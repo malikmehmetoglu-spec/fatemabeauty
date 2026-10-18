@@ -15,6 +15,9 @@ export function ManifestSwitch() {
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     const href = admin ? "/admin.webmanifest" : "/manifest.webmanifest";
     if (link && link.getAttribute("href") !== href) link.setAttribute("href", href);
+    const apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+    const icon = admin ? "/icons/admin-192.png" : "/icons/icon-192.png";
+    if (apple && apple.getAttribute("href") !== icon) apple.setAttribute("href", icon);
   }, [pathname]);
   return null;
 }
