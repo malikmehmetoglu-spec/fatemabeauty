@@ -2,13 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm ci",
-  "buildCommand": "next build",
-  "rewrites": [
-    { "source": "/", "has": [{ "type": "host", "value": "fatema.beauty" }], "destination": "/site/" },
-    { "source": "/", "has": [{ "type": "host", "value": "www.fatema.beauty" }], "destination": "/site/" },
-    { "source": "/", "has": [{ "type": "host", "value": "store.fatema.beauty" }], "destination": "/store/" },
-    { "source": "/", "has": [{ "type": "host", "value": "admin.fatema.beauty" }], "destination": "/admin/login/" },
-    { "source": "/", "has": [{ "type": "host", "value": "kiosk.fatema.beauty" }], "destination": "/kiosk/" },
-    { "source": "/", "has": [{ "type": "host", "value": "tv.fatema.beauty" }], "destination": "/tv/" }
-  ]
+  "buildCommand": "next build"
 }
