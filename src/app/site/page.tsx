@@ -15,6 +15,7 @@ import { money } from "@/lib/format";
 import { C, FATEMA_PHOTO } from "@/lib/tokens";
 import { PRODUCTS } from "@/lib/mock/c1";
 import { ProductArt } from "@/app/store/c1ui";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const STEPS = [
   { title: "احجزي من هاتفكِ", text: "اختاري الخدمة واليوم والوقت المناسب، ويصلكِ التأكيد والتذكير على واتساب." },
@@ -77,6 +78,7 @@ export default function SitePage() {
               <span><Icon name="msg" size={18} />تذكير على واتساب</span>
               <span><Icon name="clock" size={18} />لا انتظار طويل</span>
             </div>
+            <InstallPrompt style={{ marginTop: 26, maxWidth: 520 }} />
           </div>
 
           <div className={s.photoCard}>
