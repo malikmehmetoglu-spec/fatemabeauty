@@ -13,6 +13,7 @@ import { money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { applyStocktake, listInventory } from "@/lib/db/products";
+import css from "../inventory.module.css";
 
 type Filter = "all" | "retail" | "consumable" | "diff" | "uncounted";
 
@@ -81,6 +82,32 @@ export default function Page() {
         <EmptyState icon="clip" title="لا أصناف للجرد" text="أضيفي أصناف المخزون أولاً، ثم عودي لعدّها هنا."
           action={<Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" /> : (
+        <>
+        <div className={css.cards}>
+          {shown.map((p) => {
+            const c = parsed(p.key);
+            const d = c == null ? null : c - Number(p.stock);
+            return (
+              <article key={p.key} className={css.card}>
+                <div className={css.head}>
+                  <div style={{ lineHeight: 1.35, minWidth: 0, flex: 1 }}>
+                    <b style={{ fontSize: 14.5 }}>{p.name}</b>
+                    <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size, p.sku].filter(Boolean).join(" · ") || "—"}</div>
+                  </div>
+                  <Tag kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>
+                </div>
+                <div className={css.meta}>
+                  <span>النظام: <b className="latin">{Number(p.stock).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>
+                  <input type="number" inputMode="decimal" min={0} aria-label={`الكمية المعدودة من ${p.name} (جوال)`} value={counts[p.key] ?? ""} placeholder="العدّ"
+                    onChange={(e) => setCounts((x) => ({ ...x, [p.key]: e.target.value }))} className="latin"
+                    style={{ width: 110, height: 38, borderRadius: 14, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 14, textAlign: "center" }} />
+                  {d != null && <b className="latin" style={{ color: d < 0 ? C.danger : d > 0 ? C.okDeep : C.sub2 }}>{d > 0 ? "+" : ""}{d}</b>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div className={css.table}>
         <DataTable minWidth={680}
           headers={["الصنف", "النوع", "كمية النظام", "الكمية المعدودة", "الفرق"]}
           widths={[2.6, 0.9, 1, 1.3, 1]}
@@ -103,6 +130,8 @@ export default function Page() {
             ];
           })}
         />
+        </div>
+        </>
       )}
 
       {list.length > 0 && (

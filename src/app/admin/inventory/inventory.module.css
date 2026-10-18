@@ -1,0 +1,14 @@
+/* Inventory & store admin: table on wide screens, card list on phones. */
+.table { display: block; }
+.cards { display: none; }
+@media (max-width: 699px) {
+  .table { display: none; }
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+}
+.card {
+  background: #FFFFFF; border: 1px solid #F0E6F3; border-radius: 22px; padding: 12px 14px;
+  box-shadow: 0 8px 20px rgba(123, 70, 135, 0.07); display: flex; flex-direction: column; gap: 10px;
+}
+.head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }

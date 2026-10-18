@@ -1,4 +1,4 @@
--- Applied as «inventory_store_hardening».
+-- Applied as «inventory_store_hardening» (+ «inventory_cancel_order_idempotent» for the final cancel_order below).
 -- Inventory + store: stock only through movements, never negative, batches always match stock (FEFO with
 -- returns going back to the batch they came from), order status guard, store catalogue without cost/min_stock.
 

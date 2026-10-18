@@ -13,6 +13,7 @@ import { isLow, listExpiring, listInventory, productImage, setShowInStore, stock
 import { money, arDate, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { ProductDialog, ReceiveDialog, AdjustDialog, WasteDialog } from "./dialogs";
+import css from "./inventory.module.css";
 
 type Filter = "all" | "retail" | "consumable" | "low" | "hidden";
 type WasteBatch = { id: string; product_key: string; qty_left: number; expires_on: string | null; name: string; unit: string };
@@ -113,6 +114,47 @@ export default function InventoryPage() {
       ) : shown.length === 0 ? (
         <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" />
       ) : (
+        <>
+        <div className={css.cards}>
+          {shown.map((p) => {
+            const img = productImage(p);
+            const low = isLow(p);
+            return (
+              <article key={p.key} className={css.card}>
+                <div className={css.head}>
+                  <span style={{ width: 48, height: 48, borderRadius: 15, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {img ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name={p.kind === "retail" ? "bottle" : "box"} size={20} />}
+                  </span>
+                  <div style={{ lineHeight: 1.35, minWidth: 0, flex: 1 }}>
+                    <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14.5, fontWeight: 700, color: C.ink, textAlign: "right" }}>{p.name}</button>
+                    <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size, p.sku].filter(Boolean).join(" · ") || "—"}</div>
+                  </div>
+                  <Tag kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>
+                </div>
+                <div className={css.meta}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <b className="latin" style={{ fontSize: 16, color: low ? C.danger : C.ink }}>{Number(p.stock).toLocaleString("en-US")}</b>
+                    <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span>
+                    {Number(p.stock) <= 0 ? <Tag kind="pink">نفد</Tag> : low && <Tag kind="amber">منخفض</Tag>}
+                  </span>
+                  {p.kind === "retail" && <span>{p.price != null ? money(p.price) : <span style={{ color: C.muted }}>بلا سعر</span>}</span>}
+                  {p.kind === "retail" && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto", fontSize: 12.5, color: C.sub2 }}>
+                      في المتجر <Toggle on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busyKey !== p.key && toggleStore(p)} />
+                    </span>
+                  )}
+                </div>
+                <div className={css.actions}>
+                  <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
+                  <RowBtn icon="clip" label="جرد" onClick={() => setAdjusting(p)} />
+                  <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div className={css.table}>
         <DataTable minWidth={960}
           headers={["الصنف", "النوع", "الكمية", "سعر البيع", "في المتجر", ""]}
           widths={[2.4, 0.8, 1.3, 1, 0.8, 2.4]}
@@ -149,6 +191,8 @@ export default function InventoryPage() {
             ];
           })}
         />
+        </div>
+        </>
       )}
 
       <ProductDialog open={!!editing} product={editing === "new" ? null : editing} onClose={() => setEditing(null)} />

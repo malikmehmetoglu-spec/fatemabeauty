@@ -14,6 +14,7 @@ import { C, ICON_FILL } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { isLow, listInventory, productImage, setRecommended, setShowInStore, type Product } from "@/lib/db/products";
 import { ProductDialog, ReceiveDialog } from "@/app/admin/inventory/dialogs";
+import css from "@/app/admin/inventory/inventory.module.css";
 
 type Filter = "all" | "shown" | "hidden" | "rec" | "out";
 
@@ -71,6 +72,47 @@ export default function Page() {
           text="أضيفي منتجاً للبيع مع سعره وصورته وكميته؛ يظهر في متجر التطبيق تلقائياً ويُخصم من المخزون عند كل طلب."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة منتج</GhostButton>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا منتجات تطابق هذا الاختيار" /> : (
+        <>
+        <div className={css.cards}>
+          {shown.map((p) => {
+            const img = productImage(p);
+            const stock = Number(p.stock);
+            return (
+              <article key={p.key} className={css.card}>
+                <div className={css.head}>
+                  <span style={{ width: 48, height: 48, borderRadius: 15, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {img ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="bottle" size={20} />}
+                  </span>
+                  <div style={{ lineHeight: 1.35, minWidth: 0, flex: 1 }}>
+                    <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14.5, fontWeight: 700, color: C.ink, textAlign: "right" }}>{p.name}</button>
+                    <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size].filter(Boolean).join(" · ") || "—"}</div>
+                  </div>
+                  {p.price != null ? <b className="latin">{money(p.price)}</b> : <Tag kind="pink">بلا سعر</Tag>}
+                </div>
+                <div className={css.meta}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <b className="latin" style={{ color: stock <= 0 ? C.danger : C.ink }}>{stock.toLocaleString("en-US")}</b>
+                    <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span>
+                    {stock <= 0 ? <Tag kind="pink">نفد</Tag> : isLow(p) && <Tag kind="amber">منخفض</Tag>}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto", fontSize: 12.5, color: C.sub2 }}>
+                    في المتجر <Toggle on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busy !== p.key && run(p.key, () => setShowInStore(p.key, !p.show_in_store))} />
+                  </span>
+                </div>
+                <div className={css.actions}>
+                  <button type="button" aria-pressed={p.recommended} onClick={() => busy !== p.key && run(p.key, () => setRecommended(p.key, !p.recommended))} style={{
+                    height: 34, padding: "0 12px", borderRadius: 17, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: p.recommended ? "#A86A12" : C.sub2,
+                    border: `1px solid ${p.recommended ? "#FFFFFF" : "#EADCF0"}`, background: p.recommended ? "linear-gradient(160deg,#FFF3DC,#F6D9A0)" : C.white,
+                  }}><Icon name="star" color={p.recommended ? "#D98F26" : "#D2C3D5"} size={14} />{p.recommended ? "موصى به" : "توصية"}</button>
+                  <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
+                  <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div className={css.table}>
         <DataTable minWidth={880}
           headers={["المنتج", "السعر", "الكمية", "في المتجر", "توصية", ""]}
           widths={[2.6, 1, 1.3, 0.8, 0.7, 1.4]}
@@ -107,6 +149,8 @@ export default function Page() {
             ];
           })}
         />
+        </div>
+        </>
       )}
 
       <ProductDialog open={!!editing} product={editing === "new" ? null : editing} onClose={() => setEditing(null)} />

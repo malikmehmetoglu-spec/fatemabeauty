@@ -18,11 +18,14 @@ export function isInstalled() {
   return window.matchMedia("(display-mode: standalone)").matches || !!(navigator as unknown as { standalone?: boolean }).standalone || isNativeApp();
 }
 
-/** On fatema.beauty (not app.) installing must happen on app.fatema.beauty — send people there. */
+/**
+ * On fatema.beauty / www installing must happen on app.fatema.beauty — send people there.
+ * store.fatema.beauty installs itself (its own origin; the shared manifest starts at "/", which opens the store there).
+ */
 export function mustGoToApp() {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
-  return h.endsWith(DOMAIN) && h !== `app.${DOMAIN}`;
+  return h.endsWith(DOMAIN) && h !== `app.${DOMAIN}` && h !== `store.${DOMAIN}`;
 }
 export const APP_INSTALL_URL = `${APP_ORIGIN}/home/?install=1`;
 
