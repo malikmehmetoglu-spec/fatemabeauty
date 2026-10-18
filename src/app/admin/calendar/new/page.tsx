@@ -91,7 +91,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const loading = services.loading || rooms.loading || hours.loading;
   return (
     <Modal open onClose={onClose} title="موعد جديد" width={640}
-      footer={<SubmitButton onClick={submit} busy={busy}>{mode === "walkin" ? (checkIn ? "تسجيل الحضور وإعطاء رقم دور" : "حفظ الحضور") : "حجز الموعد"}</SubmitButton>}>
+      footer={!services.data?.length ? undefined : <SubmitButton onClick={submit} busy={busy}>{mode === "walkin" ? (checkIn ? "تسجيل الحضور وإعطاء رقم دور" : "حفظ الحضور") : "حجز الموعد"}</SubmitButton>}>
       {loading ? <Loading /> : !services.data?.length ? (
         <ErrorNote>لا توجد خدمات بعد. أضيفي الخدمات من الإعدادات أولاً.</ErrorNote>
       ) : (
