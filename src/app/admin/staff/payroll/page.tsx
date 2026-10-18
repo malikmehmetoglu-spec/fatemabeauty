@@ -139,7 +139,7 @@ export default function Page() {
               <Fragment key={r_i}>
                 <button onClick={r.pick} style={css(r.style)}>
                   <div style={{ flex: 2.2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#7B4687" }}>
+                    <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#7B4687", whiteSpace: "nowrap" }}>
                       {r.ini}
                     </span>
                     <span style={{ lineHeight: 1.35, textAlign: "right" }}>

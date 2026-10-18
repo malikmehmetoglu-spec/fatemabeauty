@@ -92,10 +92,10 @@ export default function Page() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
                     <label htmlFor="late" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
                       يُعدّ غياباً بعد تأخير
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                     </label>
                     <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
-                      <input id="late" defaultValue="15" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right" }} />
+                      <input id="late" defaultValue="15" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />
                       <span style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>دقيقة</span>
                     </div>
                   </div>
@@ -133,10 +133,10 @@ export default function Page() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
                       <label htmlFor="dep" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
                         قيمة العربون
-                        <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                       </label>
                       <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
-                        <input id="dep" defaultValue="20" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right" }} />
+                        <input id="dep" defaultValue="20" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />
                         <span style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>% من السعر</span>
                       </div>
                     </div>
@@ -229,7 +229,7 @@ export default function Page() {
             </div>
           </div>
         </div>
-        <div style={{ width: 320, flexShrink: 0, borderRadius: 30, padding: "22px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ width: 320, flexShrink: 0, borderRadius: 30, padding: "22px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", gap: 14, boxSizing: "content-box" }}>
           <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
           <div style={{ position: "absolute", top: -60, left: -60, width: 200, height: 200, borderRadius: 100, background: "radial-gradient(circle, rgba(200,160,220,0.28) 0%, rgba(200,160,220,0) 70%)" }} />
           <div style={{ position: "relative", lineHeight: "1.3" }}>
@@ -248,7 +248,7 @@ export default function Page() {
               </div>
             </Fragment>
           ))}
-          <button type="button" style={{ position: "relative", marginTop: "auto", height: 50, borderRadius: 25, border: "none", background: C.white, color: C.accent, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.18)" }}>
+          <button type="button" style={{ position: "relative", marginTop: "auto", height: 50, borderRadius: 25, border: "none", background: C.white, color: C.accent, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.18)", boxSizing: "content-box" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12l5 5L20 7" />
             </svg>

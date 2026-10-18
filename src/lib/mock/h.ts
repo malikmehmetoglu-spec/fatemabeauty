@@ -14,3 +14,6 @@ export const SERVICE_ICON: Record<"clean" | "hydra" | "peel" | "laser" | "consul
   laser: "M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0",
   consult: "M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z",
 };
+
+/** W_Roles — default permission matrix: rows = permissions, cols = roles; 2 full · 1 view only · 0 none. */
+export const ROLE_MATRIX = [[2, 2, 1, 0, 2, 0], [2, 2, 1, 0, 2, 0], [2, 2, 1, 2, 2, 0], [2, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0], [2, 0, 0, 2, 1, 0], [2, 0, 0, 0, 0, 0], [2, 0, 0, 2, 0, 0], [2, 0, 0, 0, 0, 0], [2, 1, 0, 0, 0, 2], [2, 2, 1, 0, 0, 0], [2, 1, 0, 1, 0, 0], [2, 1, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0]];

@@ -301,7 +301,7 @@ export default function Page() {
           <div style={{ fontSize: 12, color: "#866F8D" }}>
             معاينة لـ{" "}
             <span style={{ fontSize: 12, fontWeight: 600, color: "#35213D", whiteSpace: "nowrap" }}>
-              روان قاسم
+              {PERSONA.name}
             </span>
             <ExampleTag />
             {" "}· {v.chan_label}

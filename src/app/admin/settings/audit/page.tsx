@@ -52,7 +52,7 @@ export default function Page() {
               <button type="button" onClick={f.pick} style={css(f.style)}>{f.name}</button>
             </Fragment>
           ))}
-          <span style={{ marginInlineStart: "auto", height: 36, padding: "0 14px", borderRadius: 18, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: C.accent }}>
+          <span style={{ marginInlineStart: "auto", height: 36, padding: "0 14px", borderRadius: 18, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: C.accent, boxSizing: "content-box" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 7a4 4 0 1 0 8 0 4 4 0 1 0-8 0M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8M21 21v-2a4 4 0 0 0-3-3.9" />
             </svg>
@@ -61,7 +61,7 @@ export default function Page() {
               <path d="M6 9l6 6 6-6" />
             </svg>
           </span>
-          <span style={{ height: 36, padding: "0 14px", borderRadius: 18, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: C.accent }}>
+          <span style={{ height: 36, padding: "0 14px", borderRadius: 18, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: C.accent, boxSizing: "content-box" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16" />
             </svg>
@@ -82,7 +82,7 @@ export default function Page() {
           </div>
           {v.rows.map((r, rI) => (
             <Fragment key={rI}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, height: 48, borderTop: "1px solid #EDE2F1" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, height: 48, borderTop: "1px solid #EDE2F1", boxSizing: "content-box" }}>
                 <div style={{ width: 56, fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.sub }}>{r.t}</div>
                 <div style={{ flex: 1.5, display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
                   {r.fat && (
@@ -100,7 +100,7 @@ export default function Page() {
                       <span style={{ fontSize: 13.5, fontWeight: 700 }}>{r.u}</span>
                       {r.nf && (
                         <>
-                          <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                         </>
                       )}
                     </div>

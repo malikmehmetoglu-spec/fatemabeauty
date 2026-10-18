@@ -24,7 +24,7 @@ export default function ServicesPage() {
   return (
     <PhoneScreen padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
       <TopBar title="خدماتنا" back={R.Main} right={<IconButton icon="search" label="البحث في الخدمات" />} />
-      <div role="tablist" aria-label="تصنيف الخدمات" style={{ position: "relative", display: "flex", gap: 8, margin: "0 -20px", padding: "2px 20px 8px", overflow: "visible" }}>
+      <div role="tablist" aria-label="تصنيف الخدمات" style={{ position: "relative", display: "flex", gap: 8, margin: "0 -20px -14px", padding: "2px 20px 22px", overflowX: "auto" }}>
         {CATS.map((t) => (
           <Chip key={t} selected={cat === t} onClick={() => setCat(t)} style={{ padding: "0 15px", fontWeight: cat === t ? 700 : 600 }}>{t}</Chip>
         ))}

@@ -408,7 +408,7 @@ export default function Page() {
                 {v.reqs.map((r, r_i) => (
                   <Fragment key={r_i}>
                     <div style={{ borderRadius: 22, padding: "14px 16px", background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#7B4687" }}>
+                      <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#7B4687", whiteSpace: "nowrap" }}>
                         {r.ini}
                       </span>
                       <div style={{ flex: 1, minWidth: "0", lineHeight: 1.45 }}>

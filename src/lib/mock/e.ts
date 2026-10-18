@@ -68,3 +68,8 @@ export const WAITLIST: { no: number; name: string; initials: string; service: st
 ];
 /** The freed slot offered to the waitlist: Thursday 15 Oct, 12:00–13:00, hydrafacial, room 1. */
 export const FREE_SLOT = { date: new Date(2026, 9, 15), from: "12:00", to: "13:00" };
+
+/* ---------- W_Queue ---------- */
+/** Check-in (arrival) times of patients already in the waiting hall, by queue number — sample values from the design. */
+export const ARRIVALS: Record<number, string> = { 12: "12:20", 13: "12:26" };
+export const minutesSince = (t: string) => toMinutes(NOW) - toMinutes(t);

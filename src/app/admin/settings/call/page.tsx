@@ -63,13 +63,13 @@ export default function Page() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0", flex: 1 }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>عدد مرات التكرار</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <button type="button" aria-label="إنقاص" onClick={v.dec} style={{ width: 36, height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button type="button" aria-label="إنقاص" onClick={v.dec} style={{ width: 36, height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 12h14" />
                       </svg>
                     </button>
                     <span style={{ fontSize: 22, fontWeight: 700, color: C.accent, width: 24, textAlign: "center" }}>{v.rep}</span>
-                    <button type="button" aria-label="زيادة" onClick={v.inc} style={{ width: 36, height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button type="button" aria-label="زيادة" onClick={v.inc} style={{ width: 36, height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 5v14M5 12h14" />
                       </svg>
@@ -108,15 +108,15 @@ export default function Page() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0", flex: 1 }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>سرعة النطق</div>
                   <div style={{ display: "flex", gap: 7 }}>
-                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>هادئة</span>
-                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>عادية</span>
+                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, boxSizing: "content-box" }}>هادئة</span>
+                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>عادية</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0", flex: 1.3 }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>يُشغَّل على</div>
                   <div style={{ display: "flex", gap: 7 }}>
-                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>شاشة الصالة</span>
-                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>سماعة الاستقبال</span>
+                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, boxSizing: "content-box" }}>شاشة الصالة</span>
+                    <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>سماعة الاستقبال</span>
                   </div>
                 </div>
               </div>
@@ -135,7 +135,7 @@ export default function Page() {
                   <div style={{ fontSize: 12, color: C.sub2 }}>قرار معتمد للخصوصية</div>
                 </div>
               </div>
-              <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>معتمد</span>
+              <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>معتمد</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 18, padding: "10px 14px", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>
@@ -174,31 +174,31 @@ export default function Page() {
               </div>
               <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>ما يظهر على شاشة الصالة</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep }}>
+                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E7D50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12l5 5L20 7" />
                   </svg>
                   رقم الدور
                 </span>
-                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep }}>
+                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E7D50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12l5 5L20 7" />
                   </svg>
                   الغرفة
                 </span>
-                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep }}>
+                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E7D50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12l5 5L20 7" />
                   </svg>
                   الرقم التالي
                 </span>
-                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#F4F1F5", color: C.muted, textDecoration: "line-through" }}>
+                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#F4F1F5", color: C.muted, textDecoration: "line-through", boxSizing: "content-box" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A595AC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                   اسم المراجعة
                 </span>
-                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#F4F1F5", color: C.muted, textDecoration: "line-through" }}>
+                <span style={{ height: 30, padding: "0 12px", borderRadius: 15, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "#F4F1F5", color: C.muted, textDecoration: "line-through", boxSizing: "content-box" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A595AC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
@@ -246,13 +246,13 @@ export default function Page() {
               <span style={{ width: 90, height: 8, borderRadius: 4, background: "#D3C6D6" }} />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" onClick={v.test} style={{ flex: 1, height: 48, borderRadius: 24, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <button type="button" onClick={v.test} style={{ flex: 1, height: 48, borderRadius: 24, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxSizing: "content-box" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z" />
                 </svg>
                 تجربة النداء
               </button>
-              <Link href={R.TV_Board} style={{ height: 48, padding: "0 18px", borderRadius: 24, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: C.accent, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+              <Link href={R.TV_Board} style={{ height: 48, padding: "0 18px", borderRadius: 24, background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: C.accent, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxSizing: "content-box" }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" />
                 </svg>

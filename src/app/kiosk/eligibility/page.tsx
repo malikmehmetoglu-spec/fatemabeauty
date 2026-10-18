@@ -5,10 +5,38 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
+import { APPOINTMENTS_TODAY, NOW, TODAY } from "@/lib/data";
+import { arDate } from "@/lib/format";
+import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
 
 /** T_Eligibility.dc.html */
+/** The patient being checked: today's 13:00 laser in room 3. */
+const A = APPOINTMENTS_TODAY.find((a) => a.time === "13:00" && a.room === "غرفة 3")!;
+const Q: [string, "block" | "warn", string][] = [["هل أنتِ حامل أو مرضعة؟", "block", "حمل أو رضاعة: تُؤجَّل جلسة الليزر."], ["تعرّض للشمس أو تسمير خلال آخر أسبوعين؟", "warn", "بشرة متعرّضة للشمس: خطر أعلى للحروق والتصبّغ — طاقة أخف أو تأجيل حسب تقدير الأخصائية."], ["أدوية تزيد التحسّس للضوء؟", "warn", "دواء يزيد التحسّس للضوء: راجعي نوع الدواء قبل البدء."], ["علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟", "block", "إيزوتريتينوين حديث: يُؤجَّل الإجراء."], ["التهاب أو هربس نشط في منطقة الجلسة؟", "block", "التهاب نشط: لا تُعالج المنطقة حتى الشفاء."], ["ميل لظهور ندبات بارزة بعد الجروح؟", "warn", "ميل للندبات البارزة: اختبار بقعة صغيرة أولاً."], ["وشم أو مكياج دائم في المنطقة؟", "warn", "وشم في المنطقة: تجنّبي المرور فوقه."]];
+const SK = ["I", "II", "III", "IV", "V", "VI"], COL = ["#F8E3D6", "#F0D2BC", "#DDB394", "#BE8B66", "#8E5E3F", "#5A3A28"];
+const seg = (on: boolean, yes: boolean) => css("width:84px;height:56px;border-radius:28px;border:none;font-family:inherit;font-size:17px;font-weight:700;" +
+  (on ? (yes ? "background:linear-gradient(145deg,#C9A2D8,#7B4687);color:#FFFFFF;box-shadow:0 8px 16px rgba(123,70,135,0.32)"
+    : "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);color:#7B4687;box-shadow:0 8px 16px rgba(150,100,170,0.25)")
+    : "background:transparent;color:#A595AC"));
+
+/** Reception tablet: laser eligibility checklist before the procedure. */
 export default function Page() {
+  const [st, setSt] = useState({ ans: [false, true, false, false, false, false, false], skin: 2 });
+  const setAns = (i: number, v: boolean) => setSt({ ...st, ans: st.ans.map((x, j) => (j === i ? v : x)) });
+  const qs = st.ans.map((v, i) => ({ yes: () => setAns(i, true), no: () => setAns(i, false), yStyle: seg(v, true), nStyle: seg(!v, false) }));
+  const alerts = Q.map((q, i) => ({ t: q[2], kind: q[1], on: st.ans[i] })).filter((x) => x.on).map((x) => ({ t: x.t,
+    style: css("display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:18px;font-size:14.5px;font-weight:600;line-height:1.55;" +
+      (x.kind === "block" ? "background:#F4E6F8;color:#B03D6A;border:1px solid #E5C9EB" : "background:#FCF1DE;color:#8A5A12;border:1px solid #F3E0BF")),
+    dot: css("width:8px;height:8px;border-radius:4px;flex-shrink:0;margin-top:9px;background:" + (x.kind === "block" ? "#B03D6A" : "#C9962B")) }));
+  const block = Q.some((q, i) => q[1] === "block" && st.ans[i]);
+  const skins = SK.map((s, i) => ({ s, pick: () => setSt({ ...st, skin: i }),
+    style: css("flex:1;height:72px;border-radius:20px;font-family:Rubik,sans-serif;font-size:15px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;" +
+      (st.skin === i ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687;font-weight:700" : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D")),
+    sw: css("width:22px;height:22px;border-radius:11px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,0.15);background:" + COL[i]) }));
+  const skinNote = st.skin >= 3 ? "بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى." : "تأكدي من النوع قبل ضبط إعدادات الجهاز.";
+  const noAlerts = alerts.length === 0, nAlerts = alerts.length;
+  const btn = block ? "تأجيل الجلسة" : alerts.length ? "متابعة الجلسة بحذر" : "متابعة الجلسة";
   return (
     <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
@@ -21,9 +49,9 @@ export default function Page() {
         <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>قبل الإجراء
           </div>
-          <div style={{ fontSize: 15, color: C.sub2 }}>جلسة ليزر · بتول درويش
+          <div style={{ fontSize: 15, color: C.sub2 }}>{A.serviceName} · {A.name}
             <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-            </span>{" "}· غرفة 3 · 13:00 · مع ريم الحسن
+            </span>{" "}· {A.room} · {A.time} · مع {A.specialist}
             <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
             </span>
           </div>
@@ -32,10 +60,10 @@ export default function Page() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
           </svg>
-          <span>الثلاثاء 13 تشرين الأول
+          <span>{arDate(TODAY)}
           </span>
           <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>12:30
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
           </span>
         </div>
       </div>
@@ -53,9 +81,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="هل أنتِ حامل أو مرضعة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[0].yes} style={qs[0].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[0]} onClick={qs[0].yes} style={qs[0].yStyle}>نعم
               </button>
-              <button onClick={qs[0].no} style={qs[0].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[0]} onClick={qs[0].no} style={qs[0].nStyle}>لا
               </button>
             </div>
           </div>
@@ -65,9 +93,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="تعرّض للشمس أو تسمير خلال آخر أسبوعين؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[1].yes} style={qs[1].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[1]} onClick={qs[1].yes} style={qs[1].yStyle}>نعم
               </button>
-              <button onClick={qs[1].no} style={qs[1].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[1]} onClick={qs[1].no} style={qs[1].nStyle}>لا
               </button>
             </div>
           </div>
@@ -77,9 +105,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="أدوية تزيد التحسّس للضوء؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[2].yes} style={qs[2].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[2]} onClick={qs[2].yes} style={qs[2].yStyle}>نعم
               </button>
-              <button onClick={qs[2].no} style={qs[2].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[2]} onClick={qs[2].no} style={qs[2].nStyle}>لا
               </button>
             </div>
           </div>
@@ -89,9 +117,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[3].yes} style={qs[3].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[3]} onClick={qs[3].yes} style={qs[3].yStyle}>نعم
               </button>
-              <button onClick={qs[3].no} style={qs[3].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[3]} onClick={qs[3].no} style={qs[3].nStyle}>لا
               </button>
             </div>
           </div>
@@ -101,9 +129,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="التهاب أو هربس نشط في منطقة الجلسة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[4].yes} style={qs[4].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[4]} onClick={qs[4].yes} style={qs[4].yStyle}>نعم
               </button>
-              <button onClick={qs[4].no} style={qs[4].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[4]} onClick={qs[4].no} style={qs[4].nStyle}>لا
               </button>
             </div>
           </div>
@@ -113,9 +141,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="ميل لظهور ندبات بارزة بعد الجروح؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[5].yes} style={qs[5].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[5]} onClick={qs[5].yes} style={qs[5].yStyle}>نعم
               </button>
-              <button onClick={qs[5].no} style={qs[5].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[5]} onClick={qs[5].no} style={qs[5].nStyle}>لا
               </button>
             </div>
           </div>
@@ -125,9 +153,9 @@ export default function Page() {
               </div>
             </div>
             <div role="group" aria-label="وشم أو مكياج دائم في المنطقة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button onClick={qs[6].yes} style={qs[6].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[6]} onClick={qs[6].yes} style={qs[6].yStyle}>نعم
               </button>
-              <button onClick={qs[6].no} style={qs[6].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[6]} onClick={qs[6].no} style={qs[6].nStyle}>لا
               </button>
             </div>
           </div>
@@ -141,22 +169,22 @@ export default function Page() {
               </div>
             </div>
             <div dir="ltr" style={{ display: "flex", gap: 6 }}>
-              <button onClick={skins[0].pick} aria-label="نوع البشرة I" style={skins[0].style}>
+              <button type="button" aria-pressed={st.skin === 0} onClick={skins[0].pick} aria-label="نوع البشرة I" style={skins[0].style}>
                 <span style={skins[0].sw} />I
               </button>
-              <button onClick={skins[1].pick} aria-label="نوع البشرة II" style={skins[1].style}>
+              <button type="button" aria-pressed={st.skin === 1} onClick={skins[1].pick} aria-label="نوع البشرة II" style={skins[1].style}>
                 <span style={skins[1].sw} />II
               </button>
-              <button onClick={skins[2].pick} aria-label="نوع البشرة III" style={skins[2].style}>
+              <button type="button" aria-pressed={st.skin === 2} onClick={skins[2].pick} aria-label="نوع البشرة III" style={skins[2].style}>
                 <span style={skins[2].sw} />III
               </button>
-              <button onClick={skins[3].pick} aria-label="نوع البشرة IV" style={skins[3].style}>
+              <button type="button" aria-pressed={st.skin === 3} onClick={skins[3].pick} aria-label="نوع البشرة IV" style={skins[3].style}>
                 <span style={skins[3].sw} />IV
               </button>
-              <button onClick={skins[4].pick} aria-label="نوع البشرة V" style={skins[4].style}>
+              <button type="button" aria-pressed={st.skin === 4} onClick={skins[4].pick} aria-label="نوع البشرة V" style={skins[4].style}>
                 <span style={skins[4].sw} />V
               </button>
-              <button onClick={skins[5].pick} aria-label="نوع البشرة VI" style={skins[5].style}>
+              <button type="button" aria-pressed={st.skin === 5} onClick={skins[5].pick} aria-label="نوع البشرة VI" style={skins[5].style}>
                 <span style={skins[5].sw} />VI
               </button>
             </div>
@@ -209,7 +237,7 @@ export default function Page() {
               </svg>صور «قبل» للمنطقة بنفس الزوايا
             </div>
           </div>
-          <Link href={R.T_Photos} style={{ height: 64, borderRadius: 32, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <Link href={block ? R.T_Desk : R.T_Photos} style={{ height: 64, borderRadius: 32, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3M9 12l2 2 4-4" />
             </svg>{btn}
