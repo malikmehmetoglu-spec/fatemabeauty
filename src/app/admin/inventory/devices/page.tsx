@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { APPOINTMENTS_TODAY } from "@/lib/data";
 import { AdminShell } from "@/components/shell";
 import { Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -12,7 +13,11 @@ import { css, tagStyle } from "@/lib/mock/g";
 /** W_Devices.dc.html — الأجهزة والصيانة. */
 export default function Page() {
   const [m, setM] = useState([false, false]);
-  const UP = [3, 5];
+  const hydra = APPOINTMENTS_TODAY.filter((a) => a.service === "hydra");
+  const hydraDone = hydra.filter((a) => a.status === "انتهت").length;
+  const hydraNow = hydra.filter((a) => a.status === "في الجلسة").length;
+  const hydraLeft = hydra.filter((a) => a.status !== "انتهت" && a.status !== "في الجلسة" && a.status !== "لم تحضر");
+  const UP = [hydraLeft.length, 5];
   const mk = (k: number) => {
     const on = m[k];
     return {
@@ -79,7 +84,7 @@ export default function Page() {
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
                     <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
-                      1
+                      {hydraDone}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
                       منتهية
@@ -87,7 +92,7 @@ export default function Page() {
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
                     <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
-                      0
+                      {hydraNow}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
                       جارية
@@ -95,7 +100,7 @@ export default function Page() {
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
                     <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
-                      3
+                      {hydraLeft.length}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
                       متبقية
@@ -365,20 +370,10 @@ export default function Page() {
                 <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>
                   جهاز الهيدرافيشل{" "}
                   <span style={{ fontWeight: 400, color: "#866F8D" }}>
-                    (3)
+                    ({hydraLeft.length})
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                      13:00
-                    </span>
-                  </span>
-                  <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                      14:15
-                    </span>
-                  </span>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
                     <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       16:00
