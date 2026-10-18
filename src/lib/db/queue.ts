@@ -268,9 +268,9 @@ export function useLiveQueue(intervalMs = 5000) {
   return { rows, error };
 }
 
-/** The most recent call (called_at) among today's rows. */
+/** The most recent call (called_at) among today's rows that are still waiting or in session (a finished visit is not shown as "please proceed"). */
 export function lastCalled(rows: TvRow[] | null) {
-  return (rows ?? []).filter((r) => r.called_at).sort((a, b) => b.called_at!.localeCompare(a.called_at!))[0] ?? null;
+  return (rows ?? []).filter((r) => r.called_at && r.status !== "done").sort((a, b) => b.called_at!.localeCompare(a.called_at!))[0] ?? null;
 }
 
 /** Live clock that re-renders every 15 s. */
