@@ -1,13 +1,21 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useState } from "react";
-import Link from "next/link";
 import { Stage } from "@/components/shell";
-import { R } from "@/lib/routes";
+import { APPOINTMENTS_TODAY, NOW, ROOMS, TODAY } from "@/lib/data";
+import { arDate, dayName } from "@/lib/format";
 import { C, SH, ICON_FILL, LOGO } from "@/lib/tokens";
 
-/** TV_Board.dc.html */
+/** Per room: the number in session now and the next number waiting (from today's schedule). */
+const UPCOMING = APPOINTMENTS_TODAY.filter((a) => a.status === "في الانتظار" || a.status === "مؤكد" || a.status === "بانتظار التأكيد");
+const BOARD = ROOMS.map((room) => ({
+  room,
+  cur: APPOINTMENTS_TODAY.find((a) => a.room === room && a.status === "في الجلسة")?.queueNo ?? "—",
+  next: UPCOMING.find((a) => a.room === room)?.queueNo ?? "—",
+}));
+const NEXT = UPCOMING.slice(0, 5);
+
+/** TV_Board.dc.html — waiting-room screen: who is in each room and who is next. */
 export default function Page() {
   return (
     <Stage width={1920} height={1080}  padding="60px 72px" direction="column" gap={40}>
@@ -23,12 +31,12 @@ export default function Page() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 22, height: 96, padding: "0 34px", borderRadius: 48, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: SH }}>
-          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 56, fontWeight: 500, color: C.accent, letterSpacing: 1 }}>12:30
+          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 56, fontWeight: 500, color: C.accent, letterSpacing: 1 }}>{NOW}
           </div>
           <span style={{ width: 2, height: 46, background: C.border }} />
-          <div style={{ fontSize: 26, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>الثلاثاء
+          <div style={{ fontSize: 26, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{dayName(TODAY)}
             <br />
-            <span style={{ fontWeight: 500, color: C.sub }}>13 تشرين الأول 2026
+            <span style={{ fontWeight: 500, color: C.sub }}>{arDate(TODAY, { day: false, year: true })}
             </span>
           </div>
         </div>
@@ -42,18 +50,18 @@ export default function Page() {
                 <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
               </svg>
             </span>
-            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>غرفة 1
+            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>{BOARD[0].room}
             </span>
           </div>
           <div style={{ alignSelf: "center", marginTop: 34, height: 50, padding: "0 24px", borderRadius: 25, background: "#FBEAF1", color: C.danger, fontSize: 24, fontWeight: 700, display: "flex", alignItems: "center", gap: 12, whiteSpace: "nowrap", position: "relative" }}>
             <span style={{ width: 12, height: 12, borderRadius: 6, background: "#9B4FB0", boxShadow: "0 0 0 5px rgba(155,79,176,0.18)" }} />في الجلسة
           </div>
-          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>9
+          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>{BOARD[0].cur}
           </div>
           <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 26px", borderRadius: 32, background: "linear-gradient(135deg,#F9F3FA,#F2E4F5)", border: "1px solid #FFFFFF", position: "relative" }}>
             <span style={{ fontSize: 30, fontWeight: 600, color: C.sub }}>التالي
             </span>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>12
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>{BOARD[0].next}
             </span>
           </div>
         </div>
@@ -65,18 +73,18 @@ export default function Page() {
                 <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
               </svg>
             </span>
-            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>غرفة 2
+            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>{BOARD[1].room}
             </span>
           </div>
           <div style={{ alignSelf: "center", marginTop: 34, height: 50, padding: "0 24px", borderRadius: 25, background: "#FBEAF1", color: C.danger, fontSize: 24, fontWeight: 700, display: "flex", alignItems: "center", gap: 12, whiteSpace: "nowrap", position: "relative" }}>
             <span style={{ width: 12, height: 12, borderRadius: 6, background: "#9B4FB0", boxShadow: "0 0 0 5px rgba(155,79,176,0.18)" }} />في الجلسة
           </div>
-          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>11
+          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>{BOARD[1].cur}
           </div>
           <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 26px", borderRadius: 32, background: "linear-gradient(135deg,#F9F3FA,#F2E4F5)", border: "1px solid #FFFFFF", position: "relative" }}>
             <span style={{ fontSize: 30, fontWeight: 600, color: C.sub }}>التالي
             </span>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>14
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>{BOARD[1].next}
             </span>
           </div>
         </div>
@@ -88,18 +96,18 @@ export default function Page() {
                 <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
               </svg>
             </span>
-            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>غرفة 3
+            <span style={{ fontSize: 46, fontWeight: 700, whiteSpace: "nowrap" }}>{BOARD[2].room}
             </span>
           </div>
           <div style={{ alignSelf: "center", marginTop: 34, height: 50, padding: "0 24px", borderRadius: 25, background: "#FBEAF1", color: C.danger, fontSize: 24, fontWeight: 700, display: "flex", alignItems: "center", gap: 12, whiteSpace: "nowrap", position: "relative" }}>
             <span style={{ width: 12, height: 12, borderRadius: 6, background: "#9B4FB0", boxShadow: "0 0 0 5px rgba(155,79,176,0.18)" }} />في الجلسة
           </div>
-          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>10
+          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>{BOARD[2].cur}
           </div>
           <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 26px", borderRadius: 32, background: "linear-gradient(135deg,#F9F3FA,#F2E4F5)", border: "1px solid #FFFFFF", position: "relative" }}>
             <span style={{ fontSize: 30, fontWeight: 600, color: C.sub }}>التالي
             </span>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>13
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 72, fontWeight: 500, color: C.ink, lineHeight: 1 }}>{BOARD[2].next}
             </span>
           </div>
         </div>
@@ -112,33 +120,33 @@ export default function Page() {
           <div style={{ position: "relative", fontSize: 34, fontWeight: 700, marginBottom: 8 }}>التالي
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid transparent", position: "relative" }}>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 64, fontWeight: 500, lineHeight: 1 }}>12
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 64, fontWeight: 500, lineHeight: 1 }}>{NEXT[0].queueNo}
             </span>
-            <span style={{ fontSize: 28, color: C.onDark }}>غرفة 1
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>13
-            </span>
-            <span style={{ fontSize: 28, color: C.onDark }}>غرفة 3
+            <span style={{ fontSize: 28, color: C.onDark }}>{NEXT[0].room}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>14
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>{NEXT[1].queueNo}
             </span>
-            <span style={{ fontSize: 28, color: C.onDark }}>غرفة 2
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>15
-            </span>
-            <span style={{ fontSize: 28, color: C.onDark }}>غرفة 1
+            <span style={{ fontSize: 28, color: C.onDark }}>{NEXT[1].room}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
-            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>16
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>{NEXT[2].queueNo}
             </span>
-            <span style={{ fontSize: 28, color: C.onDark }}>غرفة 3
+            <span style={{ fontSize: 28, color: C.onDark }}>{NEXT[2].room}
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>{NEXT[3].queueNo}
+            </span>
+            <span style={{ fontSize: 28, color: C.onDark }}>{NEXT[3].room}
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid #7C5485", position: "relative" }}>
+            <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 54, fontWeight: 500, lineHeight: 1 }}>{NEXT[4].queueNo}
+            </span>
+            <span style={{ fontSize: 28, color: C.onDark }}>{NEXT[4].room}
             </span>
           </div>
         </div>

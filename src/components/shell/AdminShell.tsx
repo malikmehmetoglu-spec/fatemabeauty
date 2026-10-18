@@ -34,7 +34,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   active: AdminSection; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; overlay?: ReactNode;
 }) {
   return (
-    <div dir="rtl" style={{ minHeight: "100dvh", minWidth: 1280, background: BG_WIDE, color: C.ink, display: "flex", position: "relative", isolation: "isolate" }}>
+    <div dir="rtl" style={{ minHeight: "100dvh", minWidth: 1280, background: BG_WIDE, color: C.ink, display: "flex", position: "relative", isolation: "isolate", overflowX: "clip" }}>
       <Blobs width={900} />
       <aside style={{
         width: 248, flexShrink: 0, margin: "16px 16px 16px 0", borderRadius: 30, background: "rgba(255,255,255,0.72)",

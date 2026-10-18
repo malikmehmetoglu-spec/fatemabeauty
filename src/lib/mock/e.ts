@@ -2,6 +2,7 @@
 import type { CSSProperties } from "react";
 import { APPOINTMENTS_TODAY, DONE_TODAY, NOW, SERVICE, TODAY, toMinutes, type Appointment, type ServiceKey } from "@/lib/data";
 import { arDate } from "@/lib/format";
+import type { TagKind } from "@/components/ui";
 
 /** Convert a design CSS string ("a:b;c:d") into a React style object (used where the design computes styles in JS). */
 export function css(s: string): CSSProperties {
@@ -73,3 +74,20 @@ export const FREE_SLOT = { date: new Date(2026, 9, 15), from: "12:00", to: "13:0
 /** Check-in (arrival) times of patients already in the waiting hall, by queue number — sample values from the design. */
 export const ARRIVALS: Record<number, string> = { 12: "12:20", 13: "12:26" };
 export const minutesSince = (t: string) => toMinutes(NOW) - toMinutes(t);
+
+/* ---------- W_Patients (sample list from the design; file numbers match today's schedule) ---------- */
+export type PatientRow = {
+  fileNo: number; name: string; phone: string; last: Date; pkg?: { name: string; done: number; total: number }; due: number; tags: [string, TagKind][];
+};
+export const PATIENTS: PatientRow[] = [
+  { fileNo: 1024, name: "ريم سالم", phone: "44", last: TODAY, pkg: { name: "تنظيف عميق", done: 3, total: 6 }, due: 0, tags: [["حساسية: عطور", "pink"], ["مختلطة", "gray"]] },
+  { fileNo: 1056, name: "جود الحلبي", phone: "76", last: TODAY, pkg: { name: "تنظيف عميق", done: 4, total: 6 }, due: 0, tags: [["في الجلسة", "plum"], ["حساسية: عطور", "pink"]] },
+  { fileNo: 1028, name: "رنا خليل", phone: "48", last: TODAY, pkg: { name: "هيدرافيشل", done: 2, total: 6 }, due: 0, tags: [["دهنية", "gray"]] },
+  { fileNo: 1007, name: "لمى حداد", phone: "27", last: TODAY, due: 0, tags: [["ليزر", "gray"]] },
+  { fileNo: 1035, name: "هالة منصور", phone: "55", last: new Date(2026, 7, 25), due: 0, tags: [["غابت اليوم", "amber"]] },
+  { fileNo: 1014, name: "نور الأحمد", phone: "34", last: TODAY, due: 2000, tags: [["بشرة حساسة", "pink"]] },
+  { fileNo: 1000, name: "روان قاسم", phone: "97", last: TODAY, pkg: { name: "هيدرافيشل", done: 5, total: 6 }, due: 0, tags: [] },
+  { fileNo: 1021, name: "سارة يوسف", phone: "41", last: TODAY, pkg: { name: "تنظيف عميق", done: 1, total: 6 }, due: 0, tags: [] },
+  { fileNo: 1063, name: "تالا ناصر", phone: "83", last: TODAY, due: 3500, tags: [["ليزر", "gray"]] },
+  { fileNo: 1042, name: "ديما شاهين", phone: "62", last: TODAY, due: 0, tags: [["دهنية", "gray"]] },
+];

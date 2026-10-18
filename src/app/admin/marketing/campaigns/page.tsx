@@ -239,7 +239,7 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
-            <button style={{ height: 52, borderRadius: 26, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", flex: 1, fontSize: 15 }}>
+            <button style={{ height: 52, borderRadius: 26, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", flex: 1, fontSize: 15 }}>
               <Icon name="send" color="#FFFFFF" size={19} stroke={1.9} />
               إرسال للجمهور المحدد
             </button>

@@ -11,7 +11,7 @@ export default function Page() {
 
   return (
     <AdminShell active="التسويق والولاء" title="النقاط والعضويات" subtitle="شرائح العضوية وقواعد النقاط وبطاقات الهدايا" actions={<>
-      <button style={{ height: 46, borderRadius: 23, padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", border: "none", padding: "0 20px", fontSize: 14 }}>
+      <button style={{ height: 46, borderRadius: 23, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", border: "none", padding: "0 20px", fontSize: 14 }}>
         <Icon name="check" color="#FFFFFF" size={16} stroke={1.9} />
         حفظ التغييرات
       </button>
@@ -635,7 +635,7 @@ export default function Page() {
               </div>
             </div>
             <div style={{ marginTop: "auto" }}>
-              <button style={{ height: 44, borderRadius: 22, padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", border: "none", width: "100%", fontSize: 14 }}>
+              <button style={{ height: 44, borderRadius: 22, padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", border: "none", width: "100%", fontSize: 14 }}>
                 <Icon name="plus" color="#FFFFFF" size={16} stroke={1.9} />
                 إصدار بطاقة هدية
               </button>

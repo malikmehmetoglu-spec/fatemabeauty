@@ -18,7 +18,7 @@ export default function Page() {
       </Link>
     </>}>
       <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1, minWidth: "0" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: "0", flex: 1, minWidth: "0" }}>
           <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0" }}>
             <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
