@@ -23,7 +23,8 @@ function Inner() {
   const settings = useRef(tv.call); settings.current = tv.call;
   // Speak whenever a new called_at appears (and on arrival if the call is fresh).
   useEffect(() => {
-    if (!CALL?.called_at || spoken.current === CALL.called_at) return;
+    // only newer calls are spoken (when the latest visit finishes, the card falls back to an older call silently)
+    if (!CALL?.called_at || (spoken.current !== null && CALL.called_at <= spoken.current)) return;
     const first = spoken.current === null;
     spoken.current = CALL.called_at;
     if (first && Date.now() - new Date(CALL.called_at).getTime() > 60000) return;
