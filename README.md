@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fatema Beauty — Skin Care Center
 
-## Getting Started
+تطبيق مركز فاطمة بيوتي للعناية بالبشرة: تطبيق المراجِعة (ويب + متجرا Apple وGoogle)، تابلت الاستقبال، شاشة الانتظار، ولوحة الإدارة — في مشروع واحد.
 
-First, run the development server:
+## الأجزاء
+
+| الجزء | المسار | الجهاز |
+|---|---|---|
+| تطبيق المراجِعة | `/` ثم `/home/` … | الهاتف (ويب قابل للتثبيت + تطبيق المتاجر) |
+| تابلت الاستقبال | `/kiosk/` | تابلت 1194×834 بوضع أفقي |
+| شاشة الانتظار | `/tv/` | شاشة 1920×1080 |
+| لوحة الإدارة | `/admin/` | حاسوب (1440×900 فأكبر) |
+| فهرس كل الشاشات | `/screens/` | للمراجعة |
+
+## التقنية
+
+- **Next.js 15 + TypeScript** بتصدير ثابت (`output: "export"`): البناء نفسه يُنشر على الويب ويُغلَّف للمتاجر.
+- **Capacitor 7** لتطبيقي iOS وAndroid (`capacitor.config.ts`).
+- الخطوط محلية: El Messiri للعربية وRubik للاتينية.
+- البيانات حالياً من `src/lib/data.ts` (بيانات مرجعية متسقة لكل الشاشات)، وستُستبدل بـ **Supabase** في المرحلة التالية.
+
+## التشغيل
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
+npm run build        # يُنتج المجلد out/ للنشر على أي استضافة ثابتة
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## تطبيقا المتاجر
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npx cap add android   # مرة واحدة
+npx cap add ios       # مرة واحدة (على macOS مع Xcode)
+npx cap sync
+npm run android       # يفتح Android Studio
+npm run ios           # يفتح Xcode
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## البنية
 
-## Learn More
+```
+src/
+  app/                 كل شاشة صفحة مستقلة (المسارات في src/lib/routes.ts)
+  components/ui/       المكونات المشتركة (أزرار، بطاقات، رقاقات، جداول، أيقونات…)
+  components/shell/    إطارات الأجهزة: PhoneScreen + TabBar، AdminShell، Stage (التابلت والشاشة)
+  lib/tokens.ts        ألوان الهوية الموف ووصفات العمق
+  lib/data.ts          البيانات المرجعية (الخدمات والأسعار، الفريق، مواعيد اليوم…)
+  lib/mock/            بيانات أمثلة خاصة بكل مجموعة شاشات
+docs/PORTING.md        قواعد نقل التصاميم إلى الكود
+```
 
-To learn more about Next.js, take a look at the following resources:
+## قواعد ثابتة
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- لا أشرطة تمرير ظاهرة في أي مكان.
+- لا بيانات وهمية: الاسم الحقيقي الوحيد **فاطمة طيبة**، وكل اسم آخر يحمل وسم «مثال».
+- المركز للتنظيف والعناية بالبشرة فقط (تنظيف عميق، هيدرافيشل، تقشير، ليزر).
+- التواريخ حقيقية، والعملة «ل.س» بأرقام غربية.
