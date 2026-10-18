@@ -2,22 +2,16 @@
 
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
+import { arDate } from "@/lib/format";
+import { PACKAGE_RULE, TODAY } from "@/lib/data";
 import { ExampleTag, Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, ICON_FILL, SH, SHB, SH_SOFT } from "@/lib/tokens";
 
 /** W_Receivables.dc.html — الذمم والأقساط. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-</script>
-  */
   return (
-    <AdminShell active="المالية" title="الذمم والأقساط" subtitle="أقساط الباقات (6 جلسات بسعر 5) · حتى الثلاثاء 13 تشرين الأول 2026" actions={<>
+    <AdminShell active="المالية" title="الذمم والأقساط" subtitle={`أقساط الباقات (${PACKAGE_RULE}) · حتى ${arDate(TODAY, { year: true })}`} actions={<>
         <button style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
           <Icon name="download" color={C.accent} size={17} stroke={1.9} />
           تصدير

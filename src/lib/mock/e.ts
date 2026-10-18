@@ -1,5 +1,7 @@
 /** Batch "e" (admin web) helpers + admin-only sample data copied from the designs. All person names are samples (مثال). */
 import type { CSSProperties } from "react";
+import { APPOINTMENTS_TODAY, DONE_TODAY, NOW, SERVICE, TODAY, toMinutes, type Appointment, type ServiceKey } from "@/lib/data";
+import { arDate } from "@/lib/format";
 
 /** Convert a design CSS string ("a:b;c:d") into a React style object (used where the design computes styles in JS). */
 export function css(s: string): CSSProperties {
@@ -16,3 +18,38 @@ export function css(s: string): CSSProperties {
   }
   return o as CSSProperties;
 }
+
+/* ---------- derived from today's schedule (@/lib/data) ---------- */
+
+export const TODAY_FULL = `${arDate(TODAY, { year: true })} · الآن ${NOW}`;
+
+/** Short service names used in admin lists. */
+export const SHORT: Record<ServiceKey, string> = { clean: "تنظيف عميق", hydra: "هيدرافيشل", peel: "تقشير", laser: "ليزر", consult: "استشارة" };
+
+const nowMin = toMinutes(NOW);
+/** Appointments due by now (ended), and the no-shows among them. */
+export const DUE_NOW = APPOINTMENTS_TODAY.filter((a) => toMinutes(a.time) + a.minutes <= nowMin);
+export const NO_SHOWS = DUE_NOW.filter((a) => a.status === "لم تحضر");
+export const IN_SESSION = APPOINTMENTS_TODAY.filter((a) => a.status === "في الجلسة");
+export const UPCOMING = APPOINTMENTS_TODAY.filter((a) => a.status === "في الانتظار" || a.status === "مؤكد" || a.status === "بانتظار التأكيد");
+export const PENDING_CONFIRM = APPOINTMENTS_TODAY.filter((a) => a.status === "بانتظار التأكيد");
+export const FIRST_TIME = APPOINTMENTS_TODAY[0].time;
+export const LAST_TIME = APPOINTMENTS_TODAY[APPOINTMENTS_TODAY.length - 1].time;
+
+/** Appointments per clock hour, with past / current / future state. */
+export const HOURS = Array.from(new Set(APPOINTMENTS_TODAY.map((a) => a.time.slice(0, 2)))).map((h) => {
+  const n = APPOINTMENTS_TODAY.filter((a) => a.time.startsWith(h)).length;
+  const hh = Number(h) * 60;
+  const state: "past" | "now" | "next" = hh + 60 <= nowMin ? "past" : hh <= nowMin ? "now" : "next";
+  return { label: `${h}:00`, n, state };
+});
+export const HOURS_MAX = Math.max(...HOURS.map((h) => h.n));
+
+/** Next patients in the queue (waiting / confirmed, in queue order). */
+export const NEXT_IN_QUEUE: Appointment[] = UPCOMING.slice(0, 4);
+
+/** Revenue by service from the finished sessions. */
+export const REVENUE_BY_SERVICE = (Object.keys(SERVICE) as ServiceKey[])
+  .map((k) => { const d = DONE_TODAY.filter((a) => a.service === k); return { key: k, name: SERVICE[k].name.replace(" للبشرة", ""), count: d.length, total: d.reduce((s, a) => s + a.price, 0) }; })
+  .filter((r) => r.count > 0)
+  .sort((a, b) => b.total - a.total);

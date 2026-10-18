@@ -1,39 +1,34 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
-import { ExampleTag, Icon } from "@/components/ui";
+import { ExampleTag, Icon, Tag, type TagKind } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { C, ICON_FILL, SH, SHB } from "@/lib/tokens";
+import { INVOICES_TODAY, CASH_TODAY, CARD_TODAY } from "@/lib/mock/f";
+import { arDate, money } from "@/lib/format";
+import { APPOINTMENTS_TODAY, NOW, REVENUE_EXPECTED, REVENUE_SO_FAR, TODAY, initials, isSampleName } from "@/lib/data";
+import { C, ICON_FILL, SH, SHB , SELECTED } from "@/lib/tokens";
 
 /** W_Invoices.dc.html — الفواتير. */
-export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"f": 0}; }
-  renderVals() {
-    const A = this.props.accent ?? '#7B4687';
+const OFF: CSSProperties = { background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" };
 
-    const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const SELST = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const OFFST = 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)';
-    const TAGST = {pink:'background:#F3EAF6;color:#B03D6A', green:'background:#E6F4EC;color:#2E7D50', amber:'background:#FCF1DE;color:#8A5A12', gray:'background:#F0EDF0;color:#695D6B', plum:'background:#7B4687;color:#FFFFFF'};
-    const tagStyle = k => 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap;' + TAGST[k];
-    const ALL = [{"inv": "INV-1013-01", "time": "10:45", "name": "لمى حداد", "service": "جلسة ليزر", "sp": "ريم الحسن", "method": "بطاقة", "amount": 3500, "ini": "ل ح", "ex": true}, {"inv": "INV-1013-02", "time": "11:00", "name": "ريم سالم", "service": "تنظيف عميق للبشرة", "sp": "فاطمة طيبة", "method": "نقدي", "amount": 1500, "ini": "ر س", "ex": false}, {"inv": "INV-1013-03", "time": "11:00", "name": "نور الأحمد", "service": "تقشير البشرة", "sp": "هبة العلي", "method": "نقدي", "amount": 2000, "ini": "ن ا", "ex": true}, {"inv": "INV-1013-04", "time": "11:30", "name": "سارة يوسف", "service": "جلسة ليزر", "sp": "ريم الحسن", "method": "بطاقة", "amount": 3500, "ini": "س ي", "ex": true}, {"inv": "INV-1013-05", "time": "12:00", "name": "رنا خليل", "service": "هيدرافيشل", "sp": "فاطمة طيبة", "method": "نقدي", "amount": 2000, "ini": "ر خ", "ex": false}, {"inv": "INV-1013-06", "time": "12:15", "name": "ميس عيسى", "service": "جلسة ليزر", "sp": "ريم الحسن", "method": "بطاقة", "amount": 3500, "ini": "م ع", "ex": true}, {"inv": "INV-1013-07", "time": "12:30", "name": "ديما شاهين", "service": "تنظيف عميق للبشرة", "sp": "هبة العلي", "method": "نقدي", "amount": 1500, "ini": "د ش", "ex": true}];
-    const F = ['الكل', 'نقدي', 'بطاقة'];
-    const chips = F.map((f, i) => ({ label: f + ' (' + (i === 0 ? ALL.length : ALL.filter(r => r.method === f).length) + ')', pick: () => this.setState({ f: i }),
-      style: 'height:40px;padding:0 16px;border-radius:20px;font-size:13px;font-weight:600;font-family:inherit;' + (this.state.f === i ? SELST : OFFST) }));
-    const list = ALL.filter(r => this.state.f === 0 || r.method === F[this.state.f]);
-    const rows = list.map(r => Object.assign({}, r, { amount: fmt(r.amount), mstyle: tagStyle(r.method === 'نقدي' ? 'pink' : 'gray') }));
-    const sum = list.reduce((a, r) => a + r.amount, 0);
-    return { accent: A, chips, rows, total: fmt(sum), countLabel: list.length + ' فواتير' };
-  }
-}
-</script>
-  */
+export default function Page() {
+  const [f, setF] = useState(0);
+  const ALL = INVOICES_TODAY;
+  const F = ["الكل", "نقدي", "بطاقة"];
+  const chips = F.map((x, i) => ({ label: `${x} (${i === 0 ? ALL.length : ALL.filter((r) => r.method === x).length})`, pick: () => setF(i),
+    style: { height: 40, padding: "0 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, ...(f === i ? SELECTED : OFF) } as CSSProperties }));
+  const list = ALL.filter((r) => f === 0 || r.method === F[f]);
+  const rows = list.map((r) => ({ inv: r.inv, time: r.issuedAt, ini: initials(r.name), name: r.name, service: r.serviceName, sp: r.specialist,
+    ex: isSampleName(r.specialist), method: r.method, amount: money(r.price, false), mkind: (r.method === "نقدي" ? "pink" : "gray") as TagKind }));
+  const total = money(list.reduce((a, r) => a + r.price, 0), false);
+  const countLabel = `${list.length} فواتير`;
+  const cash = ALL.filter((r) => r.method === "نقدي"), card = ALL.filter((r) => r.method === "بطاقة");
+  const passed = APPOINTMENTS_TODAY.filter((a) => a.status === "انتهت" || a.status === "لم تحضر");
+  const noShow = APPOINTMENTS_TODAY.find((a) => a.status === "لم تحضر")!;
   return (
-    <AdminShell active="المالية" title="الفواتير" subtitle="الثلاثاء 13 تشرين الأول · آخر تحديث 12:30" actions={<>
+    <AdminShell active="المالية" title="الفواتير" subtitle={`${arDate(TODAY)} · آخر تحديث ${NOW}`} actions={<>
         <Link href={R.W_Cashier} style={{ height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 18px", whiteSpace: "nowrap" }}>
           <Icon name="plus" color={C.white} size={17} stroke={1.9} />
           فاتورة جديدة
@@ -48,8 +43,8 @@ class Component extends DCLogic {
                 <Icon name="receipt" color={C.accentMid} size={16} />
               </span>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>7</div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>من 8 مواعيد حتى الآن</div>
+            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>{ALL.length}</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>من {passed.length} مواعيد حتى الآن</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -59,10 +54,10 @@ class Component extends DCLogic {
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>
-              {"7,000 "}
+              {money(CASH_TODAY, false)}{" "}
               <span style={{ fontSize: 14 }}>ل.س</span>
             </div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>4 فواتير · في الصندوق</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{cash.length} فواتير · في الصندوق</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -72,10 +67,10 @@ class Component extends DCLogic {
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>
-              {"10,500 "}
+              {money(CARD_TODAY, false)}{" "}
               <span style={{ fontSize: 14 }}>ل.س</span>
             </div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>3 فواتير</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{card.length} فواتير</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }}></div>
@@ -84,10 +79,10 @@ class Component extends DCLogic {
               <Icon name="wallet" color={"#E8D6F0"} size={20} />
             </div>
             <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: 1.25, marginTop: 6 }}>
-              {"17,500 "}
+              {money(REVENUE_SO_FAR, false)}{" "}
               <span style={{ fontSize: 15 }}>ل.س</span>
             </div>
-            <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>المتوقع لنهاية اليوم 58,000 ل.س</div>
+            <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>المتوقع لنهاية اليوم {money(REVENUE_EXPECTED)}</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -99,7 +94,7 @@ class Component extends DCLogic {
           <div style={{ display: "flex", gap: 10 }}>
             <button style={{ height: 40, borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
               <Icon name="cal" color={C.accent} size={17} stroke={1.9} />
-              اليوم · 13 تشرين الأول
+              اليوم · {arDate(TODAY, { day: false })}
             </button>
             <button style={{ height: 40, borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
               <Icon name="filter" color={C.accent} size={17} stroke={1.9} />
@@ -144,7 +139,7 @@ class Component extends DCLogic {
                 </>)}
               </div>
               <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={r.mstyle}>{r.method}</span>
+                <Tag kind={r.mkind}>{r.method}</Tag>
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>{r.amount}</span>
@@ -178,7 +173,7 @@ class Component extends DCLogic {
         <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 14, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, background: C.tint, color: "#74457F" }}>
           <Icon name="info" color={C.accentMid} size={17} />
           <span>
-            موعد واحد بدون فاتورة: استشارة في المركز الساعة 11:00 — هالة منصور
+            موعد واحد بدون فاتورة: {noShow.serviceName} الساعة {noShow.time} — {noShow.name}
             <ExampleTag />
             {" (لم تحضر). الاستشارة في المركز مجانية."}
           </span>

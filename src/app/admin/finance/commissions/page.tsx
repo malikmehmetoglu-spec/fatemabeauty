@@ -1,42 +1,34 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState, type CSSProperties } from "react";
+import { money, arDate } from "@/lib/format";
+import { TODAY } from "@/lib/data";
+import { COMMISSIONS } from "@/lib/mock/f";
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
 import { ExampleTag, Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { C, FATEMA_PHOTO, ICON_FILL, SH, SHB } from "@/lib/tokens";
+import { C, FATEMA_PHOTO, ICON_FILL, SH, SHB , SELECTED } from "@/lib/tokens";
 
 /** W_Commissions.dc.html — العمولات. */
-export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"m": 0}; }
-  renderVals() {
-    const A = this.props.accent ?? '#7B4687';
+const OFF: CSSProperties = { background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" };
 
-    const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const SELST = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const OFFST = 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)';
-    const TAGST = {pink:'background:#F3EAF6;color:#B03D6A', green:'background:#E6F4EC;color:#2E7D50', amber:'background:#FCF1DE;color:#8A5A12', gray:'background:#F0EDF0;color:#695D6B', plum:'background:#7B4687;color:#FFFFFF'};
-    const tagStyle = k => 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap;' + TAGST[k];
-    const D = {"oct": [{"name": "فاطمة طيبة", "ex": false, "ini": "ف ط", "sessions": 92, "revenue": 161000, "rate": 0, "comm": 0, "breakdown": [{"l": "تنظيف 46"}, {"l": "هيدرافيشل 29"}, {"l": "تقشير 17"}]}, {"name": "ريم الحسن", "ex": true, "ini": "ر ا", "sessions": 80, "revenue": 280000, "rate": 10, "comm": 28000, "breakdown": [{"l": "ليزر 80"}]}, {"name": "هبة العلي", "ex": true, "ini": "ه ا", "sessions": 89, "revenue": 127000, "rate": 10, "comm": 12700, "breakdown": [{"l": "تنظيف 34"}, {"l": "هيدرافيشل 13"}, {"l": "تقشير 25"}, {"l": "استشارة 17"}]}], "sep": [{"name": "فاطمة طيبة", "ex": false, "ini": "ف ط", "sessions": 220, "revenue": 385000, "rate": 0, "comm": 0, "breakdown": [{"l": "تنظيف 110"}, {"l": "هيدرافيشل 70"}, {"l": "تقشير 40"}]}, {"name": "ريم الحسن", "ex": true, "ini": "ر ا", "sessions": 190, "revenue": 665000, "rate": 10, "comm": 66500, "breakdown": [{"l": "ليزر 190"}]}, {"name": "هبة العلي", "ex": true, "ini": "ه ا", "sessions": 210, "revenue": 300000, "rate": 10, "comm": 30000, "breakdown": [{"l": "تنظيف 80"}, {"l": "هيدرافيشل 30"}, {"l": "تقشير 60"}, {"l": "استشارة 40"}]}]};
-    const s = this.state, list = s.m === 0 ? D.oct : D.sep;
-    const tabs = ['تشرين الأول 2026 (حتى اليوم)', 'أيلول 2026'].map((l, i) => ({ label: l, pick: () => this.setState({ m: i }),
-      style: 'height:40px;padding:0 18px;border-radius:20px;font-size:13.5px;font-weight:600;font-family:inherit;' + (s.m === i ? SELST : OFFST) }));
-    const rows = list.map(r => Object.assign({}, r, { fat: !r.ex, sessions: r.sessions, revenue: fmt(r.revenue), comm: r.rate ? fmt(r.comm) : '—',
-      rateLabel: r.rate ? r.rate + '%' : 'غير مفعّلة', rateStyle: r.rate ? 'font-family:Rubik,sans-serif;font-weight:600' : tagStyle('gray'),
-      status: !r.rate ? '—' : (s.m === 0 ? 'قيد الاحتساب' : 'صُرفت مع الراتب'), stStyle: !r.rate ? 'color:#A595AC' : tagStyle(s.m === 0 ? 'amber' : 'green') }));
-    const tc = list.reduce((a, r) => a + r.comm, 0), ts = list.reduce((a, r) => a + r.sessions, 0), tr = list.reduce((a, r) => a + r.revenue, 0);
-    return { accent: A, tabs, rows, totalComm: fmt(tc), totalSessions: ts, totalRev: fmt(tr),
-      monthLabel: s.m === 0 ? 'تشرين الأول حتى اليوم' : 'أيلول 2026',
-      heroSub: s.m === 0 ? 'تقديرية — تُعتمد في نهاية الشهر' : 'مُعتمدة · صُرفت في 1 تشرين الأول',
-      sessionsSub: s.m === 0 ? '11 يوم عمل حتى اليوم' : '26 يوم عمل',
-      payText: s.m === 0 ? 'تُعتمد عمولات تشرين الأول بعد إغلاق الشهر وتُضاف إلى مسير رواتبه.' : 'صُرفت عمولات أيلول ضمن مسير رواتب أيلول يوم الخميس 1 تشرين الأول 2026.' };
-  }
-}
-</script>
-  */
+export default function Page() {
+  const [m, setM] = useState(0);
+  const fmt = (n: number) => money(n, false);
+  const list = m === 0 ? COMMISSIONS.oct : COMMISSIONS.sep;
+  const tabs = [`${arDate(TODAY, { day: false }).split(" ").slice(1).join(" ")} ${TODAY.getFullYear()} (حتى اليوم)`, "أيلول 2026"].map((l, i) => ({ label: l, pick: () => setM(i),
+    style: { height: 40, padding: "0 18px", borderRadius: 20, fontSize: 13.5, fontWeight: 600, ...(m === i ? SELECTED : OFF) } as CSSProperties }));
+  const tag = (bg: string, color: string): CSSProperties => ({ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: bg, color });
+  const rows = list.map((r) => ({ ...r, fat: !r.ex, revenue: fmt(r.revenue), comm: r.rate ? fmt(r.comm) : "—",
+    rateLabel: r.rate ? `${r.rate}%` : "غير مفعّلة", rateStyle: r.rate ? { fontFamily: "Rubik, sans-serif", fontWeight: 600 } : tag("#F0EDF0", "#695D6B"),
+    status: !r.rate ? "—" : m === 0 ? "قيد الاحتساب" : "صُرفت مع الراتب",
+    stStyle: !r.rate ? { color: C.muted } : m === 0 ? tag("#FCF1DE", "#8A5A12") : tag("#E6F4EC", C.okDeep) }));
+  const totalComm = fmt(list.reduce((a, r) => a + r.comm, 0)), totalSessions = list.reduce((a, r) => a + r.sessions, 0), totalRev = fmt(list.reduce((a, r) => a + r.revenue, 0));
+  const monthLabel = m === 0 ? "تشرين الأول حتى اليوم" : "أيلول 2026";
+  const heroSub = m === 0 ? "تقديرية — تُعتمد في نهاية الشهر" : "مُعتمدة · صُرفت في 1 تشرين الأول";
+  const sessionsSub = m === 0 ? "11 يوم عمل حتى اليوم" : "26 يوم عمل";
+  const payText = m === 0 ? "تُعتمد عمولات تشرين الأول بعد إغلاق الشهر وتُضاف إلى مسير رواتبه." : `صُرفت عمولات أيلول ضمن مسير رواتب أيلول يوم ${arDate(new Date(2026, 9, 1), { year: true })}.`;
   return (
     <AdminShell active="المالية" title="العمولات" subtitle="عمولات الأخصائيات على الجلسات المنتهية">
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0" }}>

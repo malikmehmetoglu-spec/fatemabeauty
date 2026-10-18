@@ -5,13 +5,12 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, SH_SOFT } from "@/lib/tokens";
+import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
 
 /** T_Photos.dc.html */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 36px 40px 32px; gap: 20px; position: relative; isolation: isolate
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
         <Link href={R.T_Consent} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -241,28 +240,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { ang: 1, shots: [true, false, false] }; }
-  renderVals() {
-    const st = this.state;
-    const names = ["أمامي", "جانبي 45°", "جانبي 90°"];
-    const sel = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const angs = names.map((n, i) => ({ pick: () => this.setState({ ang: i }),
-      style: 'flex:1;height:58px;border-radius:29px;font-family:inherit;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;' +
-        (st.ang === i ? sel : 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)') }));
-    const thumbs = names.map((n, i) => ({ label: n, done: st.shots[i], todo: !st.shots[i], pick: () => this.setState({ ang: i }),
-      style: 'flex:1;height:156px;border-radius:22px;font-family:inherit;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;' +
-        (st.shots[i] ? 'border:2px solid #FFFFFF;background:radial-gradient(circle at 50% 38%,#F6D9C8 0,#E9BFAE 30%,#C9A8D1 55%,#AA8DB1 100%);box-shadow:0 8px 18px rgba(123,70,135,0.18)'
-                     : 'border:1.5px dashed ' + (st.ang === i ? '#A877B6' : '#DAC7DE') + ';background:' + (st.ang === i ? 'rgba(243,234,246,0.9)' : 'rgba(255,255,255,0.6)')) }));
-    const shoot = () => { const s = st.shots.slice(); s[st.ang] = true; let nx = s.findIndex(x => !x); this.setState({ shots: s, ang: nx < 0 ? st.ang : nx }); };
-    const n = st.shots.filter(Boolean).length;
-    return { accent: this.props.accent ?? '#7B4687', angs: angs, thumbs: thumbs, shoot: shoot,
-      a0: st.ang === 0, a1: st.ang === 1, a2: st.ang === 2, angName: names[st.ang],
-      count: n + ' من 3', saveLbl: n === 3 ? 'حفظ في الملف' : 'حفظ في الملف (' + n + '/3)',
-      shotState: st.shots[st.ang] ? 'تم التقاطها — يمكنكِ الإعادة' : 'جاهزة للالتقاط' };
-  }
-}
-
-*/

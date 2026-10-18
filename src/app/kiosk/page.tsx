@@ -1,17 +1,31 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
+import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** T_Welcome.dc.html */
+const T = {
+  ar: { dir: "rtl", font: "var(--font-messiri), 'El Messiri', serif", hello: "أهلاً بكِ", h1: "امسحي رمز موعدكِ", sub: "افتحي موعدكِ في التطبيق، ثم اعرضي رمز الوصول أمام الكاميرا.", s1: "افتحي «موعدي اليوم» في التطبيق", s2: "اعرضي رمز الوصول أمام الكاميرا", s3: "خذي رقم دوركِ واجلسي براحتكِ", w1: "ليس لديكِ موعد؟", w2: "سجّلي حضوركِ واحجزي جلسة من هنا", cam: "وجّهي الرمز نحو الكاميرا", help: "تحتاجين مساعدة؟ فريق الاستقبال بجانبكِ" },
+  en: { dir: "ltr", font: "var(--font-rubik), Rubik, sans-serif", hello: "Welcome", h1: "Scan your appointment code", sub: "Open your appointment in the app, then show the check-in code to the camera.", s1: "Open “Today’s appointment” in the app", s2: "Show the check-in code to the camera", s3: "Take your number and relax", w1: "No appointment?", w2: "Check in and book a session here", cam: "Point the code at the camera", help: "Need help? Our reception team is right here" },
+} as const;
+
+const seg = (on: boolean, font: string): CSSProperties => ({
+  height: 48, padding: "0 22px", borderRadius: 24, border: "none", fontSize: 16, fontWeight: on ? 700 : 600, display: "flex", alignItems: "center", fontFamily: font,
+  ...(on ? { background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", color: C.accent, boxShadow: "0 8px 18px rgba(150,100,170,0.28)" } : { background: "transparent", color: C.sub2 }),
+});
+
+/** Reception tablet idle screen: scan the appointment QR code, or walk in without one. */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: row; padding: 36px 40px 32px; gap: 36px; position: relative; isolation: isolate
+  const [lang, setLang] = useState<"ar" | "en">("ar");
+  const t = T[lang];
+  const setAr = () => setLang("ar"), setEn = () => setLang("en");
+  const arStyle = seg(lang === "ar", T.ar.font), enStyle = seg(lang === "en", T.en.font);
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834} background={BG} padding="36px 40px 32px" direction="row" gap={36}>
 
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", position: "relative" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -164,19 +178,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { lang: 'ar' }; }
-  renderVals() {
-    const T = {"ar": {"dir": "rtl", "font": "'El Messiri', serif", "hello": "أهلاً بكِ", "h1": "امسحي رمز موعدكِ", "sub": "افتحي موعدكِ في التطبيق، ثم اعرضي رمز الوصول أمام الكاميرا.", "s1": "افتحي «موعدي اليوم» في التطبيق", "s2": "اعرضي رمز الوصول أمام الكاميرا", "s3": "خذي رقم دوركِ واجلسي براحتكِ", "w1": "ليس لديكِ موعد؟", "w2": "سجّلي حضوركِ واحجزي جلسة من هنا", "cam": "وجّهي الرمز نحو الكاميرا", "help": "تحتاجين مساعدة؟ فريق الاستقبال بجانبكِ"}, "en": {"dir": "ltr", "font": "Rubik, sans-serif", "hello": "Welcome", "h1": "Scan your appointment code", "sub": "Open your appointment in the app, then show the check-in code to the camera.", "s1": "Open “Today’s appointment” in the app", "s2": "Show the check-in code to the camera", "s3": "Take your number and relax", "w1": "No appointment?", "w2": "Check in and book a session here", "cam": "Point the code at the camera", "help": "Need help? Our reception team is right here"}};
-    const l = this.state.lang;
-    const seg = (on) => 'height:48px;padding:0 22px;border-radius:24px;border:none;font-size:16px;font-weight:' + (on ? '700' : '600') + ';display:flex;align-items:center;' +
-      (on ? 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);color:#7B4687;box-shadow:0 8px 18px rgba(150,100,170,0.28)' : 'background:transparent;color:#866F8D');
-    return { accent: this.props.accent ?? '#7B4687', t: T[l],
-      arStyle: seg(l === 'ar') + ';font-family:El Messiri,serif', enStyle: seg(l === 'en') + ';font-family:Rubik,sans-serif',
-      setAr: () => this.setState({ lang: 'ar' }), setEn: () => this.setState({ lang: 'en' }) };
-  }
-}
-
-*/

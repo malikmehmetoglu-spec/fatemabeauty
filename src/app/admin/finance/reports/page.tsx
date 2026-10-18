@@ -6,14 +6,6 @@ import { C, ICON_FILL, SH, SHB } from "@/lib/tokens";
 
 /** W_FinanceReports.dc.html — التقارير المالية. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-</script>
-  */
   return (
     <AdminShell active="المالية" title="التقارير المالية" subtitle="أيلول 2026 · الأرقام الشهرية أمثلة متسقة مع أسعار الخدمات" actions={<>
         <button style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
@@ -104,7 +96,7 @@ class Component extends DCLogic {
                 <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 172 }}>20k</div>
                 <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 100 }}>40k</div>
                 <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 29 }}>60k</div>
-                <svg width="100%" height="276" viewbox="0 0 700 276" preserveaspectratio="none" style={{ display: "block", direction: "ltr" }}>
+                <svg width="100%" height="276" viewBox="0 0 700 276" preserveAspectRatio="none" style={{ display: "block", direction: "ltr" }}>
                   <line x1="0" x2="700" y1="250.0" y2="250.0" stroke="#EFE5F1" strokeWidth="1" />
                   <line x1="0" x2="700" y1="178.6" y2="178.6" stroke="#EFE5F1" strokeWidth="1" />
                   <line x1="0" x2="700" y1="107.1" y2="107.1" stroke="#EFE5F1" strokeWidth="1" />
@@ -332,7 +324,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>حسب الأخصائية</div>
               </div>
               <div style={{ display: "flex", gap: 14, alignItems: "center", minHeight: "0" }}>
-                <svg width="160" height="160" viewbox="0 0 120 120">
+                <svg width="160" height="160" viewBox="0 0 120 120">
                   <circle cx="60" cy="60" r="46" fill="none" stroke="#7B4687" strokeWidth="18" strokeDasharray="80.4 208.6" strokeDashoffset="0.0" transform="rotate(-90 60 60)" />
                   <title>فاطمة طيبة: 385,000 ل.س</title>
                   <circle cx="60" cy="60" r="46" fill="none" stroke="#A877B6" strokeWidth="18" strokeDasharray="140.4 148.7" strokeDashoffset="-82.4" transform="rotate(-90 60 60)" />

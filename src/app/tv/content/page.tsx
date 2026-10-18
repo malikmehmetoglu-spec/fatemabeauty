@@ -9,9 +9,8 @@ import { C, SH, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** TV_Content.dc.html */
 export default function Page() {
-  // ROOT: width: 1920px; height: 1080px; box-sizing: border-box; background: linear-gradient(160deg, #ECDDF2 0%, #F2E8F5 35%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 52px 72px 56px; gap: 28px; position: relative; isolation: isolate
   return (
-    <Stage width={1920} height={1080} padding="" direction="row" gap={0}>
+    <Stage width={1920} height={1080}  padding="52px 72px 56px" direction="column" gap={28}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
         <div style={{ display: "flex" }}>
@@ -111,9 +110,9 @@ export default function Page() {
               <rect x="232" y="130" width="136" height="92" rx="22" fill="url(#cap)" />
               <rect x="246" y="140" width="22" height="70" rx="11" fill="#FFFFFF" opacity="0.18" />
               <rect x="236" y="300" width="128" height="150" rx="20" fill="#FFFFFF" opacity="0.85" />
-              <text x="300" y="370" textAnchor="middle" fontFamily="Rubik" fontSize="44" fontWeight="700" fill="#7B4687">SPF
+              <text x="300" y="370" textAnchor="middle" fontFamily="var(--font-rubik), Rubik, sans-serif" fontSize="44" fontWeight="700" fill="#7B4687">SPF
               </text>
-              <text x="300" y="420" textAnchor="middle" direction="ltr" unicodeBidi="embed" fontFamily="Rubik" fontSize="40" fontWeight="500" fill="#A877B6">30+
+              <text x="300" y="420" textAnchor="middle" direction="ltr" unicodeBidi="embed" fontFamily="var(--font-rubik), Rubik, sans-serif" fontSize="40" fontWeight="500" fill="#A877B6">30+
               </text>
               <path d="M240 240c6 120 10 220 22 310" stroke="#FFFFFF" strokeWidth="10" strokeLinecap="round" opacity="0.6" fill="none" />
             </g>
@@ -170,12 +169,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1920,"height":1080}}'>
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-
-*/

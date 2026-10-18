@@ -9,9 +9,8 @@ import { C, SH, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** TV_Board.dc.html */
 export default function Page() {
-  // ROOT: width: 1920px; height: 1080px; box-sizing: border-box; background: linear-gradient(160deg, #ECDDF2 0%, #F2E8F5 35%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 60px 72px; gap: 40px; position: relative; isolation: isolate
   return (
-    <Stage width={1920} height={1080} padding="" direction="row" gap={0}>
+    <Stage width={1920} height={1080}  padding="60px 72px" direction="column" gap={40}>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -166,12 +165,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1920,"height":1080}}'>
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-
-*/

@@ -1,5 +1,9 @@
 "use client";
 
+import { useState, type CSSProperties } from "react";
+import { money } from "@/lib/format";
+import { REVENUE_SO_FAR } from "@/lib/data";
+import { CASH_TODAY, CARD_TODAY, INVOICES_TODAY } from "@/lib/mock/f";
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
 import { ExampleTag, Icon } from "@/components/ui";
@@ -8,29 +12,17 @@ import { C, ICON_FILL, SH, SHB } from "@/lib/tokens";
 
 /** W_CashBox.dc.html — الصندوق اليومي. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"counted": 7300, "closed": false}; }
-  renderVals() {
-    const A = this.props.accent ?? '#7B4687';
-
-    const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const SELST = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const OFFST = 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)';
-    const TAGST = {pink:'background:#F3EAF6;color:#B03D6A', green:'background:#E6F4EC;color:#2E7D50', amber:'background:#FCF1DE;color:#8A5A12', gray:'background:#F0EDF0;color:#695D6B', plum:'background:#7B4687;color:#FFFFFF'};
-    const tagStyle = k => 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap;' + TAGST[k];
-    const EXP = 7350;
-    const s = this.state, d = s.counted - EXP;
-    const st = d === 0 ? 'background:#E6F4EC;color:#2E6B47' : (d < 0 ? 'background:#F3EAF6;color:#B03D6A' : 'background:#FCF1DE;color:#8A5A12');
-    return { accent: A, counted: fmt(s.counted), diff: (d > 0 ? '+' : d < 0 ? '−' : '') + fmt(Math.abs(d)),
-      diffStyle: 'display:flex;align-items:center;justify-content:space-between;border-radius:16px;padding:10px 14px;' + st,
-      diffHint: d === 0 ? 'الصندوق مطابق.' : (d < 0 ? 'عجز — يُطلب ذكر السبب عند الإغلاق ويُرسل تنبيه للإدارة.' : 'زيادة — تُسجَّل في تقرير الإغلاق.'),
-      dec: () => this.setState({ counted: s.counted - 50 }), inc: () => this.setState({ counted: s.counted + 50 }),
-      open: !s.closed, closed: s.closed, close: () => this.setState({ closed: true }) };
-  }
-}
-</script>
-  */
+  const EXP = 500 + CASH_TODAY - 150; // opening float + cash receipts − petty expense
+  const [countedN, setCounted] = useState(EXP - 50);
+  const [isClosed, setClosed] = useState(false);
+  const d = countedN - EXP;
+  const tone: CSSProperties = d === 0 ? { background: "#E6F4EC", color: "#2E6B47" } : d < 0 ? { background: C.tint, color: C.danger } : { background: "#FCF1DE", color: "#8A5A12" };
+  const counted = money(countedN, false);
+  const diff = (d > 0 ? "+" : d < 0 ? "−" : "") + money(Math.abs(d), false);
+  const diffStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 16, padding: "10px 14px", ...tone };
+  const diffHint = d === 0 ? "الصندوق مطابق." : d < 0 ? "عجز — يُطلب ذكر السبب عند الإغلاق ويُرسل تنبيه للإدارة." : "زيادة — تُسجَّل في تقرير الإغلاق.";
+  const dec = () => setCounted(countedN - 50), inc = () => setCounted(countedN + 50);
+  const open = !isClosed, closed = isClosed, close = () => setClosed(true);
   return (
     <AdminShell active="المالية" title="الصندوق اليومي" subtitle="الثلاثاء 13 تشرين الأول · وردية الصباح منذ 10:00 · الآن 12:30" actions={<>
         <Link href={R.W_Cashier} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
@@ -39,22 +31,22 @@ class Component extends DCLogic {
         </Link>
     </>}>
       <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1, minWidth: "0" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: "0", flex: 1, minWidth: "0" }}>
           <div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }}></div>
             <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <div style={{ fontSize: 13, color: C.onDark }}>النقد المتوقع في الدرج</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>7,350</span>
+                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>{money(EXP, false)}</span>
                   <span>ل.س</span>
                 </div>
-                <div style={{ fontSize: 12, color: C.onDark }}>500 افتتاحي + 7,000 مقبوضات − 150 مصروف</div>
+                <div style={{ fontSize: 12, color: C.onDark }}>500 افتتاحي + {money(CASH_TODAY, false)} مقبوضات − 150 مصروف</div>
               </div>
               <div style={{ textAlign: "left", fontSize: 12, color: C.onDark, lineHeight: 1.6 }}>
                 مدفوعات البطاقة
                 <br />
-                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 18, color: C.white, fontWeight: 700 }}>10,500</span>
+                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 18, color: C.white, fontWeight: 700 }}>{money(CARD_TODAY, false)}</span>
                 {" ل.س"}
               </div>
             </div>
@@ -91,7 +83,7 @@ class Component extends DCLogic {
                   <div style={{ fontSize: 12, color: C.sub2 }}>مقبوضات نقدية</div>
                   <div style={{ marginTop: 2 }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 18, color: C.ok }}>7,000</span>
+                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 18, color: C.ok }}>{money(CASH_TODAY, false)}</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -141,7 +133,7 @@ class Component extends DCLogic {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>توزيع مقبوضات اليوم</div>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>17,500</span>
+                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>{money(REVENUE_SO_FAR, false)}</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -237,7 +229,7 @@ class Component extends DCLogic {
                     <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-02</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
-                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>ريم سالم</span>
+                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{INVOICES_TODAY[1].name}</span>
                       <ExampleTag />
                     </span>
                   </div>

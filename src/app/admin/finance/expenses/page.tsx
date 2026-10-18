@@ -1,21 +1,15 @@
 "use client";
 
 import { AdminShell } from "@/components/shell";
+import { arDate } from "@/lib/format";
+import { TODAY } from "@/lib/data";
 import { Icon } from "@/components/ui";
 import { C, ICON_FILL, SH, SHB } from "@/lib/tokens";
 
 /** W_Expenses.dc.html — المصاريف. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-</script>
-  */
   return (
-    <AdminShell active="المالية" title="المصاريف" subtitle="أيلول 2026 وتشرين الأول حتى 13 تشرين الأول · القيم أمثلة توضيحية" actions={<>
+    <AdminShell active="المالية" title="المصاريف" subtitle={`أيلول 2026 وتشرين الأول حتى ${arDate(TODAY, { day: false })} · القيم أمثلة توضيحية`} actions={<>
         <button style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
           <Icon name="cal" color={C.accent} size={17} stroke={1.9} />
           أيلول 2026
@@ -186,7 +180,7 @@ class Component extends DCLogic {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 46, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.4, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ color: C.sub, whiteSpace: "nowrap" }}>الثلاثاء 13 تشرين الأول</span>
+                <span style={{ color: C.sub, whiteSpace: "nowrap" }}>{arDate(TODAY)}</span>
               </div>
               <div style={{ flex: 2.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontWeight: 700 }}>مستلزمات ضيافة (من الصندوق)</span>

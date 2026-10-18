@@ -2,22 +2,16 @@
 
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
+import { arDate } from "@/lib/format";
+import { TODAY } from "@/lib/data";
 import { Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, ICON_FILL, SH, SHB } from "@/lib/tokens";
 
 /** W_Inventory.dc.html — المخزون. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-</script>
-  */
   return (
-    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle="الكميات حتى الثلاثاء 13 تشرين الأول 2026 · قيم مثال" actions={<>
+    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={`الكميات حتى ${arDate(TODAY, { year: true })} · قيم مثال`} actions={<>
         <Link href={R.W_Devices} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
           <Icon name="tool" color={C.accent} size={17} stroke={1.9} />
           الأجهزة
@@ -65,7 +59,7 @@ class Component extends DCLogic {
                 <Icon name="clip" color={C.accentMid} size={16} />
               </span>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>13 تشرين الأول</div>
+            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>{arDate(TODAY, { day: false })}</div>
             <div style={{ fontSize: 12, color: C.sub2 }}>قيد الاعتماد</div>
           </div>
         </div>

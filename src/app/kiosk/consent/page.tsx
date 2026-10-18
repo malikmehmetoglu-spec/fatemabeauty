@@ -5,13 +5,12 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, ICON_FILL } from "@/lib/tokens";
+import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
 
 /** T_Consent.dc.html */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 36px 40px 32px; gap: 20px; position: relative; isolation: isolate
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
         <Link href={R.T_Eligibility} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -195,26 +194,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { ans: [false, false, false], agree: true }; }
-  renderVals() {
-    const seg = (on, yes) => 'width:84px;height:56px;border-radius:28px;border:none;font-family:inherit;font-size:17px;font-weight:700;' +
-      (on ? (yes ? 'background:linear-gradient(145deg,#C9A2D8,#7B4687);color:#FFFFFF;box-shadow:0 8px 16px rgba(123,70,135,0.32)'
-                 : 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);color:#7B4687;box-shadow:0 8px 16px rgba(150,100,170,0.25)')
-          : 'background:transparent;color:#A595AC');
-    const st = this.state;
-    const qs = st.ans.map((v, i) => ({ yes: () => { const a = st.ans.slice(); a[i] = true; this.setState({ ans: a }); },
-      no: () => { const a = st.ans.slice(); a[i] = false; this.setState({ ans: a }); }, yStyle: seg(v, true), nStyle: seg(!v, false) }));
-    const anyYes = st.ans.some(Boolean);
-    return { accent: this.props.accent ?? '#7B4687', qs: qs, anyYes: anyYes, allNo: !anyYes,
-      toggleAgree: () => this.setState({ agree: !st.agree }),
-      boxStyle: 'width:32px;height:32px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
-        (st.agree ? 'background:linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 12px rgba(123,70,135,0.30)' : 'background:#FFFFFF;border:1.5px solid #DAC7DE;box-sizing:border-box'),
-      btnStyle: 'height:66px;border-radius:33px;border:none;color:#FFFFFF;font-size:20px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;' +
-        'background-color:' + (this.props.accent ?? '#7B4687') + ';background-image:linear-gradient(145deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0) 45%,rgba(0,0,0,0.20) 100%);box-shadow:0 16px 34px rgba(123,70,135,0.32),inset 0 1px 0 rgba(255,255,255,0.25);' + (st.agree ? '' : 'opacity:0.45') };
-  }
-}
-
-*/

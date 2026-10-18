@@ -1,53 +1,50 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
 import { ExampleTag, Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { C, ICON_FILL, SH, SHB, SH_SOFT } from "@/lib/tokens";
+import { INVOICES_TODAY } from "@/lib/mock/f";
+import { arDate, money } from "@/lib/format";
+import { NOW, TODAY } from "@/lib/data";
+import { C, ICON_FILL, SH, SHB, SH_SOFT , SELECTED } from "@/lib/tokens";
 
 /** W_Cashier.dc.html — الكاشير. */
+const OFF: CSSProperties = { background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" };
+
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"disc": 0, "method": 0, "split": false, "issued": false}; }
-  renderVals() {
-    const A = this.props.accent ?? '#7B4687';
-
-    const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const SELST = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const OFFST = 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)';
-    const TAGST = {pink:'background:#F3EAF6;color:#B03D6A', green:'background:#E6F4EC;color:#2E7D50', amber:'background:#FCF1DE;color:#8A5A12', gray:'background:#F0EDF0;color:#695D6B', plum:'background:#7B4687;color:#FFFFFF'};
-    const tagStyle = k => 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap;' + TAGST[k];
-
-    const s = this.state, sub = 1500;
-    const pcts = [0, 5, 10, 15];
-    const discs = pcts.map((p, i) => ({ label: p === 0 ? 'بدون خصم' : p + '%', pick: () => this.setState({ disc: i }),
-      style: 'height:38px;padding:0 16px;border-radius:19px;font-size:13px;font-weight:600;font-family:inherit;' + (s.disc === i ? SELST : OFFST) }));
-    const pct = pcts[s.disc], dAmt = Math.round(sub * pct / 100), total = sub - dAmt;
-    const names = ['نقدي', 'بطاقة', 'رصيد باقة', 'نقاط الولاء'];
-    let amounts = [0, 0, 0, 0];
-    if (s.split) { const half = Math.round(total / 2 / 50) * 50; amounts[0] = half; amounts[1] = total - half; }
-    else amounts[s.method] = total;
-    const methods = names.map((n, i) => {
-      const on = amounts[i] > 0;
-      return { label: n, amount: on ? fmt(amounts[i]) : '—', pick: () => this.setState({ method: i, split: false }),
-        style: 'width:calc(50% - 5px);box-sizing:border-box;height:46px;border-radius:23px;padding:0 14px;display:flex;align-items:center;gap:10px;font-family:inherit;color:#35213D;' + (on ? SELST : OFFST),
-        dot: 'width:14px;height:14px;border-radius:7px;flex-shrink:0;box-sizing:border-box;' + (on ? 'background:#7B4687;border:3px solid #F1E3F6;box-shadow:0 0 0 1.5px #7B4687' : 'border:1.5px solid #D1C0D5;background:#FFFFFF') };
-    });
-    const payLabel = s.split ? 'نقدي + بطاقة' : names[s.method];
-    return { accent: A, discs, subtotal: fmt(sub), discPct: pct, discAmt: fmt(dAmt), total: fmt(total), methods,
-      needApproval: pct > 10, okNote: pct <= 10, toggleSplit: () => this.setState({ split: !s.split }),
-      splitLabel: s.split ? 'دفع بطريقة واحدة' : 'تقسيم الدفع', splitHint: s.split ? 'قُسِّم المبلغ مناصفة بين النقدي والبطاقة — يمكن تعديل الحصص.' : 'اختاري طريقة واحدة أو قسّمي المبلغ بين طريقتين.',
-      issue: () => { if (pct <= 10) this.setState({ issued: true }); }, issueLabel: pct > 10 ? 'بانتظار موافقة الإدارة' : 'إصدار الفاتورة',
-      issued: s.issued, payLabel, reset: () => this.setState({ issued: false, disc: 0, method: 0, split: false }) };
-  }
-}
-</script>
-  */
+  const [disc, setDisc] = useState(0);
+  const [method, setMethod] = useState(0);
+  const [split, setSplit] = useState(false);
+  const [issued, setIssued] = useState(false);
+  const cur = INVOICES_TODAY[INVOICES_TODAY.length - 1]; // the session that just finished, ready to pay
+  const sub = cur.price;
+  const pcts = [0, 5, 10, 15];
+  const pct = pcts[disc], dAmt = Math.round((sub * pct) / 100), total = sub - dAmt;
+  const fmt = (n: number) => money(n, false);
+  const discs = pcts.map((p, i) => ({ label: p === 0 ? "بدون خصم" : `${p}%`, pick: () => setDisc(i),
+    style: { height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(disc === i ? SELECTED : OFF) } as CSSProperties }));
+  const names = ["نقدي", "بطاقة", "رصيد باقة", "نقاط الولاء"];
+  const amounts = [0, 0, 0, 0];
+  if (split) { const half = Math.round(total / 2 / 50) * 50; amounts[0] = half; amounts[1] = total - half; } else amounts[method] = total;
+  const methods = names.map((n, i) => {
+    const on = amounts[i] > 0;
+    return { label: n, amount: on ? fmt(amounts[i]) : "—", pick: () => { setMethod(i); setSplit(false); },
+      style: { width: "calc(50% - 5px)", height: 46, borderRadius: 23, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, color: C.ink, ...(on ? SELECTED : OFF) } as CSSProperties,
+      dot: { width: 14, height: 14, borderRadius: 7, flexShrink: 0, ...(on ? { background: C.accent, border: "3px solid #F1E3F6", boxShadow: "0 0 0 1.5px #7B4687" } : { border: "1.5px solid #D1C0D5", background: C.white }) } as CSSProperties };
+  });
+  const payLabel = split ? "نقدي + بطاقة" : names[method];
+  const needApproval = pct > 10, okNote = pct <= 10;
+  const toggleSplit = () => setSplit(!split);
+  const splitLabel = split ? "دفع بطريقة واحدة" : "تقسيم الدفع";
+  const splitHint = split ? "قُسِّم المبلغ مناصفة بين النقدي والبطاقة — يمكن تعديل الحصص." : "اختاري طريقة واحدة أو قسّمي المبلغ بين طريقتين.";
+  const issue = () => { if (pct <= 10) setIssued(true); };
+  const issueLabel = pct > 10 ? "بانتظار موافقة الإدارة" : issued ? "صدرت الفاتورة" : "إصدار الفاتورة";
+  const subtotal = fmt(sub), discPct = pct, discAmt = fmt(dAmt), totalStr = fmt(total);
+  const prev = INVOICES_TODAY[INVOICES_TODAY.length - 2];
   return (
-    <AdminShell active="المالية" title="الكاشير" subtitle="الثلاثاء 13 تشرين الأول · 12:30 · الصندوق مفتوح منذ 10:00" actions={<>
+    <AdminShell active="المالية" title="الكاشير" subtitle={`${arDate(TODAY)} · ${NOW} · الصندوق مفتوح منذ 10:00`} actions={<>
         <Link href={R.W_CashBox} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
           <Icon name="cash" color={C.accent} size={17} stroke={1.9} />
           الصندوق اليومي
@@ -65,12 +62,12 @@ class Component extends DCLogic {
                 <span style={{ width: 42, height: 42, borderRadius: 21, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: C.accent }}>د ش</span>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.5 }}>
                   <div style={{ fontSize: 14.5, whiteSpace: "nowrap" }}>
-                    <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>ديما شاهين</span>
+                    <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{cur.name}</span>
                     <ExampleTag />
                   </div>
                   <div style={{ fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>
                     {"تنظيف عميق · انتهت "}
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>12:30</span>
+                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>{cur.issuedAt}</span>
                   </div>
                 </div>
                 <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: C.accent, color: C.white }}>جاهزة</span>
@@ -118,7 +115,7 @@ class Component extends DCLogic {
               <div style={{ fontSize: 12, color: C.muted, padding: "2px 4px" }}>تظهر الجلسة هنا تلقائياً عند انتهائها.</div>
             </div>
             <div style={{ marginTop: "auto", borderTop: "1px solid #EDE2F1", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, color: C.sub2 }}>
-              <span>صدرت اليوم 6 فواتير</span>
+              <span>صدرت اليوم {INVOICES_TODAY.length - 1} فواتير</span>
               <Link href={R.W_Invoices} style={{ color: C.accentMid, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                 {"كل الفواتير "}
                 <Icon name="chev" color={C.accentMid} size={15} />
@@ -132,19 +129,19 @@ class Component extends DCLogic {
               <span style={{ width: 54, height: 54, borderRadius: 27, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: C.accent }}>د ش</span>
               <div style={{ flex: 1, lineHeight: 1.5 }}>
                 <div style={{ fontSize: 18 }}>
-                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>ديما شاهين</span>
+                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{cur.name}</span>
                   <ExampleTag />
                 </div>
                 <div style={{ fontSize: 12.5, color: C.sub2 }}>
                   {"ملف "}
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>1042</span>
-                  {" · غرفة 2 · هبة العلي"}
+                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.fileNo}</span>
+                  {` · ${cur.room} · ${cur.specialist}`}
                   <ExampleTag />
                 </div>
               </div>
               <div style={{ textAlign: "left", lineHeight: 1.5 }}>
                 <div style={{ fontSize: 12, color: C.sub2 }}>رقم الفاتورة</div>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 14, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-07</span>
+                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 14, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
               </div>
             </div>
             <div style={{ height: 1, background: C.line }}></div>
@@ -163,15 +160,15 @@ class Component extends DCLogic {
                     <div style={{ fontSize: 14, fontWeight: 700 }}>تنظيف عميق للبشرة</div>
                     <div style={{ fontSize: 11.5, color: C.sub2 }}>
                       {"جلسة "}
-                      <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>11:30</span>
-                      {" · 60 دقيقة"}
+                      <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.time}</span>
+                      {` · ${cur.minutes} دقيقة`}
                     </div>
                   </div>
                 </div>
                 <div style={{ flex: 1, textAlign: "center", fontFamily: "Rubik, sans-serif" }}>1</div>
                 <div style={{ flex: 1.3, textAlign: "left" }}>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>1,500</span>
+                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>{fmt(cur.price)}</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
@@ -233,7 +230,7 @@ class Component extends DCLogic {
             <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: C.sub2 }}>
                 ملاحظة على الفاتورة (اختياري)
-                <textarea aria-label="ملاحظة على الفاتورة" rows="2" placeholder="تظهر في نسخة المراجعة" style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13, color: C.ink, resize: "none", outline: "none" }} />
+                <textarea aria-label="ملاحظة على الفاتورة" rows={2} placeholder="تظهر في نسخة المراجعة" style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13, color: C.ink, resize: "none", outline: "none" }} />
               </label>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub2 }}>
                 <Icon name="shield" color={C.accentMid} size={16} />
@@ -260,7 +257,7 @@ class Component extends DCLogic {
             <div style={{ position: "relative", height: 1, background: "rgba(255,255,255,0.18)", margin: "12px 0" }}></div>
             <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>المطلوب</div>
             <div style={{ position: "relative", display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.2 }}>{total}</span>
+              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.2 }}>{totalStr}</span>
               <span style={{ fontSize: 15 }}>ل.س</span>
             </div>
           </div>
@@ -273,12 +270,12 @@ class Component extends DCLogic {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: "1px solid #EDE2F1", fontSize: 13 }}>
                   <span style={{ color: C.sub2 }}>رقم الفاتورة</span>
                   <span style={{ fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-07</span>
+                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: "1px solid #EDE2F1", fontSize: 13 }}>
                   <span style={{ color: C.sub2 }}>التاريخ</span>
-                  <span style={{ fontWeight: 700 }}>الثلاثاء 13 تشرين الأول · 12:30</span>
+                  <span style={{ fontWeight: 700 }}>{arDate(TODAY)} · {NOW}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: "1px solid #EDE2F1", fontSize: 13 }}>
                   <span style={{ color: C.sub2 }}>الخدمة</span>
@@ -310,16 +307,16 @@ class Component extends DCLogic {
               <div style={{ flex: 1, lineHeight: 1.45 }}>
                 <div style={{ fontSize: 12, color: C.sub2 }}>
                   {"الفاتورة السابقة · "}
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>INV-1013-06</span>
-                  {" · 12:15"}
+                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>{prev.inv}</span>
+                  {` · ${prev.issuedAt}`}
                 </div>
                 <div style={{ fontSize: 13.5 }}>
-                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>ميس عيسى</span>
+                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{prev.name}</span>
                   <ExampleTag />
                 </div>
               </div>
               <span style={{ whiteSpace: "nowrap" }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>3,500</span>
+                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>{fmt(prev.price)}</span>
                 <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
               </span>
             </div>

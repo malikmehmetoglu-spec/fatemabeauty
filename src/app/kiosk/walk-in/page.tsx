@@ -1,17 +1,48 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
+ 
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
+import { NOW, SERVICES, TODAY } from "@/lib/data";
+import { arDate, money } from "@/lib/format";
+import { css } from "../css";
+import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 
 /** T_WalkIn.dc.html */
+const ICONS = ["M12 3c3.5 4.2 6 7.4 6 10.5a6 6 0 0 1-12 0C6 10.4 8.5 7.2 12 3z", "M16 18a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zm0-12a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zM9 18a6 6 0 0 1 6-6 6 6 0 0 1-6-6 6 6 0 0 1-6 6 6 6 0 0 1 6 6", "M12 4L4 8l8 4 8-4-8-4M4 12l8 4 8-4M4 16l8 4 8-4", "M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0", "M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z"];
+
+// Availability for a walk-in at the current time: only the consultation still has a free slot today.
+const SLOT: Record<string, { ok: boolean; slot: string; spec: string }> = {
+  consult: { ok: true, slot: "16:50 · غرفة 2", spec: "هبة العلي" },
+};
+const S = SERVICES.map((s) => ({
+  key: s.key, name: s.name, price: s.price === 0 ? "مجانية" : (s.from ? "من " : "") + money(s.price), minutes: `${s.minutes} دقيقة`,
+  ...(SLOT[s.key] ?? { ok: false, slot: "مكتمل اليوم", spec: "" }),
+}));
+
+/** Reception tablet: walk-in booking without an appointment. */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 36px 40px 32px; gap: 24px; position: relative; isolation: isolate
+  const [sel, setSel] = useState(4);
+  const svcs = S.map((s, i) => {
+    const on = sel === i;
+    return {
+      ...s, on, pick: () => setSel(i),
+      style: css("border-radius:30px;padding:22px 22px 20px;text-align:right;font-family:inherit;display:flex;flex-direction:column;gap:10px;position:relative;box-sizing:border-box;" +
+        (on ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 12px 26px rgba(150,100,170,0.30);color:#7B4687"
+          : "background:#FFFFFF;border:1px solid #F0E6F3;box-shadow:0 12px 30px rgba(123,70,135,0.10),0 2px 6px rgba(123,70,135,0.05);color:#35213D")),
+      slotStyle: css("display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:17px;font-size:15px;font-weight:700;align-self:flex-start;" +
+        (s.ok ? "background:#E6F4EC;color:#2E7D50" : "background:" + (on ? "rgba(255,255,255,0.7)" : "#F0EDF0") + ";color:#695D6B")),
+      checkStyle: css("position:absolute;top:18px;left:18px;width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;" +
+        (on ? "background:linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 12px rgba(123,70,135,0.30)" : "background:#FFFFFF;border:1.5px solid #E4D6E7;box-sizing:border-box")),
+    };
+  });
+  const cur = S[sel];
+  const btn = cur.ok ? "احجزي وخذي رقماً" : "أضيفيني لقائمة الانتظار";
+  const note = cur.ok ? "أقرب وقت شاغر اليوم: " + cur.slot : "لا يوجد وقت شاغر اليوم لهذه الخدمة — سنراسلكِ فور توفّر مكان.";
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={24}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
         <Link href={R.T_Welcome} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -29,10 +60,10 @@ export default function Page() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
           </svg>
-          <span>الثلاثاء 13 تشرين الأول
+          <span>{arDate(TODAY)}
           </span>
           <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>12:30
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
           </span>
         </div>
       </div>
@@ -45,126 +76,30 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "1fr 1fr", gap: 16, flexGrow: 1, minHeight: "0" }}>
-            <button onClick={svcs[0].pick} aria-label="تنظيف عميق للبشرة" style={svcs[0].style}>
-              <span style={svcs[0].checkStyle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3c3.5 4.2 6 7.4 6 10.5a6 6 0 0 1-12 0C6 10.4 8.5 7.2 12 3z" />
-                </svg>
-              </span>
-              <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>تنظيف عميق للبشرة
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
-                <b style={{ color: C.accent, fontSize: 18 }}>1,500 ل.س
-                </b>
-                <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />60 دقيقة
-              </span>
-              <span style={{ marginTop: "auto" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                </svg>مكتمل اليوم
-              </span>
-            </button>
-            <button onClick={svcs[1].pick} aria-label="هيدرافيشل" style={svcs[1].style}>
-              <span style={svcs[1].checkStyle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 18a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zm0-12a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zM9 18a6 6 0 0 1 6-6 6 6 0 0 1-6-6 6 6 0 0 1-6 6 6 6 0 0 1 6 6" />
-                </svg>
-              </span>
-              <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>هيدرافيشل
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
-                <b style={{ color: C.accent, fontSize: 18 }}>2,000 ل.س
-                </b>
-                <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />60 دقيقة
-              </span>
-              <span style={{ marginTop: "auto" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                </svg>مكتمل اليوم
-              </span>
-            </button>
-            <button onClick={svcs[2].pick} aria-label="تقشير البشرة" style={svcs[2].style}>
-              <span style={svcs[2].checkStyle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 4L4 8l8 4 8-4-8-4M4 12l8 4 8-4M4 16l8 4 8-4" />
-                </svg>
-              </span>
-              <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>تقشير البشرة
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
-                <b style={{ color: C.accent, fontSize: 18 }}>2,000 ل.س
-                </b>
-                <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />45 دقيقة
-              </span>
-              <span style={{ marginTop: "auto" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                </svg>مكتمل اليوم
-              </span>
-            </button>
-            <button onClick={svcs[3].pick} aria-label="جلسة ليزر" style={svcs[3].style}>
-              <span style={svcs[3].checkStyle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0" />
-                </svg>
-              </span>
-              <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>جلسة ليزر
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
-                <b style={{ color: C.accent, fontSize: 18 }}>من 3,500 ل.س
-                </b>
-                <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />45 دقيقة
-              </span>
-              <span style={{ marginTop: "auto" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                </svg>مكتمل اليوم
-              </span>
-            </button>
-            <button onClick={svcs[4].pick} aria-label="استشارة في المركز" style={svcs[4].style}>
-              <span style={svcs[4].checkStyle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z" />
-                </svg>
-              </span>
-              <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>استشارة في المركز
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
-                <b style={{ color: C.accent, fontSize: 18 }}>مجانية
-                </b>
-                <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />20 دقيقة
-              </span>
-              <span style={{ marginTop: "auto" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                </svg>16:50 · غرفة 2
-              </span>
-            </button>
+            {svcs.map((s, i) => (
+              <button key={s.key} type="button" onClick={s.pick} aria-label={s.name} aria-pressed={s.on} style={s.style}>
+                <span style={s.checkStyle}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12l5 5L20 7" />
+                  </svg>
+                </span>
+                <span style={{ width: 54, height: 54, borderRadius: 27, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={ICONS[i]} />
+                  </svg>
+                </span>
+                <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>{s.name}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
+                  <b style={{ color: C.accent, fontSize: 18 }}>{s.price}</b>
+                  <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />{s.minutes}
+                </span>
+                <span style={{ ...s.slotStyle, marginTop: "auto" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
+                  </svg>{s.slot}
+                </span>
+              </button>
+            ))}
             <div style={{ borderRadius: 30, padding: 22, border: "1.5px dashed #DFCBE4", background: "rgba(255,255,255,0.45)", display: "flex", flexDirection: "column", gap: 10, justifyContent: "center" }}>
               <span style={{ width: 50, height: 50, borderRadius: 25, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -253,33 +188,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { sel: 4 }; }
-  renderVals() {
-    const S = [{"key": "clean", "name": "تنظيف عميق للبشرة", "price": "1,500 ل.س", "minutes": "60 دقيقة", "ok": false, "slot": "مكتمل اليوم", "spec": ""}, {"key": "hydra", "name": "هيدرافيشل", "price": "2,000 ل.س", "minutes": "60 دقيقة", "ok": false, "slot": "مكتمل اليوم", "spec": ""}, {"key": "peel", "name": "تقشير البشرة", "price": "2,000 ل.س", "minutes": "45 دقيقة", "ok": false, "slot": "مكتمل اليوم", "spec": ""}, {"key": "laser", "name": "جلسة ليزر", "price": "من 3,500 ل.س", "minutes": "45 دقيقة", "ok": false, "slot": "مكتمل اليوم", "spec": ""}, {"key": "consult", "name": "استشارة في المركز", "price": "مجانية", "minutes": "20 دقيقة", "ok": true, "slot": "16:50 · غرفة 2", "spec": "هبة العلي"}];
-    const icons = {};
-    const svcs = S.map((s, i) => {
-      const on = this.state.sel === i;
-      return Object.assign({}, s, {
-        pick: () => this.setState({ sel: i }),
-        aria: s.name,
-        style: 'border-radius:30px;padding:22px 22px 20px;text-align:right;font-family:inherit;display:flex;flex-direction:column;gap:10px;position:relative;box-sizing:border-box;' +
-          (on ? 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 12px 26px rgba(150,100,170,0.30);color:#7B4687'
-              : 'background:#FFFFFF;border:1px solid #F0E6F3;box-shadow:0 12px 30px rgba(123,70,135,0.10),0 2px 6px rgba(123,70,135,0.05);color:#35213D'),
-        slotStyle: 'display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:17px;font-size:15px;font-weight:700;align-self:flex-start;' +
-          (s.ok ? 'background:#E6F4EC;color:#2E7D50' : 'background:' + (on ? 'rgba(255,255,255,0.7)' : '#F0EDF0') + ';color:#695D6B'),
-        checkStyle: 'position:absolute;top:18px;left:18px;width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;' +
-          (on ? 'background:linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 12px rgba(123,70,135,0.30)' : 'background:#FFFFFF;border:1.5px solid #E4D6E7;box-sizing:border-box'),
-        on: on
-      });
-    });
-    const cur = S[this.state.sel];
-    return { accent: this.props.accent ?? '#7B4687', svcs, cur,
-      btn: cur.ok ? 'احجزي وخذي رقماً' : 'أضيفيني لقائمة الانتظار',
-      note: cur.ok ? ('أقرب وقت شاغر اليوم: ' + cur.slot) : 'لا يوجد وقت شاغر اليوم لهذه الخدمة — سنراسلكِ فور توفّر مكان.' };
-  }
-}
-
-*/

@@ -8,14 +8,6 @@ import { C, ICON_FILL, SH, SH_SOFT } from "@/lib/tokens";
 
 /** W_Consents.dc.html — الموافقات. */
 export default function Page() {
-  /* DESIGN LOGIC:
-class Component extends DCLogic {
-  renderVals() {
-    return { accent: this.props.accent ?? '#7B4687' };
-  }
-}
-</script>
-  */
   return (
     <AdminShell active="المراجعات" title="الموافقات" subtitle="نماذج الموافقة لكل إجراء وسجلّ التواقيع" actions={<>
         <Link href={R.T_Consent} style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -24,7 +16,7 @@ class Component extends DCLogic {
         </Link>
     </>}>
       <div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: "0" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: "0", flex: 1, minWidth: "0" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minWidth: "0" }}>
           <div style={{ display: "flex", gap: 14 }}>
             <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -216,17 +208,17 @@ class Component extends DCLogic {
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent }}>ر ق</span>
+                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent }}>ر س</span>
                   <div style={{ lineHeight: 1.35, minWidth: "0" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
-                      روان قاسم
+                      ريم سالم
                       <ExampleTag />
                     </div>
                   </div>
                 </div>
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 600, lineHeight: 1.35 }}>الهيدرافيشل</span>
+                <span style={{ fontWeight: 600, lineHeight: 1.35 }}>التنظيف العميق</span>
               </div>
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
@@ -374,7 +366,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>التنظيف العميق</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>قبل أول جلسة من الخدمة</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -390,7 +382,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>الهيدرافيشل</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>قبل أول جلسة من الخدمة</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -406,7 +398,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>تقشير البشرة</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>قبل كل جلسة</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -422,7 +414,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>جلسة الليزر</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>قبل كل جلسة + اختبار بقعة</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -438,7 +430,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>التصوير الطبي</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>مرة واحدة · للسجل فقط</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>
@@ -454,7 +446,7 @@ class Component extends DCLogic {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>الصور للتسويق</div>
                 <div style={{ fontSize: 11.5, color: C.sub2 }}>اختيارية · يمكن سحبها</div>
               </div>
-              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
+              <button aria-label="معاينة" style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 36, padding: "0" }}>
                 <Icon name="eye" color={C.accent} size={16} stroke={1.9} />
               </button>
               <button style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}>

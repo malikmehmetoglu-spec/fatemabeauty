@@ -5,13 +5,12 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
+import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** T_Cashier.dc.html */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: row; padding: 28px 28px 28px 32px; gap: 24px; position: relative; isolation: isolate
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
       <nav aria-label="وضع الاستقبال" style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
         <div style={{ display: "flex" }}>
@@ -261,32 +260,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { m: 0, recv: '2000' }; }
-  renderVals() {
-    const TOTAL = 1500;
-    const st = this.state;
-    const n = x => Number(x || 0).toLocaleString('en-US');
-    const sel = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
-    const methods = [0, 1, 2].map(i => ({ pick: () => this.setState({ m: i }),
-      style: 'flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;' +
-        (st.m === i ? sel : 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 4px 12px rgba(123,70,135,0.06)') }));
-    const press = k => { let r = st.recv;
-      if (k === 'del') r = r.slice(0, -1); else if (r.length < 7) r = (r === '0' ? '' : r) + k;
-      this.setState({ recv: r }); };
-    const keys = ['1','2','3','4','5','6','7','8','9','000','0','del'].map(k => ({ k: k === 'del' ? '⌫' : k, aria: k === 'del' ? 'حذف' : k, press: () => press(k) }));
-    const quick = [TOTAL, 2000, 5000].map(v => ({ label: n(v), set: () => this.setState({ recv: String(v) }),
-      style: 'height:56px;border-radius:28px;font-family:Rubik,sans-serif;font-size:17px;font-weight:500;' +
-        (Number(st.recv) === v ? sel : 'background:#FFFFFF;border:1px solid #EADCF0;color:#7B4687;box-shadow:0 3px 10px rgba(123,70,135,0.05)') }));
-    const r = Number(st.recv || 0), diff = r - TOTAL;
-    return { accent: this.props.accent ?? '#7B4687', methods: methods, keys: keys, quick: quick,
-      cash: st.m === 0, card: st.m === 1, pkg: st.m === 2,
-      recv: n(r), changeLabel: diff >= 0 ? 'الباقي للمراجعة' : 'المبلغ ناقص', change: n(Math.abs(diff)) + ' ل.س',
-      changeStyle: 'font-size:30px;font-weight:700;font-family:Rubik,sans-serif;line-height:1.3;color:' + (diff >= 0 ? '#2E7D50' : '#B03D6A'),
-      due: st.m === 2 ? '0' : n(TOTAL), dueNote: st.m === 2 ? 'تُخصم من الباقة' : 'بدون خصم' };
-  }
-}
-
-*/

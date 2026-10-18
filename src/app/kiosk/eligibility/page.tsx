@@ -5,13 +5,12 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { C, SH, SHB, SH_SOFT } from "@/lib/tokens";
+import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
 
 /** T_Eligibility.dc.html */
 export default function Page() {
-  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 36px 40px 32px; gap: 20px; position: relative; isolation: isolate
   return (
-    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
         <Link href={R.T_Desk} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -222,32 +221,3 @@ export default function Page() {
   );
 }
 
-/* SCRIPT
- data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { ans: [false, true, false, false, false, false, false], skin: 2 }; }
-  renderVals() {
-    const seg = (on, yes) => 'width:84px;height:56px;border-radius:28px;border:none;font-family:inherit;font-size:17px;font-weight:700;' +
-      (on ? (yes ? 'background:linear-gradient(145deg,#C9A2D8,#7B4687);color:#FFFFFF;box-shadow:0 8px 16px rgba(123,70,135,0.32)'
-                 : 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);color:#7B4687;box-shadow:0 8px 16px rgba(150,100,170,0.25)')
-          : 'background:transparent;color:#A595AC');
-    const st = this.state, Q = [["هل أنتِ حامل أو مرضعة؟", "block", "حمل أو رضاعة: تُؤجَّل جلسة الليزر."], ["تعرّض للشمس أو تسمير خلال آخر أسبوعين؟", "warn", "بشرة متعرّضة للشمس: خطر أعلى للحروق والتصبّغ — طاقة أخف أو تأجيل حسب تقدير الأخصائية."], ["أدوية تزيد التحسّس للضوء؟", "warn", "دواء يزيد التحسّس للضوء: راجعي نوع الدواء قبل البدء."], ["علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟", "block", "إيزوتريتينوين حديث: يُؤجَّل الإجراء."], ["التهاب أو هربس نشط في منطقة الجلسة؟", "block", "التهاب نشط: لا تُعالج المنطقة حتى الشفاء."], ["ميل لظهور ندبات بارزة بعد الجروح؟", "warn", "ميل للندبات البارزة: اختبار بقعة صغيرة أولاً."], ["وشم أو مكياج دائم في المنطقة؟", "warn", "وشم في المنطقة: تجنّبي المرور فوقه."]];
-    const qs = st.ans.map((v, i) => ({ yes: () => { const a = st.ans.slice(); a[i] = true; this.setState({ ans: a }); },
-      no: () => { const a = st.ans.slice(); a[i] = false; this.setState({ ans: a }); }, yStyle: seg(v, true), nStyle: seg(!v, false) }));
-    const alerts = Q.map((q, i) => ({ t: q[2], kind: q[1], on: st.ans[i] })).filter(x => x.on).map(x => ({ t: x.t,
-      style: 'display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:18px;font-size:14.5px;font-weight:600;line-height:1.55;' +
-        (x.kind === 'block' ? 'background:#F4E6F8;color:#B03D6A;border:1px solid #E5C9EB' : 'background:#FCF1DE;color:#8A5A12;border:1px solid #F3E0BF'),
-      dot: 'width:8px;height:8px;border-radius:4px;flex-shrink:0;margin-top:9px;background:' + (x.kind === 'block' ? '#B03D6A' : '#C9962B') }));
-    const block = Q.some((q, i) => q[1] === 'block' && st.ans[i]);
-    const sk = ['I', 'II', 'III', 'IV', 'V', 'VI'], col = ['#F8E3D6', '#F0D2BC', '#DDB394', '#BE8B66', '#8E5E3F', '#5A3A28'];
-    const skins = sk.map((s, i) => ({ s: s, pick: () => this.setState({ skin: i }),
-      style: 'flex:1;height:72px;border-radius:20px;font-family:Rubik,sans-serif;font-size:15px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;' +
-        (st.skin === i ? 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687;font-weight:700' : 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D'),
-      sw: 'width:22px;height:22px;border-radius:11px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,0.15);background:' + col[i] }));
-    const skinNote = st.skin >= 3 ? 'بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى.' : 'تأكدي من النوع قبل ضبط إعدادات الجهاز.';
-    return { accent: this.props.accent ?? '#7B4687', qs: qs, alerts: alerts, hasAlerts: alerts.length > 0, noAlerts: alerts.length === 0, skins: skins, skinNote: skinNote,
-      btn: block ? 'تأجيل الجلسة' : (alerts.length ? 'متابعة الجلسة بحذر' : 'متابعة الجلسة'), nAlerts: alerts.length };
-  }
-}
-
-*/
