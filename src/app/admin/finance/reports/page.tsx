@@ -30,7 +30,7 @@ export default function Page() {
 
   // net value per line: share of the invoice discount spread over its lines
   const lines = invs.flatMap((i) => (i.invoice_items ?? []).map((x) => ({ ...x, net: i.subtotal ? (x.qty * x.unit_price * i.total) / i.subtotal : 0, spec: i.appointments?.staff?.name })));
-  const byService = sumBy(lines.filter((l) => l.kind === "service" || l.kind === "custom"), (l) => l.label, (l) => l.net).map(([k, v]) => [k, Math.round(v)] as [string, number]);
+  const byService = sumBy(lines.filter((l) => (l.kind === "service" || l.kind === "custom") && l.net > 0), (l) => l.label, (l) => l.net).map(([k, v]) => [k, Math.round(v)] as [string, number]);
   const byKind = sumBy(lines, (l) => KIND_AR[l.kind] ?? "أخرى", (l) => l.net).map(([k, v]) => [k, Math.round(v)] as [string, number]);
   const bySpec = sumBy(invs.filter((i) => i.appointments?.staff?.name), (i) => i.appointments?.staff?.name as string, (i) => i.total);
   const methods = receivedByMethod(pays);

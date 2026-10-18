@@ -11,7 +11,7 @@ import { C, DEEP_SHADOW, ICON_FILL, SELECTED, SH, SHB, SHEEN } from "@/lib/token
 
 export const OFF: CSSProperties = { background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" };
 export const PANEL: CSSProperties = { borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative", minWidth: 0 };
-export const LATIN: CSSProperties = { fontFamily: "var(--font-rubik), sans-serif" };
+export const LATIN: CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", unicodeBidi: "isolate" };
 export const SERIES = ["#7B4687", "#A673B4", "#C9A2D6", "#E3C9EC", "#D88FB0", "#8F7C96", "#B9AABD"];
 
 export function Pill({ on, onClick, children, style }: { on: boolean; onClick: () => void; children: ReactNode; style?: CSSProperties }) {

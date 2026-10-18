@@ -19,7 +19,7 @@ export function artFor(p: Pick<DbProduct, "key" | "name" | "category">): ArtSpec
   let h = 0;
   for (const ch of p.key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const kind: ArtKind = /سيروم|قطرة|زيت/.test(t) ? "dropper" : /واقي|كريم أساس|أنبوب|جل/.test(t) ? "tube" : /ماسك|قناع|مرطب|كريم|زبدة/.test(t) ? "jar" : /غسول|منظف|تونر|شامبو|رغوة/.test(t) ? "pump" : KINDS[h % 4];
-  const body = BODIES[(h >> 3) % BODIES.length];
+  const body = BODIES[(h >>> 3) % BODIES.length];
   return { kind, body, cap: body[1] === "#F0DCC8" || body[1] === "#F1CF9C" ? "#C9A24B" : "#7B4687" };
 }
 

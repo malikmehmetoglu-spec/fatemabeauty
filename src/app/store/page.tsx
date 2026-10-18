@@ -100,9 +100,9 @@ export default function StorePage() {
                 </div>
               </div>
               <Link href={R.P_Cart} onClick={addRecommended} style={{
-                height: 34, borderRadius: 17, background: C.white, color: C.accent, fontSize: 12.5, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 6px 14px rgba(0,0,0,0.18)", whiteSpace: "nowrap",
-              }}>{recommended.length > 1 ? "أضيفيها كلها" : "أضيفيه"} · <span className="latin">{money(recPrice, false)}</span></Link>
+                minHeight: 34, borderRadius: 17, padding: "5px 10px", background: C.white, color: C.accent, fontSize: 12.5, fontWeight: 700, lineHeight: 1.25,
+                display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: 4, boxShadow: "0 6px 14px rgba(0,0,0,0.18)", textAlign: "center",
+              }}><span>{recommended.length > 1 ? "أضيفيها كلها" : "أضيفيه"}</span><span className="latin" style={{ whiteSpace: "nowrap" }}>{money(recPrice, false)}</span></Link>
             </div>
             <div style={{ flex: 1, display: "flex", gap: 6, minWidth: 0 }}>
               {recommended.map((p) => (

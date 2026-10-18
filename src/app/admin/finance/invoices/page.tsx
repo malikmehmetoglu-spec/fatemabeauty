@@ -38,7 +38,7 @@ export default function Page() {
   const isToday = day === dayKey();
 
   const exportCsv = () => downloadCsv(`invoices-${day}.csv`, ["رقم", "الوقت", "المراجعة", "البنود", "الدفع", "المجموع", "الخصم", "الصافي", "المقبوض", "الحالة"],
-    list.map((i) => [i.no, clock(i.created_at), customerName(i), (i.invoice_items ?? []).map((x) => `${x.label}×${x.qty}`).join(" + "), PAY_LABEL[i.method], i.subtotal, i.discount, i.total, collected(i), i.void ? "ملغاة" : i.paid ? "مدفوعة" : "غير مكتملة"]));
+    list.map((i) => [i.no, clock(i.created_at), customerName(i), (i.invoice_items ?? []).map((x) => `${x.label}×${x.qty}`).join(" + "), (i.invoice_payments ?? []).filter((p) => p.amount > 0).length > 1 ? (i.invoice_payments ?? []).filter((p) => p.amount > 0).map((p) => `${PAY_LABEL[p.method]} ${p.amount}`).join(" + ") : PAY_LABEL[i.method], i.subtotal, i.discount, i.total, collected(i), i.void ? "ملغاة" : i.paid ? "مدفوعة" : "غير مكتملة"]));
 
   return (
     <AdminShell active="المالية" title="الفواتير" subtitle={`${arDate(new Date(`${day}T12:00:00`))}${isToday ? ` · آخر تحديث ${clock()}` : ""}`} actions={
@@ -58,7 +58,7 @@ export default function Page() {
             ))}
           </div>
           <div className={css.toolbarEnd}>
-            <input aria-label="بحث" value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم، رقم ملف أو فاتورة" style={{ height: 40, width: 200, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 13 }} />
+            <input aria-label="بحث في الفواتير" value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم، رقم ملف أو فاتورة" style={{ height: 40, width: 200, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 13 }} />
             <label style={{ height: 40, borderRadius: 20, background: C.white, boxShadow: SHB, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 12px", color: C.accent }}>
               <Icon name="cal" color={C.accent} size={17} />
               <input aria-label="اليوم" type="date" value={day} max={dayKey()} onChange={(e) => e.target.value && setDay(e.target.value)} style={{ border: "none", background: "transparent", color: C.accent, fontSize: 13, ...LATIN }} />
@@ -89,7 +89,7 @@ export default function Page() {
                   </div>
                   <div style={{ flex: 1.7, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>البنود</span>{invoiceTitle(i)}</div>
                   <div style={{ flex: 1.1, minWidth: 0, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>الأخصائية</span>{i.appointments?.staff?.name ?? "—"}</div>
-                  <div style={{ flex: 0.9, minWidth: 0 }}><Tag kind={METHOD_TAG[i.method]}>{(i.invoice_payments?.length ?? 0) > 1 ? "مقسّم" : PAY_LABEL[i.method]}</Tag></div>
+                  <div style={{ flex: 0.9, minWidth: 0 }}><Tag kind={METHOD_TAG[i.method]}>{new Set((i.invoice_payments ?? []).map((p) => p.method)).size > 1 ? "مقسّم" : PAY_LABEL[i.method]}</Tag></div>
                   <div style={{ flex: 1.1, minWidth: 0 }}><Amount n={i.total} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}><Status i={i} /></div>
                   <div className={css.tight} style={{ flex: 0.4, minWidth: 0 }}>

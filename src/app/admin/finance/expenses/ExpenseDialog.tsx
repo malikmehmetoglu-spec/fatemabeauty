@@ -3,7 +3,8 @@
 /** Add / edit / delete an expense (used by the expenses page and the cash box). */
 import { useState } from "react";
 import { ErrorNote, Modal, NumberInput, Select, SubmitButton, TextArea, TextInput, Toggle } from "@/components/ui";
-import { deleteExpense, EXPENSE_CATEGORIES, financeError, saveExpense, type Expense } from "@/lib/db/finance";
+import { deleteExpense, EXPENSE_CATEGORIES, financeError, getOpenShift, saveExpense, type Expense } from "@/lib/db/finance";
+import { useQuery } from "@/lib/db/query";
 import { dayKey } from "@/lib/format";
 import { C } from "@/lib/tokens";
 
@@ -16,6 +17,7 @@ export function ExpenseDialog({ exp, onClose, till: tillDefault = false }: { exp
   const [note, setNote] = useState(e?.note ?? "");
   const [till, setTill] = useState(e?.from_cash_box ?? tillDefault);
   const [busy, setBusy] = useState(false);
+  const shift = useQuery(["finance", "shift", "open"], getOpenShift);
   const [confirmDel, setConfirmDel] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const cats = EXPENSE_CATEGORIES.includes(category) ? EXPENSE_CATEGORIES : [category, ...EXPENSE_CATEGORIES];
@@ -23,6 +25,7 @@ export function ExpenseDialog({ exp, onClose, till: tillDefault = false }: { exp
     if (!label.trim() || !(Number(amount) > 0)) { setErr("أدخلي البند والمبلغ."); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { setErr("اختاري تاريخ المصروف."); return; }
     if (day > dayKey()) { setErr("لا يمكن تسجيل مصروف بتاريخ مستقبلي."); return; }
+    if (till && !e?.shift_id && !shift.loading && !shift.data) { setErr("الصندوق مغلق — افتحي وردية من «الصندوق اليومي» قبل أي حركة نقدية."); return; }
     setBusy(true); setErr(null);
     try { await saveExpense({ id: e?.id, category, label: label.trim(), amount: Math.round(Number(amount)), spent_on: day, note: note || null, from_cash_box: till }); onClose(); }
     catch (x) { setErr(financeError(x)); } finally { setBusy(false); }

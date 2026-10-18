@@ -15,6 +15,7 @@ import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import { C, SH, SHB } from "@/lib/tokens";
+import css from "./appts.module.css";
 
 const HOUR = 75; // px per hour
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
@@ -205,6 +206,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   if (!appt) return null;
   const a = appt;
   async function go(to: Status) {
+    if ((to === "cancelled" || to === "no_show") && !window.confirm(to === "cancelled" ? "إلغاء هذا الموعد؟" : "تسجيل أنها لم تحضر؟")) return;
     setBusy(true); setError("");
     try { await setStatus(a.id, to); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); }
   }
@@ -255,7 +257,7 @@ function HoursDialog({ open, hours, onClose }: { open: boolean; hours: Hours; on
           <Chip key={i} selected={h.days.includes(i)} onClick={() => setH({ ...h, days: h.days.includes(i) ? h.days.filter((x) => x !== i) : [...h.days, i].sort() })}>{n}</Chip>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div className={css.grid3}>
         <TextInput label="من" type="time" dir="ltr" value={h.from} onChange={(v) => setH({ ...h, from: v })} />
         <TextInput label="إلى" type="time" dir="ltr" value={h.to} onChange={(v) => setH({ ...h, to: v })} />
         <TextInput label="الفاصل (دقيقة)" dir="ltr" value={String(h.slot)} onChange={(v) => setH({ ...h, slot: Math.max(5, Number(v.replace(/\D/g, "")) || 15) })} />

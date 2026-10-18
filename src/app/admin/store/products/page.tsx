@@ -71,7 +71,7 @@ export default function Page() {
           text="أضيفي منتجاً للبيع مع سعره وصورته وكميته؛ يظهر في متجر التطبيق تلقائياً ويُخصم من المخزون عند كل طلب."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة منتج</GhostButton>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا منتجات تطابق هذا الاختيار" /> : (
-        <DataTable minWidth={820}
+        <DataTable minWidth={880}
           headers={["المنتج", "السعر", "الكمية", "في المتجر", "توصية", ""]}
           widths={[2.6, 1, 1.3, 0.8, 0.7, 1.4]}
           rowHeight={64}
@@ -100,7 +100,7 @@ export default function Page() {
                 width: 34, height: 34, borderRadius: 17, display: "flex", alignItems: "center", justifyContent: "center",
                 border: `1px solid ${p.recommended ? "#FFFFFF" : "#EADCF0"}`, background: p.recommended ? "linear-gradient(160deg,#FFF3DC,#F6D9A0)" : C.white,
               }}><Icon name="star" color={p.recommended ? "#D98F26" : "#D2C3D5"} size={16} /></button>,
-              <span key="a" style={{ display: "flex", gap: 6 }}>
+              <span key="a" style={{ display: "flex", gap: 6, flexWrap: "nowrap", marginInlineStart: "auto" }}>
                 <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
                 <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
               </span>,
@@ -117,7 +117,7 @@ export default function Page() {
 
 function RowBtn({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: "1px solid #EADCF0", background: C.white, fontSize: 12.5, fontWeight: 600, color: C.accent, display: "inline-flex", alignItems: "center", gap: 5 }}>
+    <button type="button" onClick={onClick} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: "1px solid #EADCF0", background: C.white, fontSize: 12.5, fontWeight: 600, color: C.accent, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", flexShrink: 0 }}>
       <Icon name={icon} color={C.accent} size={14} stroke={2} />{label}
     </button>
   );

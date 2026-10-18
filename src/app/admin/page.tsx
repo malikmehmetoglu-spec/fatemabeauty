@@ -12,6 +12,7 @@ import { isLow, listInventory } from "@/lib/db/products";
 import { getHours, listRange, personName, revenueToday, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments } from "@/lib/db/appointments";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
+import css from "./calendar/appts.module.css";
 import { C, SH, ICON_FILL } from "@/lib/tokens";
 import { NEW_BTN } from "./calendar/CalendarBoard";
 
@@ -85,19 +86,19 @@ export default function DashboardPage() {
       {appts.error && <ErrorNote>تعذّر تحميل مواعيد اليوم: {appts.error}</ErrorNote>}
       {loading ? <Loading /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
-          <div style={{ display: "flex", gap: 16 }}>
-            <div style={{ flex: 1, minWidth: 0, borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
+          <div className="adm-row" style={{ gap: 16 }}>
+            <div style={{ borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
               <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>إيراد اليوم حتى الآن</div>
               <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: 1.25, marginTop: 6 }}>{revenue.error ? "—" : money(revenue.data ?? 0)}</div>
               <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>من فواتير اليوم{upcoming.length ? ` · المواعيد المتبقية ${money(upcoming.reduce((s, a) => s + a.price, 0))}` : ""}</div>
             </div>
-            <div style={{ ...CARD, flex: 1, minWidth: 0 }}>
+            <div style={{ ...CARD }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>مواعيد اليوم</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" /></div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4 }}>{all.length}</div>
-              <div style={{ fontSize: 12, color: C.sub2 }}>{done.length} انتهت · {inSession.length} في الجلسة · {checkedIn.length} وصلت · {upcoming.length} قادمة</div>
+              <div style={{ fontSize: 12, color: C.sub2 }}>{done.length} انتهت · {inSession.length} في الجلسة · {checkedIn.length} وصلت · {upcoming.length} قادمة{noShow.length ? ` · ${noShow.length} لم تحضر` : ""}</div>
             </div>
-            <div style={{ ...CARD, flex: 1, minWidth: 0 }}>
+            <div style={{ ...CARD }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>الإشغال المحجوز لكل غرفة</div><IconDot d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /></div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
                 {occ.length === 0 ? <div style={{ fontSize: 12.5, color: C.muted }}>لم تُضف غرف بعد</div> : occ.map((r) => (
@@ -109,14 +110,14 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <div style={{ ...CARD, flex: 1, minWidth: 0 }}>
+            <div style={{ ...CARD }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>نسبة الغياب اليوم</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M10 14l4 4M14 14l-4 4" /></div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4 }}>{due.length ? Math.round((noShow.length / due.length) * 100) : 0}%</div>
               <div style={{ fontSize: 12, color: C.sub2 }}>{noShow.length} من {due.length} مواعيد مستحقة حتى الآن</div>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 16 }}>
+          <div className={css.split}>
             <div style={{ ...CARD, flex: 1.55, minWidth: 0 }}>
               <Head title="المواعيد حسب الساعة" sub={all.length ? `من ${timeOf(all[0])} حتى ${timeOf(all[all.length - 1])}` : "لا مواعيد اليوم بعد"}
                 right={<div style={{ display: "flex", gap: 14, fontSize: 12, color: C.sub2 }}>
@@ -124,9 +125,9 @@ export default function DashboardPage() {
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 5, background: C.accent }} />الساعة الحالية</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 5, background: "#E5CCEA" }} />قادمة</span>
                 </div>} />
-              <div style={{ display: "flex", gap: 10, height: 194, marginTop: 10, paddingTop: 6, borderTop: "1px dashed #EDE2F1" }}>
+              <div style={{ display: "flex", gap: 10, height: 194, marginTop: 10, paddingTop: 6, borderTop: "1px dashed #EDE2F1", overflowX: "auto" }}>
                 {hourBars.map((b) => (
-                  <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 6, height: "100%" }}>
+                  <div key={b.label} style={{ flex: 1, minWidth: 26, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 6, height: "100%" }}>
                     <div className="latin" style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{b.n}</div>
                     <div style={{ width: "70%", maxWidth: 46, height: Math.max(4, Math.floor((b.n / maxBar) * 142)), borderRadius: "14px 14px 8px 8px", background: b.state === "past" ? "linear-gradient(180deg,#C9A2D8,#7B4687)" : b.state === "now" ? C.accent : "linear-gradient(180deg,#F2E4F5,#E5CCEA)", boxShadow: b.n ? "0 8px 16px rgba(123,70,135,0.18)" : "none" }} />
                     <div className="latin" style={{ fontSize: 12, color: b.state === "now" ? C.accent : b.state === "past" ? C.sub2 : C.muted, fontWeight: b.state === "now" ? 700 : 400 }}>{b.label}</div>
@@ -154,7 +155,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 16 }}>
+          <div className={css.split}>
             <div style={{ ...CARD, padding: "14px 20px", flex: 1.55, minWidth: 0 }}>
               <Head title="إيراد اليوم حسب الخدمة" sub={`من الجلسات المنتهية حتى ${clock()}`}
                 right={<span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "#FBEAF1", color: C.danger }}>المجموع {money(svcRows.reduce((s, r) => s + r.total, 0))}</span>} />

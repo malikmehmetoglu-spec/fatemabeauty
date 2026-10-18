@@ -59,7 +59,7 @@ export async function listMovements(key: string) {
 /** Batches still in stock that expire within `days` days. */
 export async function listExpiring(days = 60) {
   const until = new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
-  return must(await supabase.from("stock_batches").select("*, products(name, unit)").gt("qty_left", 0).not("expires_on", "is", null).lte("expires_on", until).order("expires_on"));
+  return must(await supabase.from("stock_batches").select("*, products!inner(name, unit, active)").eq("products.active", true).gt("qty_left", 0).not("expires_on", "is", null).lte("expires_on", until).order("expires_on"));
 }
 
 export async function saveProduct(input: ProductInput, opening?: { qty: number; expires?: string | null; cost?: number | null; supplier?: string | null }) {
@@ -111,7 +111,7 @@ export async function setShowInStore(key: string, show: boolean) {
 
 /** Removes an item from the inventory and the store (history is kept). */
 export async function archiveProduct(key: string) {
-  must(await supabase.from("products").update({ active: false, show_in_store: false }).eq("key", key));
+  must(await supabase.from("products").update({ active: false, show_in_store: false, recommended: false }).eq("key", key));
   invalidate("products");
 }
 

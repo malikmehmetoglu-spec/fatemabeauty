@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Policies.dc.html — booking & cancellation policies, stored in settings «policies». */
+import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, Chip, ErrorNote, Loading, NumberInput, SubmitButton, Toggle } from "@/components/ui";
@@ -45,7 +46,7 @@ export default function PoliciesPage() {
     <AdminShell active="الإعدادات" title="سياسات الحجز والإلغاء" subtitle="المهل والتذكيرات وقائمة الانتظار — تُطبّق على كل القنوات"
       actions={p && <SubmitButton onClick={save} busy={busy}>حفظ السياسات</SubmitButton>}>
       {loading || (!p && !error) ? <Loading /> : error ? <ErrorNote>تعذّر تحميل السياسات: {error}</ErrorNote> : p && (
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           <div style={{ flex: 1.4, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
             <Section title="مهلة التعديل والإلغاء المجاني">
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -61,7 +62,7 @@ export default function PoliciesPage() {
               <div style={{ fontSize: 13, color: C.sub2 }}>عند التفعيل يُطلب عربون عند الحجز ويُخصم من الفاتورة.</div>
             </Section>
             <Section title="قائمة الانتظار" right={<Toggle on={p.waitlist} onChange={(v) => set({ waitlist: v })} label="تفعيل قائمة الانتظار" />}>
-              <div style={{ display: "flex", gap: 8, opacity: p.waitlist ? 1 : 0.45 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", opacity: p.waitlist ? 1 : 0.45 }}>
                 {RS.map((m) => <Chip key={m} selected={p.waitlist_reply_min === m} onClick={() => p.waitlist && set({ waitlist_reply_min: m })}>{m} دقيقة للرد</Chip>)}
               </div>
             </Section>
@@ -75,7 +76,7 @@ export default function PoliciesPage() {
                   </label>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                 {CH.map(([k, t]) => <Chip key={k} selected={p.channels.includes(k)} onClick={() => set({ channels: p.channels.includes(k) ? p.channels.filter((x) => x !== k) : [...p.channels, k] })}>{t}</Chip>)}
               </div>
               <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>إرسال التذكيرات عبر واتساب و SMS غير مربوط بعد؛ تُحفظ القناة المختارة للتفعيل لاحقاً.</div>
@@ -100,7 +101,7 @@ export default function PoliciesPage() {
 function Section({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card radius={26} padding={18} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <div style={{ fontSize: 15, fontWeight: 700 }}>{title}</div>{right}
       </div>
       {children}

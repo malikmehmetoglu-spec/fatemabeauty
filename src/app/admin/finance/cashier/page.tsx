@@ -382,7 +382,7 @@ function PatientPicker({ onPick }: { onPick: (w: Who) => void }) {
       <div style={{ fontSize: 12, fontWeight: 700, color: C.sub2, padding: "0 4px" }}>بيع أو دفع بدون موعد</div>
       <label style={{ height: 42, borderRadius: 21, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 8, padding: "0 14px" }}>
         <Icon name="search" color={C.muted} size={16} />
-        <input aria-label="بحث عن مراجعة" value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم، رقم ملف أو هاتف" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13, color: C.ink, minWidth: 0 }} />
+        <input aria-label="بحث عن ملف للدفع" value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم، رقم ملف أو هاتف" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13, color: C.ink, minWidth: 0 }} />
       </label>
       {debounced.trim() && (res.loading ? <Loading style={{ padding: 8 }} /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

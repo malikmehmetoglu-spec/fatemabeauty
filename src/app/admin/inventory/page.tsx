@@ -113,9 +113,9 @@ export default function InventoryPage() {
       ) : shown.length === 0 ? (
         <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" />
       ) : (
-        <DataTable minWidth={880}
+        <DataTable minWidth={960}
           headers={["الصنف", "النوع", "الكمية", "سعر البيع", "في المتجر", ""]}
-          widths={[2.6, 1, 1.2, 1, 0.9, 1.6]}
+          widths={[2.4, 0.8, 1.3, 1, 0.8, 2.4]}
           rowHeight={64}
           rows={shown.map((p) => {
             const img = productImage(p);
@@ -141,7 +141,7 @@ export default function InventoryPage() {
               p.kind === "retail"
                 ? <Toggle key="t" on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busyKey !== p.key && toggleStore(p)} />
                 : <span style={{ fontSize: 12, color: C.muted }}>لا يظهر</span>,
-              <span key="a" style={{ display: "flex", gap: 6 }}>
+              <span key="a" style={{ display: "flex", gap: 6, flexWrap: "nowrap", marginInlineStart: "auto" }}>
                 <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
                 <RowBtn icon="clip" label="جرد" onClick={() => setAdjusting(p)} />
                 <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
@@ -161,7 +161,7 @@ export default function InventoryPage() {
 
 function RowBtn({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} title={label} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: `1px solid #EADCF0`, background: C.white, fontSize: 12.5, fontWeight: 600, color: C.accent, display: "inline-flex", alignItems: "center", gap: 5 }}>
+    <button type="button" onClick={onClick} title={label} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: `1px solid #EADCF0`, background: C.white, fontSize: 12.5, fontWeight: 600, color: C.accent, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", flexShrink: 0 }}>
       <Icon name={icon} color={C.accent} size={14} stroke={2} />{label}
     </button>
   );
