@@ -3,6 +3,7 @@
 /** W_Policies.dc.html — سياسات الحجز والإلغاء. */
 import { Fragment, useState } from "react";
 import { AdminShell } from "@/components/shell";
+import { ExampleTag } from "@/components/ui";
 import { C } from "@/lib/tokens";
 import { ch, css, tg } from "@/app/admin/_h/css";
 
@@ -123,7 +124,7 @@ export default function Page() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
                     <label htmlFor="late" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
                       يُعدّ غياباً بعد تأخير
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                      <ExampleTag />
                     </label>
                     <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
                       <input id="late" defaultValue="15" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />
@@ -164,7 +165,7 @@ export default function Page() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
                       <label htmlFor="dep" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
                         قيمة العربون
-                        <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                        <ExampleTag />
                       </label>
                       <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
                         <input id="dep" defaultValue="20" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />

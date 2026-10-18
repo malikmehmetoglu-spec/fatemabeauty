@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AdminShell } from "@/components/shell";
+import { ExampleTag } from "@/components/ui";
 import { APPOINTMENTS_TODAY, DEVICES, PERSONA, TODAY } from "@/lib/data";
 import { arDate } from "@/lib/format";
 import { R } from "@/lib/routes";
@@ -89,7 +90,7 @@ export default function Page() {
                 <div style={{ flex: 1, minWidth: "0", lineHeight: "1.4" }}>
                   <div style={{ whiteSpace: "nowrap" }}>
                     <span style={{ fontSize: 13.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>جود الحلبي</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                    <ExampleTag />
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق للبشرة · فاطمة طيبة</div>
                 </div>
@@ -136,7 +137,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>{PERSONA.name}</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
@@ -144,7 +145,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>غنى صباغ</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
@@ -152,7 +153,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>نغم إبراهيم</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تقشير البشرة</span>
               </div>
@@ -193,11 +194,11 @@ export default function Page() {
                 <div style={{ flex: 1, minWidth: "0", lineHeight: "1.4" }}>
                   <div style={{ whiteSpace: "nowrap" }}>
                     <span style={{ fontSize: 13.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>لين عبود</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                    <ExampleTag />
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>
                     تقشير البشرة · هبة العلي
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                    <ExampleTag />
                   </div>
                 </div>
                 <div style={{ textAlign: "left", lineHeight: "1.3" }}>
@@ -244,7 +245,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:15</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>يارا حمدان</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
@@ -252,7 +253,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:15</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>آية الشامي</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
@@ -260,7 +261,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:30</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>دانة عطار</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
@@ -296,11 +297,11 @@ export default function Page() {
                 <div style={{ flex: 1, minWidth: "0", lineHeight: "1.4" }}>
                   <div style={{ whiteSpace: "nowrap" }}>
                     <span style={{ fontSize: 13.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>تالا ناصر</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                    <ExampleTag />
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>
                     جلسة ليزر · ريم الحسن
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                    <ExampleTag />
                   </div>
                 </div>
                 <div style={{ textAlign: "left", lineHeight: "1.3" }}>
@@ -345,7 +346,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>بتول درويش</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>جلسة ليزر</span>
               </div>
@@ -353,7 +354,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>ماريا جرجس</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>جلسة ليزر</span>
               </div>
@@ -361,7 +362,7 @@ export default function Page() {
                 <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>سلاف موسى</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                  <ExampleTag />
                 </div>
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>جلسة ليزر</span>
               </div>

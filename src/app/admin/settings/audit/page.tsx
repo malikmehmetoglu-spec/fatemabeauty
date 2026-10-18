@@ -3,16 +3,19 @@
 /** W_Audit.dc.html — سجل التدقيق. */
 import { Fragment, useState } from "react";
 import { AdminShell } from "@/components/shell";
+import { NOW, TODAY } from "@/lib/data";
+import { arDate } from "@/lib/format";
+import { ExampleTag } from "@/components/ui";
 import { C, FATEMA_PHOTO } from "@/lib/tokens";
 import { ch, css } from "@/app/admin/_h/css";
 import { AUDIT_LOG } from "@/lib/mock/h";
 
 export default function Page() {
-  const [f, setF] = useState(0);
+  const [flt, setFlt] = useState(0);
   const F: [string, string[] | null][] = [["الكل", null], ["فتح ملف", ["file"]], ["الفواتير والخصومات", ["invoice", "discount"]], ["الحذف والتصدير", ["delete", "export"]], ["الحضور", ["queue"]], ["الإعدادات", ["settings"]]];
-  const keep = F[f][1];
+  const keep = F[flt][1];
   const v = {
-    filters: F.map((x, i) => ({ name: x[0], style: ch(f === i, 36), pick: () => setF(i) })),
+    filters: F.map((x, i) => ({ name: x[0], on: flt === i, style: ch(flt === i, 36), pick: () => setFlt(i) })),
     rows: AUDIT_LOG.filter((r) => !keep || keep.includes(r.k)).map((r) => ({ ...r, nf: !r.fat })),
   };
   return (
@@ -49,12 +52,12 @@ export default function Page() {
             <div style={{ fontSize: 15, fontWeight: 700 }}>سجل دائم لا يمكن تعديله أو حذفه</div>
             <div style={{ fontSize: 12.5, color: C.onDark }}>كل فتح ملف، تعديل فاتورة، خصم أو حذف يُسجَّل باسم منفذته ووقته وتفاصيله</div>
           </div>
-          <span style={{ position: "relative", marginInlineStart: "auto", fontSize: 13, color: C.onDark }}>الثلاثاء 13 تشرين الأول · 11 حركة حتى 12:30</span>
+          <span style={{ position: "relative", marginInlineStart: "auto", fontSize: 13, color: C.onDark }}>{arDate(TODAY)} · {AUDIT_LOG.length} حركة حتى {NOW}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {v.filters.map((f, fI) => (
             <Fragment key={fI}>
-              <button type="button" aria-pressed={fI === v.filters.indexOf(f) && f.style.includes("#F1E3F6")} onClick={f.pick}
+              <button type="button" aria-pressed={f.on} onClick={f.pick}
  style={css(f.style, "button")}>{f.name}</button>
             </Fragment>
           ))}
@@ -107,7 +110,7 @@ export default function Page() {
                       <span style={{ fontSize: 13.5, fontWeight: 700 }}>{r.u}</span>
                       {r.nf && (
                         <>
-                          <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
+                          <ExampleTag />
                         </>
                       )}
                     </div>
