@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
 import { BG_WIDE, C, SELECTED, SH, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
 import { FatemaAvatar, Icon, IconButton, Logo } from "@/components/ui";
@@ -9,7 +12,7 @@ import { Blobs } from "./PhoneScreen";
 
 export type AdminSection =
   | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "جدولي" | "المالية" | "المخزون والأجهزة"
-  | "فريق العمل" | "التسويق والولاء" | "المتجر" | "التقارير" | "الإعدادات";
+  | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
   ["dash", "لوحة القيادة", R.W_Dashboard],
@@ -21,6 +24,7 @@ const NAV: [string, AdminSection, string][] = [
   ["box", "المخزون والأجهزة", R.W_Inventory],
   ["badge", "فريق العمل", R.W_Staff],
   ["megaphone", "التسويق والولاء", R.W_Offers],
+  ["download", "تثبيت التطبيق", R.W_Installs],
   ["bag", "المتجر", R.W_Products],
   ["chart", "التقارير", R.W_Reports],
   ["settings", "الإعدادات", R.W_Services],
@@ -33,6 +37,13 @@ const NAV: [string, AdminSection, string][] = [
 export function AdminShell({ active, title, subtitle, actions, children, overlay }: {
   active: AdminSection; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; overlay?: ReactNode;
 }) {
+  const router = useRouter();
+  const { loading, staff } = useSession();
+  useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
+  if (loading || !staff) {
+    return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
+  }
+  const signOut = async () => { await supabase.auth.signOut(); router.replace(R.W_Login); };
   return (
     <div dir="rtl" style={{ minHeight: "100dvh", minWidth: 1280, background: BG_WIDE, color: C.ink, display: "flex", position: "relative", isolation: "isolate", overflowX: "clip" }}>
       <Blobs width={900} />
@@ -59,11 +70,14 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           )}
         </nav>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: 20, background: "#F8F2FA" }}>
-          <FatemaAvatar size={38} />
-          <div style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>فاطمة طيبة</div>
-            <div style={{ fontSize: 11, color: C.sub2 }}>أخصائية عناية بالبشرة</div>
+          {staff.photo_url ? <FatemaAvatar size={38} /> : <span style={{ width: 38, height: 38, borderRadius: 19, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.accent, flexShrink: 0 }}>{staff.name.charAt(0)}</span>}
+          <div style={{ lineHeight: 1.3, flexGrow: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>{staff.name}</div>
+            <div style={{ fontSize: 11, color: C.sub2 }}>{staff.title || ROLE_LABEL[staff.role]}</div>
           </div>
+          <button type="button" onClick={signOut} aria-label="تسجيل الخروج" title="تسجيل الخروج" style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon name="logout" color={C.sub2} size={17} />
+          </button>
         </div>
       </aside>
       <main style={{ flexGrow: 1, minWidth: 0, padding: "26px 28px 24px 16px", display: "flex", flexDirection: "column", gap: 18, position: "relative" }}>

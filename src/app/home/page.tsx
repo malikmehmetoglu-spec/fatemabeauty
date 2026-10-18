@@ -5,12 +5,13 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PhoneScreen } from "@/components/shell";
 import { Circ, Icon, IconButton, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { SERVICES } from "@/lib/data";
+import { useCatalog } from "@/lib/supabase/catalog";
 import { money } from "@/lib/format";
 import { C, CARD, DARK, FATEMA_PHOTO, GLASS, SH, SHB } from "@/lib/tokens";
 
 /** Main.dc.html — patient home. */
 export default function HomePage() {
+  const { services: SERVICES } = useCatalog();
   const cards = SERVICES.filter((s) => s.key !== "consult");
   return (
     <PhoneScreen tab="الرئيسية" padding="0" gap={0}>

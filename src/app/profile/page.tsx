@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { useSession } from "@/lib/supabase/session";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, Icon, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -18,7 +21,35 @@ const label: CSSProperties = { display: "block", fontSize: 12.5, fontWeight: 700
 const chipBase: CSSProperties = { height: 32, padding: "0 12px", borderRadius: 19, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 };
 
 export default function ProfilePage() {
-  const [concerns, setConcerns] = useState<Record<number, boolean>>({ 1: true, 6: true });
+  const [concerns, setConcerns] = useState<Record<number, boolean>>({});
+  const [name, setName] = useState("");
+  const [dob, setDob] = useState("");
+  const [allergy, setAllergy] = useState("");
+  const [meds, setMeds] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const { patient } = useSession();
+  async function save() {
+    setError("");
+    if (!name.trim()) { setError("اكتبي اسمكِ أولاً."); return; }
+    if (!patient) { router.push(R.Main); return; }
+    const m = dob.match(/^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})$/);
+    setBusy(true);
+    const { error: e } = await supabase.from("patients").update({
+      name: name.trim(), pregnant: answers.preg === "yes",
+      birth_date: m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : null,
+      notes: answers.iso === "yes" ? "تتناول دواءً لحب الشباب" : null,
+    }).eq("id", patient.id);
+    const conds = [
+      ...CONCERNS.filter((_, i) => concerns[i]).map((c) => ({ patient_id: patient.id, kind: "concern", name: c })),
+      ...(allergy.trim() ? [{ patient_id: patient.id, kind: "allergy", name: allergy.trim() }] : []),
+      ...(meds.trim() ? [{ patient_id: patient.id, kind: "medication", name: meds.trim() }] : []),
+    ];
+    if (!e && conds.length) await supabase.from("patient_conditions").insert(conds);
+    setBusy(false);
+    if (e) setError("تعذّر الحفظ. حاولي مرة أخرى."); else router.replace(R.Main);
+  }
   const [answers, setAnswers] = useState<Record<string, string>>({ preg: "no", iso: "no" });
   const [consent, setConsent] = useState(true);
 
@@ -30,11 +61,11 @@ export default function ProfilePage() {
       <div style={{ ...CARD, position: "relative", borderRadius: 26, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
           <label htmlFor="pname" style={label}>الاسم الكامل</label>
-          <div style={field}><Icon name="user" color={C.accentMid} size={17} /><input id="pname" type="text" placeholder="اكتبي اسمكِ كما تحبين أن نناديكِ" style={inputStyle} /></div>
+          <div style={field}><Icon name="user" color={C.accentMid} size={17} /><input id="pname" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="اكتبي اسمكِ كما تحبين أن نناديكِ" style={inputStyle} /></div>
         </div>
         <div>
           <label htmlFor="pdob" style={label}>تاريخ الميلاد</label>
-          <div style={field}><Icon name="cal" color={C.accentMid} size={17} /><input id="pdob" type="text" placeholder="اليوم / الشهر / السنة" style={inputStyle} /></div>
+          <div style={field}><Icon name="cal" color={C.accentMid} size={17} /><input id="pdob" type="text" inputMode="numeric" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="اليوم / الشهر / السنة" style={inputStyle} /></div>
         </div>
       </div>
 
@@ -65,11 +96,11 @@ export default function ProfilePage() {
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <label htmlFor="pallergy" style={{ ...label, marginBottom: 4 }}>حساسية معروفة</label>
-            <input id="pallergy" type="text" placeholder="لا يوجد" style={smallInput} />
+            <input id="pallergy" type="text" value={allergy} onChange={(e) => setAllergy(e.target.value)} placeholder="لا يوجد" style={smallInput} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <label htmlFor="pmeds" style={{ ...label, marginBottom: 4 }}>أدوية حالية</label>
-            <input id="pmeds" type="text" placeholder="لا يوجد" style={smallInput} />
+            <input id="pmeds" type="text" value={meds} onChange={(e) => setMeds(e.target.value)} placeholder="لا يوجد" style={smallInput} />
           </div>
         </div>
         <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2 }}>ما الذي يزعجكِ في بشرتكِ؟ <span style={{ fontWeight: 400, color: C.sub2 }}>(اختاري ما يناسب)</span></div>
@@ -95,7 +126,8 @@ export default function ProfilePage() {
       </button>
 
       <div style={{ marginTop: "auto", position: "relative" }}>
-        {consent ? <PrimaryButton href={R.Main}>حفظ ومتابعة</PrimaryButton> : <PrimaryButton disabled style={{ opacity: 0.45, width: "100%" }}>حفظ ومتابعة</PrimaryButton>}
+        {error && <div role="alert" style={{ fontSize: 13.5, fontWeight: 600, color: C.danger, background: "#FBEAF1", borderRadius: 14, padding: "10px 14px", textAlign: "center" }}>{error}</div>}
+        {consent ? <PrimaryButton onClick={save} disabled={busy}>{busy ? "جارٍ الحفظ…" : "حفظ ومتابعة"}</PrimaryButton> : <PrimaryButton disabled style={{ opacity: 0.45, width: "100%" }}>حفظ ومتابعة</PrimaryButton>}
       </div>
     </PhoneScreen>
   );

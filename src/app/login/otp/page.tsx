@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import { maskPhone, savedPhone, sendCode, verifyCode } from "@/lib/supabase/phoneAuth";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Icon, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -9,9 +11,28 @@ import { C, GLASS, ICON_FILL, SH, SHB, SOFT_PANEL } from "@/lib/tokens";
 
 /** P_OTP.dc.html — WhatsApp verification code. */
 export default function OtpPage() {
-  const [digits, setDigits] = useState(["4", "8", "1", "7", "", ""]);
-  const [focus, setFocus] = useState(4);
-  const [sec, setSec] = useState(42);
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const [focus, setFocus] = useState(0);
+  const [sec, setSec] = useState(59);
+  const [phone, setPhone] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  useEffect(() => { const p = savedPhone(); if (!p) router.replace(R.Login); else setPhone(p); }, [router]);
+  async function confirm() {
+    const token = digits.join("");
+    if (token.length !== 6) { setError("أدخلي الأرقام الستة كاملة."); return; }
+    setBusy(true); setError("");
+    const r = await verifyCode(phone, token);
+    setBusy(false);
+    if (r.error) { setError(r.error); return; }
+    router.replace(r.patient && r.patient.name ? R.Main : R.P_Profile);
+  }
+  async function resend() {
+    setError(""); setSec(59);
+    const e = await sendCode(phone);
+    if (e) setError(e);
+  }
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -50,7 +71,7 @@ export default function OtpPage() {
         <h1 style={{ margin: "22px 0 0", fontSize: 26, fontWeight: 700, color: C.ink }}>أدخلي رمز التحقق</h1>
         <p style={{ margin: "8px 0 0", fontSize: 14.5, color: C.sub, lineHeight: 1.7 }}>أرسلنا رمزاً من 6 أرقام عبر واتساب إلى</p>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-          <span dir="ltr" className="latin" style={{ fontSize: 17, fontWeight: 500, color: C.accent, letterSpacing: 0.5 }}>+963 9•• ••• •••</span>
+          <span dir="ltr" className="latin" style={{ fontSize: 17, fontWeight: 500, color: C.accent, letterSpacing: 0.5 }}>{phone ? maskPhone(phone) : ""}</span>
           <Link href={R.Login} style={{ fontSize: 13, fontWeight: 600, color: C.accentMid, textDecoration: "underline", textUnderlineOffset: 4 }}>تغيير الرقم</Link>
         </div>
       </div>
@@ -72,7 +93,7 @@ export default function OtpPage() {
             <b dir="ltr" className="latin" style={{ fontWeight: 500, color: C.accent }}>00:{String(sec).padStart(2, "0")}</b>
           </div>
         ) : (
-          <button type="button" onClick={() => setSec(59)} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent }}>
+          <button type="button" onClick={resend} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent }}>
             <Icon name="refresh" color={C.accent} size={17} />إعادة إرسال الرمز
           </button>
         )}
@@ -80,9 +101,10 @@ export default function OtpPage() {
 
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, color: C.sub2 }}>
-          لم يصلكِ الرمز؟<button type="button" onClick={() => setSec(59)} style={{ border: "none", background: "none", padding: 0, fontSize: 13, fontWeight: 700, color: C.accentMid }}>أرسليه برسالة SMS</button>
+          لم يصلكِ الرمز؟<button type="button" onClick={resend} style={{ border: "none", background: "none", padding: 0, fontSize: 13, fontWeight: 700, color: C.accentMid }}>أرسليه برسالة SMS</button>
         </div>
-        <PrimaryButton href={R.P_Profile}>تأكيد</PrimaryButton>
+        {error && <div role="alert" style={{ fontSize: 13.5, fontWeight: 600, color: C.danger, background: "#FBEAF1", borderRadius: 14, padding: "10px 14px", textAlign: "center" }}>{error}</div>}
+        <PrimaryButton onClick={confirm} disabled={busy}>{busy ? "جارٍ التحقق…" : "تأكيد"}</PrimaryButton>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, color: C.sub2 }}>
           <Icon name="lock" color={C.muted} size={14} />لا تشاركي هذا الرمز مع أي أحد
         </div>

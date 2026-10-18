@@ -5,7 +5,8 @@ import { useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Chip, Circ, DarkGlow, Icon, IconButton } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PACKAGES, PACKAGE_RULE, SERVICES, type ServiceKey } from "@/lib/data";
+import { PACKAGE_RULE, type ServiceKey } from "@/lib/data";
+import { useCatalog } from "@/lib/supabase/catalog";
 import { money } from "@/lib/format";
 import { C, CARD, DARK, SHB } from "@/lib/tokens";
 
@@ -16,6 +17,7 @@ const CATS = ["الكل", "تنظيف", "تقشير", "ليزر", "استشار�
 
 export default function ServicesPage() {
   const [cat, setCat] = useState("الكل");
+  const { services: SERVICES, packages: PACKAGES } = useCatalog();
   const items = SERVICES.filter((s) => cat === "الكل" || CAT[s.key] === cat);
   const n = items.length;
   const countText = n === 1 ? "خدمة واحدة" : n === 2 ? "خدمتان" : `${n} خدمات`;

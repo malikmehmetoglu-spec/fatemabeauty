@@ -10,7 +10,7 @@ import { APP_ORIGIN, DOMAIN } from "@/lib/hosts";
 import s from "./site.module.css";
 import { Icon, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PACKAGES, SERVICES } from "@/lib/data";
+import { useCatalog } from "@/lib/supabase/catalog";
 import { money } from "@/lib/format";
 import { C, FATEMA_PHOTO } from "@/lib/tokens";
 import { PRODUCTS } from "@/lib/mock/c1";
@@ -29,6 +29,7 @@ const APP_FEATURES: [string, string][] = [
 ];
 
 export default function SitePage() {
+  const { services: SERVICES, packages: PACKAGES } = useCatalog();
   const services = SERVICES.filter((x) => x.key !== "consult");
   const products = PRODUCTS.filter((p) => p.price !== null).slice(0, 3);
   // On fatema.beauty, booking/app links go to app.fatema.beauty and store links to store.fatema.beauty.
