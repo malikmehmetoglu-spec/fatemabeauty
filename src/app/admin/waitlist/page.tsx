@@ -6,7 +6,7 @@ import { AdminShell } from "@/components/shell";
 import { Icon, ExampleTag, Tag, PersonName } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { arDate } from "@/lib/format";
-import { css, WAITLIST, FREE_SLOT } from "@/lib/mock/e";
+import { css, WaitStatus, WAITLIST, FREE_SLOT } from "@/lib/mock/e";
 import { C, SH, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 
 /** W_Waitlist.dc.html */

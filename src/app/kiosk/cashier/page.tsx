@@ -5,10 +5,39 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
+import { Toggle } from "@/components/ui";
+import { APPOINTMENTS_TODAY, DONE_TODAY, NOW, TODAY, initials } from "@/lib/data";
+import { arDate, money } from "@/lib/format";
+import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** T_Cashier.dc.html */
+/** The session waiting for payment: today's first visit (10:00, room 1), finished. */
+const A = APPOINTMENTS_TODAY[0];
+const TOTAL = A.price;
+const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
+const n = (x: string | number) => Number(x || 0).toLocaleString("en-US");
+
+/** Reception tablet: cashier for a finished session. */
 export default function Page() {
+  const [st, setSt] = useState({ m: 0, recv: "2000" });
+  const [wa, setWa] = useState(true);
+  const [print, setPrint] = useState(false);
+  const methods = [0, 1, 2].map((i) => ({ pick: () => setSt({ ...st, m: i }),
+    style: css("flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" +
+      (st.m === i ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 4px 12px rgba(123,70,135,0.06)")) }));
+  const press = (k: string) => { let r = st.recv;
+    if (k === "del") r = r.slice(0, -1); else if (r.length < 7) r = (r === "0" ? "" : r) + k;
+    setSt({ ...st, recv: r }); };
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"].map((k) => ({ k: k === "del" ? "⌫" : k, aria: k === "del" ? "حذف" : k, press: () => press(k) }));
+  const quick = [TOTAL, 2000, 5000].map((v) => ({ label: n(v), set: () => setSt({ ...st, recv: String(v) }),
+    style: css("height:56px;border-radius:28px;font-family:Rubik,sans-serif;font-size:17px;font-weight:500;" +
+      (Number(st.recv) === v ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#7B4687;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
+  const r = Number(st.recv || 0), diff = r - TOTAL;
+  const cash = st.m === 0, card = st.m === 1, pkg = st.m === 2;
+  const recv = n(r), changeLabel = diff >= 0 ? "الباقي للمراجعة" : "المبلغ ناقص", change = n(Math.abs(diff)) + " ل.س";
+  const changeStyle = css("font-size:30px;font-weight:700;font-family:Rubik,sans-serif;line-height:1.3;color:" + (diff >= 0 ? "#2E7D50" : "#B03D6A"));
+  const due = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : "بدون خصم";
   return (
     <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
@@ -52,7 +81,7 @@ export default function Page() {
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>الكاشير
             </div>
-            <div style={{ fontSize: 15, color: C.sub2 }}>جلسة منتهية بانتظار الدفع · 7 جلسات انتهت اليوم
+            <div style={{ fontSize: 15, color: C.sub2 }}>جلسة منتهية بانتظار الدفع · {DONE_TODAY.length} جلسات انتهت اليوم
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -60,10 +89,10 @@ export default function Page() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
               </svg>
-              <span>الثلاثاء 13 تشرين الأول
+              <span>{arDate(TODAY)}
               </span>
               <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>12:30
+              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
               </span>
             </div>
           </div>
@@ -72,14 +101,14 @@ export default function Page() {
           <div style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "20px 22px 6px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14 }}>
-                <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>ر س
+                <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(A.name)}
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 19, fontWeight: 700 }}>ريم سالم
+                  <div style={{ fontSize: 19, fontWeight: 700 }}>{A.name}
                     <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
                     </span>
                   </div>
-                  <div style={{ fontSize: 14, color: C.sub2 }}>ملف 1000 · دور 1 · 10:00
+                  <div style={{ fontSize: 14, color: C.sub2 }}>ملف {A.fileNo} · دور {A.queueNo} · {A.time}
                   </div>
                 </div>
                 <span style={{ display: "inline-flex", alignItems: "center", height: 30, padding: "0 14px", borderRadius: 15, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>انتهت
@@ -92,18 +121,18 @@ export default function Page() {
                   </svg>
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>تنظيف عميق للبشرة
+                  <div style={{ fontSize: 17, fontWeight: 700 }}>{A.serviceName}
                   </div>
-                  <div style={{ fontSize: 13, color: C.sub2 }}>فاطمة طيبة · غرفة 1 · 60 دقيقة
+                  <div style={{ fontSize: 13, color: C.sub2 }}>{A.specialist} · {A.room} · {A.minutes} دقيقة
                   </div>
                 </div>
-                <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>1,500 ل.س
+                <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>{money(TOTAL)}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderTop: "1px solid #EDE2F1", fontSize: 16 }}>
                 <span style={{ color: C.sub }}>المجموع
                 </span>
-                <span style={{ fontWeight: 700 }}>1,500 ل.س
+                <span style={{ fontWeight: 700 }}>{money(TOTAL)}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderTop: "1px solid #EDE2F1", fontSize: 16 }}>
@@ -143,9 +172,7 @@ export default function Page() {
                     </svg>
                   </span>إرسال الفاتورة على واتساب
                 </span>
-                <span style={{ width: 52, height: 30, borderRadius: 15, padding: 3, boxSizing: "border-box", flexShrink: 0, display: "flex", justifyContent: "flex-end", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 14px rgba(123,70,135,0.30)" }}>
-                  <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)" }} />
-                </span>
+                <Toggle on={wa} onChange={setWa} label="إرسال الفاتورة على واتساب" />
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 58, fontSize: 16, fontWeight: 600, borderTop: "1px solid #EDE2F1" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -155,12 +182,10 @@ export default function Page() {
                     </svg>
                   </span>طباعة إيصال ورقي
                 </span>
-                <span style={{ width: 52, height: 30, borderRadius: 15, padding: 3, boxSizing: "border-box", flexShrink: 0, display: "flex", justifyContent: "flex-start", background: "#E6DDE8" }}>
-                  <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)" }} />
-                </span>
+                <Toggle on={print} onChange={setPrint} label="طباعة إيصال ورقي" />
               </div>
             </div>
-            <button style={{ marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <button type="button" style={{ marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2M9 7h6M9 11h6M13 15h2" />
               </svg>إصدار الفاتورة
@@ -170,17 +195,17 @@ export default function Page() {
             <div style={{ fontSize: 18, fontWeight: 700 }}>طريقة الدفع
             </div>
             <div style={{ display: "flex", gap: 12 }}>
-              <button onClick={methods[0].pick} style={methods[0].style}>
+              <button type="button" aria-pressed={st.m === 0} onClick={methods[0].pick} style={methods[0].style}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
                 </svg>نقداً
               </button>
-              <button onClick={methods[1].pick} style={methods[1].style}>
+              <button type="button" aria-pressed={st.m === 1} onClick={methods[1].pick} style={methods[1].style}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM3 10h18M7 15h2" />
                 </svg>بطاقة
               </button>
-              <button onClick={methods[2].pick} style={methods[2].style}>
+              <button type="button" aria-pressed={st.m === 2} onClick={methods[2].pick} style={methods[2].style}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 11 5 12 8c1-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5" />
                 </svg>من الباقة
@@ -203,7 +228,7 @@ export default function Page() {
                   </div>
                   {quick.map((q, qI) => (
                     <Fragment key={qI}>
-                      <button onClick={q.set} style={q.style}>{q.label}
+                      <button type="button" onClick={q.set} style={q.style}>{q.label}
                       </button>
                     </Fragment>
                   ))}
@@ -217,7 +242,7 @@ export default function Page() {
                 <div dir="ltr" style={{ flex: 1, minWidth: "0", borderRadius: 30, padding: 16, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "1fr", gap: 10 }}>
                   {keys.map((k, kI) => (
                     <Fragment key={kI}>
-                      <button onClick={k.press} aria-label={k.aria} style={{ borderRadius: 20, border: "1px solid #F0E6F3", background: "linear-gradient(180deg,#FFFFFF,#FAF4FB)", boxShadow: "0 4px 10px rgba(123,70,135,0.06), inset 0 1px 0 #FFFFFF", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 25, fontWeight: 500, color: C.ink, minHeight: 56 }}>{k.k}
+                      <button type="button" onClick={k.press} aria-label={k.aria} style={{ borderRadius: 20, border: "1px solid #F0E6F3", background: "linear-gradient(180deg,#FFFFFF,#FAF4FB)", boxShadow: "0 4px 10px rgba(123,70,135,0.06), inset 0 1px 0 #FFFFFF", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 25, fontWeight: 500, color: C.ink, minHeight: 56 }}>{k.k}
                       </button>
                     </Fragment>
                   ))}
@@ -234,7 +259,7 @@ export default function Page() {
                 <div style={{ fontSize: 24, fontWeight: 700 }}>مرّري البطاقة على جهاز الدفع
                 </div>
                 <div style={{ fontSize: 16, color: C.sub, lineHeight: 1.6 }}>المبلغ{" "}
-                  <b style={{ color: C.accent }}>1,500 ل.س
+                  <b style={{ color: C.accent }}>{money(TOTAL)}
                   </b>{" "}— بعد نجاح العملية اضغطي «إصدار الفاتورة».
                 </div>
               </div>

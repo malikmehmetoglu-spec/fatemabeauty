@@ -56,6 +56,7 @@ export const STOCKTAKE = [
 
 /* ---------- staff names (from STAFF) ---------- */
 import { STAFF } from "@/lib/data";
+import { arDate, dayName } from "@/lib/format";
 /** Staff name by id: SN.reem → «ريم الحسن». */
 export const SN = Object.fromEntries(STAFF.map((s) => [s.id, s.name])) as Record<"fatema" | "reem" | "hiba" | "lina" | "salma", string>;
 
@@ -72,9 +73,9 @@ export const PAYROLL = [
 
 /* ---------- W_Attendance: leave requests (sample) ---------- */
 export const LEAVE_REQUESTS = [
-  { id: "hiba", type: "إجازة سنوية", when: new Date(2026, 9, 22), whenText: "", days: "يوم واحد", note: "مواعيدها في ذلك اليوم تحتاج إعادة توزيع" },
-  { id: "reem", type: "إجازة سنوية", when: new Date(2026, 10, 1), whenText: "– الثلاثاء 3 تشرين الثاني 2026", days: "3 أيام", note: "جلسات الليزر تُنقل أو تُؤجَّل" },
-  { id: "salma", type: "مغادرة ساعية", when: new Date(2026, 9, 20), whenText: "14:00 – 16:00", days: "ساعتان", note: "لا تأثير على المواعيد" },
+  { id: "hiba", type: "إجازة سنوية", when: arDate(new Date(2026, 9, 22), { year: true }), days: "يوم واحد", note: "مواعيدها في ذلك اليوم تحتاج إعادة توزيع" },
+  { id: "reem", type: "إجازة سنوية", when: `${dayName(new Date(2026, 10, 1))} 1 – ${arDate(new Date(2026, 10, 3), { year: true })}`, days: "3 أيام", note: "جلسات الليزر تُنقل أو تُؤجَّل" },
+  { id: "salma", type: "مغادرة ساعية", when: `${arDate(new Date(2026, 9, 20))} 14:00 – 16:00`, days: "ساعتان", note: "لا تأثير على المواعيد" },
 ].map((r) => {
   const s = STAFF.find((x) => x.id === r.id)!;
   return { ...r, name: s.name, ini: s.initials };

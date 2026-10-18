@@ -20,10 +20,14 @@ export function css(s: string | undefined | null): CSSProperties {
     const i = d.indexOf(":");
     if (i < 0) continue;
     let k = d.slice(0, i).trim();
-    if (!k || k === "box-sizing") continue;
+    if (!k) continue;
     if (k.startsWith("-webkit-")) k = "Webkit-" + k.slice(8);
     k = k.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
     out[k] = d.slice(i + 1).trim();
+  }
+  // the designs have no global border-box rule: sized boxes with padding/border are content-box unless stated
+  if (!out.boxSizing && (out.height || out.width) && Object.keys(out).some((x) => x.startsWith("padding") || (x.startsWith("border") && x !== "borderRadius"))) {
+    out.boxSizing = "content-box";
   }
   return out as CSSProperties;
 }
@@ -33,7 +37,7 @@ export const fmt = (n: number | string) => String(n).replace(/\B(?=(\d{3})+(?!\d
 
 /** Design toggle look (RTL: ON knob on the left) as a CSS string. */
 export function tg(on: boolean) {
-  return "width:52px;height:30px;border-radius:15px;padding:3px;border:none;flex-shrink:0;display:flex;justify-content:" + (on ? "flex-end" : "flex-start") +
+  return "width:52px;height:30px;border-radius:15px;padding:3px;box-sizing:border-box;border:none;flex-shrink:0;display:flex;justify-content:" + (on ? "flex-end" : "flex-start") +
     ";background:" + (on ? "linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 14px rgba(123,70,135,0.30)" : "#E6DDE8");
 }
 

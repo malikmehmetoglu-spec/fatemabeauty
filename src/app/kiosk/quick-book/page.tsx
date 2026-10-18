@@ -20,7 +20,7 @@ const SP = [
 ];
 /** Booked [start, end) minutes per room, from today's schedule. */
 const B: Record<string, [number, number][]> = Object.fromEntries(SP.map((p) => [p.room,
-  APPOINTMENTS_TODAY.filter((a) => a.room === p.room && a.status !== "لم تحضر").map((a) => [toMinutes(a.time), toMinutes(a.time) + a.minutes] as [number, number])]));
+  APPOINTMENTS_TODAY.filter((a) => a.room === p.room).map((a) => [toMinutes(a.time), toMinutes(a.time) + a.minutes] as [number, number])]));
 const NOW = toMinutes(NOW_HM), END = 18 * 60, D0 = 600, DL = END - D0;
 const pc = (m: number) => ((m - D0) / DL * 100).toFixed(2) + "%";
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";

@@ -110,7 +110,7 @@ export default function Page() {
           </span>
         </div>
         <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10, boxSizing: "content-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px" }}>
               <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -128,9 +128,9 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{o.ini}</span>
+                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap", boxSizing: "content-box" }}>{o.ini}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>{o.name}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.sub, lineHeight: "1.5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.items}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -138,7 +138,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -150,7 +150,7 @@ export default function Page() {
               </Fragment>
             ))}
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10, boxSizing: "content-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px" }}>
               <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -168,9 +168,9 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{o.ini}</span>
+                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap", boxSizing: "content-box" }}>{o.ini}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>{o.name}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.sub, lineHeight: "1.5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.items}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -178,7 +178,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -190,7 +190,7 @@ export default function Page() {
               </Fragment>
             ))}
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10, boxSizing: "content-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px" }}>
               <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -208,9 +208,9 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{o.ini}</span>
+                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap", boxSizing: "content-box" }}>{o.ini}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>{o.name}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.sub, lineHeight: "1.5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.items}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -218,7 +218,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -230,7 +230,7 @@ export default function Page() {
               </Fragment>
             ))}
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 28, padding: "14px 12px", background: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.8)", display: "flex", flexDirection: "column", gap: 10, boxSizing: "content-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px" }}>
               <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -248,9 +248,9 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{o.ini}</span>
+                    <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, whiteSpace: "nowrap", boxSizing: "content-box" }}>{o.ini}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>{o.name}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle", boxSizing: "content-box" }}>مثال</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.sub, lineHeight: "1.5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.items}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -258,7 +258,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>

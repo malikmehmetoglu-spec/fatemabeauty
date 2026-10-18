@@ -54,6 +54,7 @@ export default function Page() {
         </>
       }
       overlay={
+        <>
         {v.open && (
           <>
             <div style={{ position: "fixed", inset: "0", zIndex: 20, background: "rgba(94,51,105,0.10)" }}>
@@ -153,6 +154,7 @@ export default function Page() {
             </div>
           </>
         )}
+        </>
       }
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0", flex: 1 }}>
@@ -180,7 +182,7 @@ export default function Page() {
                 <div style={{ flex: 0.8, fontSize: 13.5 }}>{r.minutes}{" دقيقة"}</div>
                 <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.accent }}>{r.price}</div>
                 <div style={{ flex: 0.9 }}>
-                  <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: C.tint2, color: C.sub, fontSize: 12.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: C.tint2, color: C.sub, fontSize: 12.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, boxSizing: "content-box" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#76607E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
                     </svg>
@@ -195,7 +197,7 @@ export default function Page() {
                   </button>
                 </div>
                 <div style={{ width: 36 }}>
-                  <button type="button" aria-label="تعديل الخدمة" onClick={r.edit} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button type="button" aria-label="تعديل الخدمة" onClick={r.edit} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4M13.5 6.5l4 4" />
                     </svg>

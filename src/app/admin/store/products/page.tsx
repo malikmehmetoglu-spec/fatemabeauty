@@ -51,7 +51,7 @@ export default function Page() {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1 }}>
         <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0" }}>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden", boxSizing: "content-box" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
             <div style={{ position: "relative", display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 13, color: C.onDark }}>ظاهرة في المتجر</span>
@@ -65,7 +65,7 @@ export default function Page() {
             </div>
             <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>المتجر مربوط بالمخزون — لا بيع لصنف نافد</div>
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 13, color: C.sub2 }}>موصى بها من الأخصائية</span>
               <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -77,7 +77,7 @@ export default function Page() {
             <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25" }}>{v.rec}</div>
             <div style={{ fontSize: 12, color: C.sub2 }}>تظهر جاهزة في سلة المراجعة بعد الجلسة</div>
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ fontSize: 13, color: C.sub2 }}>مخزون منخفض</div>
               <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -89,7 +89,7 @@ export default function Page() {
             <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25", marginTop: 4, color: C.ink }}>1</div>
             <div style={{ fontSize: 12, color: C.sub2 }}>أقل من الحد الأدنى</div>
           </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
+          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ fontSize: 13, color: C.sub2 }}>نفدت</div>
               <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -121,7 +121,7 @@ export default function Page() {
           </div>
           {v.rows.map((r, rI) => (
             <Fragment key={rI}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, height: 54, borderTop: "1px solid #EDE2F1" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, height: 54, borderTop: "1px solid #EDE2F1", boxSizing: "content-box" }}>
                 <div style={{ flex: 2.6, display: "flex", alignItems: "center", gap: 12, minWidth: "0" }}>
                   <span style={{ width: 38, height: 38, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -156,7 +156,7 @@ export default function Page() {
                   </button>
                 </div>
                 <div style={{ width: 34 }}>
-                  <button type="button" aria-label="تعديل المنتج" style={{ width: 34, height: 34, borderRadius: 17, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button type="button" aria-label="تعديل المنتج" style={{ width: 34, height: 34, borderRadius: 17, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxSizing: "content-box" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4M13.5 6.5l4 4" />
                     </svg>
