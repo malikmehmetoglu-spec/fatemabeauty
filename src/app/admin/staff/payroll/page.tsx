@@ -51,7 +51,7 @@ export default function PayrollPage() {
       {team.loading || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الرواتب: {error}</ErrorNote> : members.length === 0 ? (
         <EmptyState icon="wallet" title="لا رواتب مسجّلة لهذا الشهر" text="أضيفي الموظفات من صفحة الفريق، ثم سجّلي لكل منهن الراتب الأساسي والعمولة والمكافآت والخصومات." />
       ) : (
-        <DataTable headers={["الموظفة", "الأساسي", "العمولة", "مكافآت", "خصومات", "الصافي", "مدفوع", ""]} widths={[2, 1, 1, 0.9, 0.9, 1.1, 0.8, 1]}
+        <DataTable minWidth={700} headers={["الموظفة", "الأساسي", "العمولة", "مكافآت", "خصومات", "الصافي", "مدفوع", ""]} widths={[2, 1, 1, 0.9, 0.9, 1.1, 0.8, 1]}
           rows={members.map((s) => {
             const p = by.get(s.id);
             const dash = <span style={{ color: C.muted }}>—</span>;

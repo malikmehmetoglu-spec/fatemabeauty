@@ -1,7 +1,7 @@
 /* Inventory & store admin: table on wide screens, card list on phones. */
 .table { display: block; }
 .cards { display: none; }
-@media (max-width: 699px) {
+@media (max-width: 1023px) {
   .table { display: none; }
   .cards { display: flex; flex-direction: column; gap: 10px; }
 }

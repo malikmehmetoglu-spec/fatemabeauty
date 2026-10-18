@@ -105,7 +105,7 @@ function SnapRow({ label, n, strong, accent }: { label: string; n: number; stron
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 40, borderTop: `1px solid ${C.line}`, fontSize: 13.5, fontWeight: strong ? 700 : 400 }}>
       <span style={{ color: strong ? C.ink : C.sub }}>{label}</span>
-      <span style={{ ...LATIN, color: accent ? (n < 0 ? C.danger : C.accent) : n < 0 ? C.sub : C.ink, fontSize: strong ? 15 : 13.5 }}>{n < 0 ? "−" : ""}{money(Math.abs(n))}</span>
+      <span dir="ltr" style={{ ...LATIN, color: accent ? (n < 0 ? C.danger : C.accent) : n < 0 ? C.sub : C.ink, fontSize: strong ? 15 : 13.5 }}>{n < 0 ? "−" : ""}{money(Math.abs(n))}</span>
     </div>
   );
 }

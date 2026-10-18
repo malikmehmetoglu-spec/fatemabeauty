@@ -124,7 +124,7 @@ function OpenShift({ shift, names }: { shift: CashShift; names: Record<string, s
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 16, padding: "12px 14px", background: c === null ? C.tint : diff === 0 ? "#E6F4EC" : diff < 0 ? "#FBEAF1" : "#FCF1DE" }}>
           <span style={{ fontSize: 13, color: C.sub2 }}>الفرق عن المتوقع</span>
-          <span style={{ ...LATIN, fontSize: 18, fontWeight: 700, color: c === null ? C.muted : diff === 0 ? C.okDeep : diff < 0 ? C.danger : "#8A5A12" }}>{c === null ? "—" : `${diff > 0 ? "+" : diff < 0 ? "−" : ""}${money(Math.abs(diff), false)}`}</span>
+          <span dir="ltr" style={{ ...LATIN, fontSize: 18, fontWeight: 700, color: c === null ? C.muted : diff === 0 ? C.okDeep : diff < 0 ? C.danger : "#8A5A12" }}>{c === null ? "—" : `${diff > 0 ? "+" : diff < 0 ? "−" : ""}${money(Math.abs(diff), false)}`}</span>
         </div>
         {c !== null && <div style={{ fontSize: 12.5, color: C.sub2 }}>{diff === 0 ? "الصندوق مطابق." : diff < 0 ? "عجز — يُطلب ذكر السبب عند الإغلاق ويظهر في تقرير الإغلاق." : "زيادة — يُطلب ذكر السبب وتُسجَّل في تقرير الإغلاق."}</div>}
         <TextArea label="ملاحظة الإغلاق" value={note} onChange={setNote} rows={2} placeholder={diff < 0 ? "سبب العجز (مطلوب)" : diff > 0 ? "سبب الزيادة (مطلوب)" : "اختياري"} />
@@ -152,7 +152,7 @@ function MoveRow({ title, sub, at, amount, sign, out }: { title: string; sub: st
         <div style={{ fontSize: 13.5, fontWeight: 700 }}>{title}</div>
         <div style={{ fontSize: 12, color: C.sub2 }}><span style={LATIN}>{clock(at)}</span>{sub ? ` · ${sub}` : ""}</div>
       </div>
-      <span style={{ ...LATIN, fontWeight: 700, fontSize: 14, color: out ? C.muted : sign < 0 ? C.danger : C.okDeep }}>{sign < 0 ? "−" : "+"}{money(amount, false)}</span>
+      <span dir="ltr" style={{ ...LATIN, fontWeight: 700, fontSize: 14, color: out ? C.muted : sign < 0 ? C.danger : C.okDeep }}>{sign < 0 ? "−" : "+"}{money(amount, false)}</span>
     </div>
   );
 }

@@ -21,6 +21,13 @@ const parseTarget = (t: string | null): [string, string] => {
   const i = v.indexOf(":");
   return i < 0 ? [v, ""] : [v.slice(0, i), v.slice(i + 1)];
 };
+const FIELD: Record<string, string> = {
+  name: "الاسم", active: "التفعيل", status: "الحالة", stock: "الكمية", price: "السعر", cost: "التكلفة", show_in_store: "الظهور في المتجر",
+  recommended: "التوصية", starts_at: "الموعد", ends_at: "نهاية الموعد", room_id: "الغرفة", staff_id: "الأخصائية", service_id: "الخدمة",
+  phone: "الهاتف", notes: "الملاحظات", note: "الملاحظة", role: "الدور", title: "المسمى", total: "الإجمالي", amount_paid: "المدفوع",
+  discount: "الخصم", min_stock: "الحد الأدنى", category: "الفئة", description: "الوصف", photo_url: "الصورة", image_path: "الصورة",
+  archived: "الأرشفة", user_id: "حساب الدخول", birth_date: "تاريخ الميلاد", email: "البريد", checked_in_at: "وقت الوصول",
+};
 type F = "all" | keyof typeof TABLE;
 
 export default function AuditPage() {
@@ -49,7 +56,7 @@ export default function AuditPage() {
               <span key="w" style={{ fontWeight: 600 }}>{r.actor ? names?.get(r.actor) ?? "مراجعة / حساب آخر" : "النظام"}</span>,
               <Tag key="a" kind={a[1]}>{a[0]}</Tag>,
               <span key="o" style={{ fontSize: 13 }}>{TABLE[tbl] ?? (tbl || "—")} <span className="latin" style={{ color: C.muted, fontSize: 11.5 }}>{id}</span></span>,
-              <span key="c" className="latin" style={{ fontSize: 12, color: C.sub2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{changed?.join(", ") ?? "—"}</span>,
+              <span key="c" style={{ fontSize: 12, color: C.sub2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{changed?.map((c) => FIELD[c] ?? c).join("، ") ?? "—"}</span>,
             ];
           })} />
       )}

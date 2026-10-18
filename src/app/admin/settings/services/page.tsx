@@ -37,7 +37,7 @@ export default function ServicesPage() {
           text="أضيفي أول خدمة بسعرها ومدتها وغرفتها. تظهر الخدمات المفعّلة فوراً في التطبيق والموقع وفي الحجز."
           action={<GhostButton icon="plus" onClick={() => setEdit("new")}>خدمة جديدة</GhostButton>} />
       ) : (
-        <DataTable
+        <DataTable minWidth={700}
           headers={["الخدمة", "المدة", "السعر", "الغرفة الأساسية", "الجهاز", "الحجز أونلاين", "مفعّلة", ""]}
           widths={[2.4, 0.8, 1.1, 1, 1.2, 0.9, 0.7, 0.5]}
           rowHeight={62}
