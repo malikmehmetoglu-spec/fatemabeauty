@@ -7,7 +7,8 @@ import { Icon } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C } from "@/lib/tokens";
 import { arDate } from "@/lib/format";
-import { SERVICE } from "@/lib/data";
+import { PACKAGES, PACKAGE_RULE, SERVICE } from "@/lib/data";
+import { money } from "@/lib/format";
 import { css, fmt, tg } from "@/lib/mock/g";
 
 /** W_Offers.dc.html — الباقات والعروض. */
@@ -48,7 +49,7 @@ export default function Page() {
               <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon name="drop" color="#A877B6" size={20} />
               </span>
-              <button aria-label="تفعيل باقة التنظيف العميق" role="switch" onClick={v.pk[0].toggle} style={css(v.pk[0].tg)}>
+              <button aria-label="تفعيل باقة التنظيف العميق" role="switch" aria-checked={on[0]} onClick={v.pk[0].toggle} style={css(v.pk[0].tg)}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: "#FFFFFF", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }}></span>
               </button>
             </div>
@@ -57,19 +58,19 @@ export default function Page() {
                 باقة التنظيف العميق
               </div>
               <div style={{ fontSize: 12.5, color: "#866F8D" }}>
-                6 جلسات بسعر 5 · 60 دقيقة للجلسة
+                {PACKAGE_RULE} · {SERVICE[PACKAGES[0].service].minutes} دقيقة للجلسة
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", position: "relative" }}>
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 26, fontWeight: 700, color: "#7B4687" }}>
-                  7,500{" "}
+                  {money(PACKAGES[0].price, false)}{" "}
                   <span style={{ fontSize: 13 }}>
                     ل.س
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: "#A595AC", textDecoration: "line-through" }}>
-                  9,000 ل.س
+                  {money(PACKAGES[0].sessions * SERVICE[PACKAGES[0].service].price)}
                 </div>
               </div>
               <span style={css(v.pk[0].badge)}>
@@ -78,7 +79,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", gap: 6, position: "relative" }}>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                توفير 1,500 ل.س
+                توفير {money(PACKAGES[0].saving)}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: "#B03D6A" }}>
                 جلسة مجانية
@@ -91,7 +92,7 @@ export default function Page() {
               <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon name="sparkle" color="#A877B6" size={20} />
               </span>
-              <button aria-label="تفعيل باقة الهيدرافيشل" role="switch" onClick={v.pk[1].toggle} style={css(v.pk[1].tg)}>
+              <button aria-label="تفعيل باقة الهيدرافيشل" role="switch" aria-checked={on[1]} onClick={v.pk[1].toggle} style={css(v.pk[1].tg)}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: "#FFFFFF", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }}></span>
               </button>
             </div>
@@ -100,19 +101,19 @@ export default function Page() {
                 باقة الهيدرافيشل
               </div>
               <div style={{ fontSize: 12.5, color: "#866F8D" }}>
-                6 جلسات بسعر 5 · 60 دقيقة للجلسة
+                {PACKAGE_RULE} · {SERVICE[PACKAGES[1].service].minutes} دقيقة للجلسة
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", position: "relative" }}>
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 26, fontWeight: 700, color: "#7B4687" }}>
-                  10,000{" "}
+                  {money(PACKAGES[1].price, false)}{" "}
                   <span style={{ fontSize: 13 }}>
                     ل.س
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: "#A595AC", textDecoration: "line-through" }}>
-                  12,000 ل.س
+                  {money(PACKAGES[1].sessions * SERVICE[PACKAGES[1].service].price)}
                 </div>
               </div>
               <span style={css(v.pk[1].badge)}>
@@ -121,7 +122,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", gap: 6, position: "relative" }}>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                توفير 2,000 ل.س
+                توفير {money(PACKAGES[1].saving)}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: "#B03D6A" }}>
                 جلسة مجانية
@@ -134,7 +135,7 @@ export default function Page() {
               <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon name="layers" color="#A877B6" size={20} />
               </span>
-              <button aria-label="تفعيل باقة التقشير" role="switch" onClick={v.pk[2].toggle} style={css(v.pk[2].tg)}>
+              <button aria-label="تفعيل باقة التقشير" role="switch" aria-checked={on[2]} onClick={v.pk[2].toggle} style={css(v.pk[2].tg)}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: "#FFFFFF", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }}></span>
               </button>
             </div>
@@ -143,19 +144,19 @@ export default function Page() {
                 باقة التقشير
               </div>
               <div style={{ fontSize: 12.5, color: "#866F8D" }}>
-                6 جلسات بسعر 5 · 45 دقيقة للجلسة
+                {PACKAGE_RULE} · {SERVICE[PACKAGES[2].service].minutes} دقيقة للجلسة
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", position: "relative" }}>
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 26, fontWeight: 700, color: "#7B4687" }}>
-                  10,000{" "}
+                  {money(PACKAGES[2].price, false)}{" "}
                   <span style={{ fontSize: 13 }}>
                     ل.س
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: "#A595AC", textDecoration: "line-through" }}>
-                  12,000 ل.س
+                  {money(PACKAGES[2].sessions * SERVICE[PACKAGES[2].service].price)}
                 </div>
               </div>
               <span style={css(v.pk[2].badge)}>
@@ -164,7 +165,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", gap: 6, position: "relative" }}>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                توفير 2,000 ل.س
+                توفير {money(PACKAGES[2].saving)}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: "#B03D6A" }}>
                 جلسة مجانية
@@ -240,7 +241,7 @@ export default function Page() {
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: "#ECDBF0", textDecoration: "line-through" }}>
-                  3,500 ل.س
+                  {money(SERVICE.laser.price)}
                 </div>
               </div>
             </div>

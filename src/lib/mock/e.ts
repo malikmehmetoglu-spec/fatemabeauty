@@ -53,3 +53,18 @@ export const REVENUE_BY_SERVICE = (Object.keys(SERVICE) as ServiceKey[])
   .map((k) => { const d = DONE_TODAY.filter((a) => a.service === k); return { key: k, name: SERVICE[k].name.replace(" للبشرة", ""), count: d.length, total: d.reduce((s, a) => s + a.price, 0) }; })
   .filter((r) => r.count > 0)
   .sort((a, b) => b.total - a.total);
+
+/* ---------- W_Waitlist (sample rows from the design) ---------- */
+export type WaitStatus = "match" | "waiting" | "nofit";
+export const WAITLIST: { no: number; name: string; initials: string; service: string; windows: string[]; requested: Date; status: WaitStatus }[] = [
+  { no: 1, name: "نغم إبراهيم", initials: "ن إ", service: "هيدرافيشل", windows: ["الخميس", "ظهراً"], requested: new Date(2026, 9, 6), status: "match" },
+  { no: 2, name: "ميس عيسى", initials: "م ع", service: "ليزر", windows: ["الأربعاء", "صباحاً"], requested: new Date(2026, 9, 7), status: "waiting" },
+  { no: 3, name: "دانة عطار", initials: "د ع", service: "هيدرافيشل", windows: ["أي يوم", "قبل 14:00"], requested: new Date(2026, 9, 8), status: "match" },
+  { no: 4, name: "رهف زين", initials: "ر ز", service: "تنظيف عميق", windows: ["السبت", "مساءً"], requested: new Date(2026, 9, 9), status: "waiting" },
+  { no: 5, name: "شام العمر", initials: "ش ا", service: "تقشير", windows: ["الخميس", "صباحاً"], requested: new Date(2026, 9, 10), status: "waiting" },
+  { no: 6, name: "كندة سعيد", initials: "ك س", service: "هيدرافيشل", windows: ["الخميس", "مساءً"], requested: new Date(2026, 9, 11), status: "nofit" },
+  { no: 7, name: "ولاء نجار", initials: "و ن", service: "ليزر", windows: ["الإثنين", "ظهراً"], requested: new Date(2026, 9, 12), status: "waiting" },
+  { no: 8, name: "آية الشامي", initials: "آ ا", service: "تنظيف عميق", windows: ["أي يوم"], requested: new Date(2026, 9, 12), status: "waiting" },
+];
+/** The freed slot offered to the waitlist: Thursday 15 Oct, 12:00–13:00, hydrafacial, room 1. */
+export const FREE_SLOT = { date: new Date(2026, 9, 15), from: "12:00", to: "13:00" };
