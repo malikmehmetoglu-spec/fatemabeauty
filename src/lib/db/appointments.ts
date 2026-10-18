@@ -271,3 +271,14 @@ export async function myPackagesFor(patientId: string, serviceKey: string) {
 
 /** "YYYY-MM-DD" → Date at Damascus noon (safe for getDate()/getDay() in any browser time zone near +03). */
 export const dateOfKey = (k: string) => new Date(`${k}T12:00:00+03:00`);
+
+/** Keeps today's queue fresh: realtime + 30 s fallback. */
+export function useLiveAppointments(channel: string) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const ch = supabase.channel(channel).on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => invalidate("appointments")).subscribe();
+    const t = setInterval(() => { invalidate("appointments"); tick((n) => n + 1); }, 30000);
+    return () => { clearInterval(t); supabase.removeChannel(ch); };
+  }, [channel]);
+}
+

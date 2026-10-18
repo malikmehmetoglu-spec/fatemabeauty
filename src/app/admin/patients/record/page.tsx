@@ -8,7 +8,7 @@ import { EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Select, Submi
 import { R } from "@/lib/routes";
 import { arDate, clock, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
-import { addCondition, getPatient, getTiers, listConditions, maskPhone, removeCondition, SKIN_TYPES, tierFor, updatePatient, type ConditionKind, type Patient } from "@/lib/db/patients";
+import { addCondition, getPatient, getTiers, listConditions, removeCondition, SKIN_TYPES, tierFor, updatePatient, type ConditionKind, type Patient } from "@/lib/db/patients";
 import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
 import { Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
@@ -219,7 +219,7 @@ function Photos({ id }: { id: string }) {
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
       {data.map((x) => (
         <Link key={x.id} href={fileHref(R.W_Photos, "patient", id)} style={{ borderRadius: 16, overflow: "hidden", background: "#F3EAF6", aspectRatio: "3/4", position: "relative", display: "block" }}>
-          {x.url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={x.url} alt={angleLabel(x.angle)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          {x.url && <img src={x.url} alt={angleLabel(x.angle)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
           <span style={{ position: "absolute", bottom: 6, right: 6, ...PILL_GRAY, height: 20, fontSize: 11 }}>{STAGE_LABEL[x.stage] ?? x.stage} · {arDate(new Date(x.created_at), { day: false })}</span>
         </Link>
       ))}

@@ -99,7 +99,7 @@ export default function JourneyPage() {
       {next ? (
       <div style={{ background: C.white, borderRadius: 26, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: SH }}>
         {next.staff?.photo_url
-          ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={next.staff.photo_url} alt={next.staff.name} style={{ width: 50, height: 50, borderRadius: 25, objectFit: "cover", border: "2px solid #FFFFFF", flexShrink: 0 }} />
+          ? <img src={next.staff.photo_url} alt={next.staff.name} style={{ width: 50, height: 50, borderRadius: 25, objectFit: "cover", border: "2px solid #FFFFFF", flexShrink: 0 }} />
           : <Circ icon="cal" size={50} iconSize={22} />}
         <div style={{ flexGrow: 1, lineHeight: 1.35, minWidth: 0 }}>
           <div style={{ fontSize: 12, color: C.sub2 }}>الجلسة القادمة · {next.services?.name ?? ""}</div>

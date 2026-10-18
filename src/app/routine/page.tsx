@@ -29,7 +29,7 @@ export default function RoutinePage() {
   useEffect(() => { try { setDone(JSON.parse(localStorage.getItem(storeKey) || "{}")); } catch { /* ignore */ } }, [storeKey]);
   const toggle = (k: string) => { const next = { ...done, [k]: !done[k] }; setDone(next); try { localStorage.setItem(storeKey, JSON.stringify(next)); } catch { /* ignore */ } };
   const total = BLOCKS.reduce((s, b) => s + b[2].length, 0);
-  const count = Object.values(done).filter(Boolean).length;
+  const count = BLOCKS.reduce((s, [k, , n]) => s + n.filter((_, i) => done[k + i]).length, 0);
   return (
     <PhoneScreen>
       <TopBar title="وصفتي وروتيني" back={R.Journey} />
@@ -91,7 +91,7 @@ export default function RoutinePage() {
       </div>
 
       <div style={{ marginTop: "auto", position: "relative", display: "flex", gap: 10 }}>
-        <PrimaryButton icon="download" height={56} style={{ flexGrow: 1, fontSize: 16 }} href={R.P_Prescriptions}>حفظ الوصفة PDF</PrimaryButton>
+        <PrimaryButton icon="file" height={56} style={{ flexGrow: 1, fontSize: 16 }} href={R.P_Prescriptions}>كل وصفاتي</PrimaryButton>
         <IconButton icon="msg" label="مراسلة الأخصائية" size={56} href={R.P_Chat} />
       </div>
       </>)}

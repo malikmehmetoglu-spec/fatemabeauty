@@ -26,9 +26,9 @@ export const STATUS_LABEL: Record<string, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكد", checked_in: "حضرت", in_session: "في الجلسة", done: "تمت", no_show: "لم تحضر", cancelled: "ملغى",
 };
 
-const APPT = "id, starts_at, minutes, status, price, service_key, patient_id, patient_package_id, services(name, short_name), staff(name, photo_url), rooms(name)";
+const APPT = "id, starts_at, minutes, status, price, service_key, patient_id, patient_package_id, services(name, short_name, description), staff(name, photo_url), rooms(name)";
 export type Visit = { id: string; starts_at: string; minutes: number; status: string; price: number; service_key: string; patient_id: string | null; patient_package_id: string | null;
-  services: { name: string; short_name: string } | null; staff: { name: string; photo_url: string | null } | null; rooms: { name: string } | null };
+  services: { name: string; short_name: string; description: string } | null; staff: { name: string; photo_url: string | null } | null; rooms: { name: string } | null };
 
 export async function listVisits(patientId: string): Promise<Visit[]> {
   return must(await supabase.from("appointments").select(APPT).eq("patient_id", patientId).order("starts_at", { ascending: false })) as unknown as Visit[];
@@ -77,7 +77,7 @@ export async function savePrescription(patientId: string, authorId: string | nul
 
 /* ---------- consents ---------- */
 
-export type ConsentAnswers = { title?: string; questions?: Record<string, boolean>; signature?: string; signer?: string };
+export type ConsentAnswers = { title?: string; questions?: Record<string, boolean>; signature?: string; signer?: string; method?: "app" | "tablet" };
 export type ConsentRow = Consent & { services: { name: string } | null; patients?: { name: string; file_no: number } | null };
 
 export async function listConsents(patientId?: string): Promise<ConsentRow[]> {
@@ -86,8 +86,8 @@ export async function listConsents(patientId?: string): Promise<ConsentRow[]> {
   return must(await q) as ConsentRow[];
 }
 
-export async function signConsent(patientId: string, serviceKey: string | null, answers: ConsentAnswers) {
-  must(await supabase.from("consents").insert({ patient_id: patientId, service_key: serviceKey, answers: answers as Json }));
+export async function signConsent(patientId: string, serviceKey: string | null, answers: ConsentAnswers, appointmentId: string | null = null) {
+  must(await supabase.from("consents").insert({ patient_id: patientId, service_key: serviceKey, appointment_id: appointmentId, answers: answers as Json }));
   invalidate("clinical");
 }
 

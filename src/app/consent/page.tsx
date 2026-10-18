@@ -2,21 +2,23 @@
 
 /** P_Consent.dc.html — treatment consent: summary, yes/no health questions, finger signature pad. */
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useRouter } from "next/navigation";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, Icon, PrimaryButton, Tag } from "@/components/ui";
+import { Circ, ErrorNote, Icon, PrimaryButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { TODAY } from "@/lib/data";
 import { arDate } from "@/lib/format";
 import { C, CARD, SHB } from "@/lib/tokens";
-import { PKG_SERVICE } from "@/lib/mock/b";
+import { useQuery } from "@/lib/db/query";
+import { useMe } from "@/lib/db/patients";
+import { listVisits, signConsent } from "@/lib/db/clinical";
+import { Wait } from "../account/Wait";
 
-const INFO = [
-  { icon: "sparkle", t: "ما هو الإجراء", d: "تنظيف البشرة بعمق وإزالة الرؤوس السوداء والشوائب، ثم تقشير لطيف وقناع مهدّئ وترطيب." },
-  { icon: "drop", t: "ما قد تشعرين به بعده", d: "احمرار خفيف مؤقت يزول عادةً خلال ساعات، وقد تبدو البشرة حساسة قليلاً ليوم أو يومين." },
-  { icon: "list", t: "التعليمات", d: "تجنبي المكياج 24 ساعة، واستعملي واقي الشمس، ولا تلمسي البشرة أو تقشريها." },
+const GENERAL = [
+  { icon: "drop", t: "ما قد تشعرين به بعده", d: "قد يظهر احمرار أو حساسية خفيفة مؤقتة حسب نوع الجلسة، وتخبركِ الأخصائية بما يُتوقّع." },
+  { icon: "list", t: "التعليمات", d: "اتبعي تعليمات العناية بعد الجلسة التي تصلكِ، واستعملي واقي الشمس." },
+  { icon: "lock", t: "سرية بياناتكِ", d: "تُحفظ إجاباتكِ وتوقيعكِ في ملفكِ الصحي، ولا يطّلع عليها إلا فريق المركز." },
 ];
 const QS = ["هل لديكِ حساسية من أي مستحضر للعناية بالبشرة؟", "هل تستعملين حالياً علاجاً موضعياً للبشرة (مثل الريتينويد)؟", "هل يوجد التهاب أو جرح مفتوح في وجهكِ؟"];
-const DEMO_SIG = "M14 48c10-2 18-20 26-30 6-8 10-6 8 4-3 14-10 26-6 28 5 2 12-16 18-18 4-1 2 12 6 13 6 1 10-12 16-12 5 0 2 10 8 10 8 0 14-14 22-14 6 0 4 9 10 9 10 0 20-12 34-14 10-1 20 2 30 0";
 
 const seg = (on: boolean): CSSProperties => ({
   width: 46, height: 30, borderRadius: 15, border: "none", fontSize: 12.5, fontWeight: 700,
@@ -24,19 +26,28 @@ const seg = (on: boolean): CSSProperties => ({
 });
 
 export default function ConsentPage() {
+  const { me, loading, error } = useMe();
+  const id = me?.id ?? "";
+  const { data: visits } = useQuery(["clinical", "visits", id], () => listVisits(id), { enabled: !!id });
+  const today = new Date().toISOString().slice(0, 10);
+  const next = [...(visits ?? [])].reverse().find((v) => ["pending", "confirmed", "checked_in"].includes(v.status) && v.starts_at >= today);
+  const svc = next?.services;
+  const title = svc?.name ?? "الموافقة العامة على جلسات العناية";
+  const INFO = svc?.description ? [{ icon: "sparkle", t: "ما هو الإجراء", d: svc.description }, ...GENERAL] : GENERAL;
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
   const [a, setA] = useState([1, 1, 1]);
-  const [demo, setDemo] = useState(true); // the design opens with a sample signature
   const [strokes, setStrokes] = useState<string[]>([]);
   const drawing = useRef(false);
   const pad = useRef<SVGSVGElement>(null);
-  const signed = demo || strokes.length > 0;
+  const signed = strokes.length > 0;
 
   const pt = (e: PointerEvent) => {
     const r = pad.current!.getBoundingClientRect();
     return `${Math.round(e.clientX - r.left)} ${Math.round(e.clientY - r.top)}`;
   };
   const down = (e: PointerEvent<SVGSVGElement>) => {
-    if (demo) return;
     drawing.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
     setStrokes((s) => [...s, `M${pt(e)}`]);
@@ -46,13 +57,26 @@ export default function ConsentPage() {
     setStrokes((s) => [...s.slice(0, -1), `${s[s.length - 1]} L${pt(e)}`]);
   };
 
+  async function submit() {
+    if (!me || !signed) return;
+    setBusy(true); setErr("");
+    try {
+      await signConsent(me.id, next?.service_key ?? null, {
+        title, signer: me.name, signature: strokes.join(" "), method: "app",
+        questions: Object.fromEntries(QS.map((q, i) => [q, a[i] === 0])),
+      }, next?.id ?? null);
+      router.push(R.P_Prescriptions);
+    } catch { setErr("تعذّر حفظ التوقيع. حاولي مرة أخرى."); setBusy(false); }
+  }
+
   return (
     <PhoneScreen>
       <TopBar title="نموذج الموافقة" back={R.P_Prescriptions} />
+      {!me ? <Wait loading={loading} error={error} /> : (<>
 
       <div style={{ ...CARD, borderRadius: 26, padding: "8px 16px 4px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{PKG_SERVICE.name}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{title}</div>
           <Tag kind="pink">اقرئي ثم وقّعي</Tag>
         </div>
         {INFO.map((x) => (
@@ -83,19 +107,14 @@ export default function ConsentPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700 }}>وقّعي هنا</div>
-            <div style={{ fontSize: 11.5, color: C.sub2 }}>{arDate(TODAY, { year: true })}</div>
+            <div style={{ fontSize: 11.5, color: C.sub2 }}>{arDate(new Date(), { year: true })}</div>
           </div>
-          <button type="button" onClick={() => { setDemo(false); setStrokes([]); }} disabled={!signed} style={{ height: 32, padding: "0 12px", borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, fontSize: 12, fontWeight: 600, color: C.danger, display: "flex", alignItems: "center", gap: 4, opacity: signed ? 1 : 0.5 }}>
+          <button type="button" onClick={() => setStrokes([])} disabled={!signed} style={{ height: 32, padding: "0 12px", borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, fontSize: 12, fontWeight: 600, color: C.danger, display: "flex", alignItems: "center", gap: 4, opacity: signed ? 1 : 0.5 }}>
             <Icon name="refresh" color={C.danger} size={14} />امسحي
           </button>
         </div>
         <div style={{ position: "relative", height: 92, marginTop: 8, borderRadius: 18, border: "1.5px dashed #DDC9E1", background: "linear-gradient(180deg,#FFFFFF,#FBF5FC)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-          {demo ? (
-            <svg width={220} height={70} viewBox="0 0 220 70" fill="none" role="img" aria-label="توقيعكِ">
-              <path d={DEMO_SIG} stroke={C.accent} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M30 58c40-4 90-5 160-3" stroke={C.accentMid} strokeWidth={1.6} strokeLinecap="round" opacity={0.6} />
-            </svg>
-          ) : (
+          {(
             <>
               {strokes.length === 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted, pointerEvents: "none" }}>
@@ -111,9 +130,11 @@ export default function ConsentPage() {
         </div>
       </div>
 
+      {err && <ErrorNote>{err}</ErrorNote>}
       <div style={{ marginTop: "auto" }}>
-        <PrimaryButton icon="sign" href={signed ? R.P_Prescriptions : undefined} disabled={!signed} style={{ width: "100%" }}>توقيع وإرسال</PrimaryButton>
+        <PrimaryButton icon="sign" onClick={submit} disabled={!signed || busy} style={{ width: "100%", opacity: signed ? 1 : 0.5 }}>{busy ? "جارٍ الحفظ…" : "توقيع وإرسال"}</PrimaryButton>
       </div>
+      </>)}
     </PhoneScreen>
   );
 }

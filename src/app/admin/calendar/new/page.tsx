@@ -75,7 +75,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     try {
       let pid = patient?.id ?? null;
-      if (mode === "new") pid = (await createPatient(name, phone)).id;
+      if (mode === "new") pid = (await createPatient(name, phone))?.id ?? null;
       await book({
         service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
         walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,

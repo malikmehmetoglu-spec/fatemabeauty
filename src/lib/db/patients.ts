@@ -68,6 +68,17 @@ export async function updatePatient(id: string, patch: Partial<Pick<Patient, "na
   return row;
 }
 
+/* ---------- preferences (patients.notify jsonb) ---------- */
+
+export type NotifyPrefs = { whatsapp: boolean; sms: boolean; app: boolean; offers: boolean; photos_marketing: boolean };
+const PREF_DEFAULTS: NotifyPrefs = { whatsapp: true, sms: true, app: true, offers: false, photos_marketing: false };
+export function prefsOf(v: unknown): NotifyPrefs {
+  const o = (v && typeof v === "object" && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
+  const out = { ...PREF_DEFAULTS };
+  for (const k of Object.keys(out) as (keyof NotifyPrefs)[]) if (typeof o[k] === "boolean") out[k] = o[k] as boolean;
+  return out;
+}
+
 /* ---------- conditions ---------- */
 
 export async function listConditions(patientId: string) {

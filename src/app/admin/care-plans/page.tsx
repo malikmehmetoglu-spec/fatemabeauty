@@ -29,7 +29,7 @@ export default function CarePlansPage() {
   }
 
   const today = dayKey();
-  const all = plans ?? [];
+  const all = useMemo(() => plans ?? [], [plans]);
   const todayCount = all.filter((p) => p.next && dayKey(new Date(p.next)) === today).length;
   const byService = useMemo(() => {
     const m = new Map<string, number>();

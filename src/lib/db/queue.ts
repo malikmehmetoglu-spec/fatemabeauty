@@ -229,8 +229,9 @@ export async function saveEligibility(id: string, answers: Record<string, Json>)
 
 /* ---------- settings (call + TV content) ---------- */
 
-export type CallSettings = { voice: "female" | "male"; repeat: number; languages: ("ar" | "en")[]; by_number_only: boolean; chime?: boolean; volume?: number };
-export type TvContent = { tips: { title: string; body: string }[]; interval_s: number };
+export type CallSettings = { voice: "female" | "male"; repeat: number; languages: ("ar" | "en")[]; by_number_only: boolean; chime?: boolean; volume?: number; rate?: number };
+export type TvTip = { title: string; body: string; points?: string[] };
+export type TvContent = { tips: TvTip[]; interval_s: number };
 export const CALL_DEFAULT: CallSettings = { voice: "female", repeat: 2, languages: ["ar", "en"], by_number_only: true, chime: true, volume: 80 };
 export const TV_DEFAULT: TvContent = { tips: [], interval_s: 12 };
 
@@ -292,12 +293,25 @@ export function speakCall(no: number, room: string | null, s: CallSettings = CAL
   if (s.languages.includes("ar")) lines.push(["ar-SA", `الرقم ${AR_NUM(no)}${room ? `، تفضّلي إلى ${room}` : ""}`]);
   if (s.languages.includes("en")) lines.push(["en-US", `Number ${no}${room ? `, please proceed to ${roomEn}` : ""}`]);
   synth.cancel();
+  if (s.chime !== false) {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new Ctx(), g = ctx.createGain();
+      g.connect(ctx.destination);
+      [880, 660].forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f; o.connect(g);
+        const t = ctx.currentTime + i * 0.35;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25 * ((s.volume ?? 80) / 100) + 0.001, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+        o.start(t); o.stop(t + 0.34);
+      });
+    } catch { /* no audio */ }
+  }
   for (let i = 0; i < Math.max(1, s.repeat); i++) {
     for (const [lang, text] of lines) {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang; u.rate = 0.9; u.volume = (s.volume ?? 80) / 100;
+      u.lang = lang; u.rate = s.rate ?? 0.9; u.volume = (s.volume ?? 80) / 100;
       const v = pick(lang.slice(0, 2)); if (v) u.voice = v;
-      synth.speak(u);
+      if (s.chime !== false) setTimeout(() => synth.speak(u), 750); else synth.speak(u);
     }
   }
 }

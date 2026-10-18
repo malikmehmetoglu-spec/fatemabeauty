@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { prefsOf, updatePatient, useMe, type NotifyPrefs } from "@/lib/db/patients";
+import { Wait } from "../account/Wait";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, Icon, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -34,12 +36,12 @@ function SwitchRow({ icon, title, sub, on, set, top = true }: { icon: string; ti
 
 /** P_Settings.dc.html — app settings (language, notifications, privacy, account). */
 export default function SettingsPage() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
-  const [wa, setWa] = useState(true);
-  const [sms, setSms] = useState(true);
-  const [app, setApp] = useState(true);
-  const [offers, setOffers] = useState(false);
-  const [mkt, setMkt] = useState(false);
+  const { me, loading, error } = useMe();
+  const [askDelete, setAskDelete] = useState(false);
+  const lang = me?.lang === "en" ? "en" : "ar";
+  const setLang = (v: "ar" | "en") => { if (me) updatePatient(me.id, { lang: v }); };
+  const prefs = prefsOf(me?.notify);
+  const pref = (k: keyof NotifyPrefs) => (v: boolean) => { if (me) updatePatient(me.id, { notify: { ...prefs, [k]: v } }); };
 
   const seg = (on: boolean): CSSProperties => ({
     flex: 1, height: 40, borderRadius: 20, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -51,6 +53,7 @@ export default function SettingsPage() {
   return (
     <PhoneScreen>
       <TopBar title="الإعدادات" back={R.Account} />
+      {!me ? <Wait loading={loading} error={error} /> : (<>
 
       <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px", position: "relative", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -64,14 +67,14 @@ export default function SettingsPage() {
       </div>
 
       <Group title="الإشعارات">
-        <SwitchRow icon="msg" title="تذكيرات واتساب" sub="قبل الموعد بيوم وبساعتين" on={wa} set={setWa} top={false} />
-        <SwitchRow icon="phone" title="رسائل SMS" sub="عند تعذّر الوصول عبر واتساب" on={sms} set={setSms} />
-        <SwitchRow icon="bell" title="إشعارات التطبيق" sub="دوركِ، الجلسات، الطلبات" on={app} set={setApp} />
-        <SwitchRow icon="megaphone" title="العروض والباقات" sub="عروض موسمية من المركز" on={offers} set={setOffers} />
+        <SwitchRow icon="msg" title="تذكيرات واتساب" sub="قبل الموعد بيوم وبساعتين" on={prefs.whatsapp} set={pref("whatsapp")} top={false} />
+        <SwitchRow icon="phone" title="رسائل SMS" sub="عند تعذّر الوصول عبر واتساب" on={prefs.sms} set={pref("sms")} />
+        <SwitchRow icon="bell" title="إشعارات التطبيق" sub="دوركِ، الجلسات، الطلبات" on={prefs.app} set={pref("app")} />
+        <SwitchRow icon="megaphone" title="العروض والباقات" sub="عروض موسمية من المركز" on={prefs.offers} set={pref("offers")} />
       </Group>
 
       <Group title="الخصوصية">
-        <SwitchRow icon="camera" title="استخدام صوري في التسويق" sub="لن تُستخدم صوركِ إلا بموافقتكِ" on={mkt} set={setMkt} top={false} />
+        <SwitchRow icon="camera" title="استخدام صوري في التسويق" sub="لن تُستخدم صوركِ إلا بموافقتكِ" on={prefs.photos_marketing} set={pref("photos_marketing")} top={false} />
       </Group>
 
       <Group title="الحساب">
@@ -80,7 +83,7 @@ export default function SettingsPage() {
           <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>تغيير رقم الهاتف</div>
           <Icon name="chev" color={C.muted} size={18} />
         </Link>
-        <button type="button" style={{ ...rowStyle(true), width: "100%", borderWidth: "1px 0 0", borderStyle: "solid", borderColor: C.line, background: "none", textAlign: "right" }}>
+        <button type="button" onClick={() => setAskDelete(true)} style={{ ...rowStyle(true), width: "100%", borderWidth: "1px 0 0", borderStyle: "solid", borderColor: C.line, background: "none", textAlign: "right" }}>
           <span style={{ width: 38, height: 38, borderRadius: 19, background: C.tint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Icon name="trash" color={C.danger} size={18} />
           </span>
@@ -89,7 +92,9 @@ export default function SettingsPage() {
             <span style={{ display: "block", fontSize: 12, color: C.sub2 }}>يراجع المركز الطلب ويتواصل معكِ</span>
           </span>
         </button>
+        {askDelete && <div role="status" style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, padding: "4px 0 10px" }}>لحذف حسابكِ وملفكِ الصحي تواصلي مع استقبال المركز برقم ملفكِ <b className="latin">{me.file_no}</b>، فيُراجَع الطلب ويُنفَّذ بعد التحقق من هويتكِ.</div>}
       </Group>
+      </>)}
     </PhoneScreen>
   );
 }

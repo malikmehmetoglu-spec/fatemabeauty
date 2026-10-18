@@ -24,7 +24,7 @@ function Frame({ label, photo }: { label: string; photo?: PhotoRow }) {
   return (
     <div style={{ flex: 1, minWidth: 0, height: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4E6F8 0%, #E9D8EF 60%, #DCC5E4 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}>
       {photo?.url
-        ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={photo.url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ? <img src={photo.url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : <svg width={220} height={220} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.7 }}><path d={FACE} /></svg>}
       <span style={{ position: "absolute", top: 14, right: 14, height: 30, padding: "0 14px", borderRadius: 15, background: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center" }}>
         {label}{photo ? ` · ${arDate(new Date(photo.created_at), { day: false, year: true })}` : ""}
@@ -87,7 +87,7 @@ function Photos() {
                   <button key={x.id} type="button" onClick={() => setPick(new Date(x.created_at) < new Date(after?.created_at ?? 0) ? { ...pick, b: x.id } : { ...pick, a: x.id })}
                     style={{ width: 120, flexShrink: 0, borderRadius: 18, padding: 6, textAlign: "right", ...(role ? { background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF" } : { background: C.white, border: "1px solid #EADCF0" }) }}>
                     <div style={{ height: 90, borderRadius: 12, overflow: "hidden", background: "#F3EAF6" }}>
-                      {x.url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      {x.url && <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
                     </div>
                     <div style={{ fontSize: 11.5, marginTop: 4, color: C.ink }}>{arDate(new Date(x.created_at), { day: false })} · {STAGE_LABEL[x.stage] ?? x.stage}{role ? ` · ${role}` : ""}</div>
                   </button>

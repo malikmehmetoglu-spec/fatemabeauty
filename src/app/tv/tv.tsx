@@ -38,7 +38,7 @@ export function useTv() {
   const waiting = list.filter((r) => r.status === "checked_in").sort((a, b) => a.queue_no - b.queue_no);
   const board = names.map((room) => ({
     room,
-    cur: list.filter((r) => r.room === room && r.status === "in_session").sort((a, b) => b.queue_no - a.queue_no)[0]?.queue_no ?? "—",
+    cur: list.filter((r) => r.room === room && r.status === "in_session").sort((a, b) => b.queue_no - a.queue_no).at(0)?.queue_no ?? "—",
     next: waiting.find((r) => r.room === room)?.queue_no ?? "—",
   }));
   const tips = (content.tips ?? []).filter((t) => t && (t.title || t.body));

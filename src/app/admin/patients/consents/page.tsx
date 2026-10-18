@@ -55,7 +55,7 @@ export default function ConsentsPage() {
             ) : !rows.length ? (
               <EmptyState compact icon="sign" title={f === 1 ? "لم تُوقّع موافقات اليوم" : "لا موافقات موقّعة بعد"} text="عندما توقّع المراجعة نموذج الموافقة من تطبيقها أو على تابلت الاستقبال يظهر هنا مع التاريخ والطريقة." />
             ) : rows.map((c) => {
-              const a = (c.answers ?? {}) as ConsentAnswers & { method?: string };
+              const a = (c.answers ?? {}) as ConsentAnswers;
               const d = new Date(c.signed_at);
               return <Row key={c.id} pid={c.patient_id} name={c.patients?.name} fileNo={c.patients?.file_no} form={a.title ?? c.services?.name ?? "موافقة عامة"}
                 date={dayKey(d) === today ? `اليوم ${clock(d)}` : arDate(d, { day: false, year: true })} method={METHOD[a.method ?? ""] ?? (c.appointment_id ? "التابلت" : "التطبيق")} tag={<Tag kind="green">موقّعة</Tag>} />;

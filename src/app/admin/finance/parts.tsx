@@ -68,7 +68,7 @@ export function StatCard({ label, value, sub, icon, dark }: { label: string; val
   );
 }
 
-/** "1,500 ل.س" with a big number — for stat cards. */
+/** Big amount with a small currency unit — for stat cards. */
 export const Big = ({ n, unit = "ل.س" }: { n: number; unit?: string }) => <>{money(n, false)} <span style={{ fontSize: 14 }}>{unit}</span></>;
 
 export function PanelTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
