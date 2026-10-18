@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
@@ -9,6 +9,7 @@ import { BG_WIDE, C, SELECTED, SH, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
 import { FatemaAvatar, Icon, IconButton, Logo } from "@/components/ui";
 import { Blobs } from "./PhoneScreen";
+import { ChangePasswordDialog } from "./ChangePassword";
 
 export type AdminSection =
   | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "جدولي" | "المالية" | "المخزون والأجهزة"
@@ -39,6 +40,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
 }) {
   const router = useRouter();
   const { loading, staff } = useSession();
+  const [pwOpen, setPwOpen] = useState(false);
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   if (loading || !staff) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
@@ -75,6 +77,9 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             <div style={{ fontSize: 13, fontWeight: 700 }}>{staff.name}</div>
             <div style={{ fontSize: 11, color: C.sub2 }}>{staff.title || ROLE_LABEL[staff.role]}</div>
           </div>
+          <button type="button" onClick={() => setPwOpen(true)} aria-label="تغيير كلمة المرور" title="تغيير كلمة المرور" style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon name="lock" color={C.sub2} size={17} />
+          </button>
           <button type="button" onClick={signOut} aria-label="تسجيل الخروج" title="تسجيل الخروج" style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Icon name="logout" color={C.sub2} size={17} />
           </button>
@@ -98,6 +103,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
         {children}
       </main>
       {overlay}
+      <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
     </div>
   );
 }

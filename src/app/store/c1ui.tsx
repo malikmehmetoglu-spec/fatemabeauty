@@ -1,7 +1,7 @@
 "use client";
 
 /** Screen-only building blocks shared by the c1 store screens (store, product, cart, checkout, order, gift). */
-import { useId, type CSSProperties, type ReactNode } from "react";
+import { useId, type ChangeEvent, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@/components/ui";
 import { productImage, type Product as DbProduct } from "@/lib/db/products";
 import { C, SHB } from "@/lib/tokens";
@@ -171,13 +171,13 @@ export function QtyStepper({ qty, onChange, btn = 28, radius = 18, min = 1, max 
 }
 
 /** Labelled text input matching the design's form fields. */
-export function Field({ id, label, placeholder, type = "text", ltr, style }: {
-  id: string; label: string; placeholder: string; type?: string; ltr?: boolean; style?: CSSProperties;
+export function Field({ id, label, placeholder, type = "text", ltr, style, value, onChange }: {
+  id: string; label: string; placeholder: string; type?: string; ltr?: boolean; style?: CSSProperties; value?: string; onChange?: (v: string) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: 1, ...style }}>
       <label htmlFor={id} style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>{label}</label>
-      <input id={id} type={type} dir={ltr ? "ltr" : undefined} placeholder={placeholder} className={ltr ? "latin" : undefined} style={INPUT_STYLE(ltr)} />
+      <input id={id} type={type} dir={ltr ? "ltr" : undefined} placeholder={placeholder} {...(onChange ? { value: value ?? "", onChange: (e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value) } : {})} className={ltr ? "latin" : undefined} style={INPUT_STYLE(ltr)} />
     </div>
   );
 }

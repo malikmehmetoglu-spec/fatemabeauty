@@ -1,38 +1,112 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
+import { EmptyState, ErrorNote, Icon, Loading } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PERSONA } from "@/lib/data";
 import { arDate } from "@/lib/format";
-import { cs } from "../../calendar/CalendarBoard";
-import { css } from "@/lib/mock/e";
-import { C, SH, SHB, ICON_FILL } from "@/lib/tokens";
+import { useQuery } from "@/lib/db/query";
+import { getPatient } from "@/lib/db/patients";
+import { ANGLES, angleLabel, listPhotos, STAGE_LABEL, uploadPhoto, type PhotoRow } from "@/lib/db/clinical";
+import { C } from "@/lib/tokens";
+import { BackLink, chip, displayName, fileHref, outlineBtn, Panel, primaryBtn } from "../kit";
 
-const A = ["أمامي", "جانب أيمن", "جانب أيسر", "عن قرب"];
-const D = PERSONA.sessions.map((d) => arDate(d, { day: false, year: true }));
+const FACE = "M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0";
 
 /** W_Photos.dc.html */
 export default function PhotosPage() {
-  const [a, setA] = useState(0);
-  const [b, setB] = useState(0);
-  const [af, setAf] = useState(2);
-  const th = (i: number) => {
-    const sel = i === b || i === af;
-    return {
-      role: i === b ? "قبل" : i === af ? "بعد" : "",
-      style: "width:150px;flex-shrink:0;border-radius:18px;padding:8px;text-align:right;font-family:inherit;cursor:pointer;color:#35213D;" + (sel ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30)" : "background:#FFFFFF;border:1px solid #EADCF0"),
-      pick: () => { if (sel) return; if (i < af) setB(i); else setAf(i); },
-    };
-  };
-  const v = { angle: A[a], before: { d: D[b] }, after: { d: D[af] }, th0: th(0), th1: th(1), th2: th(2) };
+  return <Suspense><Photos /></Suspense>;
+}
+
+function Frame({ label, photo }: { label: string; photo?: PhotoRow }) {
   return (
-    <AdminShell active="المراجعات" title="صور قبل/بعد" subtitle={<>ملف {PERSONA.fileNo} · {PERSONA.name}<ExampleTag /> · {D.length} جلسات مصوّرة</>} actions={<><Link href={R.W_Record} style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2zM9 13h6M9 17h6" size={16} color={C.accent} stroke={1.9} />الملف الصحي</Link></>}>
-<div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: "0" }}><div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", flex: 1 }}><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 16, fontWeight: 700, color: C.ink }}>مقارنة قبل/بعد</div></div><div style={{ display: "flex", gap: 10, alignItems: "center" }}><div role="tablist" style={{ display: "flex", gap: 6 }}><button onClick={() => setA(0)} style={css(cs(a === 0, 34) + ";font-size:12.5px;padding:0 12px")}>أمامي</button><button onClick={() => setA(1)} style={css(cs(a === 1, 34) + ";font-size:12.5px;padding:0 12px")}>جانب أيمن</button><button onClick={() => setA(2)} style={css(cs(a === 2, 34) + ";font-size:12.5px;padding:0 12px")}>جانب أيسر</button><button onClick={() => setA(3)} style={css(cs(a === 3, 34) + ";font-size:12.5px;padding:0 12px")}>عن قرب · الأنف</button></div><div style={{ display: "flex", gap: 4, padding: 4, borderRadius: 22, background: C.white, boxShadow: SHB }}><span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>جنباً إلى جنب</span><span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>تمرير</span></div></div></div><div style={{ display: "flex", gap: 14, marginTop: 14, position: "relative" }}><div style={{ flex: 1, height: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4D6C8 0%, #E9BCA9 55%, #D9A592 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}><div style={{ position: "absolute", inset: "0", backdropFilter: "blur(6px)" }} /><svg width={291} height={291} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.55 }}><path d="M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0" /></svg><div style={{ position: "absolute", top: 14, right: 14, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", color: C.accent }}>قبل</div><div style={{ position: "absolute", bottom: 14, right: 14, left: 14, height: 40, padding: "0 14px", borderRadius: 20, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}><span style={{ fontWeight: 700 }}>{v.before.d}</span><span style={{ color: C.sub2 }}>{v.angle} · صورة توضيحية</span></div></div><div style={{ flex: 1, height: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F8E2D7 0%, #F0CDBE 55%, #E3B8A6 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}><div style={{ position: "absolute", inset: "0", backdropFilter: "blur(6px)" }} /><svg width={291} height={291} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.55 }}><path d="M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0" /></svg><div style={{ position: "absolute", top: 14, right: 14, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", color: C.accent }}>بعد</div><div style={{ position: "absolute", bottom: 14, right: 14, left: 14, height: 40, padding: "0 14px", borderRadius: 20, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}><span style={{ fontWeight: 700 }}>{v.after.d}</span><span style={{ color: C.sub2 }}>{v.angle} · صورة توضيحية</span></div></div><div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 52, height: 52, borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}><Icon name="M8 7l-5 5 5 5M16 7l5 5-5 5" size={22} color={C.accent} /></div></div></div><div style={{ borderRadius: 26, padding: "14px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>الخط الزمني للصور</div></div><span style={{ fontSize: 12, color: C.sub2 }}>اختاري صورتين للمقارنة · الأقدم «قبل» والأحدث «بعد»</span></div><div style={{ display: "flex", gap: 12, marginTop: 12 }}><button onClick={v.th0.pick} style={css(v.th0.style)}><div style={{ height: 64, borderRadius: 14, background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4D6C8, #D9A592)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width={48} height={48} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0" /></svg></div><div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 6 }}>الجلسة 1</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{arDate(PERSONA.sessions[0], { day: false })}</div><div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 2, minHeight: 16, color: C.accentMid }}>{v.th0.role}</div></button><button onClick={v.th1.pick} style={css(v.th1.style)}><div style={{ height: 64, borderRadius: 14, background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F6DCCF, #DFAF9C)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width={48} height={48} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0" /></svg></div><div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 6 }}>الجلسة 2</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{arDate(PERSONA.sessions[1], { day: false })}</div><div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 2, minHeight: 16, color: C.accentMid }}>{v.th1.role}</div></button><button onClick={v.th2.pick} style={css(v.th2.style)}><div style={{ height: 64, borderRadius: 14, background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F8E2D7, #E3B8A6)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width={48} height={48} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0" /></svg></div><div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 6 }}>الجلسة 3</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{arDate(PERSONA.sessions[2], { day: false })}</div><div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 2, minHeight: 16, color: C.accentMid }}>{v.th2.role}</div></button><div style={{ flex: 1, borderRadius: 18, border: "1.5px dashed #E3D3E7", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: C.sub2, fontSize: 12.5 }}><Icon name="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" size={22} color={C.accentMid} />الجلسة {D.length + 1}<span style={{ fontSize: 11.5 }}>{arDate(PERSONA.nextSession, { day: false })}</span></div></div></div></div><div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", width: 340, flexShrink: 0 }}><div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}><div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} /> <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 46, height: 46, borderRadius: 23, background: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM11 16a1 1 0 1 0 2 0 1 1 0 0 0-2 0M8 11V7a4 4 0 1 1 8 0v4" size={22} color={"#E8D6F0"} /></span> <div style={{ lineHeight: 1.35 }}><div style={{ fontSize: 13, color: C.onDark }}>موافقة الاستخدام التسويقي</div><div style={{ fontSize: 22, fontWeight: 700 }}>غير موافِقة</div></div></div> <div style={{ position: "relative", fontSize: 13, lineHeight: 1.7, color: "#F4E9F6", marginTop: 12 }}>الصور محفوظة للاستخدام الطبي فقط ضمن ملفها. لا يمكن تصديرها أو مشاركتها أو استخدامها في الحملات.</div> <button disabled={true} aria-disabled="true" style={{ position: "relative", marginTop: 14, width: "100%", height: 46, borderRadius: 23, border: "1px dashed rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.08)", color: C.onDark, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "not-allowed" }}><Icon name="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM11 16a1 1 0 1 0 2 0 1 1 0 0 0-2 0M8 11V7a4 4 0 1 1 8 0v4" size={17} color={C.onDark} />التصدير مقفل</button> </div><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>الموافقات المرتبطة</div></div></div><div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: "1px solid #EDE2F1", marginTop: 8 }}><span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" size={15} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.35 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>التصوير الطبي</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{D[0]}</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>موقّعة</span></div><div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: "1px solid #EDE2F1", marginTop: 0 }}><span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M18 8a3 3 0 0 1 0 6M10 8v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-5M12 8l4.7-3.9A.9.9 0 0 1 18 4.8v12.4a.9.9 0 0 1-1.3.7L12 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h8" size={15} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.35 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>الاستخدام التسويقي</div><div style={{ fontSize: 11.5, color: C.sub2 }}>لم توافق</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>غير موافِقة</span></div><Link href={R.W_Consents} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, height: 40, borderRadius: 20, background: C.tint, fontSize: 13, fontWeight: 600, color: C.accent }}><Icon name="M10 14L21 3M21 3l-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1z" size={16} color={C.accent} />طلب موافقة تسويقية عبر التطبيق</Link></div><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>تفاصيل الالتقاط</div></div></div><div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 8 }}><span style={{ color: C.sub2 }}>الجهاز</span><span style={{ fontWeight: 700 }}>تابلت الاستقبال</span></div><div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 0 }}><span style={{ color: C.sub2 }}>الإضاءة</span><span style={{ fontWeight: 700 }}>ثابتة · نفس الزاوية</span></div><div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 0 }}><span style={{ color: C.sub2 }}>التقطتها</span><span style={{ fontWeight: 700 }}>{PERSONA.specialist}</span></div></div></div></div>
+    <div style={{ flex: 1, minWidth: 0, height: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4E6F8 0%, #E9D8EF 60%, #DCC5E4 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}>
+      {photo?.url
+        ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={photo.url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : <svg width={220} height={220} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.7 }}><path d={FACE} /></svg>}
+      <span style={{ position: "absolute", top: 14, right: 14, height: 30, padding: "0 14px", borderRadius: 15, background: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center" }}>
+        {label}{photo ? ` · ${arDate(new Date(photo.created_at), { day: false, year: true })}` : ""}
+      </span>
+    </div>
+  );
+}
 
+function Photos() {
+  const patientId = useSearchParams().get("patient") ?? "";
+  const { data: p, loading: lp } = useQuery(["patients", "one", patientId], () => getPatient(patientId), { enabled: !!patientId });
+  const { data, loading, error } = useQuery(["clinical", "photos", patientId], () => listPhotos(patientId), { enabled: !!patientId });
+  const [angle, setAngle] = useState("front");
+  const [pick, setPick] = useState<{ b?: string; a?: string }>({});
+  const [stage, setStage] = useState<"before" | "after" | "progress">("before");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
-    </AdminShell>
+  const shell = (sub: React.ReactNode, body: React.ReactNode) => (
+    <AdminShell active="المراجعات" title="صور قبل/بعد" subtitle={sub} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">الملف الصحي</BackLink> : undefined}>{body}</AdminShell>
+  );
+  if (!patientId) return shell("صور المراجعات", <EmptyState icon="camera" title="اختاري مراجعة أولاً" text="افتحي الصور من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>المراجعات</Link>} />);
+  if (lp || loading) return shell("", <Loading />);
+  if (!p) return shell("", <EmptyState icon="users" title="لم يُعثر على هذا الملف" />);
+
+  const all = data ?? [];
+  const list = all.filter((x) => x.angle === angle);
+  const before = list.find((x) => x.id === pick.b) ?? list[0];
+  const after = list.find((x) => x.id === pick.a) ?? (list.length > 1 ? list[list.length - 1] : undefined);
+  const sessions = new Set(all.map((x) => x.appointment_id ?? x.created_at.slice(0, 10))).size;
+
+  async function onFile(file?: File) {
+    if (!file) return;
+    setBusy(true); setErr("");
+    try { await uploadPhoto(p!.id, file, angle, stage, null); } catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الرفع"); }
+    setBusy(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  return shell(<>ملف <span className="latin">{p.file_no}</span> · {displayName(p.name)} · {sessions} جلسات مصوّرة</>,
+    <div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: 0, flexWrap: "wrap", alignItems: "flex-start" }}>
+      <Panel title="مقارنة قبل/بعد" style={{ flex: 1, minWidth: 520 }} right={
+        <div role="tablist" style={{ display: "flex", gap: 6 }}>
+          {ANGLES.map((a) => <button key={a.key} type="button" role="tab" aria-selected={angle === a.key} onClick={() => { setAngle(a.key); setPick({}); }} style={{ ...chip(angle === a.key, 34), fontSize: 12.5, padding: "0 12px" }}>{a.label}</button>)}
+        </div>}>
+        {error && <ErrorNote>{error}</ErrorNote>}
+        {!list.length ? (
+          <EmptyState compact icon="camera" title={`لا صور بزاوية «${angleLabel(angle)}»`} text="ارفعي صورة من اليمين أو التقطيها من جهاز الاستقبال قبل الجلسة." />
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 14 }}>
+              <Frame label="قبل" photo={before} />
+              <Frame label="بعد" photo={after} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 14, overflowX: "auto", paddingBottom: 4 }}>
+              {list.map((x) => {
+                const role = x.id === before?.id ? "قبل" : x.id === after?.id ? "بعد" : "";
+                return (
+                  <button key={x.id} type="button" onClick={() => setPick(new Date(x.created_at) < new Date(after?.created_at ?? 0) ? { ...pick, b: x.id } : { ...pick, a: x.id })}
+                    style={{ width: 120, flexShrink: 0, borderRadius: 18, padding: 6, textAlign: "right", ...(role ? { background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF" } : { background: C.white, border: "1px solid #EADCF0" }) }}>
+                    <div style={{ height: 90, borderRadius: 12, overflow: "hidden", background: "#F3EAF6" }}>
+                      {x.url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                    </div>
+                    <div style={{ fontSize: 11.5, marginTop: 4, color: C.ink }}>{arDate(new Date(x.created_at), { day: false })} · {STAGE_LABEL[x.stage] ?? x.stage}{role ? ` · ${role}` : ""}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </Panel>
+      <Panel title="إضافة صورة" style={{ width: 280 }}>
+        <div style={{ fontSize: 12.5, color: C.sub2, marginBottom: 8 }}>الزاوية: <b style={{ color: C.ink }}>{angleLabel(angle)}</b></div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {(["before", "after", "progress"] as const).map((s) => <button key={s} type="button" onClick={() => setStage(s)} style={{ ...chip(stage === s, 34), fontSize: 12.5 }}>{STAGE_LABEL[s]}</button>)}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} style={{ ...primaryBtn, width: "100%", opacity: busy ? 0.6 : 1 }}><Icon name="upload" size={18} color={C.white} />{busy ? "جارٍ الرفع…" : "رفع صورة"}</button>
+        {err && <ErrorNote style={{ marginTop: 10 }}>{err}</ErrorNote>}
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.7 }}>تُحفظ الصور في مساحة خاصة، ولا تراها إلا المراجعة نفسها وفريق المركز.</div>
+      </Panel>
+    </div>
   );
 }

@@ -1,16 +1,17 @@
 "use client";
 
+/** P_ConsultBook.dc.html — book an online consultation (day, time). Uses the centre's opening hours. */
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, FatemaAvatar, Icon, PrimaryButton, SectionTitle } from "@/components/ui";
+import { Circ, EmptyState, ErrorNote, Icon, Loading, PrimaryButton, SectionTitle } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { AR_MONTHS } from "@/lib/data";
-import { dayName } from "@/lib/format";
-import { C, CARD, DONE_GRAD, GLASS, SOFT_PANEL } from "@/lib/tokens";
-
-const DAYS = [14, 15, 17, 18].map((n) => new Date(2026, 9, n));
-const TIMES = ["11:00", "12:30", "16:00", "17:30", "18:30"];
+import { atDamascus, dayKey, dayName, money } from "@/lib/format";
+import { useQuery } from "@/lib/db/query";
+import { bookConsult, getConsultService, getHours } from "@/lib/db/consult";
+import { useRequirePatient } from "@/lib/supabase/session";
+import { C, CARD, SOFT_PANEL } from "@/lib/tokens";
 
 const sel = (on: boolean): CSSProperties => ({
   border: `1px solid ${on ? "#FFFFFF" : "#EEE4F1"}`,
@@ -18,41 +19,83 @@ const sel = (on: boolean): CSSProperties => ({
   color: on ? C.accent : C.sub2,
   boxShadow: on ? "0 10px 22px rgba(150,100,170,0.30)" : "0 4px 12px rgba(123,70,135,0.06)",
 });
+const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
-function Shot({ label }: { label: string }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0, height: 132, borderRadius: 22, position: "relative", overflow: "hidden", border: "2px solid #FFFFFF", boxShadow: "0 10px 22px rgba(123,70,135,0.12)" }}>
-      <div style={{ position: "absolute", inset: -20, background: "radial-gradient(ellipse at 50% 40%, #F3D6C3 0%, #DDB096 80%)", filter: "blur(8px)" }} />
-      <span style={{ ...DONE_GRAD, position: "absolute", top: 8, left: 8, width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon name="check" color="#FFFFFF" size={11} stroke={2.4} />
-      </span>
-      <div style={{ ...GLASS, position: "absolute", bottom: 8, right: 8, left: 8, height: 26, borderRadius: 13, fontSize: 11.5, fontWeight: 700, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>{label}</div>
-    </div>
-  );
-}
-
-/** P_ConsultBook.dc.html — book an online consultation (day, time, skin photos). */
 export default function ConsultBookPage() {
+  const { patient, loading: sLoading } = useRequirePatient();
+  const { data: svc, loading: l1 } = useQuery(["consult", "service"], getConsultService);
+  const { data: hours, loading: l2 } = useQuery(["consult", "hours"], getHours);
   const [day, setDay] = useState(0);
-  const [slot, setSlot] = useState(2);
-  const d = DAYS[day];
+  const [slot, setSlot] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const days = useMemo(() => {
+    if (!hours) return [];
+    const out: Date[] = [];
+    for (let i = 0; out.length < 6 && i < 21; i++) {
+      const d = new Date(Date.now() + i * 864e5);
+      const k = dayKey(d);
+      const wd = new Date(`${k}T12:00:00+03:00`).getUTCDay();
+      if (hours.days.includes(wd)) out.push(new Date(`${k}T12:00:00+03:00`));
+    }
+    return out;
+  }, [hours]);
+
+  const times = useMemo(() => {
+    if (!hours || !svc || !days[day]) return [];
+    const step = Math.max(svc.minutes, 30);
+    const k = dayKey(days[day]);
+    const out: string[] = [];
+    for (let m = toMin(hours.from); m + svc.minutes <= toMin(hours.to); m += step) {
+      const t = hhmm(m);
+      if (new Date(atDamascus(k, t)).getTime() > Date.now() + 60 * 6e4) out.push(t);
+    }
+    return out;
+  }, [hours, svc, days, day]);
+
+  const book = async () => {
+    if (!svc || !slot || !days[day]) return;
+    setBusy(true); setErr(null);
+    try { await bookConsult(svc.key, atDamascus(dayKey(days[day]), slot)); setDone(true); }
+    catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  };
+
+  if (sLoading || !patient || l1 || l2) return <PhoneScreen><TopBar title="حجز استشارة أونلاين" back={R.Consult} /><Loading /></PhoneScreen>;
+  if (!svc) return (
+    <PhoneScreen>
+      <TopBar title="حجز استشارة أونلاين" back={R.Consult} />
+      <EmptyState icon="cam" title="الاستشارة الأونلاين غير متاحة حالياً" text="لم يُضف المركز خدمة الاستشارة عن بُعد بعد. يمكنكِ حجز استشارة في المركز."
+        action={<PrimaryButton href={R.Booking}>حجز موعد في المركز</PrimaryButton>} />
+    </PhoneScreen>
+  );
+  if (done) return (
+    <PhoneScreen>
+      <TopBar title="حجز استشارة أونلاين" back={R.Consult} />
+      <EmptyState icon="calcheck" title="تم حجز الاستشارة" text="سيؤكد المركز الموعد ويتواصل معكِ لترتيب المكالمة." action={<PrimaryButton href={R.Consult}>عرض استشاراتي</PrimaryButton>} />
+    </PhoneScreen>
+  );
+
+  const d = days[day];
   return (
     <PhoneScreen>
-      <TopBar title="حجز استشارة أونلاين" />
+      <TopBar title="حجز استشارة أونلاين" back={R.Consult} />
 
       <div style={{ ...SOFT_PANEL, display: "flex", alignItems: "center", gap: 12, borderRadius: 24, padding: "12px 14px" }}>
-        <FatemaAvatar size={46} />
+        <Circ icon="cam" size={46} iconSize={20} />
         <div style={{ flexGrow: 1, lineHeight: 1.35 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>مع فاطمة طيبة</div>
-          <div style={{ fontSize: 12, color: C.sub2 }}>مكالمة فيديو من بيتكِ · نحو 20 دقيقة</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{svc.name}</div>
+          <div style={{ fontSize: 12, color: C.sub2 }}>من بيتكِ · نحو {svc.minutes} دقيقة{svc.price > 0 ? ` · ${money(svc.price)}` : ""}</div>
         </div>
-        <Circ icon="cam" size={40} iconSize={18} />
       </div>
 
-      <SectionTitle right={<span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{AR_MONTHS[9]} 2026</span>}>اختاري اليوم</SectionTitle>
+      <SectionTitle right={d ? <span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{AR_MONTHS[d.getMonth()]} {d.getFullYear()}</span> : undefined}>اختاري اليوم</SectionTitle>
       <div style={{ display: "flex", gap: 8 }}>
-        {DAYS.map((x, i) => (
-          <button key={i} type="button" aria-pressed={day === i} onClick={() => setDay(i)} style={{
+        {days.map((x, i) => (
+          <button key={i} type="button" aria-pressed={day === i} onClick={() => { setDay(i); setSlot(null); }} style={{
             ...sel(day === i), flex: 1, minWidth: 0, height: 62, borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           }}>
             <span style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.15 }}>{x.getDate()}</span>
@@ -62,29 +105,17 @@ export default function ConsultBookPage() {
       </div>
 
       <SectionTitle>اختاري الوقت</SectionTitle>
-      <div style={{ display: "flex", gap: 6, justifyContent: "space-between" }}>
-        {TIMES.map((t, i) => (
-          <button key={t} type="button" aria-pressed={slot === i} onClick={() => setSlot(i)} style={{
-            ...sel(slot === i), flex: 1, minWidth: 0, height: 40, borderRadius: 20, fontSize: 13.5, fontWeight: 600, padding: 0,
-          }}>{t}</button>
-        ))}
-      </div>
+      {times.length === 0 ? <EmptyState compact icon="clock" title="لا أوقات متاحة في هذا اليوم" /> : (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {times.map((t) => (
+            <button key={t} type="button" aria-pressed={slot === t} onClick={() => setSlot(t)} className="latin" style={{
+              ...sel(slot === t), flex: "1 0 64px", height: 40, borderRadius: 20, fontSize: 13.5, fontWeight: 600, padding: 0,
+            }}>{t}</button>
+          ))}
+        </div>
+      )}
 
-      <SectionTitle right={<span style={{ fontSize: 12, color: C.sub2 }}>2 من 3 · بضوء النهار وبدون مكياج</span>}>صور بشرتكِ</SectionTitle>
-      <div style={{ display: "flex", gap: 10 }}>
-        <Shot label="أمامية" />
-        <Shot label="الجانب الأيمن" />
-        <button type="button" aria-label="التقاط صورة الجانب الأيسر" style={{
-          flex: 1, minWidth: 0, height: 132, borderRadius: 22, border: "1.5px dashed #D7BFDC", background: "linear-gradient(180deg,#FFFFFF,#F8F1FA)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-        }}>
-          <Circ icon="camera" size={42} iconSize={19} />
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: C.accent }}>الجانب الأيسر</span>
-          <span style={{ fontSize: 10.5, color: C.muted }}>التقطي صورة</span>
-        </button>
-      </div>
-
-      <Link href={R.P_SkinType} style={{ ...CARD, display: "flex", alignItems: "center", gap: 12, borderRadius: 22, padding: "10px 14px" }}>
+      <Link href={R.P_SkinType} style={{ ...CARD, display: "flex", alignItems: "center", gap: 12, borderRadius: 22, padding: "10px 14px", color: C.ink }}>
         <Circ icon="clip" size={38} iconSize={17} />
         <div style={{ flexGrow: 1, lineHeight: 1.35 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>استبيان قصير عن بشرتكِ</div>
@@ -93,12 +124,10 @@ export default function ConsultBookPage() {
         <Icon name="chev" color={C.accentMid} size={18} stroke={2} />
       </Link>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", fontSize: 12.5, color: C.sub }}>
-        <Icon name="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" color={C.ok} size={17} />
-        يصلكِ التأكيد ورابط المكالمة على واتساب
-      </div>
-
-      <PrimaryButton href={R.Consult} style={{ marginTop: "auto" }}>متابعة · {dayName(d)} {d.getDate()} · {TIMES[slot]}</PrimaryButton>
+      {err && <ErrorNote>تعذّر الحجز: {err}</ErrorNote>}
+      <PrimaryButton onClick={book} disabled={!slot || busy} style={{ marginTop: "auto" }}>
+        {busy ? "جارٍ الحجز…" : slot && d ? `تأكيد · ${dayName(d)} ${d.getDate()} · ${slot}` : "اختاري الوقت"}
+      </PrimaryButton>
     </PhoneScreen>
   );
 }

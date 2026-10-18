@@ -1,9 +1,14 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
+import { ErrorNote, GhostButton, Modal, SubmitButton, TextInput } from "@/components/ui";
+import { checkIn, findToday, personName, serviceName, STATUS_AR, type QueueAppt } from "@/lib/db/queue";
+import { clock } from "@/lib/format";
+import { useKiosk } from "./kiosk";
 import { R } from "@/lib/routes";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
@@ -19,8 +24,60 @@ const seg = (on: boolean, font: string): CSSProperties => ({
 });
 
 /** Reception tablet idle screen: scan the appointment QR code, or walk in without one. */
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
+
 export default function Page() {
+  const k = useKiosk();
+  const router = useRouter();
   const [lang, setLang] = useState<"ar" | "en">("ar");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [camOn, setCamOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [manual, setManual] = useState(false);
+  const [term, setTerm] = useState("");
+  const [found, setFound] = useState<QueueAppt[] | null>(null);
+  const ready = !k.gate;
+
+  const doCheckIn = async (id: string) => {
+    setBusy(true); setErr(null);
+    try { await checkIn(id); router.push(`/kiosk/checked-in/?id=${id}`); }
+    catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+  };
+  const doCheckInRef = useRef(doCheckIn); doCheckInRef.current = doCheckIn;
+
+  // Camera QR scan (BarcodeDetector where the browser supports it). The QR holds the appointment id.
+  useEffect(() => {
+    if (!ready) return;
+    const BD = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
+    if (!BD || !navigator.mediaDevices?.getUserMedia) return;
+    let stream: MediaStream | null = null, timer: ReturnType<typeof setInterval> | null = null, stop = false, handled = false;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then((st) => {
+      if (stop) { st.getTracks().forEach((t) => t.stop()); return; }
+      stream = st;
+      const v = videoRef.current; if (!v) return;
+      v.srcObject = st; v.play().catch(() => {}); setCamOn(true);
+      const det = new BD({ formats: ["qr_code"] });
+      timer = setInterval(async () => {
+        if (handled || v.readyState < 2) return;
+        try {
+          const codes = await det.detect(v);
+          const id = codes.map((c) => c.rawValue.match(UUID)?.[0]).find(Boolean);
+          if (id) { handled = true; doCheckInRef.current(id).finally(() => { setTimeout(() => { handled = false; }, 4000); }); }
+        } catch { /* frame not ready */ }
+      }, 500);
+    }).catch(() => setCamOn(false));
+    return () => { stop = true; if (timer) clearInterval(timer); stream?.getTracks().forEach((t) => t.stop()); };
+  }, [ready]);
+
+  const search = async () => {
+    setBusy(true); setErr(null);
+    try { setFound(await findToday(term)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    setBusy(false);
+  };
+
+  if (k.gate) return k.gate;
   const t = T[lang];
   const setAr = () => setLang("ar"), setEn = () => setLang("en");
   const arStyle = seg(lang === "ar", T.ar.font), enStyle = seg(lang === "en", T.en.font);
@@ -116,6 +173,7 @@ export default function Page() {
           </svg>
         </div>
         <div style={{ position: "relative", marginTop: 40 }}>
+          <video ref={videoRef} muted playsInline style={{ position: "absolute", left: 34, top: 34, width: 362, height: 362, objectFit: "cover", borderRadius: 24, transform: "scaleX(-1)", display: camOn ? "block" : "none" }} />
           <svg width="430" height="430" viewBox="0 0 430 430" aria-hidden="true">
             <defs>
               <linearGradient id="scl" x1="0" x2="1">
@@ -172,6 +230,27 @@ export default function Page() {
             <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 17v.01M12 13.5a1.5 1.5 0 0 1 1-1.5 2.6 2.6 0 1 0-3-4" />
           </svg>{t.help}
         </div>
+        {err && !manual && <ErrorNote style={{ position: "relative", maxWidth: 420 }}>{err}</ErrorNote>}
+        <button type="button" onClick={() => { setManual(true); setFound(null); setErr(null); }} style={{ position: "relative", height: 48, padding: "0 22px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 16, fontWeight: 700, fontFamily: t.font }}>
+          {lang === "ar" ? "تسجيل الوصول برقم الهاتف أو الملف" : "Check in by phone or file number"}
+        </button>
+        <Modal open={manual} onClose={() => setManual(false)} title="تسجيل الوصول يدوياً" footer={<><SubmitButton onClick={search} busy={busy} disabled={!term.trim()}>بحث</SubmitButton><GhostButton onClick={() => setManual(false)}>إغلاق</GhostButton></>}>
+          <TextInput label="رقم الهاتف أو رقم الملف" value={term} onChange={setTerm} placeholder="09xxxxxxxx أو 1001" dir="ltr" />
+          {err && <ErrorNote>{err}</ErrorNote>}
+          {found && found.length === 0 && <div style={{ fontSize: 15, color: C.sub, marginTop: 12 }}>لا يوجد موعد اليوم بهذا الرقم. يمكنكِ تسجيلها كزيارة بدون موعد.</div>}
+          {found?.map((a) => (
+            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}>
+              <span className="latin" style={{ fontSize: 17, fontWeight: 600, width: 52 }}>{clock(a.starts_at)}</span>
+              <div style={{ flex: 1, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{personName(a)}</div>
+                <div style={{ fontSize: 13, color: C.sub2 }}>{serviceName(a)}{a.rooms ? ` · ${a.rooms.name}` : ""} · {STATUS_AR[a.status]}</div>
+              </div>
+              {a.queue_no != null
+                ? <Link href={`/kiosk/checked-in/?id=${a.id}`} style={{ fontWeight: 700, color: C.accent }}>الدور {a.queue_no}</Link>
+                : <SubmitButton onClick={() => doCheckIn(a.id)} busy={busy} disabled={a.status !== "pending" && a.status !== "confirmed"}>تسجيل الوصول</SubmitButton>}
+            </div>
+          ))}
+        </Modal>
       </div>
 
     </Stage>

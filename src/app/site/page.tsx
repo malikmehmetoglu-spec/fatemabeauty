@@ -3,6 +3,7 @@
 /**
  * Public landing page of the centre — served at https://fatema.beauty/ (see vercel.json).
  * Not part of the design canvas; built with the same identity (mauve, El Messiri, depth).
+ * Live data: services, packages, the specialist and store products all come from Supabase.
  */
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,11 +11,11 @@ import { APP_ORIGIN, DOMAIN } from "@/lib/hosts";
 import s from "./site.module.css";
 import { Icon, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { useCatalog } from "@/lib/supabase/catalog";
+import { useQuery } from "@/lib/db/query";
+import { listPackages, listServices, listSpecialists, priceLabel, serviceIcon } from "@/lib/db/catalog";
+import { listStore, productImage } from "@/lib/db/products";
 import { money } from "@/lib/format";
-import { C, FATEMA_PHOTO } from "@/lib/tokens";
-import { PRODUCTS } from "@/lib/mock/c1";
-import { ProductArt } from "@/app/store/c1ui";
+import { C } from "@/lib/tokens";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const STEPS = [
@@ -29,9 +30,14 @@ const APP_FEATURES: [string, string][] = [
 ];
 
 export default function SitePage() {
-  const { services: SERVICES, packages: PACKAGES } = useCatalog();
-  const services = SERVICES.filter((x) => x.key !== "consult");
-  const products = PRODUCTS.filter((p) => p.price !== null).slice(0, 3);
+  const { data: svcData, loading: svcLoading } = useQuery(["catalog", "services"], listServices);
+  const { data: pkgData } = useQuery(["catalog", "packages"], () => listPackages());
+  const { data: team } = useQuery(["catalog", "specialists"], listSpecialists);
+  const { data: storeData } = useQuery(["products", "store"], listStore);
+  const services = svcData ?? [];
+  const PACKAGES = pkgData ?? [];
+  const spec = team?.[0];
+  const products = (storeData ?? []).filter((p) => p.price != null).slice(0, 3);
   // On fatema.beauty, booking/app links go to app.fatema.beauty and store links to store.fatema.beauty.
   const [hosts, setHosts] = useState({ app: "", store: "" });
   useEffect(() => {
@@ -63,8 +69,8 @@ export default function SitePage() {
             <span className={s.eyebrow}>مركز العناية بالبشرة</span>
             <h1 className={s.h1}><em>عناية</em> تليق ببشرتكِ<br />وخبرة تمنحكِ <em>إشراقة تدوم</em></h1>
             <p className={s.lead}>
-              تنظيف عميق، هيدرافيشل، تقشير وليزر — بإشراف الأخصائية فاطمة طيبة.
-              احجزي جلستكِ في دقيقة، وتابعي دوركِ ورحلة بشرتكِ من هاتفكِ.
+              {services.length ? services.slice(0, 4).map((x) => x.short_name || x.name).join("، ") + (spec ? ` — بإشراف ${spec.name}.` : ".") : "جلسات عناية بالبشرة بإشراف أخصائيات المركز."}
+              {" "}احجزي جلستكِ في دقيقة، وتابعي دوركِ ورحلة بشرتكِ من هاتفكِ.
             </p>
             <div className={s.ctaRow}>
               <Link className={s.btnPrimary} href={app(R.Login)}>
@@ -82,20 +88,26 @@ export default function SitePage() {
             <InstallPrompt style={{ marginTop: 26, maxWidth: 520 }} />
           </div>
 
+          {spec ? (
           <div className={s.photoCard}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={FATEMA_PHOTO} alt="الأخصائية فاطمة طيبة" />
+            {spec.photo_url ? <img src={spec.photo_url} alt={spec.name} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={110} /></div>}
             <span className={s.floatTag}><Icon name="sparkle" color={C.accent} size={17} />تنظيف وعناية فقط</span>
             <div className={s.glass}>
               <div>
-                <div className={s.glassName}>فاطمة طيبة</div>
-                <div className={s.glassRole}>أخصائية عناية بالبشرة</div>
+                <div className={s.glassName}>{spec.name}</div>
+                <div className={s.glassRole}>{spec.title || "أخصائية عناية بالبشرة"}</div>
               </div>
-              <Link className={s.navCta} href={app(R.Login)} aria-label="احجزي مع فاطمة">
+              <Link className={s.navCta} href={app(R.Login)} aria-label={`احجزي مع ${spec.name}`}>
                 <Icon name="arrow" color="#FFFFFF" size={17} stroke={2} />
               </Link>
             </div>
           </div>
+          ) : (
+            <div className={s.photoCard} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Logo height={120} />
+            </div>
+          )}
         </section>
 
         <section id="services" className={s.section}>
@@ -107,19 +119,20 @@ export default function SitePage() {
           </div>
 
           <div className={s.services}>
-            {services.map((x) => {
-              const dark = x.key === "laser";
+            {!svcLoading && services.length === 0 && <p className={s.sub}>تُنشر قائمة الخدمات وأسعارها قريباً.</p>}
+            {services.map((x, i) => {
+              const dark = i === 3;
               return (
                 <Link key={x.key} href={app(R.Login)} className={`${s.svc} ${dark ? s.svcDark : ""}`}>
                   <span style={{ width: 52, height: 52, borderRadius: 26, display: "flex", alignItems: "center", justifyContent: "center",
                     background: dark ? "rgba(255,255,255,0.16)" : "linear-gradient(145deg, #F6EEF9, #E6D3EE)" }}>
-                    <Icon name={{ clean: "drop", hydra: "sparkle", peel: "layers", laser: "sun", consult: "msg" }[x.key]} color={dark ? "#FFFFFF" : C.accentMid} size={24} />
+                    <Icon name={serviceIcon(x.name)} color={dark ? "#FFFFFF" : C.accentMid} size={24} />
                   </span>
                   <div className={s.svcName}>{x.name}</div>
-                  <div className={s.svcDesc}>{x.desc} · {x.minutes} دقيقة</div>
+                  <div className={s.svcDesc}>{x.description ? `${x.description} · ` : ""}{x.minutes} دقيقة</div>
                   <div className={s.svcFoot}>
                     <div>
-                      <div className={s.price}>{x.from ? "من " : ""}{money(x.price)}</div>
+                      <div className={s.price}>{priceLabel(x)}</div>
                       <div className={s.per}>للجلسة</div>
                     </div>
                     <span className={s.arrow}><Icon name="arrow" color={C.accent} size={16} stroke={2} /></span>
@@ -129,20 +142,20 @@ export default function SitePage() {
             })}
           </div>
 
-          <div className={s.packBand}>
+          {PACKAGES.length > 0 && <div className={s.packBand}>
             <span style={{ width: 52, height: 52, borderRadius: 26, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)" }}>
               <Icon name="gift" color="#FFFFFF" size={24} />
             </span>
             <div>
-              <div className={s.packTitle}>الباقات: 6 جلسات بسعر 5</div>
-              <div className={s.per} style={{ fontSize: 14 }}>الجلسة السادسة هدية منا</div>
+              <div className={s.packTitle}>باقات الجلسات</div>
+              <div className={s.per} style={{ fontSize: 14 }}>سعر أقل عند حجز عدة جلسات معاً</div>
             </div>
             <div className={s.packList}>
               {PACKAGES.map((p) => (
-                <span key={p.service} className={s.packChip}>{p.name.replace(" للبشرة", "")} <b>{money(p.price)}</b></span>
+                <span key={p.id} className={s.packChip}>{p.name} · {p.sessions} جلسات <b>{money(p.price)}</b></span>
               ))}
             </div>
-          </div>
+          </div>}
         </section>
 
         <section id="how" className={s.section}>
@@ -182,15 +195,18 @@ export default function SitePage() {
                 <h2 className={s.h2}>متجر <em>فاطمة بيوتي</em></h2>
                 <p className={s.sub}>منتجات تختارها الأخصائية لروتينكِ اليومي، تستلمينها في زيارتكِ أو تصلكِ إلى البيت.</p>
               </div>
-              <div className={s.products}>
+              {products.length > 0 && <div className={s.products}>
                 {products.map((p) => (
                   <Link key={p.key} href={store(R.P_Store)} className={s.product}>
-                    <ProductArt p={p} width={64} />
+                    {(() => { const img = productImage(p); return img
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={img} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover" }} />
+                      : <Icon name="bottle" size={30} />; })()}
                     <div className={s.productName}>{p.name}</div>
                     <div className={s.productPrice}>{money(p.price ?? 0)}</div>
                   </Link>
                 ))}
-              </div>
+              </div>}
               <Link className={s.btnGhost} href={store(R.P_Store)} style={{ alignSelf: "flex-start" }}>
                 <Icon name="bag" color={C.accent} size={19} stroke={1.9} />ادخلي المتجر
               </Link>

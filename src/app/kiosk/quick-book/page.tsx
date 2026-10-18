@@ -3,32 +3,29 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
+import { ErrorNote, Loading } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { APPOINTMENTS_TODAY, NOW as NOW_HM, SERVICES, toMinutes } from "@/lib/data";
-import { money } from "@/lib/format";
+import { initials } from "@/lib/data";
+import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
+import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/queue";
+import { useQuery } from "@/lib/db/query";
+import { clock, dayKey } from "@/lib/format";
 import { css } from "../css";
-import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO, FATEMA_PHOTO } from "@/lib/tokens";
+import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
+import { NowText, useKiosk } from "../kiosk";
 
 /** T_QuickBook.dc.html */
 const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
-const SV = SERVICES;
-const SP = [
-  { name: "فاطمة طيبة", room: "غرفة 1", can: ["clean", "hydra", "peel", "consult"] },
-  { name: "هبة العلي", room: "غرفة 2", can: ["clean", "hydra", "peel", "consult"] },
-  { name: "ريم الحسن", room: "غرفة 3", can: ["laser"] },
-];
-/** Booked [start, end) minutes per room, from today's schedule. */
-const B: Record<string, [number, number][]> = Object.fromEntries(SP.map((p) => [p.room,
-  APPOINTMENTS_TODAY.filter((a) => a.room === p.room).map((a) => [toMinutes(a.time), toMinutes(a.time) + a.minutes] as [number, number])]));
-const NOW = toMinutes(NOW_HM), END = 18 * 60, D0 = 600, DL = END - D0;
+const toMin = (hm: string) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
+const END = 18 * 60, D0 = 600, DL = END - D0;
 const pc = (m: number) => ((m - D0) / DL * 100).toFixed(2) + "%";
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 
-function slotsFor(sp: number, svc: number) {
-  const b = B[SP[sp].room], dur = SV[svc].minutes;
+function slotsFor(b: [number, number][], dur: number, NOW: number) {
   const set = new Set<number>();
-  for (let t = NOW + 15; t <= END - 15; t += 15) set.add(t);
+  for (let t = Math.ceil((NOW + 15) / 15) * 15; t <= END - 15; t += 15) set.add(t);
   b.forEach((x) => { if (x[1] > NOW && x[1] < END) set.add(x[1]); });
   return [...set].sort((x, y) => x - y).map((t) => {
     const taken = b.some((x) => t >= x[0] && t < x[1]);
@@ -37,15 +34,33 @@ function slotsFor(sp: number, svc: number) {
   });
 }
 
-/** Reception tablet: quick booking for a patient at the desk. */
+/** Reception tablet: quick booking (today) for a patient at the desk. */
 export default function Page() {
-  const [st, setSt] = useState<{ svc: number; sp: number; slot: number | null }>({ svc: 4, sp: 1, slot: null });
-  const pickSvc = (i: number) => {
-    let sp = st.sp;
-    if (!SP[sp].can.includes(SV[i].key)) sp = SP.findIndex((x) => x.can.includes(SV[i].key));
-    setSt({ svc: i, sp, slot: null });
-  };
-  const cs = slotsFor(st.sp, st.svc);
+  const k = useKiosk();
+  const router = useRouter();
+  const q = useQuery(["queue", "quick-book"], async () => {
+    const [services, specialists, rooms, today] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday()]);
+    return { services, specialists, rooms, today };
+  }, { enabled: !k.gate });
+  const [st, setSt] = useState<{ svc: number; sp: number; slot: number | null }>({ svc: 0, sp: -1, slot: null });
+  const [term, setTerm] = useState("");
+  const [hits, setHits] = useState<PatientHit[] | null>(null);
+  const [pat, setPat] = useState<PatientHit | null>(null);
+  const [newName, setNewName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (k.gate) return k.gate;
+  const SV = q.data?.services ?? [];
+  const SP = q.data?.specialists ?? [];
+  const rooms = q.data?.rooms ?? [];
+  const today = q.data?.today ?? [];
+  const NOW_HM = clock();
+  const NOW = toMin(NOW_HM);
+  const s = SV[st.svc];
+  const p = st.sp >= 0 ? SP[st.sp] : undefined;
+  const busyList = today.filter((a) => a.status !== "no_show" && (s?.room_id ? a.room_id === s.room_id : p ? a.specialist_id === p.id : false));
+  const B: [number, number][] = busyList.map((a) => { const m = toMin(clock(a.starts_at)); return [m, m + a.minutes]; });
+  const cs = s ? slotsFor(B, s.minutes, NOW) : [];
   let slot = st.slot;
   if (slot === null || !cs.some((c) => c.t === slot && c.fits)) { const f = cs.find((c) => c.fits); slot = f ? f.t : null; }
   const cells = cs.map((c) => {
@@ -57,23 +72,37 @@ export default function Page() {
     else style += "background:transparent;border:1.5px dashed #E0D2E3;color:#AF9EB3";
     return { label: fmt(c.t), style: css(style), aria: fmt(c.t) + (c.fits ? "" : " — غير متاح"), pick: () => { if (c.fits) setSt({ ...st, slot: c.t }); } };
   });
-  const svcs = SV.map((_, i) => ({ pick: () => pickSvc(i),
+  const svcs = SV.map((x, i) => ({ name: x.name, pick: () => setSt({ ...st, svc: i, slot: null }),
     style: css("height:56px;padding:0 20px;border-radius:28px;font-size:16px;font-weight:600;font-family:inherit;display:flex;align-items:center;white-space:nowrap;" +
       (i === st.svc ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
-  const sps = SP.map((p, i) => { const ok = p.can.includes(SV[st.svc].key), on = i === st.sp;
-    return { pick: () => { if (ok) setSt({ ...st, sp: i, slot: null }); },
-      style: css("flex:1;min-width:0;border-radius:24px;padding:16px 8px 14px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;" + (ok ? "" : "opacity:0.4;") +
+  const sps = SP.map((x, i) => { const on = i === st.sp;
+    return { x, pick: () => setSt({ ...st, sp: on ? -1 : i, slot: null }),
+      style: css("flex:1;min-width:0;border-radius:24px;padding:16px 8px 14px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;" +
         (on ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#35213D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }; });
-  const s = SV[st.svc], p = SP[st.sp];
+  const roomName = s?.room_id ? rooms.find((r) => r.id === s.room_id)?.name ?? "" : "";
   const free = cs.filter((c) => c.fits).length;
-  const blocks = B[p.room].map((b) => ({ style: css("position:absolute;top:0;bottom:0;right:" + pc(b[0]) + ";width:calc(" + ((b[1] - b[0]) / DL * 100).toFixed(2) + "% - 3px);border-radius:8px;background:" + (b[1] <= NOW ? "#E5DEE6" : "#D3C6D6")) }));
-  const pickBlock = css(slot === null ? "display:none" : "position:absolute;top:-5px;bottom:-5px;right:" + pc(slot) + ";width:" + (s.minutes / DL * 100).toFixed(2) + "%;border-radius:9px;background:linear-gradient(160deg,#DEB3E8,#A877B6);box-shadow:0 6px 14px rgba(150,100,170,0.40);border:2px solid #FFFFFF");
-  const nowStyle = css("position:absolute;top:-10px;bottom:-10px;width:2px;border-radius:1px;background:#7B4687;right:" + pc(NOW));
-  const tlRoom = p.room;
-  const sum = { svc: s.name, sp: p.name, room: p.room, time: slot === null ? "لا وقت شاغر اليوم" : fmt(slot) + " – " + fmt(slot + s.minutes),
-    price: s.price === 0 ? "مجانية" : (s.from ? "من " : "") + money(s.price) };
+  const blocks = B.map((b) => ({ style: css("position:absolute;top:0;bottom:0;right:" + pc(b[0]) + ";width:calc(" + ((b[1] - b[0]) / DL * 100).toFixed(2) + "% - 3px);border-radius:8px;background:" + (b[1] <= NOW ? "#E5DEE6" : "#D3C6D6")) }));
+  const pickBlock = css(slot === null || !s ? "display:none" : "position:absolute;top:-5px;bottom:-5px;right:" + pc(slot) + ";width:" + (s.minutes / DL * 100).toFixed(2) + "%;border-radius:9px;background:linear-gradient(160deg,#DEB3E8,#A877B6);box-shadow:0 6px 14px rgba(150,100,170,0.40);border:2px solid #FFFFFF");
+  const nowStyle = css("position:absolute;top:-10px;bottom:-10px;width:2px;border-radius:1px;background:#7B4687;right:" + pc(Math.min(END, Math.max(D0, NOW))));
+  const tlRoom = roomName || p?.name || "المركز";
+  const sum = { svc: s?.name ?? "اختاري خدمة", sp: p?.name ?? "أي أخصائية", room: roomName || "—", time: slot === null ? "لا وقت شاغر اليوم" : fmt(slot) + " – " + fmt(slot + (s?.minutes ?? 0)),
+    price: s ? priceLabel(s) : "" };
   const freeTxt = free ? (free === 1 ? "وقت واحد يناسب مدة الخدمة" : free + " أوقات تناسب مدة الخدمة") : "لا يوجد وقت شاغر يناسب مدة الخدمة اليوم";
-  const btn = slot === null ? "قائمة الانتظار" : "تأكيد الحجز";
+  const btn = busy ? "جارٍ الحجز…" : "تأكيد الحجز";
+  const search = async () => {
+    setErr(null); setPat(null);
+    try { setHits(await searchPatients(term)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  };
+  const isPhone = term.replace(/\D/g, "").length >= 8;
+  const canBook = !!s && slot !== null && (!!pat || (isPhone && !!newName.trim()));
+  const book = async () => {
+    if (!s || slot === null) return;
+    setBusy(true); setErr(null);
+    try {
+      await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null });
+      router.push(R.T_Desk);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+  };
   return (
     <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
@@ -125,10 +154,10 @@ export default function Page() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
               </svg>
-              <span>الثلاثاء 13 تشرين الأول
+              <span><NowText part="date" />
               </span>
               <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>12:30
+              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
               </span>
             </div>
           </div>
@@ -144,79 +173,69 @@ export default function Page() {
                 </svg>
                 <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>بحث
                 </span>
-                <input id="qp" type="search" defaultValue="هالة" placeholder="ابحثي بالاسم أو رقم الهاتف أو الملف" style={{ flexGrow: 1, minWidth: "0", border: "none", outline: "none", background: "transparent", fontSize: 15, color: C.ink }} />
+                <input id="qp" type="search" value={term} onChange={(e) => { setTerm(e.target.value); setHits(null); setPat(null); }} onKeyDown={(e) => { if (e.key === "Enter") search(); }} placeholder="ابحثي بالاسم أو رقم الهاتف أو الملف" style={{ flexGrow: 1, minWidth: "0", border: "none", outline: "none", background: "transparent", fontSize: 15, color: C.ink }} />
+                <button type="button" onClick={search} disabled={!term.trim()} style={{ border: "none", background: "transparent", color: C.accent, fontWeight: 700, fontSize: 15, fontFamily: "inherit" }}>بحث</button>
               </label>
+              {pat ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 22, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>
-                <span style={{ width: 48, height: 48, borderRadius: 24, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.accent }}>ه م
+                <span style={{ width: 48, height: 48, borderRadius: 24, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.accent }}>{initials(pat.name || "؟")}
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: C.ink }}>هالة منصور
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-                    </span>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: C.ink }}>{pat.name || "بدون اسم"}
                   </div>
-                  <div style={{ fontSize: 13, color: C.sub }}>ملف 1035 · لم تحضر موعد 11:00 اليوم
+                  <div style={{ fontSize: 13, color: C.sub }}>ملف {pat.file_no}{pat.phone ? ` · ${pat.phone}` : ""}
                   </div>
                 </div>
-                <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <button type="button" onClick={() => setPat(null)} aria-label="تغيير" style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, border: "none", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12l5 5L20 7" />
                   </svg>
-                </span>
+                </button>
               </div>
+              ) : hits && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 130, overflowY: "auto" }}>
+                  {hits.map((h) => (
+                    <button key={h.id} type="button" onClick={() => setPat(h)} style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px", borderRadius: 16, border: "1px solid #EADCF0", background: C.white, fontFamily: "inherit", fontSize: 15, color: C.ink }}>
+                      <b>{h.name || "بدون اسم"}</b><span className="latin" style={{ color: C.sub2 }}>{h.file_no}</span>
+                    </button>
+                  ))}
+                  {hits.length === 0 && (isPhone
+                    ? <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="لا يوجد ملف — اكتبي الاسم لفتح ملف جديد" style={{ height: 46, borderRadius: 23, border: "1.5px solid #E3CEE8", padding: "0 16px", fontSize: 15, fontFamily: "inherit", outline: "none" }} />
+                    : <div style={{ fontSize: 14, color: C.sub }}>لا نتائج. لفتح ملف جديد اكتبي رقم الهاتف ثم ابحثي.</div>)}
+                </div>
+              )}
             </div>
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>الخدمة
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                <button type="button" aria-pressed={st.svc === 0} onClick={svcs[0].pick} style={svcs[0].style}>تنظيف عميق للبشرة
-                </button>
-                <button type="button" aria-pressed={st.svc === 1} onClick={svcs[1].pick} style={svcs[1].style}>هيدرافيشل
-                </button>
-                <button type="button" aria-pressed={st.svc === 2} onClick={svcs[2].pick} style={svcs[2].style}>تقشير البشرة
-                </button>
-                <button type="button" aria-pressed={st.svc === 3} onClick={svcs[3].pick} style={svcs[3].style}>جلسة ليزر
-                </button>
-                <button type="button" aria-pressed={st.svc === 4} onClick={svcs[4].pick} style={svcs[4].style}>استشارة في المركز
-                </button>
+                {svcs.map((x, i) => (
+                  <button key={i} type="button" aria-pressed={st.svc === i} onClick={x.pick} style={x.style}>{x.name}
+                  </button>
+                ))}
+                {q.loading && <Loading />}
+                {q.error && <ErrorNote>{q.error}</ErrorNote>}
+                {!q.loading && !SV.length && <div style={{ fontSize: 14, color: C.sub }}>لا توجد خدمات مفعّلة بعد — أضيفيها من لوحة الإدارة.</div>}
               </div>
             </div>
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12, flexGrow: 1 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>الأخصائية
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button type="button" aria-pressed={st.sp === 0} onClick={sps[0].pick} style={sps[0].style}>
-                  <img src={FATEMA_PHOTO} alt="فاطمة طيبة" style={{ width: 58, height: 58, borderRadius: 29, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", boxSizing: "border-box", flexShrink: 0 }} />
+                {sps.map(({ x, pick, style }, i) => (
+                <button key={x.id} type="button" aria-pressed={st.sp === i} onClick={pick} style={style}>
+                  {x.photo_url
+                    ? <img src={x.photo_url} alt={x.name} style={{ width: 58, height: 58, borderRadius: 29, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", boxSizing: "border-box", flexShrink: 0 }} />
+                    : <span style={{ width: 58, height: 58, borderRadius: 29, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: C.accent }}>{initials(x.name)}</span>}
                   <span style={{ lineHeight: 1.3, minWidth: "0" }}>
-                    <span style={{ display: "block", fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" }}>فاطمة طيبة
+                    <span style={{ display: "block", fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{x.name}
                     </span>
-                    <span style={{ display: "block", fontSize: 13, color: C.sub2, whiteSpace: "nowrap", marginTop: 2 }}>غرفة 1
+                    <span style={{ display: "block", fontSize: 13, color: C.sub2, whiteSpace: "nowrap", marginTop: 2 }}>{x.title}
                     </span>
                   </span>
                 </button>
-                <button type="button" aria-pressed={st.sp === 1} onClick={sps[1].pick} style={sps[1].style}>
-                  <span style={{ width: 58, height: 58, borderRadius: 29, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: C.accent }}>ه ع
-                  </span>
-                  <span style={{ lineHeight: 1.3, minWidth: "0" }}>
-                    <span style={{ display: "block", fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" }}>هبة العلي
-                    </span>
-                    <span style={{ display: "block", fontSize: 13, color: C.sub2, whiteSpace: "nowrap", marginTop: 2 }}>غرفة 2
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 18, padding: "0 7px", borderRadius: 9, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 6, verticalAlign: "middle", lineHeight: 1 }}>مثال
-                      </span>
-                    </span>
-                  </span>
-                </button>
-                <button type="button" aria-pressed={st.sp === 2} onClick={sps[2].pick} style={sps[2].style}>
-                  <span style={{ width: 58, height: 58, borderRadius: 29, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: C.accent }}>ر ح
-                  </span>
-                  <span style={{ lineHeight: 1.3, minWidth: "0" }}>
-                    <span style={{ display: "block", fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" }}>ريم الحسن
-                    </span>
-                    <span style={{ display: "block", fontSize: 13, color: C.sub2, whiteSpace: "nowrap", marginTop: 2 }}>غرفة 3
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 18, padding: "0 7px", borderRadius: 9, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 6, verticalAlign: "middle", lineHeight: 1 }}>مثال
-                      </span>
-                    </span>
-                  </span>
-                </button>
+                ))}
+                {!q.loading && !SP.length && <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6 }}>لا توجد أخصائيات مسجّلات بعد. يُحجز الموعد دون تحديد أخصائية.</div>}
               </div>
             </div>
           </div>
@@ -294,7 +313,8 @@ export default function Page() {
                 <div style={{ fontSize: 13.5, color: C.sub, whiteSpace: "nowrap" }}>{sum.sp} · {sum.room} · {sum.price}
                 </div>
               </div>
-              <button type="button" style={{ height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+              {err && <ErrorNote>{err}</ErrorNote>}
+              <button type="button" onClick={book} disabled={!canBook || busy} style={{ opacity: canBook && !busy ? 1 : 0.55, fontFamily: "inherit", height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12l5 5L20 7" />
                 </svg>{btn}

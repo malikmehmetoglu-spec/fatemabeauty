@@ -60,6 +60,8 @@ export type Database = {
           checked_in_at: string | null
           created_at: string
           created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
           finished_at: string | null
           id: string
           minutes: number
@@ -85,6 +87,8 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string
           created_by?: string | null
+          eligibility?: Json | null
+          eligibility_at?: string | null
           finished_at?: string | null
           id?: string
           minutes: number
@@ -110,6 +114,8 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string
           created_by?: string | null
+          eligibility?: Json | null
+          eligibility_at?: string | null
           finished_at?: string | null
           id?: string
           minutes?: number
@@ -194,9 +200,111 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_shifts: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          counted_cash: number | null
+          expected_cash: number | null
+          id: string
+          note: string | null
+          opened_at: string
+          opened_by: string | null
+          opening_cash: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          counted_cash?: number | null
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_cash?: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          counted_cash?: number | null
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_cash?: number
+        }
+        Relationships: []
+      }
+      commission_rules: {
+        Row: {
+          note: string
+          percent: number
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          note?: string
+          percent: number
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          note?: string
+          percent?: number
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           answers: Json
+          appointment_id: string | null
           id: string
           patient_id: string
           service_key: string | null
@@ -205,6 +313,7 @@ export type Database = {
         }
         Insert: {
           answers?: Json
+          appointment_id?: string | null
           id?: string
           patient_id: string
           service_key?: string | null
@@ -213,6 +322,7 @@ export type Database = {
         }
         Update: {
           answers?: Json
+          appointment_id?: string | null
           id?: string
           patient_id?: string
           service_key?: string | null
@@ -220,6 +330,13 @@ export type Database = {
           signed_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "consents_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "consents_patient_id_fkey"
             columns: ["patient_id"]
@@ -277,8 +394,11 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          from_cash_box: boolean
           id: string
           label: string
+          note: string | null
+          shift_id: string | null
           spent_on: string
         }
         Insert: {
@@ -286,8 +406,11 @@ export type Database = {
           category: string
           created_at?: string
           created_by?: string | null
+          from_cash_box?: boolean
           id?: string
           label: string
+          note?: string | null
+          shift_id?: string | null
           spent_on?: string
         }
         Update: {
@@ -295,32 +418,100 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          from_cash_box?: boolean
           id?: string
           label?: string
+          note?: string | null
+          shift_id?: string | null
           spent_on?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "cash_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_requests: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          message: string | null
+          patient_id: string
+          recipient_name: string
+          recipient_phone: string | null
+          service_key: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          patient_id: string
+          recipient_name: string
+          recipient_phone?: string | null
+          service_key?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          patient_id?: string
+          recipient_name?: string
+          recipient_phone?: string | null
+          service_key?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_requests_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       invoice_items: {
         Row: {
           id: string
           invoice_id: string
+          kind: string
           label: string
           qty: number
+          ref: string | null
           unit_price: number
         }
         Insert: {
           id?: string
           invoice_id: string
+          kind?: string
           label: string
           qty?: number
+          ref?: string | null
           unit_price: number
         }
         Update: {
           id?: string
           invoice_id?: string
+          kind?: string
           label?: string
           qty?: number
+          ref?: string | null
           unit_price?: number
         }
         Relationships: [
@@ -333,45 +524,114 @@ export type Database = {
           },
         ]
       }
+      invoice_payments: {
+        Row: {
+          amount: number
+          created_by: string | null
+          id: string
+          invoice_id: string
+          method: Database["public"]["Enums"]["pay_method"]
+          paid_at: string
+          shift_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          method: Database["public"]["Enums"]["pay_method"]
+          paid_at?: string
+          shift_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          method?: Database["public"]["Enums"]["pay_method"]
+          paid_at?: string
+          shift_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "cash_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
+          amount_paid: number
           appointment_id: string | null
           created_at: string
           created_by: string | null
           discount: number
+          discount_approved_by: string | null
+          due_on: string | null
           id: string
           method: Database["public"]["Enums"]["pay_method"]
           no: string
+          note: string | null
           paid: boolean
           patient_id: string | null
+          patient_package_id: string | null
+          shift_id: string | null
           subtotal: number
           total: number
+          void: boolean
+          walk_in_name: string | null
         }
         Insert: {
+          amount_paid?: number
           appointment_id?: string | null
           created_at?: string
           created_by?: string | null
           discount?: number
+          discount_approved_by?: string | null
+          due_on?: string | null
           id?: string
           method?: Database["public"]["Enums"]["pay_method"]
           no?: string
+          note?: string | null
           paid?: boolean
           patient_id?: string | null
+          patient_package_id?: string | null
+          shift_id?: string | null
           subtotal?: number
           total?: number
+          void?: boolean
+          walk_in_name?: string | null
         }
         Update: {
+          amount_paid?: number
           appointment_id?: string | null
           created_at?: string
           created_by?: string | null
           discount?: number
+          discount_approved_by?: string | null
+          due_on?: string | null
           id?: string
           method?: Database["public"]["Enums"]["pay_method"]
           no?: string
+          note?: string | null
           paid?: boolean
           patient_id?: string | null
+          patient_package_id?: string | null
+          shift_id?: string | null
           subtotal?: number
           total?: number
+          void?: boolean
+          walk_in_name?: string | null
         }
         Relationships: [
           {
@@ -387,6 +647,210 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_patient_package_id_fkey"
+            columns: ["patient_package_id"]
+            isOneToOne: false
+            referencedRelation: "patient_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "cash_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          created_at: string
+          decided_by: string | null
+          ends: string
+          id: string
+          kind: string
+          reason: string
+          staff_id: string
+          starts: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_by?: string | null
+          ends: string
+          id?: string
+          kind?: string
+          reason?: string
+          staff_id: string
+          starts: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_by?: string | null
+          ends?: string
+          id?: string
+          kind?: string
+          reason?: string
+          staff_id?: string
+          starts?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_patient: boolean
+          id: string
+          patient_id: string
+          read_at: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_patient: boolean
+          id?: string
+          patient_id: string
+          read_at?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_patient?: boolean
+          id?: string
+          patient_id?: string
+          read_at?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          patient_id: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          patient_id: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          patient_id?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          active: boolean
+          code: string | null
+          created_at: string
+          ends_on: string | null
+          id: string
+          kind: string
+          max_uses: number | null
+          service_key: string | null
+          starts_on: string | null
+          title: string
+          uses: number
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          kind?: string
+          max_uses?: number | null
+          service_key?: string | null
+          starts_on?: string | null
+          title: string
+          uses?: number
+          value: number
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          kind?: string
+          max_uses?: number | null
+          service_key?: string | null
+          starts_on?: string | null
+          title?: string
+          uses?: number
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
           },
         ]
       }
@@ -585,6 +1049,54 @@ export type Database = {
           },
         ]
       }
+      patient_photos: {
+        Row: {
+          angle: string
+          appointment_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          path: string
+          patient_id: string | null
+          stage: string
+        }
+        Insert: {
+          angle?: string
+          appointment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          path: string
+          patient_id?: string | null
+          stage?: string
+        }
+        Update: {
+          angle?: string
+          appointment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          path?: string
+          patient_id?: string | null
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_photos_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_photos_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string | null
@@ -595,6 +1107,7 @@ export type Database = {
           lang: string
           name: string
           notes: string | null
+          notify: Json
           phone: string | null
           points: number
           pregnant: boolean
@@ -610,6 +1123,7 @@ export type Database = {
           lang?: string
           name?: string
           notes?: string | null
+          notify?: Json
           phone?: string | null
           points?: number
           pregnant?: boolean
@@ -625,6 +1139,7 @@ export type Database = {
           lang?: string
           name?: string
           notes?: string | null
+          notify?: Json
           phone?: string | null
           points?: number
           pregnant?: boolean
@@ -632,6 +1147,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      payroll_entries: {
+        Row: {
+          base_salary: number
+          bonus: number
+          commission: number
+          created_at: string
+          deductions: number
+          id: string
+          note: string
+          paid_at: string | null
+          period: string
+          staff_id: string
+        }
+        Insert: {
+          base_salary?: number
+          bonus?: number
+          commission?: number
+          created_at?: string
+          deductions?: number
+          id?: string
+          note?: string
+          paid_at?: string | null
+          period: string
+          staff_id: string
+        }
+        Update: {
+          base_salary?: number
+          bonus?: number
+          commission?: number
+          created_at?: string
+          deductions?: number
+          id?: string
+          note?: string
+          paid_at?: string | null
+          period?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prescriptions: {
         Row: {
@@ -873,6 +1435,7 @@ export type Database = {
           author_id: string | null
           body: string
           created_at: string
+          fields: Json
           id: string
           patient_id: string
         }
@@ -881,6 +1444,7 @@ export type Database = {
           author_id?: string | null
           body: string
           created_at?: string
+          fields?: Json
           id?: string
           patient_id: string
         }
@@ -889,6 +1453,7 @@ export type Database = {
           author_id?: string | null
           body?: string
           created_at?: string
+          fields?: Json
           id?: string
           patient_id?: string
         }
@@ -946,6 +1511,7 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role"]
           title: string
           user_id: string | null
+          username: string | null
         }
         Insert: {
           active?: boolean
@@ -958,6 +1524,7 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role"]
           title?: string
           user_id?: string | null
+          username?: string | null
         }
         Update: {
           active?: boolean
@@ -970,8 +1537,95 @@ export type Database = {
           role?: Database["public"]["Enums"]["staff_role"]
           title?: string
           user_id?: string | null
+          username?: string | null
         }
         Relationships: []
+      }
+      staff_attendance: {
+        Row: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          day: string
+          id: string
+          note: string
+          staff_id: string
+        }
+        Insert: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          day?: string
+          id?: string
+          note?: string
+          staff_id: string
+        }
+        Update: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          day?: string
+          id?: string
+          note?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_shifts: {
+        Row: {
+          created_at: string
+          day: string
+          ends: string
+          id: string
+          note: string
+          room_id: string | null
+          staff_id: string
+          starts: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          ends: string
+          id?: string
+          note?: string
+          room_id?: string | null
+          staff_id: string
+          starts: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          ends?: string
+          id?: string
+          note?: string
+          room_id?: string | null
+          staff_id?: string
+          starts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_shifts_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_shifts_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_batches: {
         Row: {
@@ -1058,6 +1712,125 @@ export type Database = {
           },
         ]
       }
+      surveys: {
+        Row: {
+          answers: Json
+          appointment_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          patient_id: string
+        }
+        Insert: {
+          answers?: Json
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          patient_id: string
+        }
+        Update: {
+          answers?: Json
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surveys_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surveys_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waitlist: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string | null
+          note: string | null
+          part: string
+          patient_id: string | null
+          phone: string | null
+          preferred_day: string | null
+          service_key: string | null
+          specialist_id: string | null
+          status: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          note?: string | null
+          part?: string
+          patient_id?: string | null
+          phone?: string | null
+          preferred_day?: string | null
+          service_key?: string | null
+          specialist_id?: string | null
+          status?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          note?: string | null
+          part?: string
+          patient_id?: string | null
+          phone?: string | null
+          preferred_day?: string | null
+          service_key?: string | null
+          specialist_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "waitlist_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1067,11 +1840,145 @@ export type Database = {
         Args: { p_counted: number; p_note?: string; p_product: string }
         Returns: undefined
       }
+      attendance_punch: {
+        Args: { p_kind: string }
+        Returns: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          day: string
+          id: string
+          note: string
+          staff_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_attendance"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_appointment: {
+        Args: {
+          p_check_in?: boolean
+          p_patient?: string
+          p_room?: string
+          p_service: string
+          p_source?: string
+          p_specialist?: string
+          p_starts: string
+          p_walk_in_name?: string
+          p_walk_in_phone?: string
+        }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          finished_at: string | null
+          id: string
+          minutes: number
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      booked_ranges: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          ends_at: string
+          room_id: string
+          specialist_id: string
+          starts_at: string
+        }[]
+      }
       cancel_my_appointment: {
         Args: { p_id: string; p_reason: string }
         Returns: undefined
       }
       cancel_order: { Args: { p_order: string }; Returns: undefined }
+      cash_shift_expected: { Args: { p_shift: string }; Returns: number }
+      close_cash_shift: {
+        Args: { p_counted: number; p_note?: string }
+        Returns: {
+          closed_at: string | null
+          closed_by: string | null
+          counted_cash: number | null
+          expected_cash: number | null
+          id: string
+          note: string | null
+          opened_at: string
+          opened_by: string | null
+          opening_cash: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cash_shifts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_invoice: {
+        Args: {
+          p_appointment: string
+          p_discount: number
+          p_due_on?: string
+          p_items: Json
+          p_note?: string
+          p_patient: string
+          p_patient_package?: string
+          p_payments: Json
+          p_walk_in_name?: string
+        }
+        Returns: {
+          amount_paid: number
+          appointment_id: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          discount_approved_by: string | null
+          due_on: string | null
+          id: string
+          method: Database["public"]["Enums"]["pay_method"]
+          no: string
+          note: string | null
+          paid: boolean
+          patient_id: string | null
+          patient_package_id: string | null
+          shift_id: string | null
+          subtotal: number
+          total: number
+          void: boolean
+          walk_in_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       ensure_patient: {
         Args: never
         Returns: {
@@ -1083,6 +1990,7 @@ export type Database = {
           lang: string
           name: string
           notes: string | null
+          notify: Json
           phone: string | null
           points: number
           pregnant: boolean
@@ -1109,10 +2017,78 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role"]
           title: string
           user_id: string | null
+          username: string | null
         }
         SetofOptions: {
           from: "*"
           to: "staff"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      my_queue: {
+        Args: never
+        Returns: {
+          ahead: number
+          appointment_id: string
+          called_at: string
+          now_serving: number
+          queue_no: number
+          room: string
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+        }[]
+      }
+      open_cash_shift: {
+        Args: { p_opening: number }
+        Returns: {
+          closed_at: string | null
+          closed_by: string | null
+          counted_cash: number | null
+          expected_cash: number | null
+          id: string
+          note: string | null
+          opened_at: string
+          opened_by: string | null
+          opening_cash: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cash_shifts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pay_invoice: {
+        Args: {
+          p_amount: number
+          p_invoice: string
+          p_method: Database["public"]["Enums"]["pay_method"]
+        }
+        Returns: {
+          amount_paid: number
+          appointment_id: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          discount_approved_by: string | null
+          due_on: string | null
+          id: string
+          method: Database["public"]["Enums"]["pay_method"]
+          no: string
+          note: string | null
+          paid: boolean
+          patient_id: string | null
+          patient_package_id: string | null
+          shift_id: string | null
+          subtotal: number
+          total: number
+          void: boolean
+          walk_in_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1158,6 +2134,10 @@ export type Database = {
       }
       track_app_open: {
         Args: { p_channel: string; p_device_id: string; p_platform: string }
+        Returns: undefined
+      }
+      void_invoice: {
+        Args: { p_invoice: string; p_reason?: string }
         Returns: undefined
       }
     }

@@ -64,8 +64,8 @@ export async function listDevices() {
 
 /** Specialists shown to patients (public team listing). */
 export async function listSpecialists(): Promise<Specialist[]> {
-  return must(await supabase.from("staff").select("id,name,title,photo_url,role").eq("active", true).in("role", ["specialist", "admin", "owner"]).order("created_at"))
-    .filter((s) => s.role === "specialist" || !!s.photo_url);
+  const rows = must(await supabase.from("staff").select("id,name,title,photo_url,role").eq("active", true).in("role", ["specialist", "admin", "owner"]).order("created_at")) ?? [];
+  return rows.filter((s) => s.role === "specialist" || !!s.photo_url);
 }
 
 /** Saving vs. paying each session at the single-session price. */
@@ -137,4 +137,9 @@ export async function setDeviceMaintenance(id: string, on: boolean) {
 export async function removeDevice(id: string) {
   must(await supabase.from("devices").delete().eq("id", id));
   invalidate("catalog");
+}
+
+/** The signed-in patient's packages (RLS limits to her own rows). */
+export async function listMyPackages(patientId: string) {
+  return must(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).order("purchased_at", { ascending: false }));
 }

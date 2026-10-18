@@ -5,8 +5,21 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, DarkCard, Icon, SectionTitle } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { HELP_FAQ, WA_ICON } from "@/lib/mock/c2";
+import { useQuery } from "@/lib/db/query";
+import { getSetting } from "@/lib/db/marketing";
 import { C, CARD, SELECTED } from "@/lib/tokens";
+
+const WA_ICON = "M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1";
+
+const HELP_FAQ: [string, string][] = [
+  ["كيف ألغي موعدي؟", "من «مواعيدي» افتحي الموعد واضغطي «إلغاء الموعد». يعود الوقت متاحاً لمراجعة أخرى."],
+  ["متى يصلني التذكير؟", "يصلكِ تذكير قبل موعدكِ حسب سياسة المركز، ويمكنكِ ضبط الإشعارات من الإعدادات."],
+  ["كيف أستخدم الباقة؟", "احجزي كالمعتاد، وتُخصم جلسة من باقتكِ عند كل زيارة. تجدين رصيد باقاتكِ في حسابكِ."],
+  ["هل بياناتي محمية؟", "نعم. ملفكِ وصوركِ لا يطّلع عليها إلا أنتِ وفريق المركز المعالج، ولا تُشارك مع أي جهة أخرى."],
+];
+
+type Centre = { phone?: string; whatsapp?: string };
+const digits = (s: string) => s.replace(/[^\d+]/g, "");
 
 const contactStyle: CSSProperties = {
   flex: 1, minWidth: 0, height: 96, borderRadius: 24, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", color: C.white,
@@ -32,6 +45,7 @@ function Row({ children, top }: { children: ReactNode; top?: boolean }) {
 export default function HelpPage() {
   const [open, setOpen] = useState(0);
   const [lang, setLang] = useState(0);
+  const { data: centre } = useQuery(["settings", "centre"], () => getSetting<Centre>("centre", {}));
   return (
     <PhoneScreen>
       <TopBar title="المساعدة" back={R.Account} />
@@ -41,8 +55,8 @@ export default function HelpPage() {
         <div style={{ fontSize: 13, color: C.onDark, marginTop: 2 }}>تواصلي مع فريق المركز بالطريقة التي تناسبكِ</div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <Link href={R.P_Chat} style={contactStyle}><ContactInner icon="msg" label="محادثة" /></Link>
-          <button type="button" style={contactStyle}><ContactInner icon="phone" label="اتصال" /></button>
-          <button type="button" style={contactStyle}><ContactInner icon={WA_ICON} color={C.ok} label="واتساب" /></button>
+          {centre?.phone && <a href={`tel:${digits(centre.phone)}`} style={contactStyle}><ContactInner icon="phone" label="اتصال" /></a>}
+          {centre?.whatsapp && <a href={`https://wa.me/${digits(centre.whatsapp).replace("+", "")}`} target="_blank" rel="noreferrer" style={contactStyle}><ContactInner icon={WA_ICON} color={C.ok} label="واتساب" /></a>}
         </div>
       </DarkCard>
 

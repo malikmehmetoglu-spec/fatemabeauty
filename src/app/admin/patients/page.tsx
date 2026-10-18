@@ -1,26 +1,168 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, Tag, PersonName } from "@/components/ui";
+import { EmptyState, ErrorNote, Icon, Loading, Modal, SubmitButton, GhostButton, Tag, TextArea, TextInput, Select } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { TODAY, initials } from "@/lib/data";
-import { arDate, money } from "@/lib/format";
-import { cs } from "../calendar/CalendarBoard";
-import { css, PATIENTS } from "@/lib/mock/e";
-import { C, SH, SHB } from "@/lib/tokens";
+import { arDate, clock, dayKey, money } from "@/lib/format";
+import { useQuery } from "@/lib/db/query";
+import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
+import { C, SH } from "@/lib/tokens";
+import { Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
+
+const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً"];
+const PAGE = 20;
+
+function matches(p: PatientRow, f: number) {
+  if (f === 1) return p.packages.some((x) => x.sessions_used < x.sessions_total);
+  if (f === 2) return p.due > 0;
+  if (f === 3) return p.conditions.some((c) => c.kind === "allergy");
+  if (f === 4) return !!p.lastVisit && Date.now() - new Date(p.lastVisit).getTime() > 45 * 864e5;
+  return true;
+}
 
 /** W_Patients.dc.html */
 export default function PatientsPage() {
+  const { data, loading, error } = useQuery(["patients", "list"], listPatients);
   const [f, setF] = useState(0);
-  const rows = PATIENTS.filter((p) => f === 0 || (f === 1 && !!p.pkg && p.pkg.done < p.pkg.total) || (f === 2 && p.due > 0)
-    || (f === 3 && p.tags.some(([x]) => x.includes("حساس"))) || (f === 4 && (TODAY.getTime() - p.last.getTime()) / 86400000 > 45));
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [adding, setAdding] = useState(false);
+
+  const rows = useMemo(() => {
+    const s = q.trim().replace(/\s+/g, " ");
+    const digits = s.replace(/\D/g, "");
+    return (data ?? []).filter((p) => matches(p, f) && (!s || p.name.includes(s) || String(p.file_no) === s
+      || (digits.length >= 3 && (p.phone ?? "").replace(/\D/g, "").includes(digits))));
+  }, [data, f, q]);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const shown = rows.slice(page * PAGE, page * PAGE + PAGE);
+  const today = dayKey();
+
+  function exportCsv() {
+    const lines = [["رقم الملف", "الاسم", "الهاتف", "آخر زيارة", "الرصيد المستحق"], ...rows.map((p) => [p.file_no, p.name, p.phone ?? "", p.lastVisit ? dayKey(new Date(p.lastVisit)) : "", p.due])];
+    const blob = new Blob(["﻿" + lines.map((l) => l.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `patients-${today}.csv`; a.click();
+  }
+
+  const head = (t: string, flex: number) => <div style={{ flex, minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{t}</div>;
+  const cell = { minWidth: 0, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 } as const;
+
   return (
-    <AdminShell active="المراجعات" title="المراجعات" subtitle={<>الملفات الصحية وسجلّ الزيارات والباقات</>} actions={<><button style={{ height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 18px", whiteSpace: "nowrap" }}><Icon name="M12 5v14M5 12h14" size={19} color={C.white} stroke={1.9} />مراجعة جديدة</button></>}>
-<div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", flexGrow: 1 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><div style={{ position: "relative", width: 340 }}><label htmlFor="ps" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>بحث</label><input id="ps" placeholder="الاسم، رقم الملف أو الهاتف" style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", paddingInlineStart: 44 }} /><span style={{ position: "absolute", top: 14, right: 16 }}><Icon name="M10 10m-7 0a7 7 0 1 0 14 0 7 7 0 1 0-14 0M21 21l-6-6" size={18} color={C.muted} /></span></div><Icon name="M4 5h16l-6 8v5l-4 2v-7z" size={17} color={C.sub2} /><button onClick={() => setF(0)} style={css(cs(f === 0, 40))}>الكل</button><button onClick={() => setF(1)} style={css(cs(f === 1, 40))}>باقة نشطة</button><button onClick={() => setF(2)} style={css(cs(f === 2, 40))}>رصيد مستحق</button><button onClick={() => setF(3)} style={css(cs(f === 3, 40))}>لديها حساسية</button><button onClick={() => setF(4)} style={css(cs(f === 4, 40))}>لم تزر منذ 45 يوماً</button><span style={{ marginInlineStart: "auto" }}><button style={{ height: 40, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5 5-5M12 4v12" size={16} color={C.accent} stroke={1.9} />تصدير</button></span></div><div style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}><div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}><div style={{ flex: 0.55, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>رقم الملف</div><div style={{ flex: 1.45, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>المراجعة</div><div style={{ flex: 1.05, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>الهاتف</div><div style={{ flex: 0.7, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>آخر زيارة</div><div style={{ flex: 1.15, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>الباقة</div><div style={{ flex: 0.95, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>الرصيد</div><div style={{ flex: 1.55, minWidth: "0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>وسوم</div></div>{rows.map((p) => (<div key={p.fileNo} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: "1px solid #EDE2F1" }}><div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: C.accent }}>{p.fileNo}</span></div><div style={{ flex: 1.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}><Link href={R.W_Record} style={{ display: "flex" }}><div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}><span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{initials(p.name)}</span><div style={{ lineHeight: 1.35, minWidth: "0" }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}><PersonName name={p.name} sample /></div></div></div></Link></div><div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}><span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", color: C.sub, unicodeBidi: "isolate" }}>+963 9•• ••• •{p.phone}</span></div><div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: C.sub }}>{p.last.getTime() === TODAY.getTime() ? "اليوم" : arDate(p.last, { day: false })}</span></div><div style={{ flex: 1.15, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>{p.pkg ? (<div style={{ width: "100%", lineHeight: 1.3 }}><div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.pkg.name} · {p.pkg.done}/{p.pkg.total}</div><div style={{ height: 5, borderRadius: 2, background: "#ECE2EF", overflow: "hidden" }}><div style={{ width: `${(p.pkg.done / p.pkg.total) * 100}%`, height: 5, borderRadius: 2, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} /></div></div>) : <span style={{ color: C.muted }}>—</span>}</div><div style={{ flex: 0.95, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div><div style={{ flex: 1.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>{p.tags.length ? p.tags.map(([x, k]) => <Tag key={x} kind={k}>{x}</Tag>) : <span style={{ color: C.muted }}>—</span>}</div></div>))}</div><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: C.sub2 }}><span>عرض {rows.length} نتائج · مرتّبة حسب آخر زيارة</span><div style={{ display: "flex", gap: 6 }}><button aria-label="السابق" style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M9 6l6 6-6 6" size={14} color={C.accent} stroke={1.9} /></button><span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>1</span><span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>2</span><button aria-label="التالي" style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M15 6l-6 6 6 6" size={14} color={C.accent} stroke={1.9} /></button></div></div></div>
+    <AdminShell active="المراجعات" title="المراجعات" subtitle="الملفات الصحية وسجلّ الزيارات والباقات"
+      actions={<button type="button" onClick={() => setAdding(true)} style={primaryBtn}><Icon name={PLUS} size={19} color={C.white} stroke={1.9} />مراجعة جديدة</button>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
+            <label htmlFor="ps" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>بحث</label>
+            <input id="ps" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="الاسم، رقم الملف أو الهاتف" style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", paddingInlineStart: 44 }} />
+            <span style={{ position: "absolute", top: 14, right: 16 }}><Icon name="search" size={18} color={C.muted} /></span>
+          </div>
+          <Icon name="filter" size={17} color={C.sub2} />
+          {FILTERS.map((t, i) => <button key={t} type="button" onClick={() => { setF(i); setPage(0); }} style={chip(f === i, 40)}>{t}</button>)}
+          <span style={{ marginInlineStart: "auto" }}>
+            <button type="button" onClick={exportCsv} disabled={!rows.length} style={{ ...chip(false, 40), color: C.accent, opacity: rows.length ? 1 : 0.5 }}><Icon name="download" size={16} color={C.accent} stroke={1.9} />تصدير</button>
+          </span>
+        </div>
 
-
+        {error ? <ErrorNote>تعذّر تحميل المراجعات: {error}</ErrorNote> : loading ? <Loading /> : !data?.length ? (
+          <EmptyState icon="users" title="لا توجد ملفات مراجعات بعد" text="تظهر هنا كل مراجعة تسجّل في التطبيق أو يُفتح لها ملف في الاستقبال، مع آخر زيارة والباقة والرصيد."
+            action={<SubmitButton onClick={() => setAdding(true)}>فتح ملف جديد</SubmitButton>} />
+        ) : (
+          <>
+            <div style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
+                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
+              </div>
+              {!shown.length && <div style={{ borderTop: "1px solid #EDE2F1", padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
+              {shown.map((p) => {
+                const pkg = p.packages.find((x) => x.sessions_used < x.sessions_total) ?? p.packages[0];
+                const allergies = p.conditions.filter((c) => c.kind === "allergy");
+                const href = fileHref(R.W_Record, "id", p.id);
+                return (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: "1px solid #EDE2F1" }}>
+                    <div style={{ ...cell, flex: 0.55 }}><Link href={href} className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</Link></div>
+                    <div style={{ ...cell, flex: 1.45 }}>
+                      <Link href={href} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        <Initials name={p.name} />
+                        <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
+                      </Link>
+                    </div>
+                    <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
+                    <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{!p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false })}</span></div>
+                    <div style={{ ...cell, flex: 1.15 }}>
+                      {pkg ? (
+                        <div style={{ width: "100%", lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600 }}>{pkg.packages?.name ?? "باقة"} · {pkg.sessions_used}/{pkg.sessions_total}</div>
+                          <Bar done={pkg.sessions_used} total={pkg.sessions_total} />
+                        </div>
+                      ) : <span style={{ color: C.muted }}>—</span>}
+                    </div>
+                    <div style={{ ...cell, flex: 0.95 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div>
+                    <div style={{ ...cell, flex: 1.55, flexWrap: "wrap" }}>
+                      {allergies.map((c) => <Tag key={c.name} kind="pink">حساسية: {c.name}</Tag>)}
+                      {p.pregnant && <Tag kind="amber">حامل</Tag>}
+                      {p.breastfeeding && <Tag kind="amber">مرضع</Tag>}
+                      {p.skin_type && <Tag kind="gray">{p.skin_type}</Tag>}
+                      {!allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && <span style={{ color: C.muted }}>—</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: C.sub2 }}>
+              <span>عرض {shown.length} من {rows.length} · مرتّبة حسب آخر زيارة</span>
+              {pages > 1 && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button type="button" aria-label="السابق" disabled={page === 0} onClick={() => setPage(page - 1)} style={{ ...chip(false, 36), padding: 0, width: 36 }}><Icon name="M9 6l6 6-6 6" size={14} color={C.accent} stroke={1.9} /></button>
+                  <span className="latin" style={chip(true, 36)}>{page + 1} / {pages}</span>
+                  <button type="button" aria-label="التالي" disabled={page >= pages - 1} onClick={() => setPage(page + 1)} style={{ ...chip(false, 36), padding: 0, width: 36 }}><Icon name="M15 6l-6 6 6 6" size={14} color={C.accent} stroke={1.9} /></button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      <AddPatient open={adding} onClose={() => setAdding(false)} />
     </AdminShell>
+  );
+}
+
+function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
+  const [skin, setSkin] = useState("");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function save() {
+    setErr("");
+    if (!name.trim()) { setErr("اكتبي اسم المراجعة."); return; }
+    const digits = phone.replace(/\D/g, "");
+    if (phone && digits.length < 9) { setErr("رقم الهاتف غير مكتمل."); return; }
+    setBusy(true);
+    try {
+      const p = await createPatient({
+        name: name.trim(), phone: digits ? `+963${digits.replace(/^(963|0)/, "")}` : null,
+        birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null,
+      });
+      onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");
+      window.location.href = fileHref(R.W_Record, "id", p.id);
+    } catch (e) { setErr(e instanceof Error && e.message.includes("duplicate") ? "هذا الرقم مسجّل لمراجعة أخرى." : "تعذّر الحفظ."); }
+    setBusy(false);
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="فتح ملف مراجعة" footer={<><SubmitButton onClick={save} busy={busy}>حفظ الملف</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
+      <TextInput label="الاسم الكامل" value={name} onChange={setName} required />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09xx xxx xxx" hint="تربط الملف بحسابها عند تسجيل الدخول بهذا الرقم" />
+        <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
+      </div>
+      <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
+      <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
+      {err && <ErrorNote>{err}</ErrorNote>}
+    </Modal>
   );
 }

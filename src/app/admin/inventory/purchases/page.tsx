@@ -1,576 +1,133 @@
 "use client";
 
+/**
+ * W_Purchases.dc.html — المشتريات والموردون (live).
+ * Receiving goods = stock batches. Each «استلام» adds a batch (qty, expiry, unit cost, supplier as free text).
+ */
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
+import { Card, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
+import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
-import { arDate } from "@/lib/format";
+import { useQuery } from "@/lib/db/query";
+import { listAllBatches, listInventory, type Product } from "@/lib/db/products";
+import { ReceiveDialog } from "../dialogs";
 
-/** W_Purchases.dc.html — المشتريات والموردون. */
+const value = (b: { qty_received: number; unit_cost: number | null }) => Number(b.qty_received) * (b.unit_cost ?? 0);
+
 export default function Page() {
+  const { data: batches, loading, error } = useQuery(["products", "batches"], () => listAllBatches(300));
+  const { data: items } = useQuery(["products", "inventory"], listInventory);
+  const [picking, setPicking] = useState(false);
+  const [receiving, setReceiving] = useState<Product | null>(null);
+  const [supplier, setSupplier] = useState<string | null>(null);
+
+  const list = useMemo(() => batches ?? [], [batches]);
+  const month = dayKey().slice(0, 7);
+  const thisMonth = list.filter((b) => dayKey(new Date(b.received_at)).slice(0, 7) === month);
+  const soon = new Date(Date.now() + 60 * 864e5).toISOString().slice(0, 10);
+  const expiring = list.filter((b) => Number(b.qty_left) > 0 && b.expires_on && b.expires_on <= soon);
+
+  const suppliers = useMemo(() => {
+    const m = new Map<string, { n: number; value: number; last: string }>();
+    for (const b of list) {
+      const s = b.supplier?.trim();
+      if (!s) continue;
+      const e = m.get(s) ?? { n: 0, value: 0, last: b.received_at };
+      e.n++; e.value += value(b); if (b.received_at > e.last) e.last = b.received_at;
+      m.set(s, e);
+    }
+    return [...m.entries()].sort((a, b) => b[1].last.localeCompare(a[1].last));
+  }, [list]);
+
+  const shown = supplier ? list.filter((b) => b.supplier?.trim() === supplier) : list;
 
   return (
-    <AdminShell active="المخزون والأجهزة" title="المشتريات والموردون" subtitle="أسماء الموردين تسميات عامة · القيم أمثلة" actions={<>
-      <Link style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }} href={R.W_Inventory}>
-        <Icon name="box" color="#7B4687" size={17} stroke={1.9} />
-        المخزون
-      </Link>
-    </>}>
-      <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: "0", flex: 1, minWidth: "0" }}>
-          <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0" }}>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ fontSize: 13, color: "#866F8D" }}>
-                  طلبات مفتوحة
-                </div>
-                <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="cart" color="#A877B6" size={16} />
-                </span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-                2
-              </div>
-              <div style={{ fontSize: 12, color: "#866F8D" }}>
-                بقيمة 80,000 ل.س
-              </div>
-            </div>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ fontSize: 13, color: "#866F8D" }}>
-                  مشتريات أيلول
-                </div>
-                <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="receipt" color="#A877B6" size={16} />
-                </span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-                108,000{" "}
-                <span style={{ fontSize: 14 }}>
-                  ل.س
-                </span>
-              </div>
-              <div style={{ fontSize: 12, color: "#866F8D" }}>
-                3 طلبات · قيم مثال
-              </div>
-            </div>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ fontSize: 13, color: "#866F8D" }}>
-                  الموردون
-                </div>
-                <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="truck" color="#A877B6" size={16} />
-                </span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-                3
-              </div>
-              <div style={{ fontSize: 12, color: "#866F8D" }}>
-                مستحضرات · مستهلكات · قطع أجهزة
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 16, alignItems: "center", minHeight: "0" }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: "#7B4687" }}>
-                الكل (6)
-              </span>
-              <span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>
-                مُرسل (1)
-              </span>
-              <span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>
-                مستلم جزئياً (1)
-              </span>
-              <span style={{ height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>
-                مستلم (4)
-              </span>
-            </div>
-          </div>
-          <div style={{ borderRadius: 26, padding: "8px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                رقم الطلب
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                التاريخ
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                المورّد
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                البنود
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                القيمة
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                الحالة
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                الاستلام
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-041
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  12 تشرين الأول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستحضرات
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  4
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    58,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FCF1DE", color: "#8A5A12" }}>
-                  مُرسل
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    15 تشرين الأول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    متوقع
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-040
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  6 تشرين الأول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستهلكات الطبية
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  3
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    22,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: "#B03D6A" }}>
-                  مستلم جزئياً
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    17 تشرين الأول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    متوقع الباقي
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-039
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  1 تشرين الأول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستحضرات
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  5
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    62,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                  مستلم
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    7 تشرين الأول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    وصل
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-038
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  24 أيلول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد قطع الأجهزة
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  1
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    12,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                  مستلم
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    3 تشرين الأول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    وصل
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-037
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  14 أيلول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستحضرات
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  6
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    70,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                  مستلم
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    19 أيلول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    وصل
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
-              <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
-                  PO-2026-036
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap", color: "#76607E" }}>
-                  3 أيلول
-                </span>
-              </div>
-              <div style={{ flex: 2.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستهلكات الطبية
-                </span>
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                  4
-                </span>
-              </div>
-              <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    26,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                  مستلم
-                </span>
-              </div>
-              <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    8 أيلول
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    وصل
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#35213D" }}>
-              الموردون
-            </div>
-            <button style={{ height: 34, borderRadius: 17, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
-              <Icon name="plus" color="#7B4687" size={17} stroke={1.9} />
-              إضافة مورّد
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "stretch", minHeight: "0" }}>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 22, padding: "14px 16px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="truck" color="#A877B6" size={18} />
-              </span>
-              <div style={{ flex: 1, minWidth: "0", lineHeight: 1.45 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستحضرات
-                  <ExampleTag />
-                </div>
-                <div style={{ fontSize: 12, color: "#866F8D" }}>
-                  3 طلبات · آخرها 12 تشرين الأول
-                </div>
-              </div>
-            </div>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 22, padding: "14px 16px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="truck" color="#A877B6" size={18} />
-              </span>
-              <div style={{ flex: 1, minWidth: "0", lineHeight: 1.45 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد المستهلكات الطبية
-                  <ExampleTag />
-                </div>
-                <div style={{ fontSize: 12, color: "#866F8D" }}>
-                  2 طلبات · آخرها 6 تشرين الأول
-                </div>
-              </div>
-            </div>
-            <div style={{ flex: 1, minWidth: "0", borderRadius: 22, padding: "14px 16px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="truck" color="#A877B6" size={18} />
-              </span>
-              <div style={{ flex: 1, minWidth: "0", lineHeight: 1.45 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  مورّد قطع الأجهزة
-                  <ExampleTag />
-                </div>
-                <div style={{ fontSize: 12, color: "#866F8D" }}>
-                  1 طلبات · آخرها 24 أيلول
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0", width: 340, flexShrink: 0 }}>
-          <div style={{ flex: 1, borderRadius: 28, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#35213D" }}>
-                طلب شراء جديد
-              </div>
-              <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>
-                مسودة
-              </span>
-            </div>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#866F8D" }}>
-              المورّد
-              <span style={{ height: 44, borderRadius: 22, border: "1px solid #E7D9EB", background: "#FEFCFE", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", color: "#35213D", fontSize: 13.5, fontWeight: 600 }}>
-                <span>
-                  مورّد المستحضرات
-                  <ExampleTag />
-                </span>
-                <Icon name="down" color="#866F8D" size={16} />
-              </span>
-            </label>
-            <div style={{ fontSize: 12, color: "#866F8D" }}>
-              مقترح تلقائياً من الأصناف تحت الحد الأدنى
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, height: 46, borderTop: "1px solid #EDE2F1" }}>
-                <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    مصل الهيالورونيك
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    المتوفر 18 · الحد الأدنى 20
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="minus" color="#7B4687" size={14} />
-                  </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
-                    22
-                  </span>
-                  <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="plus" color="#7B4687" size={14} />
-                  </button>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, height: 46, borderTop: "1px solid #EDE2F1" }}>
-                <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    مواد التقشير (محلول)
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    المتوفر 6 · الحد الأدنى 8
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="minus" color="#7B4687" size={14} />
-                  </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
-                    10
-                  </span>
-                  <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="plus" color="#7B4687" size={14} />
-                  </button>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, height: 46, borderTop: "1px solid #EDE2F1" }}>
-                <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    جل التبريد لجلسات الليزر
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                    المتوفر 9 · الحد الأدنى 10
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="minus" color="#7B4687" size={14} />
-                  </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
-                    11
-                  </span>
-                  <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="plus" color="#7B4687" size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#866F8D", marginTop: 4 }}>
-              التسليم المطلوب
-              <span style={{ height: 44, borderRadius: 22, border: "1px solid #E7D9EB", background: "#FEFCFE", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", color: "#35213D", fontSize: 13.5, fontWeight: 600 }}>
-                <span>
-                  {arDate(new Date(2026, 9, 18))}
-                </span>
-                <Icon name="cal" color="#866F8D" size={16} />
-              </span>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#866F8D" }}>
-              ملاحظة للمورّد
-              <textarea aria-label="ملاحظة للمورّد" rows={2} placeholder="مثلاً: تاريخ انتهاء لا يقل عن سنة" style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13, color: "#35213D", resize: "none", outline: "none" }}></textarea>
-            </label>
-            <div style={{ borderTop: "1px solid #EDE2F1", paddingTop: 10, fontSize: 12.5, color: "#76607E", lineHeight: 1.6 }}>
-              الأسعار تُعتمد حسب عرض المورّد عند التأكيد، وتُسجَّل التشغيلة وتاريخ الانتهاء عند الاستلام.
-            </div>
-            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
-              <button style={{ height: 52, borderRadius: 26, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px" }}>
-                <Icon name="send" color="#FFFFFF" size={19} stroke={1.9} />
-                إرسال الطلب للمورّد
-              </button>
-              <button style={{ height: 44, borderRadius: 22, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
-                حفظ كمسودة
-              </button>
-            </div>
-          </div>
-        </div>
+    <AdminShell active="المخزون والأجهزة" title="المشتريات والموردون" subtitle="كل استلام بضاعة يُسجَّل دفعةً بتاريخ انتهائها وكلفتها ومورّدها"
+      actions={<>
+        <Link href={R.W_Inventory} style={{ height: 40, borderRadius: 20, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
+          <Icon name="box" color={C.accent} size={16} />المخزون
+        </Link>
+        <GhostButton icon="plus" onClick={() => setPicking(true)}>استلام بضاعة</GhostButton>
+      </>}>
+      <div style={{ display: "flex", gap: 14 }}>
+        <Kpi dark label="استلامات هذا الشهر" value={thisMonth.length} sub="دفعة مسجّلة" icon="download" />
+        <Kpi label="قيمة المستلم هذا الشهر" value={money(thisMonth.reduce((s, b) => s + value(b), 0))} sub="بكلفة الوحدة المسجّلة" icon="wallet" />
+        <Kpi label="الموردون" value={suppliers.length} sub="من سجلّ الاستلام" icon="users" />
+        <Kpi label="دفعات تنتهي خلال 60 يوماً" value={expiring.length} sub="ما زال منها كمية" icon="clock" />
       </div>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>سجلّ الاستلام</h2>
+            {supplier && <Tag kind="lilac">{supplier} <button type="button" aria-label="إزالة التصفية" onClick={() => setSupplier(null)} style={{ border: "none", background: "none", padding: 0, marginInlineStart: 4, color: C.accent }}>×</button></Tag>}
+          </div>
+          {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل السجل: {error}</ErrorNote> : list.length === 0 ? (
+            <EmptyState icon="download" title="لم تُستلم بضاعة بعد"
+              text="عند وصول بضاعة اضغطي «استلام بضاعة»، اختاري الصنف واكتبي الكمية وتاريخ الانتهاء والمورّد. تُضاف الكمية إلى المخزون ويُصرف الأقرب انتهاءً أولاً."
+              action={<GhostButton icon="plus" onClick={() => setPicking(true)}>استلام بضاعة</GhostButton>} />
+          ) : (
+            <DataTable
+              headers={["التاريخ", "الصنف", "الكمية", "المتبقي", "الانتهاء", "كلفة الوحدة", "المورّد"]}
+              widths={[1.1, 2, 0.8, 0.8, 1.1, 1, 1.2]}
+              rows={shown.map((b) => {
+                const exp = b.expires_on;
+                const expSoon = exp && exp <= soon && Number(b.qty_left) > 0;
+                return [
+                  <span key="d" style={{ fontSize: 12.5 }}>{arDate(new Date(b.received_at), { day: false })}</span>,
+                  <b key="n" style={{ fontSize: 13.5 }}>{b.products?.name ?? "—"}</b>,
+                  <span key="q" className="latin">{Number(b.qty_received)} <span style={{ fontSize: 11.5, color: C.sub2 }}>{b.products?.unit}</span></span>,
+                  <span key="l" className="latin" style={{ color: Number(b.qty_left) <= 0 ? C.muted : C.ink }}>{Number(b.qty_left)}</span>,
+                  exp ? <span key="e" style={{ fontSize: 12.5, color: expSoon ? C.danger : C.ink, fontWeight: expSoon ? 700 : 400 }}>{arDate(new Date(exp), { day: false, year: true })}</span> : <span key="e" style={{ color: C.muted }}>—</span>,
+                  b.unit_cost != null ? <span key="c" className="latin">{money(b.unit_cost)}</span> : <span key="c" style={{ color: C.muted }}>—</span>,
+                  <span key="s" style={{ fontSize: 12.5 }}>{b.supplier || <span style={{ color: C.muted }}>—</span>}</span>,
+                ];
+              })}
+            />
+          )}
+        </div>
+
+        <Card style={{ width: 300, flexShrink: 0 }} padding={18}>
+          <h2 style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700 }}>الموردون</h2>
+          {suppliers.length === 0 ? (
+            <div style={{ fontSize: 13, color: C.sub2, lineHeight: 1.8 }}>تظهر هنا أسماء الموردين كما تكتبينها عند الاستلام، مع عدد الاستلامات وقيمتها.</div>
+          ) : suppliers.map(([name, s]) => (
+            <button key={name} type="button" onClick={() => setSupplier(supplier === name ? null : name)} style={{
+              width: "100%", textAlign: "right", display: "flex", alignItems: "center", gap: 10, padding: "10px 8px", borderRadius: 14, border: "none",
+              background: supplier === name ? C.tint : "transparent", borderTop: `1px solid ${C.line}`,
+            }}>
+              <Icon name="truck" color={C.accentMid} size={18} />
+              <span style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: C.ink }}>{name}</span>
+                <span style={{ display: "block", fontSize: 11.5, color: C.sub2 }}>{s.n} استلام · آخرها {arDate(new Date(s.last), { day: false })}</span>
+              </span>
+              {s.value > 0 && <span className="latin" style={{ fontSize: 12, fontWeight: 700, color: C.accent }}>{money(s.value, false)}</span>}
+            </button>
+          ))}
+        </Card>
+      </div>
+
+      <PickProduct open={picking} items={items ?? []} onClose={() => setPicking(false)} onPick={(p) => { setPicking(false); setReceiving(p); }} />
+      <ReceiveDialog product={receiving} onClose={() => setReceiving(null)} />
     </AdminShell>
+  );
+}
+
+function PickProduct({ open, items, onClose, onPick }: { open: boolean; items: Product[]; onClose: () => void; onPick: (p: Product) => void }) {
+  const [key, setKey] = useState("");
+  const p = items.find((x) => x.key === key) ?? null;
+  return (
+    <Modal open={open} onClose={onClose} title="استلام بضاعة — اختاري الصنف" width={480}
+      footer={<SubmitButton disabled={!p} onClick={() => p && onPick(p)}>متابعة</SubmitButton>}>
+      {items.length === 0 ? (
+        <div style={{ fontSize: 13.5, color: C.sub }}>لا أصناف في المخزون بعد. أضيفي الصنف أولاً من <Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link>.</div>
+      ) : (
+        <Select label="الصنف" value={key} onChange={setKey}
+          options={[{ value: "", label: "اختاري صنفاً…" }, ...items.map((x) => ({ value: x.key, label: `${x.name}${x.size ? ` · ${x.size}` : ""} (${x.kind === "retail" ? "للبيع" : "للجلسات"})` }))]} />
+      )}
+    </Modal>
   );
 }

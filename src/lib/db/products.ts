@@ -95,3 +95,25 @@ export async function placeOrder(items: { product_key: string; qty: number }[], 
   invalidate("products"); invalidate("orders");
   return order;
 }
+
+export async function setRecommended(key: string, recommended: boolean) {
+  must(await supabase.from("products").update({ recommended }).eq("key", key));
+  invalidate("products");
+}
+
+/** Every stock batch (receiving log) with its product, newest first. */
+export async function listAllBatches(limit = 300) {
+  return must(await supabase.from("stock_batches").select("*, products(name, unit, kind)").order("received_at", { ascending: false }).limit(limit)) as unknown as (Batch & { products: { name: string; unit: string; kind: string } | null })[];
+}
+
+/** Applies several stocktake counts; returns how many items changed. */
+export async function applyStocktake(counts: { key: string; counted: number; current: number }[], note?: string) {
+  let changed = 0;
+  for (const c of counts) {
+    if (c.counted === c.current) continue;
+    must(await supabase.rpc("adjust_stock", { p_product: c.key, p_counted: c.counted, p_note: note }));
+    changed++;
+  }
+  invalidate("products");
+  return changed;
+}

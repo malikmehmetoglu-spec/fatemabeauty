@@ -1,240 +1,115 @@
 "use client";
 
-import { Fragment, useState } from "react";
+/**
+ * W_Stocktake.dc.html — الجرد (live). Count every item, compare with the system quantity,
+ * then apply: each difference is written through adjust_stock (logged as «تعديل جرد»).
+ */
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
+import { Chip, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, SubmitButton, Tag, TextInput } from "@/components/ui";
 import { R } from "@/lib/routes";
+import { money } from "@/lib/format";
 import { C } from "@/lib/tokens";
-import { arDate } from "@/lib/format";
-import { TODAY } from "@/lib/data";
-import { SN, STOCKTAKE, css, tagStyle } from "@/lib/mock/g";
+import { useQuery } from "@/lib/db/query";
+import { applyStocktake, listInventory } from "@/lib/db/products";
 
-/** W_Stocktake.dc.html — الجرد. */
+type Filter = "all" | "retail" | "consumable" | "diff" | "uncounted";
+
 export default function Page() {
-  const [done, setDone] = useState(false);
-  const rows = STOCKTAKE.map((r) => ({
-    name: r.name, lot: r.lot, sys: done ? r.cnt : r.sys, cnt: r.cnt,
-    dLabel: r.diff === 0 ? "0" : r.diff > 0 ? "+" + r.diff : String(r.diff),
-    dStyle: r.diff === 0 ? "font-family:var(--font-rubik),sans-serif;color:#A595AC" : "font-family:var(--font-rubik),sans-serif;font-weight:700;" + tagStyle(r.diff < 0 ? "pink" : "amber"),
-    noteText: r.diff === 0 ? "مطابق" : done ? "سُوّي" : r.diff < 0 ? "نقص — يحتاج سبباً" : "زيادة — راجعي الاستلام",
-    rowStyle: "display:flex;align-items:center;gap:12px;height:66px;padding:0 10px;border-top:1px solid #EDE2F1;" + (r.diff !== 0 && !done ? "background:#FDF7FE;border-radius:14px" : ""),
-  }));
-  const v = {
-    rows, pending: !done, done, approve: () => setDone(true),
-    stLabel: done ? "معتمد" : "بانتظار الاعتماد", stStyle: tagStyle(done ? "green" : "amber"),
-  };
+  const { data, loading, error } = useQuery(["products", "inventory"], listInventory);
+  const [counts, setCounts] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState<Filter>("all");
+  const [q, setQ] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [done, setDone] = useState("");
+
+  const list = useMemo(() => data ?? [], [data]);
+  const parsed = (k: string) => { const s = counts[k]; if (s == null || s.trim() === "") return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? n : null; };
+  const counted = list.filter((p) => parsed(p.key) != null);
+  const diffs = counted.filter((p) => parsed(p.key) !== Number(p.stock));
+  const diffValue = diffs.reduce((s, p) => s + ((parsed(p.key) as number) - Number(p.stock)) * (p.cost ?? 0), 0);
+
+  const shown = list.filter((p) => {
+    if (q && !p.name.includes(q) && !(p.sku ?? "").includes(q)) return false;
+    if (filter === "retail") return p.kind === "retail";
+    if (filter === "consumable") return p.kind === "consumable";
+    if (filter === "diff") return diffs.includes(p);
+    if (filter === "uncounted") return parsed(p.key) == null;
+    return true;
+  });
+
+  async function apply() {
+    if (!diffs.length) return;
+    if (!confirm(`اعتماد الجرد لـ ${diffs.length} صنف؟ ستُعدَّل كميات النظام لتطابق العدّ.`)) return;
+    setBusy(true); setErr(""); setDone("");
+    try {
+      const n = await applyStocktake(diffs.map((p) => ({ key: p.key, counted: parsed(p.key) as number, current: Number(p.stock) })), note.trim() || "جرد دوري");
+      setCounts({}); setNote(""); setDone(`اعتُمد الجرد: عُدِّلت كميات ${n} صنف.`);
+    } catch (e) { setErr("تعذّر اعتماد الجرد: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+  }
+
+  const fillSystem = () => setCounts(Object.fromEntries(shown.map((p) => [p.key, counts[p.key] ?? String(Number(p.stock))])));
+
   return (
-    <AdminShell active="المخزون والأجهزة" title="الجرد" subtitle="مقارنة الكميات المعدودة بكميات النظام · قيم مثال" actions={<>
-      <Link style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }} href={R.W_Inventory}>
-        <Icon name="box" color="#7B4687" size={17} stroke={1.9} />
-        المخزون
-      </Link>
-    </>}>
-      <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1 }}>
-          <div style={{ borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <span style={{ width: 48, height: 48, borderRadius: 24, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="clip" color="#A877B6" size={22} />
-                </span>
-                <div style={{ flex: 1, lineHeight: 1.45 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>
-                    جرد شهري — تشرين الأول 2026
-                  </div>
-                  <div style={{ fontSize: 12.5, color: "#866F8D" }}>
-                    بدأ {arDate(TODAY)} 11:00 · بواسطة {SN.salma}
-                    <ExampleTag />
-                    {" "}· كل الأصناف (8)
-                  </div>
-                </div>
-                <span style={css(v.stStyle)}>
-                  {v.stLabel}
-                </span>
-              </div>
-              <label htmlFor="scan" style={{ height: 50, borderRadius: 25, border: "1.5px solid #E2CEE6", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 10, padding: "0 16px", color: "#A595AC" }}>
-                <Icon name="scan" color="#A877B6" size={20} />
-                <input id="scan" aria-label="مسح الباركود" placeholder="امسحي باركود الصنف أو اكتبي رقم التشغيلة" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13.5, color: "#35213D" }} />
-                <span style={{ fontSize: 12 }}>
-                  8/8 مُعدود
-                </span>
-              </label>
-            </div>
-          </div>
-          <div style={{ borderRadius: 26, padding: "8px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", gap: 12, height: 38, alignItems: "center", padding: "0 10px" }}>
-              <div style={{ flex: 2.1, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                الصنف
-              </div>
-              <div style={{ flex: 1.1, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                التشغيلة
-              </div>
-              <div style={{ flex: 0.8, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                في النظام
-              </div>
-              <div style={{ flex: 0.8, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                المعدود
-              </div>
-              <div style={{ flex: 0.8, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                الفرق
-              </div>
-              <div style={{ flex: 1.9, fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                ملاحظة
-              </div>
-            </div>
-            {v.rows.map((r, r_i) => (
-              <Fragment key={r_i}>
-                <div style={css(r.rowStyle)}>
-                  <div style={{ flex: 2.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 700 }}>
-                      {r.name}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E" }}>
-                      {r.lot}
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
-                      {r.sys}
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
-                      {r.cnt}
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={css(r.dStyle)}>
-                      {r.dLabel}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12.5, color: "#76607E" }}>
-                      {r.noteText}
-                    </span>
-                  </div>
-                </div>
-              </Fragment>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", width: 340, flexShrink: 0 }}>
-          <div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
-            <div style={{ position: "relative", fontSize: 13, color: "#ECDBF0" }}>
-              نتيجة الجرد
-            </div>
-            <div style={{ position: "relative", fontSize: 34, fontWeight: 700, lineHeight: 1.3 }}>
-              3 فروقات
-            </div>
-            <div style={{ position: "relative", fontSize: 12.5, color: "#ECDBF0" }}>
-              5 أصناف مطابقة من 8
-            </div>
-            <div style={{ position: "relative", marginTop: 12 }}>
-              <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
-                <div style={{ width: "62%", height: 8, borderRadius: 4, background: "linear-gradient(90deg, #E8D6F0, #FFFFFF)" }} />
-              </div>
-            </div>
-          </div>
-          <div style={{ borderRadius: 26, padding: "14px 12px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
-                <span style={{ width: 28, height: 28, borderRadius: 14, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="check" color="#FFFFFF" size={13} stroke={2.4} />
-                </span>
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-                  عدّ الأصناف
-                </div>
-                <div style={{ fontSize: 11, color: "#866F8D" }}>
-                  8/8
-                </div>
-              </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
-                <span style={{ width: 28, height: 28, borderRadius: 14, background: "#FFFFFF", border: "2px solid #C9A2D8", boxShadow: "0 0 0 4px rgba(200,160,220,0.25)", flexShrink: 0 }}></span>
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-                  مراجعة الفروقات
-                </div>
-                <div style={{ fontSize: 11, color: "#866F8D" }}>
-                  الآن
-                </div>
-              </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
-                <span style={{ width: 28, height: 28, borderRadius: 14, background: "#FFFFFF", border: "1px solid #E9DCEE", flexShrink: 0 }}></span>
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-                  الاعتماد والتسوية
-                </div>
-                <div style={{ fontSize: 11, color: "#866F8D" }} />
-              </div>
-            </div>
-          </div>
-          <div style={{ borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: "0", minHeight: "0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#35213D" }}>
-                  الفروقات وأسبابها
-                </div>
-              </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 44, borderTop: "1px solid #EDE2F1" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 4, background: "#C9A24B" }}></span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-                    محلول جلسات الهيدرافيشل
-                  </span>
-                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#8A5A12" }}>
-                    +1
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 44, borderTop: "1px solid #EDE2F1" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 4, background: "#B03D6A" }}></span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-                    منظف رغوي للبشرة
-                  </span>
-                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#B03D6A" }}>
-                    -1
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 44, borderTop: "1px solid #EDE2F1" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 4, background: "#B03D6A" }}></span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-                    واقي شمس للبيع
-                  </span>
-                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#B03D6A" }}>
-                    -2
-                  </span>
-                </div>
-              </div>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#866F8D" }}>
-                سبب الفرق
-                <textarea aria-label="سبب الفرق" rows={2} style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13, color: "#35213D", resize: "none", outline: "none" }} defaultValue="واقي الشمس: عبوتان صُرفتا كعيّنات ولم تُسجَّلا."></textarea>
-              </label>
-            </div>
-          </div>
-          <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-            {v.pending && (
-              <>
-                <button onClick={v.approve} style={{ height: 56, borderRadius: 28, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <Icon name="check" color="#FFFFFF" size={18} />
-                  اعتماد الجرد وتسوية الكميات
-                </button>
-                <div style={{ fontSize: 12, color: "#866F8D", textAlign: "center" }}>
-                  الاعتماد يحدّث كميات النظام ويُسجَّل في سجل التدقيق.
-                </div>
-              </>
-            )}
-            {v.done && (
-              <>
-                <div style={{ height: 56, borderRadius: 28, background: "#E6F4EC", color: "#2E6B47", fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <Icon name="check" color="#3FA46A" size={18} />
-                  اعتُمد الجرد — حُدّثت الكميات
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+    <AdminShell active="المخزون والأجهزة" title="الجرد" subtitle="اكتبي الكمية المعدودة لكل صنف، ثم اعتمدي الفروقات"
+      actions={<Link href={R.W_Inventory} style={{ height: 40, borderRadius: 20, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
+        <Icon name="box" color={C.accent} size={16} />المخزون
+      </Link>}>
+      <div style={{ display: "flex", gap: 14 }}>
+        <Kpi dark label="تم عدّها" value={`${counted.length} / ${list.length}`} sub="صنف في هذا الجرد" icon="clip" />
+        <Kpi label="أصناف بفرق" value={diffs.length} sub="بين العدّ والنظام" icon="alert" />
+        <Kpi label="قيمة الفرق" value={money(diffValue)} sub="بسعر الكلفة المسجّل" icon="wallet" />
       </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {([["all", "الكل"], ["retail", "منتجات البيع"], ["consumable", "مواد الجلسات"], ["uncounted", "لم تُعدّ"], ["diff", "بفرق"]] as [Filter, string][]).map(([k, t]) => (
+          <Chip key={k} selected={filter === k} onClick={() => setFilter(k)}>{t}</Chip>
+        ))}
+        <GhostButton icon="check" onClick={fillSystem}>مطابقة المعروض لكمية النظام</GhostButton>
+        <input aria-label="بحث" placeholder="ابحثي باسم الصنف أو الرمز" value={q} onChange={(e) => setQ(e.target.value)}
+          style={{ marginInlineStart: "auto", height: 40, width: 240, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 16px", fontSize: 13.5 }} />
+      </div>
+
+      {done && <div role="status" style={{ fontSize: 13.5, fontWeight: 600, color: C.okDeep, background: "#E6F4EC", borderRadius: 14, padding: "10px 14px" }}>{done}</div>}
+      {err && <ErrorNote>{err}</ErrorNote>}
+
+      {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المخزون: {error}</ErrorNote> : list.length === 0 ? (
+        <EmptyState icon="clip" title="لا أصناف للجرد" text="أضيفي أصناف المخزون أولاً، ثم عودي لعدّها هنا."
+          action={<Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link>} />
+      ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" /> : (
+        <DataTable
+          headers={["الصنف", "النوع", "كمية النظام", "الكمية المعدودة", "الفرق"]}
+          widths={[2.6, 0.9, 1, 1.3, 1]}
+          rowHeight={60}
+          rows={shown.map((p) => {
+            const c = parsed(p.key);
+            const d = c == null ? null : c - Number(p.stock);
+            return [
+              <div key="n" style={{ lineHeight: 1.35 }}>
+                <b style={{ fontSize: 14 }}>{p.name}</b>
+                <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size, p.sku].filter(Boolean).join(" · ") || "—"}</div>
+              </div>,
+              <Tag key="k" kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>,
+              <span key="s"><b className="latin">{Number(p.stock).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>,
+              <input key="i" type="number" inputMode="decimal" min={0} aria-label={`الكمية المعدودة من ${p.name}`} value={counts[p.key] ?? ""} placeholder="—"
+                onChange={(e) => setCounts((x) => ({ ...x, [p.key]: e.target.value }))} className="latin"
+                style={{ width: 110, height: 38, borderRadius: 14, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 14, textAlign: "center" }} />,
+              d == null ? <span key="d" style={{ color: C.muted }}>—</span>
+                : <b key="d" className="latin" style={{ color: d < 0 ? C.danger : d > 0 ? C.okDeep : C.sub2 }}>{d > 0 ? "+" : ""}{d}</b>,
+            ];
+          })}
+        />
+      )}
+
+      {list.length > 0 && (
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+          <TextInput label="ملاحظة الجرد (تُحفظ مع كل تعديل)" value={note} onChange={setNote} placeholder="جرد آخر الشهر، تالف، منتهي…" style={{ flex: 1 }} />
+          <SubmitButton onClick={apply} busy={busy} disabled={!diffs.length}>اعتماد الجرد ({diffs.length})</SubmitButton>
+        </div>
+      )}
     </AdminShell>
   );
 }

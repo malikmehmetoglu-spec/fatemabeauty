@@ -57,7 +57,7 @@ export default function HomePage() {
         </div>
         )}
         <Link href={R.Consult} style={{
-          width: 214, height: 214, flexShrink: 0, borderRadius: 30, background: "linear-gradient(160deg, #FFFFFF 0%, #FAF3FB 100%)",
+          width: spec ? 214 : "100%", height: spec ? 214 : 150, flexShrink: 0, borderRadius: 30, background: "linear-gradient(160deg, #FFFFFF 0%, #FAF3FB 100%)",
           border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between",
         }}>
           <span style={{ boxShadow: "0 6px 14px rgba(150,100,170,0.18)", borderRadius: 26, width: 52 }}><Circ icon="cam" size={52} iconSize={24} /></span>

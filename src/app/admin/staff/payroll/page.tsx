@@ -1,357 +1,108 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import Link from "next/link";
+/** W_Payroll.dc.html — الرواتب (live, Supabase `payroll_entries`). One row per member per month; amounts are entered by the admin/accountant. */
+import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
-import { R } from "@/lib/routes";
+import { DataTable, EmptyState, ErrorNote, GhostButton, Kpi, Loading, Modal, NumberInput, SubmitButton, Tag, TextInput, Toggle } from "@/components/ui";
+import { useQuery } from "@/lib/db/query";
+import { listPayroll, markPaid, monthKey, netPay, savePayroll, type Payroll, type Staff } from "@/lib/db/staff";
+import { useSession } from "@/lib/supabase/session";
+import { AR_MONTHS } from "@/lib/data";
+import { money } from "@/lib/format";
 import { C } from "@/lib/tokens";
-import { arDate } from "@/lib/format";
-import { PAYROLL, css } from "@/lib/mock/g";
+import { RowBtn, StaffCell, TeamTabs, errText, useTeam } from "../team-ui";
 
-/** W_Payroll.dc.html — الرواتب. */
-export default function Page() {
-  const [sel, setSel] = useState(0);
-  const rows = PAYROLL.map((p, i) => ({
-    ...p, pick: () => setSel(i),
-    style: "width:100%;display:flex;align-items:center;gap:12px;height:96px;padding:0 12px;border-radius:18px;font-family:inherit;color:#35213D;text-align:right;" +
-      (i === sel ? "background:linear-gradient(160deg,#FAF3FB,#F1E1F4);border:1px solid #FFFFFF;box-shadow:0 8px 18px rgba(150,100,170,0.18)" : "background:transparent;border:1px solid transparent;border-top:1px solid #EDE2F1"),
-  }));
-  const v = { rows, p: PAYROLL[sel] };
+const monthLabel = (p: string) => `${AR_MONTHS[Number(p.slice(5)) - 1]} ${p.slice(0, 4)}`;
+const shiftMonth = (p: string, n: number) => { const d = new Date(Date.UTC(Number(p.slice(0, 4)), Number(p.slice(5)) - 1 + n, 15)); return d.toISOString().slice(0, 7); };
+
+export default function PayrollPage() {
+  const { staff: me } = useSession();
+  const canManage = me?.role === "owner" || me?.role === "admin" || me?.role === "accountant";
+  const team = useTeam();
+  const [period, setPeriod] = useState(monthKey());
+  const { data, loading, error } = useQuery(["payroll", period], () => listPayroll(period));
+  const [editing, setEditing] = useState<{ s: Staff; p?: Payroll } | null>(null);
+  const [msg, setMsg] = useState("");
+
+  const entries = data ?? [];
+  const by = new Map(entries.map((p) => [p.staff_id, p]));
+  const total = entries.reduce((n, p) => n + netPay(p), 0);
+  const paid = entries.filter((p) => p.paid_at);
+  const members = canManage ? team.active.concat(team.list.filter((s) => !s.active && by.has(s.id))) : team.list.filter((s) => by.has(s.id));
+
+  async function togglePaid(p: Payroll) {
+    setMsg("");
+    try { await markPaid(p.id, !p.paid_at); } catch (e) { setMsg(errText(e)); }
+  }
+
   return (
-    <AdminShell active="فريق العمل" title="الرواتب" subtitle="مسير رواتب أيلول 2026" actions={<>
-      <button style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
-        <Icon name="cal" color="#7B4687" size={17} stroke={1.9} />
-        أيلول 2026
-      </button>
-      <Link style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }} href={R.W_Commissions}>
-        <Icon name="percent" color="#7B4687" size={17} stroke={1.9} />
-        العمولات
-      </Link>
-      <button style={{ height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 18px", whiteSpace: "nowrap" }}>
-        <Icon name="download" color="#FFFFFF" size={17} stroke={1.9} />
-        تصدير
-      </button>
-    </>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0" }}>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
-            <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ fontSize: 13, color: "#ECDBF0" }}>
-                صافي الرواتب · أيلول 2026
-              </div>
-              <Icon name="wallet" color="#E8D6F0" size={20} />
-            </div>
-            <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: 1.25, marginTop: 6 }}>
-              221,500{" "}
-              <span style={{ fontSize: 15 }}>
-                ل.س
-              </span>
-            </div>
-            <div style={{ position: "relative", fontSize: 12, color: "#ECDBF0" }}>
-              4 موظفات · صُرفت {arDate(new Date(2026, 9, 1))}
-            </div>
-          </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ fontSize: 13, color: "#866F8D" }}>
-                الرواتب الأساسية
-              </div>
-              <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="users" color="#A877B6" size={16} />
-              </span>
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-              131,000{" "}
-              <span style={{ fontSize: 14 }}>
-                ل.س
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#866F8D" }}>
-              قيم مثال
-            </div>
-          </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ fontSize: 13, color: "#866F8D" }}>
-                العمولات
-              </div>
-              <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="percent" color="#A877B6" size={16} />
-              </span>
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-              96,500{" "}
-              <span style={{ fontSize: 14 }}>
-                ل.س
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#866F8D" }}>
-              من شاشة العمولات
-            </div>
-          </div>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ fontSize: 13, color: "#866F8D" }}>
-                الاستقطاعات
-              </div>
-              <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="minus" color="#A877B6" size={16} />
-              </span>
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: "#35213D" }}>
-              6,000{" "}
-              <span style={{ fontSize: 14 }}>
-                ل.س
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#866F8D" }}>
-              سلفة + تأخير
-            </div>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-          <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "14px 16px 16px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)" }}>
-            <div style={{ display: "flex", gap: 12, height: 40, alignItems: "center", padding: "0 12px" }}>
-              <div style={{ flex: 2.2, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                الموظفة
-              </div>
-              <div style={{ flex: 1, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                الأساسي
-                <ExampleTag />
-              </div>
-              <div style={{ flex: 1, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                العمولة
-              </div>
-              <div style={{ flex: 1, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                الاستقطاع
-              </div>
-              <div style={{ flex: 1, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                الصافي
-              </div>
-              <div style={{ flex: 0.9, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }}>
-                الحالة
-              </div>
-              <div style={{ flex: 0.9, fontSize: 12, color: "#866F8D", fontWeight: 600, display: "flex", alignItems: "center" }} />
-            </div>
-            {v.rows.map((r, r_i) => (
-              <Fragment key={r_i}>
-                <button onClick={r.pick} style={css(r.style)}>
-                  <div style={{ flex: 2.2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#7B4687", whiteSpace: "nowrap" }}>
-                      {r.ini}
-                    </span>
-                    <span style={{ lineHeight: 1.35, textAlign: "right" }}>
-                      <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                        {r.name}
-                      </span>
-                      <ExampleTag />
-                      <br />
-                      <span style={{ fontSize: 11.5, color: "#866F8D", whiteSpace: "nowrap" }}>
-                        {r.role}
-                      </span>
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
-                      {r.base}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
-                      {r.comm}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#B03D6A" }}>
-                      {r.ded}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#7B4687" }}>
-                      {r.net}
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                      مدفوع
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ height: 30, padding: "0 10px", borderRadius: 15, background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#7B4687" }}>
-                      <Icon name="file" color="#7B4687" size={14} />
-                      القسيمة
-                    </span>
-                  </div>
-                </button>
-              </Fragment>
-            ))}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, height: 50, marginTop: 4, padding: "0 12px", borderRadius: 18, background: "linear-gradient(145deg,#F6EEF9,#F2E4F5)" }}>
-              <div style={{ flex: 2.2, fontWeight: 700 }}>
-                الإجمالي
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    131,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
-                    96,500
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#B03D6A" }}>
-                    6,000
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#7B4687" }}>
-                    221,500
-                  </span>
-                  <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
-                    ل.س
-                  </span>
-                </span>
-              </div>
-              <div style={{ flex: 0.9 }} />
-              <div style={{ flex: 0.9 }} />
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 14, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, background: "#F3EAF6", color: "#74457F" }}>
-                <Icon name="info" color="#A877B6" size={17} />
-                <span>
-                  الرواتب الأساسية ونسب العمولة أمثلة توضيحية لهيكل المسير، تُستبدل بالقيم الفعلية عند الإعداد.
-                </span>
-              </div>
-            </div>
-          </div>
-          <div style={{ width: 340, flexShrink: 0, borderRadius: 28, padding: 20, background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#35213D" }}>
-                قسيمة الراتب
-              </div>
-              <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: "#B03D6A" }}>
-                أيلول 2026
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0 8px", borderBottom: "1px solid #EDE2F1" }}>
-              <span style={{ width: 48, height: 48, borderRadius: 24, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, color: "#7B4687" }}>
-                {v.p.ini}
-              </span>
-              <div style={{ lineHeight: 1.45 }}>
-                <div style={{ fontSize: 16 }}>
-                  <span style={{ fontWeight: 700 }}>
-                    {v.p.name}
-                  </span>
-                  <ExampleTag />
-                </div>
-                <div style={{ fontSize: 12, color: "#866F8D" }}>
-                  {v.p.role}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 34, fontSize: 13.5 }}>
-              <span style={{ color: "#76607E" }}>
-                الراتب الأساسي (مثال)
-              </span>
-              <span>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
-                  {v.p.base}
-                </span>
-                {" "}
-                <span style={{ fontSize: 11, color: "#866F8D" }}>
-                  ل.س
-                </span>
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 34, fontSize: 13.5 }}>
-              <span style={{ color: "#76607E" }}>
-                العمولة
-              </span>
-              <span>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
-                  {v.p.comm}
-                </span>
-                {" "}
-                <span style={{ fontSize: 11, color: "#866F8D" }}>
-                  ل.س
-                </span>
-              </span>
-            </div>
-            <div style={{ fontSize: 11.5, color: "#866F8D", marginTop: -6 }}>
-              {v.p.commNote}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 34, fontSize: 13.5 }}>
-              <span style={{ color: "#76607E" }}>
-                الاستقطاع
-              </span>
-              <span>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#B03D6A" }}>
-                  {v.p.ded}
-                </span>
-                {" "}
-                <span style={{ fontSize: 11, color: "#866F8D" }}>
-                  ل.س
-                </span>
-              </span>
-            </div>
-            <div style={{ fontSize: 11.5, color: "#866F8D", marginTop: -6 }}>
-              {v.p.why}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 18, padding: "12px 14px", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: "#7B4687", marginTop: 4 }}>
-              <span style={{ fontWeight: 700 }}>
-                الصافي
-              </span>
-              <span>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700 }}>
-                  {v.p.net}
-                </span>
-                {" "}
-                <span style={{ fontSize: 12 }}>
-                  ل.س
-                </span>
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#866F8D" }}>
-              صُرف {arDate(new Date(2026, 9, 1), { year: true })} · تحويل
-            </div>
-            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
-              <button style={{ height: 52, borderRadius: 26, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px" }}>
-                <Icon name="download" color="#FFFFFF" size={19} stroke={1.9} />
-                تنزيل القسيمة PDF
-              </button>
-              <div style={{ display: "flex", gap: 10 }}>
-                <button style={{ height: 40, borderRadius: 20, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap", flex: 1 }}>
-                  <Icon name="print" color="#7B4687" size={17} stroke={1.9} />
-                  طباعة
-                </button>
-                <button style={{ height: 40, borderRadius: 20, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap", flex: 1 }}>
-                  <Icon name="send" color="#7B4687" size={17} stroke={1.9} />
-                  إرسال للموظفة
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+    <AdminShell active="فريق العمل" title="الرواتب" subtitle={`مسير رواتب ${monthLabel(period)}`}
+      actions={<>
+        <GhostButton icon="fwd" onClick={() => setPeriod(shiftMonth(period, -1))}>الشهر السابق</GhostButton>
+        <GhostButton icon="back" onClick={() => setPeriod(shiftMonth(period, 1))}>التالي</GhostButton>
+      </>}>
+      <TeamTabs />
+      <div style={{ display: "flex", gap: 14 }}>
+        <Kpi dark label="صافي الرواتب المسجّلة" value={money(total)} sub={`${entries.length} موظفة في مسير ${monthLabel(period)}`} icon="wallet" />
+        <Kpi label="مدفوعة" value={paid.length} sub={money(paid.reduce((n, p) => n + netPay(p), 0))} icon="check" />
+        <Kpi label="غير مدفوعة" value={entries.length - paid.length} icon="clock" />
       </div>
+      {msg && <ErrorNote>{msg}</ErrorNote>}
+      {team.loading || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الرواتب: {error}</ErrorNote> : members.length === 0 ? (
+        <EmptyState icon="wallet" title="لا رواتب مسجّلة لهذا الشهر" text="أضيفي الموظفات من صفحة الفريق، ثم سجّلي لكل منهن الراتب الأساسي والعمولة والمكافآت والخصومات." />
+      ) : (
+        <DataTable headers={["الموظفة", "الأساسي", "العمولة", "مكافآت", "خصومات", "الصافي", "مدفوع", ""]} widths={[2, 1, 1, 0.9, 0.9, 1.1, 0.8, 1]}
+          rows={members.map((s) => {
+            const p = by.get(s.id);
+            const dash = <span style={{ color: C.muted }}>—</span>;
+            return [
+              <StaffCell key="s" s={s} sub={s.title} />,
+              p ? money(p.base_salary, false) : dash,
+              p ? money(p.commission, false) : dash,
+              p ? money(p.bonus, false) : dash,
+              p ? money(p.deductions, false) : dash,
+              p ? <b key="n">{money(netPay(p))}</b> : <span key="n" style={{ fontSize: 12.5, color: C.muted }}>لم يُسجّل</span>,
+              p ? (canManage ? <Toggle key="t" on={!!p.paid_at} label={`دُفع راتب ${s.name}`} onChange={() => togglePaid(p)} /> : <Tag key="t" kind={p.paid_at ? "green" : "amber"}>{p.paid_at ? "مدفوع" : "لا"}</Tag>) : <span key="t" />,
+              canManage ? <RowBtn key="e" icon={p ? "edit" : "plus"} label={p ? "تعديل" : "تسجيل"} onClick={() => setEditing({ s, p })} /> : <span key="e" />,
+            ];
+          })} />
+      )}
+      <PayrollDialog target={editing} period={period} onClose={() => setEditing(null)} />
     </AdminShell>
+  );
+}
+
+function PayrollDialog({ target, period, onClose }: { target: { s: Staff; p?: Payroll } | null; period: string; onClose: () => void }) {
+  const [f, setF] = useState({ base: "", commission: "", bonus: "", deductions: "", note: "" });
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  useEffect(() => {
+    const p = target?.p;
+    setF({ base: p ? String(p.base_salary) : "", commission: p ? String(p.commission) : "", bonus: p ? String(p.bonus) : "", deductions: p ? String(p.deductions) : "", note: p?.note ?? "" });
+    setError("");
+  }, [target]);
+  const n = (s: string) => Math.round(Number(s || 0));
+  async function submit() {
+    if (!target) return;
+    if (f.base.trim() === "") { setError("اكتبي الراتب الأساسي."); return; }
+    setBusy(true);
+    try {
+      await savePayroll({ id: target.p?.id, staff_id: target.s.id, period, base_salary: n(f.base), commission: n(f.commission), bonus: n(f.bonus), deductions: n(f.deductions), note: f.note.trim() });
+      onClose();
+    } catch (e) { setError(errText(e)); } finally { setBusy(false); }
+  }
+  const net = n(f.base) + n(f.commission) + n(f.bonus) - n(f.deductions);
+  return (
+    <Modal open={!!target} onClose={onClose} title={`راتب ${monthLabel(period)} — ${target?.s.name ?? ""}`} width={540}
+      footer={<SubmitButton onClick={submit} busy={busy}>حفظ</SubmitButton>}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <NumberInput label="الراتب الأساسي" required value={f.base} onChange={(v) => setF({ ...f, base: v })} suffix="ل.س" />
+        <NumberInput label="العمولة" value={f.commission} onChange={(v) => setF({ ...f, commission: v })} suffix="ل.س" hint="من صفحة العمولات" />
+        <NumberInput label="مكافآت" value={f.bonus} onChange={(v) => setF({ ...f, bonus: v })} suffix="ل.س" />
+        <NumberInput label="خصومات" value={f.deductions} onChange={(v) => setF({ ...f, deductions: v })} suffix="ل.س" />
+      </div>
+      <TextInput label="ملاحظة" value={f.note} onChange={(v) => setF({ ...f, note: v })} />
+      <div style={{ fontSize: 15, fontWeight: 700 }}>الصافي: <span style={{ color: net < 0 ? C.danger : C.accent }}>{money(net)}</span></div>
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
   );
 }

@@ -1,26 +1,55 @@
 "use client";
 
-/** P_Checkout.dc.html — delivery / pickup + payment method + order summary. */
+/** P_Checkout.dc.html — delivery / pickup + payment + order summary. Places a real order (place_order). */
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, Icon, PrimaryButton } from "@/components/ui";
+import { Circ, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
-import { cartTotals, setMode, useCart, useMode } from "@/lib/mock/c1";
+import { useQuery } from "@/lib/db/query";
+import { placeOrder } from "@/lib/db/products";
+import { cartLines, cartStore, getProductsByKeys, orderError, rememberReturn, setMode, useCart, useMode } from "@/lib/db/orders";
+import { useSession } from "@/lib/supabase/session";
 import { ArtThumb, Field, Segmented } from "../store/c1ui";
 
-type Pay = "cash" | "card";
+type Pay = "cash";
 const PAYS: { k: Pay; icon: string; title: string; sub: string }[] = [
   { k: "cash", icon: "cash", title: "نقداً", sub: "عند الاستلام" },
-  { k: "card", icon: "card", title: "بطاقة", sub: "دفع إلكتروني" },
 ];
 
 export default function CheckoutPage() {
   const mode = useMode();
   const [pay, setPay] = useState<Pay>("cash");
-  const { lines, count, sub } = cartTotals(useCart());
+  const cart = useCart();
+  const keys = Object.keys(cart).sort();
+  const { data, loading } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
+  const { lines, count, sub, canOrder } = cartLines(cart, data);
   const d = mode === "d";
+  const session = useSession();
+  const router = useRouter();
+  const [addr, setAddr] = useState({ city: "", area: "", street: "", near: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const setA = (k: keyof typeof addr) => (v: string) => setAddr((a) => ({ ...a, [k]: v }));
+
+  function login() {
+    rememberReturn(R.P_Checkout);
+    window.location.href = `${R.Login}?next=${encodeURIComponent(R.P_Checkout)}`;
+  }
+
+  async function submit() {
+    setError("");
+    if (d && (!addr.city.trim() || !addr.street.trim())) { setError("اكتبي المدينة والشارع ليصل المندوب."); return; }
+    setBusy(true);
+    try {
+      const address = d ? [addr.city, addr.area, addr.street, addr.near && `قرب ${addr.near}`].map((x) => x.trim()).filter(Boolean).join("، ") : undefined;
+      const order = await placeOrder(lines.map((l) => ({ product_key: l.p.key, qty: l.qty })), d, address);
+      cartStore.clear();
+      router.push(order ? `${R.P_OrderTrack}?id=${order.id}` : R.P_OrderTrack);
+    } catch (e) { setError(orderError(e)); setBusy(false); }
+  }
 
   return (
     <PhoneScreen gap={12}>
@@ -33,23 +62,23 @@ export default function CheckoutPage() {
       {d ? (
         <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Field id="city" label="المدينة" placeholder="مثلاً: دمشق" />
-            <Field id="area" label="المنطقة" placeholder="اسم الحي" />
+            <Field id="city" value={addr.city} onChange={setA("city")} label="المدينة" placeholder="مثلاً: دمشق" />
+            <Field id="area" value={addr.area} onChange={setA("area")} label="المنطقة" placeholder="اسم الحي" />
           </div>
-          <Field id="street" label="الشارع والبناء" placeholder="الشارع، البناء، الطابق" />
-          <Field id="near" label="علامة مميزة قريبة (اختياري)" placeholder="تساعد المندوب في الوصول" />
+          <Field id="street" value={addr.street} onChange={setA("street")} label="الشارع والبناء" placeholder="الشارع، البناء، الطابق" />
+          <Field id="near" value={addr.near} onChange={setA("near")} label="علامة مميزة قريبة (اختياري)" placeholder="تساعد المندوب في الوصول" />
         </div>
       ) : (
         <div style={{ ...CARD, borderRadius: 24, padding: 16, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Circ icon="home" size={44} iconSize={20} />
             <div style={{ lineHeight: 1.4 }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>مركز فاطمة بيوتي</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>الاستلام من المركز</div>
               <div style={{ fontSize: 12.5, color: C.sub2 }}>استلمي طلبكِ من الاستقبال في أي زيارة</div>
             </div>
           </div>
           <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 16, background: "#F8F2FA", fontSize: 12.5, color: C.sub, display: "flex", gap: 8, alignItems: "center" }}>
-            <Icon name="bell" color={C.accentMid} size={17} />سنرسل لكِ رسالة واتساب حين يصبح طلبكِ جاهزاً
+            <Icon name="bell" color={C.accentMid} size={17} />تابعي حالة طلبكِ من «طلباتي»، وسيُعلَم حين يصبح جاهزاً
           </div>
         </div>
       )}
@@ -99,7 +128,19 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <PrimaryButton href={R.P_OrderTrack} style={{ marginTop: "auto", flexShrink: 0 }}>تأكيد الطلب</PrimaryButton>
+      {error && <ErrorNote>{error}</ErrorNote>}
+      {keys.length === 0 ? (
+        <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>سلتكِ فارغة · تصفّحي المتجر</SecondaryButton>
+      ) : session.loading || loading ? <Loading style={{ marginTop: "auto" }} /> : !session.session ? (
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 12.5, color: C.sub2, textAlign: "center" }}>سجّلي الدخول برقم هاتفكِ لإرسال الطلب، ثم تعودين إلى هذه الصفحة.</div>
+          <PrimaryButton icon="user" onClick={login} style={{ flexShrink: 0 }}>تسجيل الدخول للمتابعة</PrimaryButton>
+        </div>
+      ) : !session.patient ? (
+        <ErrorNote style={{ marginTop: "auto" }}>هذا الحساب حساب موظفة. الطلب من المتجر متاح لحسابات المراجِعات فقط.</ErrorNote>
+      ) : (
+        <PrimaryButton onClick={submit} disabled={busy || !canOrder} style={{ marginTop: "auto", flexShrink: 0 }}>{busy ? "جارٍ إرسال الطلب…" : !canOrder ? "عدّلي السلة أولاً" : "تأكيد الطلب"}</PrimaryButton>
+      )}
     </PhoneScreen>
   );
 }

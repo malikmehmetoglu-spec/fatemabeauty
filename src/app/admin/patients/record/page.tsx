@@ -1,26 +1,264 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
+import { EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Select, SubmitButton, Tag, TextArea, TextInput, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PERSONA } from "@/lib/data";
-import { arDate, money } from "@/lib/format";
-import { cs } from "../../calendar/CalendarBoard";
-import { css } from "@/lib/mock/e";
-import { C, SH, SH_SOFT, ICON_FILL } from "@/lib/tokens";
+import { arDate, clock, money } from "@/lib/format";
+import { useQuery } from "@/lib/db/query";
+import { addCondition, getPatient, getTiers, listConditions, maskPhone, removeCondition, SKIN_TYPES, tierFor, updatePatient, type ConditionKind, type Patient } from "@/lib/db/patients";
+import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
+import { C } from "@/lib/tokens";
+import { Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
+
+const TABS = ["الزيارات", "ملاحظات الجلسات", "الوصفات", "الموافقات", "الصور"];
+const KIND_LABEL: Record<ConditionKind, string> = { allergy: "حساسية", medication: "دواء", concern: "مشكلة بشرة" };
 
 /** W_Record.dc.html */
 export default function RecordPage() {
-  const [t, setT] = useState(0);
-  const done = PERSONA.sessionsDone;
-  const total = PERSONA.sessionsDone + PERSONA.sessionsLeft;
+  return <Suspense><Record /></Suspense>;
+}
+
+function Record() {
+  const id = useSearchParams().get("id") ?? "";
+  const { data: p, loading, error } = useQuery(["patients", "one", id], () => getPatient(id), { enabled: !!id });
+  const { data: tiers } = useQuery(["settings", "tiers"], getTiers);
+  const [editing, setEditing] = useState(false);
+
+  if (!id) return <Shell><EmptyState icon="users" title="اختاري مراجعة من القائمة" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
+  if (error) return <Shell><ErrorNote>{error}</ErrorNote></Shell>;
+  if (loading) return <Shell><Loading /></Shell>;
+  if (!p) return <Shell><EmptyState icon="users" title="لم يُعثر على هذا الملف" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
+  const tier = tierFor(p.points, tiers ?? []);
+
   return (
-    <AdminShell active="المراجعات" title={`ملف ${PERSONA.fileNo}`} subtitle={<>السجل الصحي للمراجعة</>} actions={<><Link href={R.W_Patients} style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} stroke={1.9} />كل المراجعات</Link></>}>
-<div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", flexGrow: 1 }}><div style={{ borderRadius: 26, padding: "18px 22px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", alignItems: "center", gap: 18 }}> <span style={{ width: 72, height: 72, borderRadius: 36, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 27, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>ر س</span> <div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 22, fontWeight: 700 }}>{PERSONA.name}<ExampleTag /></span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>ملف {PERSONA.fileNo}</span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "linear-gradient(145deg,#FFFFFF,#CFCBD6)", color: "#4A4452" }}>العضوية {PERSONA.tier}</span></div> <div style={{ display: "flex", gap: 18, fontSize: 13, color: C.sub, marginTop: 4 }}><span style={{ display: "flex", gap: 6, alignItems: "center" }}><Icon name="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" size={15} color={C.accentMid} /><span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", color: C.sub, unicodeBidi: "isolate" }}>+963 9•• ••• •44</span></span><span>الأخصائية: {PERSONA.specialist}</span><span>أول زيارة: {arDate(PERSONA.sessions[0], { day: false, year: true })}</span></div> <div style={{ display: "flex", gap: 8, marginTop: 8 }}><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>نوع البشرة: مختلطة</span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}><span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>Fitzpatrick III</span></span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>{PERSONA.points} نقطة</span></div></div> <div style={{ display: "flex", gap: 8 }}><Link href={R.W_BookingModal} style={{ height: 42, borderRadius: 21, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M12 5v14M5 12h14" size={16} color={C.accent} stroke={1.9} />موعد جديد</Link><button style={{ height: 42, borderRadius: 21, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z" size={16} color={C.accent} stroke={1.9} />رسالة</button><button aria-label="طباعة" style={{ height: 42, borderRadius: 21, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: 42 }}><Icon name="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2M17 9V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4M7 13h10v8H7z" size={16} color={C.accent} stroke={1.9} /></button></div> </div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 18, background: "linear-gradient(90deg,#F4E6F8,#FAF3FB)", border: "1px solid #DEC6E8", marginTop: 14 }}><span style={{ width: 32, height: 32, borderRadius: 16, background: C.danger, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M12 3l10 18H2zM12 10v5M12 18v.01" size={17} color={C.white} stroke={2} /></span><div style={{ fontSize: 13.5, fontWeight: 700, color: C.danger }}>تنبيه حساسية: العطور</div><div style={{ fontSize: 12.5, color: C.sub }}>تجنّبي المستحضرات المعطّرة، ويظهر تحذير تلقائي عند الوصف.</div></div></div><div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: "0" }}><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative", flex: 1, minWidth: "0" }}><div role="tablist" style={{ display: "flex", gap: 8 }}><button role="tab" aria-selected={t === 0} onClick={() => setT(0)} style={css(cs(t === 0, 40) + ";padding:0 18px")}>الخط الزمني</button><button role="tab" aria-selected={t === 1} onClick={() => setT(1)} style={css(cs(t === 1, 40) + ";padding:0 18px")}>الوصفات</button><button role="tab" aria-selected={t === 2} onClick={() => setT(2)} style={css(cs(t === 2, 40) + ";padding:0 18px")}>الصور</button><button role="tab" aria-selected={t === 3} onClick={() => setT(3)} style={css(cs(t === 3, 40) + ";padding:0 18px")}>الموافقات</button><button role="tab" aria-selected={t === 4} onClick={() => setT(4)} style={css(cs(t === 4, 40) + ";padding:0 18px")}>الفواتير</button></div><div style={{ marginTop: 16 }}>{t === 0 && (<><div style={{ display: "flex", flexDirection: "column", gap: 14 }}><div style={{ display: "flex", gap: 14, position: "relative", marginTop: -2 }}><span style={{ width: 30, height: 30, borderRadius: 15, border: "2px dashed #DDC8E2", flexShrink: 0 }} /><div style={{ flex: 1, borderRadius: 20, padding: "12px 16px", border: "1.5px dashed #E3D3E7", display: "flex", alignItems: "center", gap: 10 }}><div style={{ fontSize: 14, fontWeight: 700 }}>الجلسة {done + 1} من {total}</div><div style={{ fontSize: 12.5, color: C.sub2 }}>{arDate(PERSONA.nextSession)} · {PERSONA.nextTime} · محجوزة</div><span style={{ flex: 1 }} /><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>الجلستان 5 و6 لم تُحجزا بعد</span></div></div><div style={{ display: "flex", gap: 14, position: "relative" }}><div style={{ position: "absolute", right: 14, top: 34, bottom: -14, width: 2, background: C.border }} /><span style={{ width: 30, height: 30, borderRadius: 15, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>3</span><div style={{ flex: 1, borderRadius: 20, padding: "12px 16px", background: C.white, border: "1px solid #DEC6E8", boxShadow: "0 8px 20px rgba(150,100,170,0.12)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>الجلسة 3 من 6 · تنظيف عميق للبشرة</div><div style={{ fontSize: 12.5, color: C.sub2 }}>{arDate(PERSONA.sessions[2])} · اليوم</div></div><div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 4 }}>تحسّن واضح في المسام حول الأنف، احمرار خفيف زال خلال الجلسة. استُخدمت مستحضرات خالية من العطور.</div><div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}><span style={{ fontSize: 12, color: C.sub2 }}>مع فاطمة طيبة</span><span style={{ flex: 1 }} /><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>قبل/بعد</span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>وصفة</span></div></div></div><div style={{ display: "flex", gap: 14, position: "relative" }}><div style={{ position: "absolute", right: 14, top: 34, bottom: -14, width: 2, background: C.border }} /><span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 12l5 5L20 7" size={14} color={C.white} stroke={2.4} /></span><div style={{ flex: 1, borderRadius: 20, padding: "12px 16px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>الجلسة 2 من 6 · تنظيف عميق للبشرة</div><div style={{ fontSize: 12.5, color: C.sub2 }}>{arDate(PERSONA.sessions[1])}</div></div><div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 4 }}>رؤوس سوداء أقل في منطقة T. نُصحت بواقي شمس يومي وتقليل التقشير المنزلي.</div><div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}><span style={{ fontSize: 12, color: C.sub2 }}>مع فاطمة طيبة</span><span style={{ flex: 1 }} /><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>قبل/بعد</span></div></div></div><div style={{ display: "flex", gap: 14, position: "relative" }}><span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 12l5 5L20 7" size={14} color={C.white} stroke={2.4} /></span><div style={{ flex: 1, borderRadius: 20, padding: "12px 16px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>الجلسة 1 من 6 · تنظيف عميق للبشرة</div><div style={{ fontSize: 12.5, color: C.sub2 }}>{arDate(PERSONA.sessions[0])}</div></div><div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 4 }}>الجلسة الأولى: تقييم البشرة (مختلطة، Fitzpatrick III)، توقيع الموافقة، تسجيل حساسية العطور.</div><div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}><span style={{ fontSize: 12, color: C.sub2 }}>مع فاطمة طيبة</span><span style={{ flex: 1 }} /><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>موافقة</span><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>قبل</span></div></div></div></div></>)}{t === 1 && (<><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M4.5 12.5l8-8a4.95 4.95 0 0 1 7 7l-8 8a4.95 4.95 0 0 1-7-7zM8.5 8.5l7 7" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>روتين ما بعد التنظيف العميق</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[2], { day: false })} · 4 مستحضرات · 4 أسابيع</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>مُرسلة للتطبيق</span></div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M4.5 12.5l8-8a4.95 4.95 0 0 1 7 7l-8 8a4.95 4.95 0 0 1-7-7zM8.5 8.5l7 7" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>روتين يومي للبشرة المختلطة</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[0], { day: false })} · 3 مستحضرات</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>منتهية</span></div></>)}{t === 2 && (<><div style={{ display: "flex", gap: 12, marginTop: 8 }}><div style={{ flex: 1, height: 150, borderRadius: 20, background: "radial-gradient(circle at 50% 40%, #F3D2C4, #E7B9A8 60%, #D9A493)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" size={54} color={"rgba(255,255,255,0.8)"} stroke={1.4} /><span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", borderRadius: 10, padding: "2px 8px", fontSize: 11 }}>{arDate(PERSONA.sessions[0], { day: false })}</span></div><div style={{ flex: 1, height: 150, borderRadius: 20, background: "radial-gradient(circle at 50% 40%, #F3D2C4, #E7B9A8 60%, #D9A493)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" size={54} color={"rgba(255,255,255,0.8)"} stroke={1.4} /><span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", borderRadius: 10, padding: "2px 8px", fontSize: 11 }}>{arDate(PERSONA.sessions[1], { day: false })}</span></div><div style={{ flex: 1, height: 150, borderRadius: 20, background: "radial-gradient(circle at 50% 40%, #F3D2C4, #E7B9A8 60%, #D9A493)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" size={54} color={"rgba(255,255,255,0.8)"} stroke={1.4} /><span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", borderRadius: 10, padding: "2px 8px", fontSize: 11 }}>{arDate(PERSONA.sessions[2], { day: false })}</span></div></div><div style={{ marginTop: 12 }}><Link href={R.W_Photos} style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)" }}><Icon name="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM3 16l5-5c.9-.9 2.1-.9 3 0l5 5M14 14l1-1c.9-.9 2.1-.9 3 0l3 3" size={16} color={C.accent} stroke={1.9} />فتح معرض قبل/بعد</Link></div></>)}{t === 3 && (<><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>موافقة التنظيف العميق</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[0], { day: false, year: true })}</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>موقّعة</span></div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>التصوير الطبي (قبل/بعد)</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[0], { day: false, year: true })}</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>موقّعة</span></div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>استخدام الصور تسويقياً</div><div style={{ fontSize: 12, color: C.sub2 }}>—</div></div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FBEAF1", color: C.danger }}>غير موافِقة</span></div></>)}{t === 4 && (<><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2M9 7h6M9 11h6M13 15h2" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>باقة تنظيف عميق · 6 جلسات بسعر 5</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[0], { day: false, year: true })}</div></div><div style={{ fontWeight: 700, width: 110 }}>{money(PERSONA.packagePrice)}</div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep }}>مدفوعة</span></div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #EDE2F1" }}><span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2M9 7h6M9 11h6M13 15h2" size={17} color={C.accentMid} /></span><div style={{ flex: 1, lineHeight: 1.4 }}><div style={{ fontSize: 14, fontWeight: 700 }}>جلسة 3 من الباقة</div><div style={{ fontSize: 12, color: C.sub2 }}>{arDate(PERSONA.sessions[2], { day: false, year: true })}</div></div><div style={{ fontWeight: 700, width: 110 }}>0 ل.س</div><span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>من الباقة</span></div></>)}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", width: 340, flexShrink: 0 }}><div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}><div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} /> <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>الباقة الحالية</div> <div style={{ position: "relative", fontSize: 18, fontWeight: 700 }}>{PERSONA.package}</div> <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}> <svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="36" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="9" /><circle cx="43" cy="43" r="36" fill="none" stroke="#E8D6F0" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${((done / total) * 2 * Math.PI * 36).toFixed(1)} 400`} transform="rotate(-90 43 43)" /><text x="43" y="50" textAnchor="middle" fill="#FFFFFF" fontSize="20" fontWeight="700" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>{done}/{total}</text></svg> <div style={{ lineHeight: 1.5 }}><div style={{ fontSize: 13, color: C.onDark }}>الجلسة القادمة</div><div style={{ fontSize: 16, fontWeight: 700 }}>{arDate(PERSONA.nextSession)}</div><div style={{ fontSize: 14 }}>{PERSONA.nextTime} · تنظيف عميق</div></div> </div> </div><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>ملخص البشرة</div></div></div><div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 6 }}><span style={{ color: C.sub2 }}>نوع البشرة</span><span style={{ fontWeight: 700 }}>مختلطة</span></div><div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 0 }}><span style={{ color: C.sub2 }}>درجة Fitzpatrick</span><span style={{ fontWeight: 700 }}><span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>III</span></span></div><div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderTop: "1px solid #EDE2F1", fontSize: 13, marginTop: 0 }}><span style={{ color: C.sub2 }}>النقاط</span><span style={{ fontWeight: 700 }}>{PERSONA.points} · {PERSONA.tier}</span></div></div><div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>إجراءات سريعة</div></div></div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}><Link href={R.W_SessionNote} style={{ height: 40, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: "100%" }}><Icon name="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4M13.5 6.5l4 4" size={16} color={C.accent} stroke={1.9} />ملاحظة جلسة</Link><Link href={R.W_Prescription} style={{ height: 40, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: "100%" }}><Icon name="M4.5 12.5l8-8a4.95 4.95 0 0 1 7 7l-8 8a4.95 4.95 0 0 1-7-7zM8.5 8.5l7 7" size={16} color={C.accent} stroke={1.9} />وصفة</Link><Link href={R.W_Photos} style={{ height: 40, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: "100%" }}><Icon name="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" size={16} color={C.accent} stroke={1.9} />صور قبل/بعد</Link><Link href={R.W_Consents} style={{ height: 40, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 14px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(123,70,135,0.07)", width: "100%" }}><Icon name="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" size={16} color={C.accent} stroke={1.9} />موافقة</Link></div></div></div></div></div>
+    <Shell fileNo={p.file_no}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, flexGrow: 1 }}>
+        <Panel>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+            <Initials name={p.name} size={72} />
+            <div style={{ flex: 1, lineHeight: 1.4, minWidth: 260 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
+                <span style={PILL_DANGER} className="latin">ملف {p.file_no}</span>
+                {tier && <span style={{ ...PILL_GRAY, background: "linear-gradient(145deg,#FFFFFF,#CFCBD6)", color: "#4A4452" }}>العضوية {tier.name}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 18, fontSize: 13, color: C.sub, marginTop: 4, flexWrap: "wrap" }}>
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}><Icon name="phone" size={15} color={C.accentMid} /><span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{p.phone ?? "—"}</span></span>
+                {p.birth_date && <span>الميلاد: {arDate(new Date(p.birth_date), { day: false, year: true })}</span>}
+                <span>الملف منذ: {arDate(new Date(p.created_at), { day: false, year: true })}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                <span style={PILL_GRAY}>نوع البشرة: {p.skin_type ?? "غير محدد"}</span>
+                <span style={PILL_GRAY}><span className="latin">{p.points}</span>&nbsp;نقطة</span>
+                {p.pregnant && <span style={PILL_DANGER}>حامل</span>}
+                {p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Link href={R.W_BookingModal} style={outlineBtn(42)}><Icon name={PLUS} size={16} color={C.accent} stroke={1.9} />موعد جديد</Link>
+              <Link href={fileHref(R.W_SessionNote, "patient", p.id)} style={outlineBtn(42)}><Icon name="edit" size={16} color={C.accent} />ملاحظة</Link>
+              <Link href={fileHref(R.W_Prescription, "patient", p.id)} style={outlineBtn(42)}><Icon name="pill" size={16} color={C.accent} />وصفة</Link>
+              <Link href={fileHref(R.W_Photos, "patient", p.id)} style={outlineBtn(42)}><Icon name="camera" size={16} color={C.accent} />الصور</Link>
+              <button type="button" onClick={() => setEditing(true)} style={outlineBtn(42)}><Icon name="settings" size={16} color={C.accent} />تعديل</button>
+            </div>
+          </div>
+          {p.notes && <div style={{ marginTop: 12, fontSize: 13, color: C.sub, background: "#FAF5FB", borderRadius: 14, padding: "8px 12px" }}>{p.notes}</div>}
+        </Panel>
 
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, width: 340, maxWidth: "100%", flexShrink: 0 }}>
+            <Conditions patientId={p.id} />
+            <Packages patientId={p.id} />
+          </div>
+          <History p={p} />
+        </div>
+      </div>
+      {editing && <EditPatient p={p} onClose={() => setEditing(false)} />}
+    </Shell>
+  );
+}
 
+function Shell({ children, fileNo }: { children: React.ReactNode; fileNo?: number }) {
+  return (
+    <AdminShell active="المراجعات" title={fileNo ? `ملف ${fileNo}` : "ملف المراجعة"} subtitle="السجل الصحي للمراجعة" actions={<BackLink href={R.W_Patients}>كل المراجعات</BackLink>}>
+      {children}
     </AdminShell>
+  );
+}
+
+function Conditions({ patientId }: { patientId: string }) {
+  const { data, loading } = useQuery(["conditions", patientId], () => listConditions(patientId));
+  const [kind, setKind] = useState<ConditionKind>("allergy");
+  const [name, setName] = useState("");
+  async function add() { if (name.trim()) { await addCondition(patientId, kind, name); setName(""); } }
+  return (
+    <Panel title="الحالة الصحية" sub="تظهر للأخصائية قبل كل جلسة">
+      {loading ? <Loading /> : !data?.length ? <div style={{ fontSize: 13, color: C.muted, marginBottom: 10 }}>لا حساسية أو أدوية مسجّلة.</div> : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {data.map((c) => (
+            <Tag key={c.id} kind={c.kind === "allergy" ? "pink" : c.kind === "medication" ? "amber" : "lilac"}>
+              {KIND_LABEL[c.kind as ConditionKind]}: {c.name}
+              <button type="button" aria-label="حذف" onClick={() => removeCondition(c.id)} style={{ border: "none", background: "transparent", padding: 0, marginInlineStart: 4, display: "inline-flex" }}><Icon name="x" size={12} color={C.sub2} /></button>
+            </Tag>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+        <Select label="النوع" value={kind} onChange={setKind} options={(Object.keys(KIND_LABEL) as ConditionKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))} style={{ width: 110 }} />
+        <TextInput label="الاسم" value={name} onChange={setName} style={{ flex: 1 }} />
+        <button type="button" onClick={add} aria-label="إضافة" style={{ ...outlineBtn(46), padding: "0 12px" }}><Icon name={PLUS} size={16} color={C.accent} /></button>
+      </div>
+    </Panel>
+  );
+}
+
+function Packages({ patientId }: { patientId: string }) {
+  const { data, loading } = useQuery(["clinical", "packages", patientId], () => listPatientPackages(patientId));
+  return (
+    <Panel title="الباقات">
+      {loading ? <Loading /> : !data?.length ? <div style={{ fontSize: 13, color: C.muted }}>لا باقات مشتراة.</div> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {data.map((x) => (
+            <div key={x.id} style={{ lineHeight: 1.5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, fontWeight: 700 }}>
+                <span>{x.packages?.name ?? "باقة"}</span><span className="latin" style={{ color: C.accent }}>{x.sessions_used}/{x.sessions_total}</span>
+              </div>
+              <Bar done={x.sessions_used} total={x.sessions_total} />
+              <div style={{ fontSize: 12, color: C.sub2, marginTop: 3 }}>اشتُريت {arDate(new Date(x.purchased_at), { day: false, year: true })} · {money(x.price_paid)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function History({ p }: { p: Patient }) {
+  const [t, setT] = useState(0);
+  return (
+    <Panel style={{ flex: 1, minWidth: 420 }}>
+      <div role="tablist" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+        {TABS.map((x, i) => <button key={x} type="button" role="tab" aria-selected={t === i} onClick={() => setT(i)} style={chip(t === i, 36)}>{x}</button>)}
+      </div>
+      {t === 0 && <Visits id={p.id} />}
+      {t === 1 && <Notes id={p.id} />}
+      {t === 2 && <Rx id={p.id} />}
+      {t === 3 && <Consents id={p.id} />}
+      {t === 4 && <Photos id={p.id} />}
+    </Panel>
+  );
+}
+
+const rowStyle = { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: "1px solid #EDE2F1", fontSize: 13.5 } as const;
+const when = (iso: string) => `${arDate(new Date(iso), { year: true })} · ${clock(iso)}`;
+
+function Visits({ id }: { id: string }) {
+  const { data, loading } = useQuery(["clinical", "visits", id], () => listVisits(id));
+  if (loading) return <Loading />;
+  if (!data?.length) return <EmptyState compact icon="cal" title="لا زيارات بعد" text="تظهر هنا مواعيدها وزياراتها السابقة." />;
+  return <div>{data.map((v) => (
+    <div key={v.id} style={rowStyle}>
+      <span style={{ flex: 1.2, color: C.sub }}>{when(v.starts_at)}</span>
+      <span style={{ flex: 1.3, fontWeight: 700 }}>{v.services?.name ?? v.service_key}</span>
+      <span style={{ flex: 1, color: C.sub }}>{v.staff?.name ?? "—"}{v.rooms ? ` · ${v.rooms.name}` : ""}</span>
+      <Tag kind={v.status === "done" ? "green" : v.status === "cancelled" || v.status === "no_show" ? "gray" : "lilac"}>{STATUS_LABEL[v.status] ?? v.status}</Tag>
+      {v.status === "done" && <Link href={fileHref(R.W_SessionNote, "appointment", v.id)} style={{ fontSize: 12.5, color: C.accent, fontWeight: 600 }}>ملاحظة</Link>}
+    </div>
+  ))}</div>;
+}
+
+function Notes({ id }: { id: string }) {
+  const { data, loading } = useQuery(["clinical", "notes", id], () => listNotes(id));
+  if (loading) return <Loading />;
+  if (!data?.length) return <EmptyState compact icon="edit" title="لا ملاحظات جلسات" text="تكتب الأخصائية ملاحظة بعد كل جلسة." action={<Link href={fileHref(R.W_SessionNote, "patient", id)} style={outlineBtn(40)}>كتابة ملاحظة</Link>} />;
+  return <div>{data.map((n) => {
+    const f = n.fields as NoteFields;
+    return (
+      <div key={n.id} style={{ ...rowStyle, display: "block" }}>
+        <div style={{ fontSize: 12, color: C.sub2, marginBottom: 4 }}>{when(n.created_at)}{n.staff ? ` · ${n.staff.name}` : ""}</div>
+        <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{n.body || Object.values(f ?? {}).join(" · ")}</div>
+      </div>
+    );
+  })}</div>;
+}
+
+function Rx({ id }: { id: string }) {
+  const { data, loading } = useQuery(["clinical", "rx", id], () => listPrescriptions(id));
+  if (loading) return <Loading />;
+  if (!data?.length) return <EmptyState compact icon="pill" title="لا وصفات" text="تُرسل الوصفة لتطبيق المراجعة وتُحفظ هنا." action={<Link href={fileHref(R.W_Prescription, "patient", id)} style={outlineBtn(40)}>وصفة جديدة</Link>} />;
+  return <div>{data.map((r) => (
+    <div key={r.id} style={{ ...rowStyle, display: "block" }}>
+      <div style={{ fontSize: 12, color: C.sub2, marginBottom: 4 }}>{when(r.created_at)}{r.staff ? ` · ${r.staff.name}` : ""}</div>
+      {rxItems(r).map((x, i) => <div key={i}><b>{x.name}</b> — {WHEN_LABEL[x.when]}{x.how ? ` · ${x.how}` : ""}</div>)}
+    </div>
+  ))}</div>;
+}
+
+function Consents({ id }: { id: string }) {
+  const { data, loading } = useQuery(["clinical", "consents", id], () => listConsents(id));
+  if (loading) return <Loading />;
+  if (!data?.length) return <EmptyState compact icon="sign" title="لا موافقات موقّعة" text="توقّع المراجعة الموافقة من تطبيقها أو على جهاز الاستقبال." />;
+  return <div>{data.map((c) => (
+    <div key={c.id} style={rowStyle}>
+      <Icon name="sign" size={18} color={C.accentMid} />
+      <span style={{ flex: 1, fontWeight: 700 }}>{(c.answers as { title?: string })?.title ?? c.services?.name ?? "موافقة عامة"}</span>
+      <span style={{ color: C.sub }}>{when(c.signed_at)}</span>
+      <Tag kind="green">موقّعة</Tag>
+    </div>
+  ))}</div>;
+}
+
+function Photos({ id }: { id: string }) {
+  const { data, loading } = useQuery(["clinical", "photos", id], () => listPhotos(id));
+  if (loading) return <Loading />;
+  if (!data?.length) return <EmptyState compact icon="camera" title="لا صور بعد" text="تُلتقط الصور قبل الجلسة وبعدها من جهاز الاستقبال أو من شاشة الصور." action={<Link href={fileHref(R.W_Photos, "patient", id)} style={outlineBtn(40)}>شاشة الصور</Link>} />;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
+      {data.map((x) => (
+        <Link key={x.id} href={fileHref(R.W_Photos, "patient", id)} style={{ borderRadius: 16, overflow: "hidden", background: "#F3EAF6", aspectRatio: "3/4", position: "relative", display: "block" }}>
+          {x.url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={x.url} alt={angleLabel(x.angle)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          <span style={{ position: "absolute", bottom: 6, right: 6, ...PILL_GRAY, height: 20, fontSize: 11 }}>{STAGE_LABEL[x.stage] ?? x.stage} · {arDate(new Date(x.created_at), { day: false })}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
+  const [name, setName] = useState(p.name);
+  const [phone, setPhone] = useState(p.phone ?? "");
+  const [dob, setDob] = useState(p.birth_date ?? "");
+  const [skin, setSkin] = useState(p.skin_type ?? "");
+  const [notes, setNotes] = useState(p.notes ?? "");
+  const [preg, setPreg] = useState(p.pregnant);
+  const [bf, setBf] = useState(p.breastfeeding);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function save() {
+    setBusy(true); setErr("");
+    try {
+      await updatePatient(p.id, { name: name.trim(), phone: phone.trim() || null, birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
+      onClose();
+    } catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الحفظ"); }
+    setBusy(false);
+  }
+  return (
+    <Modal open onClose={onClose} title={`تعديل ملف ${p.file_no}`} footer={<><SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
+      <TextInput label="الاسم" value={name} onChange={setName} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" />
+        <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
+      </div>
+      <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
+      <div style={{ display: "flex", gap: 24 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={preg} onChange={setPreg} label="حامل" />حامل</label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={bf} onChange={setBf} label="مرضع" />مرضع</label>
+      </div>
+      <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
+      {err && <ErrorNote>{err}</ErrorNote>}
+    </Modal>
   );
 }

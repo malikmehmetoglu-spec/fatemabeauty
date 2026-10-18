@@ -1,15 +1,17 @@
 "use client";
 
+/** P_Booked.dc.html — booking success, showing the real appointment (?id=). */
 import { Fragment, type CSSProperties } from "react";
 import { PhoneScreen } from "@/components/shell";
-import { Circ, FatemaAvatar, Icon, IconButton, PrimaryButton, SecondaryButton, Tag } from "@/components/ui";
+import { Circ, EmptyState, Icon, IconButton, Loading, PrimaryButton, SecondaryButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PERSONA, SERVICE } from "@/lib/data";
+import { useQuery } from "@/lib/db/query";
+import { getAppointment, STATUS_KIND, STATUS_LABEL, timeOf, useSearch } from "@/lib/db/appointments";
+import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate } from "@/lib/format";
 import { C, CARD, DONE_GRAD, GLASS } from "@/lib/tokens";
+import { downloadIcs, SpecialistAvatar } from "../SpecialistAvatar";
 
-/** P_Booked.dc.html — booking success. */
-const DOOR = "M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16";
 const abs = (top: number, left: number, extra: CSSProperties = {}): CSSProperties => ({ position: "absolute", top, left, ...extra });
 
 function Info({ icon, label, value }: { icon: string; label: string; value: string }) {
@@ -24,36 +26,31 @@ function Info({ icon, label, value }: { icon: string; label: string; value: stri
   );
 }
 
-function addToCalendar() {
-  const d = PERSONA.nextSession;
-  const [h, m] = PERSONA.nextTime.split(":").map(Number);
-  const svc = SERVICE[PERSONA.packageService];
-  const p = (n: number) => String(n).padStart(2, "0");
-  const stamp = (mins: number) => {
-    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m + mins);
-    return `${t.getFullYear()}${p(t.getMonth() + 1)}${p(t.getDate())}T${p(t.getHours())}${p(t.getMinutes())}00`;
-  };
-  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Fatema Beauty//AR", "BEGIN:VEVENT", `UID:${stamp(0)}@fatemabeauty`,
-    `DTSTART:${stamp(0)}`, `DTEND:${stamp(svc.minutes)}`, `SUMMARY:${svc.name} — Fatema Beauty`, `LOCATION:${svc.room}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-  a.download = "fatema-beauty.ics";
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 export default function BookedPage() {
-  const svc = SERVICE[PERSONA.packageService];
+  const s = useRequirePatient();
+  const q = useSearch();
+  const id = q?.get("id") ?? "";
+  const { data: a, loading } = useQuery(["appointments", "one", id], () => getAppointment(id), { enabled: !!id && !!s.patient });
+
   const sparkle = (top: number, left: number, size: number, color: string) => (
     <span aria-hidden style={abs(top, left)}><Icon name="sparkle" color={color} size={size} stroke={1.6} /></span>
   );
   const dot = (top: number, left: number, size: number, color: string) => (
     <span aria-hidden style={abs(top, left, { width: size, height: size, borderRadius: "50%", background: color })} />
   );
+
+  if (s.loading || !s.patient || !q || (id && loading)) return <PhoneScreen><Loading /></PhoneScreen>;
+  if (!a) return (
+    <PhoneScreen>
+      <EmptyState icon="cal" title="لم نجد هذا الحجز" text="تجدين كل مواعيدكِ في «مواعيدي»." action={<PrimaryButton href={R.P_Appointments}>مواعيدي</PrimaryButton>} />
+    </PhoneScreen>
+  );
+
+  const start = new Date(a.starts_at);
   const rows: [string, string, string][][] = [
-    [["cal", "التاريخ", arDate(PERSONA.nextSession)]],
-    [["clock", "الساعة", PERSONA.nextTime], [DOOR, "المكان", svc.room]],
-    [["sparkle", "الجلسة", svc.name]],
+    [["cal", "التاريخ", arDate(start)]],
+    [["clock", "الساعة", timeOf(a)], ["door", "المكان", a.room?.name ?? "يُحدَّد في المركز"]],
+    [["sparkle", "الجلسة", a.service?.name ?? ""]],
   ];
   return (
     <PhoneScreen gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
@@ -83,23 +80,17 @@ export default function BookedPage() {
           </Fragment>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 18, padding: "8px 10px", background: "#FAF5FB" }}>
-          <FatemaAvatar size={36} />
+          <SpecialistAvatar sp={a.specialist} size={36} />
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 11.5, color: C.sub2 }}>الأخصائية</div>
-            <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>فاطمة طيبة</div>
+            <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{a.specialist?.name ?? "تُحدَّد في المركز"}</div>
           </div>
-          <span style={{ marginInlineStart: "auto" }}><Tag kind="pink">من الباقة · الجلسة {PERSONA.sessionsDone + 1} من 6</Tag></span>
+          <span style={{ marginInlineStart: "auto" }}><Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag></span>
         </div>
       </div>
 
-      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, color: C.sub, textAlign: "center" }}>
-        <span style={{ width: 28, height: 28, borderRadius: 14, background: "#E6F4EC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon name="msg" color={C.ok} size={16} />
-        </span>أُرسل التأكيد على واتساب، وسنذكّركِ قبل الموعد
-      </div>
-
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
-        <SecondaryButton icon="calcheck" onClick={addToCalendar}>إضافة إلى التقويم</SecondaryButton>
+        <SecondaryButton icon="calcheck" onClick={() => downloadIcs({ id: a.id, starts_at: a.starts_at, minutes: a.minutes, title: a.service?.name ?? "جلسة", location: a.room?.name })}>إضافة إلى التقويم</SecondaryButton>
         <PrimaryButton href={R.Main}>العودة للرئيسية</PrimaryButton>
       </div>
     </PhoneScreen>

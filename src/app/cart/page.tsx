@@ -1,19 +1,25 @@
 "use client";
 
-/** P_Cart.dc.html — cart (interactive quantities, delivery mode, computed totals). */
+/** P_Cart.dc.html — cart. Keys + quantities from localStorage; names, prices and stock are re-read live. */
+import { useEffect } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { DarkCard, FatemaAvatar, PrimaryButton, SecondaryButton } from "@/components/ui";
+import { Circ, DarkCard, ErrorNote, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
-import { cartStore, cartTotals, setMode, useCart, useMode } from "@/lib/mock/c1";
+import { useQuery } from "@/lib/db/query";
+import { cartLines, cartStore, getProductsByKeys, setMode, useCart, useMode } from "@/lib/db/orders";
 import { ArtThumb, QtyStepper, Segmented } from "../store/c1ui";
 
 export default function CartPage() {
   const cart = useCart();
   const mode = useMode();
-  const { lines, count, sub } = cartTotals(cart);
+  const keys = Object.keys(cart).sort();
+  const { data, loading, error } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
+  const { lines, missing, count, sub, canOrder } = cartLines(cart, data);
   const d = mode === "d";
+  // Drop items that are no longer sold.
+  useEffect(() => { if (data) missing.forEach((k) => cartStore.set(k, 0)); }, [data, missing]);
 
   return (
     <PhoneScreen>
@@ -21,19 +27,22 @@ export default function CartPage() {
 
       <div style={{ ...CARD, borderRadius: 24, padding: "12px 16px 4px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <FatemaAvatar size={28} />
-          <span style={{ fontSize: 12.5, color: C.sub2 }}>روتينكِ كما أوصت به فاطمة طيبة</span>
+          <Circ icon="bag" size={28} iconSize={14} />
+          <span style={{ fontSize: 12.5, color: C.sub2 }}>الأسعار والكميات محدّثة من المركز</span>
         </div>
-        {lines.length === 0 && <div style={{ padding: "16px 0", fontSize: 13.5, color: C.sub2 }}>سلتكِ فارغة</div>}
-        {lines.map(({ p, qty, line }, i) => (
+        {keys.length > 0 && loading && <Loading />}
+        {error && <ErrorNote style={{ margin: "10px 0" }}>تعذّر تحميل السلة: {error}</ErrorNote>}
+        {!loading && lines.length === 0 && <div style={{ padding: "16px 0", fontSize: 13.5, color: C.sub2 }}>سلتكِ فارغة</div>}
+        {lines.map(({ p, qty, line, problem }, i) => (
           <div key={p.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i ? `1px solid ${C.line}` : undefined }}>
             <ArtThumb p={p} box={60} art={43} radius={20} />
             <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
               <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
               <div style={{ fontSize: 12, color: C.muted }}>{p.size}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: C.accent, marginTop: 2 }}><span className="latin">{money(line, false)}</span> ل.س</div>
+              {problem && <div style={{ fontSize: 12, fontWeight: 600, color: C.danger }}>{problem}</div>}
             </div>
-            <QtyStepper qty={qty} min={0} onChange={(q) => cartStore.set(p.key, q)} />
+            <QtyStepper qty={qty} min={0} max={Math.max(qty, Math.floor(Number(p.stock)))} onChange={(q) => cartStore.set(p.key, q)} />
           </div>
         ))}
       </div>
@@ -59,8 +68,9 @@ export default function CartPage() {
         </div>
       </DarkCard>
 
+      {lines.length > 0 && !canOrder && <ErrorNote>عدّلي الكميات المعلَّمة قبل المتابعة.</ErrorNote>}
       {lines.length > 0
-        ? <PrimaryButton href={R.P_Checkout} style={{ marginTop: "auto", flexShrink: 0 }}>متابعة الدفع</PrimaryButton>
+        ? <PrimaryButton href={canOrder ? R.P_Checkout : undefined} disabled={!canOrder} style={{ marginTop: "auto", flexShrink: 0 }}>متابعة الدفع</PrimaryButton>
         : <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>تصفّحي المتجر</SecondaryButton>}
     </PhoneScreen>
   );

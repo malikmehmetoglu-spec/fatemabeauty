@@ -133,7 +133,7 @@ export const cartCount = (c: Cart) => Object.values(c).reduce((s, q) => s + q, 0
 export type CartLine = { p: Product; qty: number; line: number; problem: string | null };
 
 /** Joins the cart with live product rows. Lines whose product vanished are dropped (and reported). */
-export function cartLines(c: Cart, products: Product[] | undefined) {
+export function cartLines(c: Cart, products: Product[] | null | undefined) {
   const byKey = new Map((products ?? []).map((p) => [p.key, p]));
   const lines: CartLine[] = [];
   const missing: string[] = [];

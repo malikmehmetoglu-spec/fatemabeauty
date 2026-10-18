@@ -1,637 +1,183 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import Link from "next/link";
+/** W_Attendance.dc.html — الحضور والإجازات (live, Supabase `staff_attendance`, `leave_requests`). */
+import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
-import { R } from "@/lib/routes";
-import { C, FATEMA_PHOTO } from "@/lib/tokens";
-import { arDate } from "@/lib/format";
-import { TODAY } from "@/lib/data";
-import { LEAVE_REQUESTS, SN, css, tagStyle } from "@/lib/mock/g";
+import { Card, DataTable, EmptyState, ErrorNote, GhostButton, Kpi, Loading, Modal, PrimaryButton, SectionTitle, Select, SubmitButton, Tag, TextArea, TextInput } from "@/components/ui";
+import { useQuery } from "@/lib/db/query";
+import { LEAVE_KIND, LEAVE_STATUS, decideLeave, listAttendance, listLeave, punch, requestLeave, saveAttendance, type Attendance } from "@/lib/db/staff";
+import { useSession } from "@/lib/supabase/session";
+import { arDate, atDamascus, clock, dayKey } from "@/lib/format";
+import { C } from "@/lib/tokens";
+import { RowBtn, StaffCell, TeamTabs, errText, useTeam } from "../team-ui";
 
-/** W_Attendance.dc.html — الحضور والإجازات. */
-export default function Page() {
-  const [d, setD] = useState<Record<number, "ok" | "no">>({});
-  const reqs = LEAVE_REQUESTS.map((r, i) => ({
-    ...r, pending: !d[i], decided: !!d[i], ok: () => setD({ ...d, [i]: "ok" }), no: () => setD({ ...d, [i]: "no" }),
-    stLabel: d[i] === "ok" ? "تمت الموافقة" : "مرفوض", st: tagStyle(d[i] === "ok" ? "green" : "pink"),
-  }));
-  const pend = LEAVE_REQUESTS.filter((r, i) => !d[i]).length;
-  const v = { reqs, pendLabel: pend ? pend + " بانتظار القرار" : "لا طلبات معلّقة", pendStyle: tagStyle(pend ? "amber" : "green") };
+const keyDate = (k: string) => new Date(`${k}T12:00:00+03:00`);
+const minus = (k: string, n: number) => dayKey(new Date(keyDate(k).getTime() - n * 864e5));
+const hours = (a: Attendance) => a.check_in && a.check_out ? (new Date(a.check_out).getTime() - new Date(a.check_in).getTime()) / 36e5 : null;
+
+export default function AttendancePage() {
+  const { staff: me } = useSession();
+  const isAdmin = me?.role === "owner" || me?.role === "admin";
+  const team = useTeam();
+  const today = dayKey();
+  const from = minus(today, 13);
+  const att = useQuery(["attendance", from], () => listAttendance(from, today));
+  const leave = useQuery(["leave", "all"], listLeave);
+  const [day, setDay] = useState(today);
+  const [editing, setEditing] = useState<Partial<Attendance> | null>(null);
+  const [asking, setAsking] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const rows = att.data ?? [];
+  const todays = rows.filter((a) => a.day === today);
+  const mineToday = todays.find((a) => a.staff_id === me?.id);
+  const onDay = rows.filter((a) => a.day === day);
+  const pending = (leave.data ?? []).filter((l) => l.status === "pending");
+  const onLeaveToday = (leave.data ?? []).filter((l) => l.status === "approved" && l.starts <= today && l.ends >= today);
+
+  async function doPunch(kind: "in" | "out") {
+    setMsg("");
+    try { await punch(kind); } catch (e) { setMsg(errText(e)); }
+  }
+  async function decide(id: string, status: "approved" | "rejected") {
+    if (!me) return;
+    try { await decideLeave(id, status, me.id); } catch (e) { setMsg(errText(e)); }
+  }
+
   return (
-    <AdminShell active="فريق العمل" title="الحضور والإجازات" subtitle={<>{arDate(TODAY)} · الآن 12:30</>} actions={<>
-      <Link style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }} href={R.W_Shifts}>
-        <Icon name="cal" color="#7B4687" size={17} stroke={1.9} />
-        الورديات
-      </Link>
-      <button style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#7B4687", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
-        <Icon name="download" color="#7B4687" size={17} stroke={1.9} />
-        تصدير الحضور
-      </button>
-    </>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0" }}>
-        <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0" }}>
-          <div style={{ borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative", flex: 1.3, minWidth: "0" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#35213D" }}>
-                  حضور اليوم · {arDate(TODAY)}
-                </div>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                  5/5 حاضرات
-                </span>
-              </div>
-              <div style={{ padding: "0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    الموظفة
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    الوردية
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    الحضور
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    الانصراف
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    الحالة
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 12, color: "#866F8D", fontWeight: 600 }}>
-                    هذا الأسبوع
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 76, borderTop: "1px solid #EDE2F1" }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={FATEMA_PHOTO} alt="فاطمة طيبة" style={{ width: 34, height: 34, borderRadius: 17, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", flexShrink: 0 }} />
-                    <div style={{ lineHeight: 1.35 }}>
-                      <div>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                          {SN.fatema}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                        أخصائية عناية بالبشرة
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
-                      10:00 – 18:00
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
-                      09:52
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#A595AC" }}>
-                      —
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                      في الموعد
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          س
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ح
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ن
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ث
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 76, borderTop: "1px solid #EDE2F1" }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#7B4687" }}>
-                      ر ا
-                    </span>
-                    <div style={{ lineHeight: 1.35 }}>
-                      <div>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                          {SN.reem}
-                        </span>
-                        <ExampleTag />
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                        أخصائية ليزر
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
-                      10:00 – 18:00
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
-                      09:45
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#A595AC" }}>
-                      —
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                      في الموعد
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div title="إجازة" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "#FFFFFF", border: "1.5px dashed #D1C0D5" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          س
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ح
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ن
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ث
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 76, borderTop: "1px solid #EDE2F1" }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#7B4687" }}>
-                      ه ا
-                    </span>
-                    <div style={{ lineHeight: 1.35 }}>
-                      <div>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                          {SN.hiba}
-                        </span>
-                        <ExampleTag />
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                        أخصائية عناية بالبشرة
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
-                      10:00 – 18:00
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
-                      10:07
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#A595AC" }}>
-                      —
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#FCF1DE", color: "#8A5A12" }}>
-                      متأخرة 7 د
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          س
-                        </span>
-                      </div>
-                      <div title="إجازة" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "#FFFFFF", border: "1.5px dashed #D1C0D5" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ح
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ن
-                        </span>
-                      </div>
-                      <div title="تأخير" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "#E9C27A" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ث
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 76, borderTop: "1px solid #EDE2F1" }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#7B4687" }}>
-                      ل خ
-                    </span>
-                    <div style={{ lineHeight: 1.35 }}>
-                      <div>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                          {SN.lina}
-                        </span>
-                        <ExampleTag />
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                        الاستقبال
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
-                      09:30 – 18:00
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
-                      09:28
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#A595AC" }}>
-                      —
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                      في الموعد
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          س
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ح
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ن
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ث
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 76, borderTop: "1px solid #EDE2F1" }}>
-                  <div style={{ flex: 2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#7B4687" }}>
-                      س ح
-                    </span>
-                    <div style={{ lineHeight: 1.35 }}>
-                      <div>
-                        <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                          {SN.salma}
-                        </span>
-                        <ExampleTag />
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "#866F8D" }}>
-                        المحاسبة
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
-                      10:00 – 16:00
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
-                      09:58
-                    </span>
-                  </div>
-                  <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#A595AC" }}>
-                      —
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: "#2E7D50" }}>
-                      في الموعد
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          س
-                        </span>
-                      </div>
-                      <div title="تأخير" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "#E9C27A" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ح
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ن
-                        </span>
-                      </div>
-                      <div title="في الموعد" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 7, background: "linear-gradient(145deg,#C9A2D8,#7B4687)" }}></span>
-                        <span style={{ fontSize: 10.5, color: "#866F8D" }}>
-                          ث
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    <AdminShell active="فريق العمل" title="الحضور والإجازات" subtitle={`${arDate(new Date())} · الآن ${clock()}`}
+      actions={<GhostButton icon="cal" onClick={() => setAsking(true)}>طلب إجازة</GhostButton>}>
+      <TeamTabs />
+      <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
+        <Card style={{ flex: 1.4, display: "flex", alignItems: "center", gap: 14 }} padding="18px 20px">
+          <div style={{ flex: 1, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: C.sub2 }}>حضوري اليوم</div>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>
+              {mineToday?.check_in ? <>دخول <span className="latin">{clock(mineToday.check_in)}</span>{mineToday.check_out && <> · خروج <span className="latin">{clock(mineToday.check_out)}</span></>}</> : "لم تسجّلي الدخول بعد"}
             </div>
           </div>
-          <div style={{ borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative", flex: 1, minWidth: "0" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: "0", minHeight: "0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#35213D" }}>
-                  طلبات الإجازة
-                </div>
-                <span style={css(v.pendStyle)}>
-                  {v.pendLabel}
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {v.reqs.map((r, r_i) => (
-                  <Fragment key={r_i}>
-                    <div style={{ borderRadius: 22, padding: "14px 16px", background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#7B4687", whiteSpace: "nowrap" }}>
-                        {r.ini}
-                      </span>
-                      <div style={{ flex: 1, minWidth: "0", lineHeight: 1.45 }}>
-                        <div style={{ fontSize: 14 }}>
-                          <span style={{ fontWeight: 700 }}>
-                            {r.name}
-                          </span>
-                          <ExampleTag />
-                        </div>
-                        <div style={{ color: "#866F8D", fontSize: 12.5 }}>
-                          {r.type} · {r.days}
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 600 }}>
-                          {r.when}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#866F8D" }}>
-                          {r.note}
-                        </div>
-                      </div>
-                      {r.pending && (
-                        <>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button onClick={r.ok} style={{ height: 36, padding: "0 14px", borderRadius: 18, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: "#FFFFFF", fontSize: 13, fontWeight: 600 }}>
-                              موافقة
-                            </button>
-                            <button onClick={r.no} style={{ height: 36, padding: "0 14px", borderRadius: 18, border: "1px solid #FFFFFF", background: "#FFFFFF", boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#B03D6A", fontSize: 13, fontWeight: 600 }}>
-                              رفض
-                            </button>
-                          </div>
-                        </>
-                      )}
-                      {r.decided && (
-                        <>
-                          <span style={css(r.st)}>
-                            {r.stLabel}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style={{ borderRadius: 26, padding: "18px 20px", background: "#FFFFFF", border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative", flex: 1 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#35213D" }}>
-                أرصدة الإجازات السنوية 2026
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "#866F8D" }}>
-                <span>
-                  مفتاح الأسبوع: س سبت · ح أحد · ن إثنين · ث ثلاثاء
-                </span>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>
-                  قيم مثال
-                </span>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "stretch", minHeight: "0" }}>
-              <div style={{ flex: 1, minWidth: "0", borderRadius: 20, padding: 14, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#7B4687" }}>
-                    ر ا
-                  </span>
-                  <div style={{ fontSize: 13, minWidth: "0" }}>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {SN.reem}
-                    </span>
-                    <ExampleTag />
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
-                    10
-                  </span>
-                  <span style={{ fontSize: 12, color: "#866F8D" }}>
-                    يوماً متبقية من 14
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
-                  <div style={{ width: "71%", height: 6, borderRadius: 3, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#866F8D" }}>
-                  <span>
-                    مستخدمة 4
-                  </span>
-                  <span>
-                    طلب معلّق
-                  </span>
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", borderRadius: 20, padding: 14, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#7B4687" }}>
-                    ه ا
-                  </span>
-                  <div style={{ fontSize: 13, minWidth: "0" }}>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {SN.hiba}
-                    </span>
-                    <ExampleTag />
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
-                    8
-                  </span>
-                  <span style={{ fontSize: 12, color: "#866F8D" }}>
-                    يوماً متبقية من 14
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
-                  <div style={{ width: "57%", height: 6, borderRadius: 3, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#866F8D" }}>
-                  <span>
-                    مستخدمة 6
-                  </span>
-                  <span>
-                    طلب معلّق
-                  </span>
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", borderRadius: 20, padding: 14, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#7B4687" }}>
-                    ل خ
-                  </span>
-                  <div style={{ fontSize: 13, minWidth: "0" }}>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {SN.lina}
-                    </span>
-                    <ExampleTag />
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
-                    5
-                  </span>
-                  <span style={{ fontSize: 12, color: "#866F8D" }}>
-                    يوماً متبقية من 14
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
-                  <div style={{ width: "36%", height: 6, borderRadius: 3, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#866F8D" }}>
-                  <span>
-                    مستخدمة 9
-                  </span>
-                  <span>
-                    لا طلبات
-                  </span>
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", borderRadius: 20, padding: 14, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#7B4687" }}>
-                    س ح
-                  </span>
-                  <div style={{ fontSize: 13, minWidth: "0" }}>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {SN.salma}
-                    </span>
-                    <ExampleTag />
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
-                    11
-                  </span>
-                  <span style={{ fontSize: 12, color: "#866F8D" }}>
-                    يوماً متبقية من 14
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
-                  <div style={{ width: "79%", height: 6, borderRadius: 3, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#866F8D" }}>
-                  <span>
-                    مستخدمة 3
-                  </span>
-                  <span>
-                    لا طلبات
-                  </span>
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: "0", borderRadius: 20, padding: 14, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={FATEMA_PHOTO} alt="فاطمة طيبة" style={{ width: 30, height: 30, borderRadius: 15, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", flexShrink: 0 }} />
-                  <div style={{ fontSize: 13, minWidth: "0" }}>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {SN.fatema}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
-                    9
-                  </span>
-                  <span style={{ fontSize: 12, color: "#866F8D" }}>
-                    يوماً متبقية من 14
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
-                  <div style={{ width: "64%", height: 6, borderRadius: 3, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#866F8D" }}>
-                  <span>
-                    مستخدمة 5
-                  </span>
-                  <span>
-                    لا طلبات
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          {!mineToday?.check_in
+            ? <PrimaryButton icon="check" height={48} onClick={() => doPunch("in")}>تسجيل الدخول</PrimaryButton>
+            : !mineToday.check_out && <PrimaryButton icon="logout" height={48} onClick={() => doPunch("out")}>تسجيل الخروج</PrimaryButton>}
+        </Card>
+        <Kpi label="حضرن اليوم" value={todays.filter((a) => a.check_in).length} sub={`من ${team.active.length} في الفريق`} icon="users" />
+        <Kpi label="في إجازة اليوم" value={onLeaveToday.length} icon="cal" />
+        <Kpi label="طلبات بانتظار الموافقة" value={pending.length} icon="clock" />
       </div>
+      {msg && <ErrorNote>{msg}</ErrorNote>}
+
+      <SectionTitle right={
+        <select aria-label="اليوم" value={day} onChange={(e) => setDay(e.target.value)} style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13 }}>
+          {Array.from({ length: 14 }, (_, i) => minus(today, i)).map((k) => <option key={k} value={k}>{i18(k, today)}</option>)}
+        </select>
+      }>سجل الحضور</SectionTitle>
+      {team.loading || att.loading ? <Loading /> : att.error ? <ErrorNote>تعذّر تحميل الحضور: {att.error}</ErrorNote> : !isAdmin && me?.role !== "accountant" ? (
+        onDay.length ? <AttTable rows={onDay} team={team} /> : <EmptyState compact icon="clock" title="لا حضور مسجّل لكِ في هذا اليوم" />
+      ) : (
+        <DataTable headers={["الموظفة", "الدخول", "الخروج", "المدة", "ملاحظة", ""]} widths={[2, 1, 1, 1, 1.6, 1]}
+          rows={team.active.map((s) => {
+            const a = onDay.find((x) => x.staff_id === s.id);
+            const h = a ? hours(a) : null;
+            const off = (leave.data ?? []).some((l) => l.staff_id === s.id && l.status === "approved" && l.starts <= day && l.ends >= day);
+            return [
+              <StaffCell key="s" s={s} sub={s.title} />,
+              a?.check_in ? <span key="i" className="latin">{clock(a.check_in)}</span> : off ? <Tag key="i" kind="lilac">إجازة</Tag> : <span key="i" style={{ color: C.muted }}>—</span>,
+              a?.check_out ? <span key="o" className="latin">{clock(a.check_out)}</span> : <span key="o" style={{ color: C.muted }}>—</span>,
+              h != null ? <span key="h" className="latin">{h.toFixed(1)} س</span> : <span key="h" style={{ color: C.muted }}>—</span>,
+              <span key="n" style={{ fontSize: 12.5, color: C.sub }}>{a?.note || ""}</span>,
+              isAdmin ? <RowBtn key="e" icon="edit" label="تعديل" onClick={() => setEditing(a ?? { staff_id: s.id, day })} /> : <span key="e" />,
+            ];
+          })} />
+      )}
+
+      <SectionTitle>طلبات الإجازة</SectionTitle>
+      {leave.loading ? <Loading /> : leave.error ? <ErrorNote>{leave.error}</ErrorNote> : !(leave.data ?? []).length ? (
+        <EmptyState compact icon="cal" title="لا طلبات إجازة" text="عندما تطلب موظفة إجازة تظهر هنا للموافقة أو الرفض." action={<GhostButton icon="plus" onClick={() => setAsking(true)}>طلب إجازة</GhostButton>} />
+      ) : (
+        <DataTable headers={["الموظفة", "النوع", "من", "إلى", "السبب", "الحالة", ""]} widths={[1.8, 0.8, 1, 1, 1.8, 1.1, 1.6]}
+          rows={(leave.data ?? []).map((l) => [
+            <StaffCell key="s" s={team.byId.get(l.staff_id)} />,
+            LEAVE_KIND[l.kind] ?? l.kind,
+            arDate(keyDate(l.starts), { day: false }),
+            arDate(keyDate(l.ends), { day: false }),
+            <span key="r" style={{ fontSize: 12.5, color: C.sub }}>{l.reason || "—"}</span>,
+            <Tag key="t" kind={l.status === "approved" ? "green" : l.status === "rejected" ? "gray" : "amber"}>{LEAVE_STATUS[l.status]}</Tag>,
+            isAdmin && l.status === "pending" ? (
+              <span key="a" style={{ display: "flex", gap: 6 }}>
+                <RowBtn icon="check" label="موافقة" color={C.okDeep} onClick={() => decide(l.id, "approved")} />
+                <RowBtn icon="x" label="رفض" color={C.danger} onClick={() => decide(l.id, "rejected")} />
+              </span>
+            ) : <span key="a" />,
+          ])} />
+      )}
+
+      <AttendanceDialog rec={editing} name={team.byId.get(editing?.staff_id ?? "")?.name ?? ""} onClose={() => setEditing(null)} />
+      <LeaveDialog open={asking} isAdmin={isAdmin} meId={me?.id ?? ""} team={team.active.map((s) => ({ value: s.id, label: s.name }))} onClose={() => setAsking(false)} />
     </AdminShell>
+  );
+}
+
+function i18(k: string, today: string) {
+  return k === today ? "اليوم" : arDate(keyDate(k));
+}
+
+function AttTable({ rows, team }: { rows: Attendance[]; team: ReturnType<typeof useTeam> }) {
+  return (
+    <DataTable headers={["الموظفة", "الدخول", "الخروج", "المدة"]} widths={[2, 1, 1, 1]}
+      rows={rows.map((a) => {
+        const h = hours(a);
+        return [<StaffCell key="s" s={team.byId.get(a.staff_id)} />, a.check_in ? clock(a.check_in) : "—", a.check_out ? clock(a.check_out) : "—", h != null ? `${h.toFixed(1)} س` : "—"];
+      })} />
+  );
+}
+
+function AttendanceDialog({ rec, name, onClose }: { rec: Partial<Attendance> | null; name: string; onClose: () => void }) {
+  const [inT, setIn] = useState(""); const [outT, setOut] = useState(""); const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  useEffect(() => { setIn(rec?.check_in ? clock(rec.check_in) : ""); setOut(rec?.check_out ? clock(rec.check_out) : ""); setNote(rec?.note ?? ""); setError(""); }, [rec]);
+  async function submit() {
+    if (!rec?.staff_id || !rec.day) return;
+    if (inT && outT && outT <= inT) { setError("وقت الخروج يجب أن يكون بعد الدخول."); return; }
+    setBusy(true);
+    try {
+      await saveAttendance({ id: rec.id, staff_id: rec.staff_id, day: rec.day, check_in: inT ? atDamascus(rec.day, inT) : null, check_out: outT ? atDamascus(rec.day, outT) : null, note: note.trim() });
+      onClose();
+    } catch (e) { setError(errText(e)); } finally { setBusy(false); }
+  }
+  return (
+    <Modal open={!!rec} onClose={onClose} title={`تعديل الحضور — ${name}`} width={480} footer={<SubmitButton onClick={submit} busy={busy}>حفظ</SubmitButton>}>
+      <div style={{ fontSize: 13.5, color: C.sub }}>{rec?.day ? arDate(keyDate(rec.day), { year: true }) : ""}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <TextInput label="الدخول" type="time" dir="ltr" value={inT} onChange={setIn} />
+        <TextInput label="الخروج" type="time" dir="ltr" value={outT} onChange={setOut} />
+      </div>
+      <TextInput label="ملاحظة" value={note} onChange={setNote} placeholder="تأخير، مغادرة مبكرة…" />
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
+  );
+}
+
+function LeaveDialog({ open, isAdmin, meId, team, onClose }: { open: boolean; isAdmin: boolean; meId: string; team: { value: string; label: string }[]; onClose: () => void }) {
+  const [who, setWho] = useState(meId); const [kind, setKind] = useState("annual"); const [starts, setStarts] = useState(""); const [ends, setEnds] = useState(""); const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  useEffect(() => { if (open) { setWho(meId); setKind("annual"); setStarts(""); setEnds(""); setReason(""); setError(""); } }, [open, meId]);
+  async function submit() {
+    if (!starts || !ends) { setError("حدّدي تاريخ البداية والنهاية."); return; }
+    if (ends < starts) { setError("تاريخ النهاية قبل البداية."); return; }
+    setBusy(true);
+    try { await requestLeave({ staff_id: who, starts, ends, kind, reason: reason.trim() }, isAdmin); onClose(); }
+    catch (e) { setError(errText(e)); } finally { setBusy(false); }
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="طلب إجازة" width={520} footer={<SubmitButton onClick={submit} busy={busy}>إرسال الطلب</SubmitButton>}>
+      {isAdmin && <Select label="الموظفة" value={who} onChange={setWho} options={team} />}
+      <Select label="نوع الإجازة" value={kind} onChange={setKind} options={Object.entries(LEAVE_KIND).map(([value, label]) => ({ value, label }))} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <TextInput label="من" type="date" dir="ltr" required value={starts} onChange={setStarts} />
+        <TextInput label="إلى" type="date" dir="ltr" required value={ends} onChange={setEnds} />
+      </div>
+      <TextArea label="السبب (اختياري)" value={reason} onChange={setReason} rows={2} />
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
   );
 }
