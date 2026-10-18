@@ -1,3 +1,4 @@
+-- NOTE: this reference data was later cleared at the owner's request (all data is now entered from the admin panel).
 -- Applied to Supabase project btcyrzvaexmgffeamlmg as migration «seed_reference_data».
 
 insert into public.rooms (name, sort) values ('غرفة 1', 1), ('غرفة 2', 2), ('غرفة 3', 3);

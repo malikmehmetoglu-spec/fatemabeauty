@@ -26,7 +26,9 @@ export default function OtpPage() {
     const r = await verifyCode(phone, token);
     setBusy(false);
     if (r.error) { setError(r.error); return; }
-    router.replace(r.patient && r.patient.name ? R.Main : R.P_Profile);
+    let next: string | null = null;
+    try { next = sessionStorage.getItem("fb.after_login"); sessionStorage.removeItem("fb.after_login"); } catch {}
+    router.replace(r.patient && r.patient.name ? (next && next.startsWith("/") ? next : R.Main) : R.P_Profile);
   }
   async function resend() {
     setError(""); setSec(59);

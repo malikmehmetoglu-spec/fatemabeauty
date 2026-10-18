@@ -22,7 +22,12 @@ export default function LoginPage() {
     setBusy(true);
     const e = await sendCode(p);
     setBusy(false);
-    if (e) setError(e); else router.push(R.P_OTP);
+    if (e) { setError(e); return; }
+    try {
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (next && next.startsWith("/")) sessionStorage.setItem("fb.after_login", next);
+    } catch {}
+    router.push(R.P_OTP);
   }
   const seg = (k: "ar" | "en", label: string) => (
     <button type="button" aria-pressed={lang === k} onClick={() => setLang(k)} className={k === "en" ? "latin" : undefined} style={{

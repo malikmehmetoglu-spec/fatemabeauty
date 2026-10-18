@@ -7,7 +7,8 @@ import { supabase } from "@/lib/supabase/client";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
 import { BG_WIDE, C, SELECTED, SH, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
-import { FatemaAvatar, Icon, IconButton, Logo } from "@/components/ui";
+import { Icon, IconButton, Logo } from "@/components/ui";
+import { staffPhoto } from "@/lib/db/staff";
 import { Blobs } from "./PhoneScreen";
 import { ChangePasswordDialog } from "./ChangePassword";
 
@@ -72,7 +73,10 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           )}
         </nav>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: 20, background: "#F8F2FA" }}>
-          {staff.photo_url ? <FatemaAvatar size={38} /> : <span style={{ width: 38, height: 38, borderRadius: 19, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.accent, flexShrink: 0 }}>{staff.name.charAt(0)}</span>}
+          {staffPhoto(staff) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={staffPhoto(staff) as string} alt="" width={38} height={38} style={{ width: 38, height: 38, borderRadius: 19, objectFit: "cover", border: "2px solid #FFFFFF", flexShrink: 0 }} />
+          ) : <span style={{ width: 38, height: 38, borderRadius: 19, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.accent, flexShrink: 0 }}>{staff.name.charAt(0)}</span>}
           <div style={{ lineHeight: 1.3, flexGrow: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>{staff.name}</div>
             <div style={{ fontSize: 11, color: C.sub2 }}>{staff.title || ROLE_LABEL[staff.role]}</div>

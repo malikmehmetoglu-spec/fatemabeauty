@@ -7,7 +7,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
-  C, CARD, DARK, DONE_GRAD, ICON_FILL, SELECTED, SHB, FATEMA_PHOTO, LOGO, LOGO_LIGHT, LOGO_ALT,
+  C, CARD, DARK, DONE_GRAD, ICON_FILL, SELECTED, SHB, LOGO, LOGO_LIGHT, LOGO_ALT,
 } from "@/lib/tokens";
 import { Icon } from "./Icon";
 import type { IconName } from "./icons";
@@ -196,15 +196,6 @@ export function Avatar({ initials, size = 40 }: { initials: string; size?: numbe
   );
 }
 
-export function FatemaAvatar({ size = 48, style }: { size?: number; style?: CSSProperties }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={FATEMA_PHOTO} alt="فاطمة طيبة" width={size} height={size} style={{
-      width: size, height: size, borderRadius: size / 2, objectFit: "cover", objectPosition: "50% 10%",
-      border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", flexShrink: 0, ...style,
-    }} />
-  );
-}
 
 export function Logo({ height = 54, light = false, style }: { height?: number; light?: boolean; style?: CSSProperties }) {
   return (

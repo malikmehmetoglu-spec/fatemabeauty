@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { Icon, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { css } from "@/lib/mock/e";
+import { css } from "@/lib/css";
 import { C, SH, ICON_FILL } from "@/lib/tokens";
 
 /** W_Login.dc.html — staff login (admin web, no AdminShell). */

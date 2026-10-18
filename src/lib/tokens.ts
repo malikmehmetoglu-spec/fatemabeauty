@@ -80,7 +80,6 @@ export const CARD: CSSProperties = {
 export const BG = "linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%)";
 export const BG_WIDE = "linear-gradient(160deg, #ECDDF2 0%, #F2E8F5 35%, #F9F5FB 100%)";
 
-export const FATEMA_PHOTO = "/images/fatema.jpg";
 export const LOGO = "/brand/fatema-logo.svg";
 export const LOGO_LIGHT = "/brand/fatema-logo-light.svg";
 export const LOGO_ALT = "Fatema Beauty — Skin Care Center";
