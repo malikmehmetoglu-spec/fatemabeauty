@@ -9,10 +9,12 @@ import { supabase, type Tables } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/database.types";
 import { atDamascus, clock, dayKey, dayRange } from "@/lib/format";
 import { invalidate, must } from "./query";
+import { bookingError } from "./appointments";
 
 /** must() for responses that always carry data. */
 function need<T>(res: { data: T; error: { message: string } | null }): NonNullable<T> {
-  const d = must(res);
+  if (res.error) throw new Error(bookingError(new Error(res.error.message)));
+  const d = res.data;
   if (d == null) throw new Error("لا توجد بيانات");
   return d as NonNullable<T>;
 }
@@ -51,6 +53,12 @@ export function normPhone(raw: string) {
   if (d.startsWith("963")) return "+" + d;
   if (d.startsWith("0")) return "+963" + d.slice(1);
   return "+963" + d;
+}
+
+/** must() with readable messages for database rule errors (null data allowed). */
+function need2<T>(res: { data: T; error: { message: string } | null }): T {
+  if (res.error) throw new Error(bookingError(new Error(res.error.message)));
+  return res.data;
 }
 
 /* ---------- reads ---------- */
@@ -97,7 +105,7 @@ export const aheadText = (n: number) => (n === 0 ? "لا أحد" : n === 1 ? "م
 
 /** Checks an appointment in; the queue number is assigned by the database. */
 export async function checkIn(id: string) {
-  const row = must(await supabase.from("appointments").update({ status: "checked_in" }).eq("id", id).in("status", ["pending", "confirmed"]).select("id, queue_no").maybeSingle());
+  const row = need2(await supabase.from("appointments").update({ status: "checked_in" }).eq("id", id).in("status", ["pending", "confirmed"]).select("id, queue_no").maybeSingle());
   if (!row) {
     const cur = await getAppointment(id);
     if (!cur) throw new Error("لم يُعثر على الموعد");
@@ -136,16 +144,13 @@ export async function ensurePatient(name: string, phoneRaw: string) {
   return row.id;
 }
 
-/** Walk-in: opens/uses the patient file, books "now" and checks in immediately. Returns the appointment id. */
+/** Walk-in: opens/uses the patient file, books "now" and checks in immediately (rpc book_appointment). Returns the appointment id. */
 export async function createWalkIn(input: { name: string; phone: string; service: Tables<"services"> }) {
-  const { data: u } = await supabase.auth.getUser();
   const patient_id = await ensurePatient(input.name, input.phone);
-  const s = input.service;
-  const row = need(await supabase.from("appointments").insert({
-    patient_id, walk_in_name: input.name.trim(), walk_in_phone: normPhone(input.phone) || null,
-    service_key: s.key, room_id: s.room_id, starts_at: new Date().toISOString(), minutes: s.minutes, price: s.price,
-    status: "checked_in", source: "walk_in", created_by: u.user?.id ?? null,
-  }).select("id").single());
+  const row = need(await supabase.rpc("book_appointment", {
+    p_service: input.service.key, p_starts: new Date().toISOString(), p_patient: patient_id,
+    p_source: "walk_in", p_check_in: true,
+  }));
   invalidate("queue"); invalidate("appointments");
   return row.id;
 }
@@ -164,15 +169,13 @@ export async function searchPatients(term: string): Promise<PatientHit[]> {
   return need(await q);
 }
 
-/** Quick booking at the desk. */
+/** Quick booking at the desk (rpc book_appointment: refuses overlaps for the room and the specialist). */
 export async function quickBook(input: { name: string; phone: string; patientId?: string; service: Tables<"services">; day: string; time: string; specialistId?: string | null }) {
-  const { data: u } = await supabase.auth.getUser();
   const patient_id = input.patientId ?? await ensurePatient(input.name, input.phone);
-  const s = input.service;
-  const row = need(await supabase.from("appointments").insert({
-    patient_id, service_key: s.key, room_id: s.room_id, specialist_id: input.specialistId || null,
-    starts_at: atDamascus(input.day, input.time), minutes: s.minutes, price: s.price, status: "confirmed", source: "reception", created_by: u.user?.id ?? null,
-  }).select("id").single());
+  const row = need(await supabase.rpc("book_appointment", {
+    p_service: input.service.key, p_starts: atDamascus(input.day, input.time), p_patient: patient_id,
+    p_specialist: input.specialistId || undefined, p_source: "reception",
+  }));
   invalidate("queue"); invalidate("appointments");
   return row.id;
 }

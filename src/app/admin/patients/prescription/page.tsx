@@ -1,5 +1,6 @@
 "use client";
 
+import ac from "../../adminPages.module.css";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -73,8 +74,8 @@ function Prescription() {
         {p.skin_type && <span style={PILL_GRAY}>{p.skin_type}</span>}
       </div>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <Panel title="المستحضرات" sub="أنواع عامة بدون علامات تجارية" style={{ flex: 1, minWidth: 480 }}
+      <div className={ac.split}>
+        <Panel title="المستحضرات" sub="أنواع عامة بدون علامات تجارية" className={ac.grow}
           right={<button type="button" onClick={() => setItems([...items, { ...BLANK }])} style={outlineBtn(34)}><Icon name={PLUS} size={16} color={C.accent} stroke={1.9} />إضافة مستحضر</button>}>
           {clashes.length > 0 && (
             <div role="alert" style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 14px", borderRadius: 16, background: "#FBEAF1", color: C.danger, fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
@@ -85,10 +86,10 @@ function Prescription() {
             {items.map((x, i) => {
               const bad = x.name.trim() && clash(x, allergies);
               return (
-                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: 10, borderRadius: 18, background: bad ? "#FBEAF1" : "#FAF5FB" }}>
+                <div key={i} className={ac.rxRow} style={{ display: "flex", gap: 8, alignItems: "center", padding: 10, borderRadius: 18, background: bad ? "#FBEAF1" : "#FAF5FB" }}>
                   <span className="latin" style={{ width: 22, textAlign: "center", fontWeight: 700, color: C.accent }}>{i + 1}</span>
-                  <input aria-label="المستحضر" value={x.name} onChange={(e) => set(i, { name: e.target.value })} placeholder="مثل: غسول لطيف للبشرة المختلطة" style={{ ...input, flex: 1.3 }} />
-                  <input aria-label="طريقة الاستعمال" value={x.how} onChange={(e) => set(i, { how: e.target.value })} placeholder="طريقة الاستعمال" style={{ ...input, flex: 1.5 }} />
+                  <input aria-label="المستحضر" value={x.name} onChange={(e) => set(i, { name: e.target.value })} placeholder="مثل: غسول لطيف للبشرة المختلطة" style={{ ...input, flex: 1.3, minWidth: 0 }} />
+                  <input aria-label="طريقة الاستعمال" value={x.how} onChange={(e) => set(i, { how: e.target.value })} placeholder="طريقة الاستعمال" style={{ ...input, flex: 1.5, minWidth: 0 }} />
                   <div style={{ display: "flex", gap: 4 }}>
                     {(Object.keys(WHEN_LABEL) as RxItem["when"][]).map((w) => <button key={w} type="button" onClick={() => set(i, { when: w })} style={{ ...chip(x.when === w, 34), fontSize: 12, padding: "0 10px" }}>{WHEN_LABEL[w]}</button>)}
                   </div>
@@ -101,7 +102,7 @@ function Prescription() {
           <div style={{ marginTop: 14 }}><SubmitButton onClick={save} busy={busy} disabled={!filled.length}>إرسال الوصفة للمراجعة</SubmitButton></div>
         </Panel>
 
-        <div style={{ width: 320, maxWidth: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className={ac.side} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Panel title="معاينة">
             <div style={{ borderRadius: 18, border: "1px solid #EFE4F2", padding: 14, background: "#FFFDFE" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><Logo height={34} /><span style={{ fontSize: 12, color: C.sub2 }}>{arDate(new Date(), { year: true })}</span></div>

@@ -30,7 +30,7 @@ export default function RoomsPage() {
         <GhostButton icon="plus" onClick={() => setEditDevice("new")}>جهاز جديد</GhostButton>
         <GhostButton icon="plus" onClick={() => setEditRoom("new")}>غرفة جديدة</GhostButton>
       </>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="الغرف" value={R.length} sub={`${R.filter((r) => r.active).length} متاحة للحجز`} icon="door" />
         <Kpi label="الأجهزة" value={D.length} sub={`${D.filter((d) => d.in_maintenance).length} في الصيانة`} icon="tool" />
         <Kpi label="الخدمات المسندة لغرفة" value={S.filter((s) => s.room_id).length} sub={`من ${S.length} خدمة`} icon="sparkle" />

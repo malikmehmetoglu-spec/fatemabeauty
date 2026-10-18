@@ -23,12 +23,19 @@ export function artFor(p: Pick<DbProduct, "key" | "name" | "category">): ArtSpec
   return { kind, body, cap: body[1] === "#F0DCC8" || body[1] === "#F1CF9C" ? "#C9A24B" : "#7B4687" };
 }
 
-/** A DB product's picture: its uploaded photo, or the illustration. */
-export function ProductPic({ p, width, height, radius = 0 }: { p: DbProduct; width: number; height?: number; radius?: number }) {
+/**
+ * A DB product's picture: its uploaded photo, or the illustration.
+ * `fill`: the photo covers the whole parent box (the illustration keeps `width`, wrapped in `artClass` for scaling).
+ */
+export function ProductPic({ p, width, height, radius = 0, fill = false, artClass, alt = "" }: {
+  p: DbProduct; width: number; height?: number; radius?: number; fill?: boolean; artClass?: string; alt?: string;
+}) {
   const img = productImage(p);
   // eslint-disable-next-line @next/next/no-img-element
-  if (img) return <img src={img} alt="" style={{ width, height: height ?? Math.round(width * 1.16), objectFit: "cover", borderRadius: radius, display: "block" }} />;
-  return <ProductArt p={{ art: artFor(p) }} width={width} />;
+  if (img && fill) return <img src={img} alt={alt} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: radius, display: "block" }} />;
+  // eslint-disable-next-line @next/next/no-img-element
+  if (img) return <img src={img} alt={alt} loading="lazy" style={{ width, height: height ?? Math.round(width * 1.16), objectFit: "cover", borderRadius: radius, display: "block" }} />;
+  return artClass ? <span className={artClass}><ProductArt p={{ art: artFor(p) }} width={width} /></span> : <ProductArt p={{ art: artFor(p) }} width={width} />;
 }
 
 /** Product illustration (bottle / dropper / tube / jar), viewBox 100×116 like the designs. */

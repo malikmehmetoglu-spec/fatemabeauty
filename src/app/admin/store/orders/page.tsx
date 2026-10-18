@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { listOrders, nextStatus, setOrderStatus, STATUS_LABEL, type OrderFull, type OrderStatus } from "@/lib/db/orders";
+import { listOrders, nextStatus, orderError, setOrderStatus, STATUS_LABEL, type OrderFull, type OrderStatus } from "@/lib/db/orders";
 
 type F = "all" | "d" | "p" | "cancelled";
 const COLS: { title: string; has: OrderStatus[]; icon: string }[] = [
@@ -31,12 +31,12 @@ export default function Page() {
   const list = all.filter((o) => (f === "cancelled" ? o.status === "cancelled" : o.status !== "cancelled" && (f === "all" || (f === "d") === o.delivery)));
   const open = all.filter((o) => !["delivered", "cancelled"].includes(o.status));
   const today = dayKey();
-  const deliveredToday = all.filter((o) => o.status === "delivered" && dayKey(new Date(o.created_at)) === today);
+  const deliveredToday = all.filter((o) => o.status === "delivered" && dayKey(new Date(o.updated_at ?? o.created_at)) === today);
 
   async function move(o: OrderFull, s: OrderStatus) {
     if (s === "cancelled" && !confirm(`إلغاء الطلب #${o.no}؟ تعود المنتجات إلى المخزون.`)) return;
     setBusy(o.id); setErr("");
-    try { await setOrderStatus(o.id, s); } catch (e) { setErr("تعذّر تحديث الطلب: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(null); }
+    try { await setOrderStatus(o.id, s); } catch (e) { setErr("تعذّر تحديث الطلب: " + orderError(e).replace(/^تعذّر إرسال الطلب: /, "")); } finally { setBusy(null); }
   }
 
   return (
@@ -44,14 +44,14 @@ export default function Page() {
       actions={<Link href={R.W_Products} style={{ height: 36, borderRadius: 18, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
         <Icon name="bag" color={C.accent} size={16} />المنتجات
       </Link>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="طلبات قيد العمل" value={open.length} sub="لم تُسلَّم بعد" icon="bag" />
         <Kpi label="توصيل للمنزل" value={open.filter((o) => o.delivery).length} sub="من الطلبات المفتوحة" icon="truck" />
         <Kpi label="استلام من المركز" value={open.filter((o) => !o.delivery).length} sub="من الطلبات المفتوحة" icon="home" />
         <Kpi label="قيمة الطلبات المفتوحة" value={money(open.reduce((s, o) => s + o.total, 0))} sub={`سُلِّم اليوم: ${deliveredToday.length}`} icon="wallet" />
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {([["all", "كل الطلبات"], ["d", "توصيل للمنزل"], ["p", "استلام من المركز"], ["cancelled", "الملغاة"]] as [F, string][]).map(([k, t]) => (
           <Chip key={k} selected={f === k} height={36} onClick={() => setF(k)}>{t}</Chip>
         ))}
@@ -69,7 +69,7 @@ export default function Page() {
           </div>
         )
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 230px), 1fr))", gap: 14, alignItems: "start" }}>
           {COLS.map((c) => {
             const items = list.filter((o) => c.has.includes(o.status));
             const shown = c.has.includes("delivered") ? items.slice(0, 12) : items;

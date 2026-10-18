@@ -38,13 +38,27 @@ export const endsAt = (a: Pick<Appointment, "starts_at" | "minutes">) => new Dat
 /** Readable Arabic message for errors raised by the booking functions. */
 export function bookingError(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);
+  if (/^[\u0600-\u06FF]/.test(m)) return m; // already readable
   if (/slot taken/.test(m)) return "هذا الوقت حُجز للتو. اختاري وقتاً آخر.";
   if (/time in the past/.test(m)) return "هذا الوقت مضى. اختاري وقتاً لاحقاً.";
   if (/not bookable online/.test(m)) return "هذه الخدمة تُحجز عبر المركز فقط.";
   if (/patient required/.test(m)) return "اختاري المراجِعة أو اكتبي اسمها.";
   if (/cannot cancel/.test(m)) return "لا يمكن إلغاء هذا الموعد الآن.";
   if (/no patient record|not signed in/.test(m)) return "سجّلي الدخول أولاً.";
+  if (/outside opening hours/.test(m)) return "هذا الوقت خارج ساعات الدوام. اختاري وقتاً من الأوقات المعروضة.";
+  if (/already booked at this time/.test(m)) return "لديكِ موعد آخر في هذا الوقت.";
+  if (/check-in only on the appointment day/.test(m)) return "يمكن تسجيل الوصول في يوم الموعد فقط.";
+  if (/bad status change/.test(m)) return "لا يمكن نقل الموعد إلى هذه الحالة من حالته الحالية.";
+  if (/only waiting patients can be called/.test(m)) return "يمكن النداء فقط على من سجّلت وصولها.";
+  if (/service not found/.test(m)) return "هذه الخدمة غير متاحة الآن.";
+  if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
   return "تعذّر الحفظ: " + m;
+}
+
+/** Same as must(), but throws the readable Arabic message for database rule errors. */
+function mustOk<T>(res: { data: T; error: { message: string } | null }) {
+  if (res.error) throw new Error(bookingError(new Error(res.error.message)));
+  return res.data;
 }
 
 /* ---------- opening hours ---------- */
@@ -108,7 +122,7 @@ export async function book(p: {
   service: string; day: string; time: string; specialist?: string | null; room?: string | null;
   patient?: string | null; walkInName?: string; walkInPhone?: string; source?: "reception" | "walk_in" | "admin"; checkIn?: boolean;
 }) {
-  const row = must(await supabase.rpc("book_appointment", {
+  const row = mustOk(await supabase.rpc("book_appointment", {
     p_service: p.service, p_starts: atDamascus(p.day, p.time),
     p_specialist: p.specialist ?? undefined, p_room: p.room ?? undefined, p_patient: p.patient ?? undefined,
     p_walk_in_name: p.walkInName || undefined, p_walk_in_phone: p.walkInPhone || undefined,
@@ -137,7 +151,7 @@ export async function myToday(patientId: string) {
 }
 
 export async function cancelMine(id: string, reason: string) {
-  must(await supabase.rpc("cancel_my_appointment", { p_id: id, p_reason: reason }));
+  mustOk(await supabase.rpc("cancel_my_appointment", { p_id: id, p_reason: reason }));
   invalidate("appointments");
 }
 
@@ -162,12 +176,12 @@ export async function setStatus(id: string, status: Status, extra: Partial<Table
   const now = new Date().toISOString();
   const stamp: Partial<Tables<"appointments">> =
     status === "checked_in" ? { checked_in_at: now } : status === "in_session" ? { started_at: now } : status === "done" ? { finished_at: now } : {};
-  must(await supabase.from("appointments").update({ status, ...stamp, ...extra }).eq("id", id));
+  mustOk(await supabase.from("appointments").update({ status, ...stamp, ...extra }).eq("id", id));
   invalidate("appointments");
 }
 
 export async function callPatient(id: string) {
-  must(await supabase.from("appointments").update({ called_at: new Date().toISOString() }).eq("id", id));
+  mustOk(await supabase.from("appointments").update({ called_at: new Date().toISOString() }).eq("id", id));
   invalidate("appointments");
 }
 
@@ -206,10 +220,10 @@ export async function listMyDay(staffId: string) {
     .neq("status", "cancelled").order("starts_at")) as unknown as Appointment[];
 }
 
-/** Sum of invoices created today (Damascus). */
+/** Sum of (non-void) invoices created today (Damascus). */
 export async function revenueToday() {
   const r = dayRange();
-  const rows = must(await supabase.from("invoices").select("total").gte("created_at", r.from).lt("created_at", r.to)) ?? [];
+  const rows = must(await supabase.from("invoices").select("total").eq("void", false).gte("created_at", r.from).lt("created_at", r.to)) ?? [];
   return rows.reduce((s, x) => s + (x.total ?? 0), 0);
 }
 
@@ -264,7 +278,7 @@ export async function freeChangeHours() {
 
 /** Packages of a patient that still have sessions for a service. */
 export async function myPackagesFor(patientId: string, serviceKey: string) {
-  const rows = must(await supabase.from("patient_packages").select("id, sessions_total, sessions_used, package:packages(name, service_key)").eq("patient_id", patientId)) ?? [];
+  const rows = must(await supabase.from("patient_packages").select("id, sessions_total, sessions_used, package:packages(name, service_key)").eq("patient_id", patientId).gt("sessions_total", 0)) ?? [];
   return (rows as unknown as { id: string; sessions_total: number; sessions_used: number; package: { name: string; service_key: string } | null }[])
     .filter((p) => p.package?.service_key === serviceKey && p.sessions_used < p.sessions_total);
 }

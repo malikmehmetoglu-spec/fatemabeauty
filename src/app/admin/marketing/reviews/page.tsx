@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Reviews.dc.html — patient reviews after sessions (live, Supabase). */
+import ac from "../../adminPages.module.css";
 import { useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Chip, DarkCard, DataTable, EmptyState, ErrorNote, Loading, Tag } from "@/components/ui";
@@ -38,7 +39,7 @@ export default function ReviewsPage() {
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل التقييمات: {error}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="star" title="لا توجد تقييمات بعد" text="بعد كل جلسة تستطيع المراجعة تقييم تجربتها من التطبيق، وتظهر التقييمات هنا مع اسمها والخدمة والأخصائية." />
       ) : (
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           <DarkCard style={{ width: 320, flexShrink: 0 }}>
             <div style={{ fontSize: 13, color: C.onDark }}>متوسط التقييمات</div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>

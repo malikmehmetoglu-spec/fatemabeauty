@@ -5,10 +5,11 @@ import { useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { ErrorNote, Loading } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { byMethod, collected, dayOf, financeData, monthRange, PAY_LABEL, shiftDay, sumBy } from "@/lib/db/finance";
+import { dayOf, financeData, monthRange, PAY_LABEL, receivedByMethod, shiftDay, sumBy } from "@/lib/db/finance";
+import css from "../finance.module.css";
 import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
-import { Bars, Big, DeepBtn, LATIN, LightBtn, MonthPicker, PANEL, PanelTitle, ShareList, StatCard, downloadCsv, monthLabel } from "../parts";
+import { PrintStyles, Bars, Big, DeepBtn, LATIN, LightBtn, MonthPicker, PANEL, PanelTitle, ShareList, StatCard, downloadCsv, monthLabel } from "../parts";
 
 const KIND_AR: Record<string, string> = { service: "خدمات", product: "منتجات", package: "باقات", custom: "أخرى" };
 
@@ -21,7 +22,8 @@ export default function Page() {
   const exps = data?.expenses ?? [];
 
   const revenue = invs.reduce((s, i) => s + i.total, 0);
-  const received = invs.reduce((s, i) => s + collected(i), 0);
+  const pays = data?.payments ?? [];
+  const received = pays.reduce((s, p) => s + p.amount, 0);   // money received in the month (any invoice date)
   const expenses = exps.reduce((s, e) => s + e.amount, 0);
   const profit = revenue - expenses;
   const sessions = invs.filter((i) => i.appointment_id).length;
@@ -31,7 +33,7 @@ export default function Page() {
   const byService = sumBy(lines.filter((l) => l.kind === "service" || l.kind === "custom"), (l) => l.label, (l) => l.net).map(([k, v]) => [k, Math.round(v)] as [string, number]);
   const byKind = sumBy(lines, (l) => KIND_AR[l.kind] ?? "أخرى", (l) => l.net).map(([k, v]) => [k, Math.round(v)] as [string, number]);
   const bySpec = sumBy(invs.filter((i) => i.appointments?.staff?.name), (i) => i.appointments?.staff?.name as string, (i) => i.total);
-  const methods = byMethod(invs);
+  const methods = receivedByMethod(pays);
   const byMeth = (Object.entries(methods) as [keyof typeof PAY_LABEL, number][]).filter(([, v]) => v > 0).map(([k, v]) => [PAY_LABEL[k], v] as [string, number]);
   const pkgSessions = invs.filter((i) => i.patient_package_id).length;
   const byCat = sumBy(exps, (e) => e.category, (e) => e.amount);
@@ -45,7 +47,7 @@ export default function Page() {
   const bars = days.map((d) => ({ label: String(Number(d.slice(8))), value: perDay.get(d) ?? 0, title: arDate(new Date(`${d}T12:00:00`)) }));
 
   const exportCsv = () => downloadCsv(`finance-${month}.csv`, ["البند", "القيمة"], [
-    ["الإيرادات (صافي الفواتير)", revenue], ["المقبوض فعلياً", received], ["المصاريف", expenses], ["صافي الربح", profit],
+    ["الإيرادات (صافي الفواتير)", revenue], ["المقبوض فعلياً", received], ["ذمم من فواتير الشهر", invs.reduce((s, i) => s + Math.max(0, i.total - i.amount_paid), 0)], ["المصاريف", expenses], ["صافي الربح", profit],
     ...byService.map(([k, v]) => [`خدمة: ${k}`, v]), ...byMeth.map(([k, v]) => [`طريقة: ${k}`, v]), ...byCat.map(([k, v]) => [`مصروف: ${k}`, v]),
     ...days.map((d) => [`يوم ${d}`, perDay.get(d) ?? 0]),
   ]);
@@ -56,8 +58,9 @@ export default function Page() {
       <LightBtn icon="print" onClick={() => window.print()} style={{ height: 46, borderRadius: 23 }}>PDF</LightBtn>
       <DeepBtn icon="download" onClick={exportCsv} disabled={!invs.length && !exps.length}>Excel</DeepBtn>
     </>}>
+      <PrintStyles />
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل التقرير: {error}</ErrorNote> : (<>
-        <div style={{ display: "flex", gap: 14 }}>
+        <div className={css.stats}>
           <StatCard dark label={`إيرادات ${monthLabel(month)}`} value={<Big n={revenue} />} sub={`${invs.length} فاتورة · ${sessions} جلسة · ${activeDays} يوم عمل`} icon="wallet" />
           <StatCard label="المصاريف" value={<Big n={expenses} />} sub={byCat.length ? byCat.slice(0, 3).map(([k]) => k).join("، ") : "لا مصاريف مسجّلة"} icon="receipt" />
           <StatCard label="صافي الربح" value={<span style={{ color: profit < 0 ? C.danger : C.ink }}><Big n={profit} /></span>} sub={revenue > 0 ? `هامش ${Math.round((profit / revenue) * 100)}%` : "—"} icon="trend" />
@@ -69,16 +72,16 @@ export default function Page() {
           <Bars data={bars} height={180} highlight={month === thisMonth ? bars.length - 1 : undefined} />
         </div>
 
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-          <div style={{ ...PANEL, flex: 1.3 }}>
+        <div className={css.three}>
+          <div style={PANEL}>
             <PanelTitle right={byKind.map(([k, v]) => `${k} ${money(v, false)}`).join(" · ")}>حسب الخدمة</PanelTitle>
             <ShareList data={byService.slice(0, 8)} empty="لا خدمات مفوترة في هذا الشهر" />
           </div>
-          <div style={{ ...PANEL, flex: 1 }}>
-            <PanelTitle right={pkgSessions ? `${pkgSessions} جلسة من باقات` : undefined}>حسب طريقة الدفع</PanelTitle>
+          <div style={PANEL}>
+            <PanelTitle right={pkgSessions ? `${pkgSessions} جلسة من باقات` : "المقبوض في الشهر"}>حسب طريقة الدفع</PanelTitle>
             <ShareList data={byMeth} empty="لا مقبوضات بعد" />
           </div>
-          <div style={{ ...PANEL, flex: 1 }}>
+          <div style={PANEL}>
             <PanelTitle>حسب الأخصائية</PanelTitle>
             <ShareList data={bySpec} empty="لا جلسات مرتبطة بأخصائية" />
           </div>

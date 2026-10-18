@@ -1,0 +1,22 @@
+/* Patient app frame: full-bleed on phones; on tablets/desktop a soft framed column on the brand background. */
+.page { min-height: 100dvh; display: flex; justify-content: center; background: #E9DDEE; }
+.col { width: 100%; min-height: 100dvh; position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; }
+.tab { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+
+@media (min-width: 620px) {
+  .page {
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgba(190,150,215,0.55), rgba(190,150,215,0) 70%),
+      radial-gradient(800px 700px at 10% 110%, rgba(255,255,255,0.75), rgba(255,255,255,0) 70%),
+      linear-gradient(160deg, #E6D3EE 0%, #EFE4F3 45%, #F6EFF8 100%);
+    background-attachment: fixed;
+    padding: 28px 16px;
+  }
+  .col { min-height: calc(100dvh - 56px); }
+  .narrow {
+    border-radius: 36px; border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 30px 70px rgba(123,70,135,0.18), 0 4px 14px rgba(123,70,135,0.08);
+  }
+  /* tab bar sits inside the framed column */
+  .tab { bottom: calc(28px + 18px); }
+}

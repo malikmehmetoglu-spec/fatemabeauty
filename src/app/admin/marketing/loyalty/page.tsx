@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Loyalty.dc.html — loyalty rules (settings «loyalty») and members (patients.points). Live, Supabase. */
+import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, NumberInput, SubmitButton, Tag, TextInput } from "@/components/ui";
@@ -19,13 +20,13 @@ export default function LoyaltyPage() {
   return (
     <AdminShell active="التسويق والولاء" title="النقاط والعضويات" subtitle="قواعد احتساب النقاط وشرائح العضوية والمراجعات اللواتي لديهن نقاط">
       <MarketingTabs active={R.W_Loyalty} />
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="عضوات لديهن نقاط" value={list.length} icon="users" />
         <Kpi label="مجموع النقاط القائمة" value={total.toLocaleString("en-US")} icon="sparkle" />
         <Kpi label="شرائح العضوية" value={rules?.tiers.length ?? 0} icon="badge" />
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل القواعد: {error}</ErrorNote> : rules && <RulesCard rules={rules} />}
         </div>

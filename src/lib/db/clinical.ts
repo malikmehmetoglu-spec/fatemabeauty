@@ -40,7 +40,7 @@ export async function getVisit(id: string): Promise<Visit | null> {
 
 export type PatientPackage = Tables<"patient_packages"> & { packages: { name: string; service_key: string } | null };
 export async function listPatientPackages(patientId: string): Promise<PatientPackage[]> {
-  return must(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).order("purchased_at", { ascending: false })) as PatientPackage[];
+  return must(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).gt("sessions_total", 0).order("purchased_at", { ascending: false })) as PatientPackage[];
 }
 
 /* ---------- notes ---------- */
@@ -138,7 +138,7 @@ export async function uploadPhoto(patientId: string, file: File, angle: string, 
 export type CarePlanPackage = PatientPackage & { patients: { id: string; name: string; file_no: number; phone: string | null } | null; next: string | null; last: string | null };
 /** Packages with sessions left, with each patient's next booked and last completed visit. */
 export async function listActivePackages(): Promise<CarePlanPackage[]> {
-  const rows = (must(await supabase.from("patient_packages").select("*, packages(name, service_key), patients(id, name, file_no, phone)").order("purchased_at", { ascending: false })) as PatientPackage[])
+  const rows = (must(await supabase.from("patient_packages").select("*, packages(name, service_key), patients(id, name, file_no, phone)").gt("sessions_total", 0).order("purchased_at", { ascending: false })) as PatientPackage[])
     .filter((r) => r.sessions_used < r.sessions_total) as CarePlanPackage[];
   if (!rows.length) return [];
   const appts = must(await supabase.from("appointments").select("patient_id, starts_at, status").in("patient_id", [...new Set(rows.map((r) => r.patient_id))]).in("status", ["pending", "confirmed", "checked_in", "in_session", "done"]).order("starts_at")) ?? [];

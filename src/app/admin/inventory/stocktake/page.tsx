@@ -33,7 +33,8 @@ export default function Page() {
   const diffValue = diffs.reduce((s, p) => s + ((parsed(p.key) as number) - Number(p.stock)) * (p.cost ?? 0), 0);
 
   const shown = list.filter((p) => {
-    if (q && !p.name.includes(q) && !(p.sku ?? "").includes(q)) return false;
+    const needle = q.trim().toLowerCase();
+    if (needle && ![p.name, p.sku ?? "", p.category].some((t) => t.toLowerCase().includes(needle))) return false;
     if (filter === "retail") return p.kind === "retail";
     if (filter === "consumable") return p.kind === "consumable";
     if (filter === "diff") return diffs.includes(p);
@@ -58,7 +59,7 @@ export default function Page() {
       actions={<Link href={R.W_Inventory} style={{ height: 40, borderRadius: 20, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
         <Icon name="box" color={C.accent} size={16} />المخزون
       </Link>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="تم عدّها" value={`${counted.length} / ${list.length}`} sub="صنف في هذا الجرد" icon="clip" />
         <Kpi label="أصناف بفرق" value={diffs.length} sub="بين العدّ والنظام" icon="alert" />
         <Kpi label="قيمة الفرق" value={money(diffValue)} sub="بسعر الكلفة المسجّل" icon="wallet" />
@@ -70,7 +71,7 @@ export default function Page() {
         ))}
         <GhostButton icon="check" onClick={fillSystem}>مطابقة المعروض لكمية النظام</GhostButton>
         <input aria-label="بحث" placeholder="ابحثي باسم الصنف أو الرمز" value={q} onChange={(e) => setQ(e.target.value)}
-          style={{ marginInlineStart: "auto", height: 40, width: 240, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 16px", fontSize: 13.5 }} />
+          style={{ marginInlineStart: "auto", height: 40, width: "min(240px, 100%)", boxSizing: "border-box", borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 16px", fontSize: 13.5 }} />
       </div>
 
       {done && <div role="status" style={{ fontSize: 13.5, fontWeight: 600, color: C.okDeep, background: "#E6F4EC", borderRadius: 14, padding: "10px 14px" }}>{done}</div>}
@@ -80,7 +81,7 @@ export default function Page() {
         <EmptyState icon="clip" title="لا أصناف للجرد" text="أضيفي أصناف المخزون أولاً، ثم عودي لعدّها هنا."
           action={<Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" /> : (
-        <DataTable
+        <DataTable minWidth={680}
           headers={["الصنف", "النوع", "كمية النظام", "الكمية المعدودة", "الفرق"]}
           widths={[2.6, 0.9, 1, 1.3, 1]}
           rowHeight={60}
@@ -105,8 +106,8 @@ export default function Page() {
       )}
 
       {list.length > 0 && (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-          <TextInput label="ملاحظة الجرد (تُحفظ مع كل تعديل)" value={note} onChange={setNote} placeholder="جرد آخر الشهر، تالف، منتهي…" style={{ flex: 1 }} />
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+          <TextInput label="ملاحظة الجرد (تُحفظ مع كل تعديل)" value={note} onChange={setNote} placeholder="جرد آخر الشهر، تالف، منتهي…" style={{ flex: "1 1 260px" }} />
           <SubmitButton onClick={apply} busy={busy} disabled={!diffs.length}>اعتماد الجرد ({diffs.length})</SubmitButton>
         </div>
       )}

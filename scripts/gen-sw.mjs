@@ -30,6 +30,8 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== self.location.origin) return;
 
   // Pages: network first (always fresh), cached copy when offline.
+  // Staff screens are never served from cache (always the latest build); the admin app needs the network anyway.
+  if (req.mode === "navigate" && /^\/(admin|kiosk|tv|screens)(\/|$)/.test(url.pathname)) return;
   if (req.mode === "navigate") {
     e.respondWith(
       fetch(req).then((res) => {

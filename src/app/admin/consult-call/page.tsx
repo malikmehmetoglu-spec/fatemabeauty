@@ -1,6 +1,7 @@
 "use client";
 
 /** W_ConsultCall.dc.html — specialist side of online consultations + patient messages. Video is not connected yet. */
+import ac from "../adminPages.module.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, DataTable, EmptyState, ErrorNote, Icon, Loading, SubmitButton, Tag } from "@/components/ui";
@@ -36,7 +37,7 @@ export default function ConsultCallPage() {
         <div style={{ fontSize: 13.5, fontWeight: 600 }}>الاتصال المرئي غير مفعّل بعد. تواصلي مع المراجعة في موعد الاستشارة هاتفياً أو عبر الرسائل أدناه.</div>
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>الاستشارات المحجوزة</div>
           {l1 || (svc && l2) ? <Loading /> : e1 || e2 ? <ErrorNote>{e1 || e2}</ErrorNote> : !svc ? (

@@ -25,7 +25,7 @@ export default function LoginPage() {
     if (e) { setError(e); return; }
     try {
       const next = new URLSearchParams(window.location.search).get("next");
-      if (next && next.startsWith("/")) sessionStorage.setItem("fb.after_login", next);
+      if (next && next.startsWith("/") && !next.startsWith("//")) sessionStorage.setItem("fb.after_login", next);
     } catch {}
     router.push(R.P_OTP);
   }

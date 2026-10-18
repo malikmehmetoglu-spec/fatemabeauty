@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import t from "../../adminPages.module.css";
 import { useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, Tag } from "@/components/ui";
@@ -45,9 +46,9 @@ export default function ConsentsPage() {
           {kpi("clock", "بانتظار التوقيع", pending?.length ?? 0, "من مواعيد اليوم")}
           {kpi("file", "كل الموافقات", all.length, "في سجلّ المركز")}
         </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <Panel style={{ flex: 1, minWidth: 520 }} title="سجلّ التواقيع" right={
-            <div style={{ display: "flex", gap: 6 }}>{FILTERS.map((t, i) => <button key={t} type="button" onClick={() => setF(i)} style={chip(f === i, 34)}>{t}</button>)}</div>}>
+        <div className={t.split}>
+          <Panel className={t.grow} title="سجلّ التواقيع" right={
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{FILTERS.map((t, i) => <button key={t} type="button" onClick={() => setF(i)} style={chip(f === i, 34)}>{t}</button>)}</div>}>
             {error ? <ErrorNote>{error}</ErrorNote> : loading ? <Loading /> : f === 2 ? (
               !pending?.length ? <EmptyState compact icon="calcheck" title="لا موافقات معلّقة اليوم" text="تظهر هنا مواعيد اليوم التي لم توقّع صاحبتها موافقة الخدمة بعد." /> : pending.map((a) => (
                 <Row key={a.id} pid={a.patient_id} name={a.patients?.name} form={a.services?.name ?? a.service_key} date={`اليوم ${clock(a.starts_at)}`} method="—" tag={<Tag kind="amber">بانتظار التوقيع</Tag>} />
@@ -61,7 +62,7 @@ export default function ConsentsPage() {
                 date={dayKey(d) === today ? `اليوم ${clock(d)}` : arDate(d, { day: false, year: true })} method={METHOD[a.method ?? ""] ?? (c.appointment_id ? "التابلت" : "التطبيق")} tag={<Tag kind="green">موقّعة</Tag>} />;
             })}
           </Panel>
-          <Panel title="مكتبة نماذج الموافقة" sub="نموذج لكل خدمة فعّالة" style={{ width: 320 }}>
+          <Panel title="مكتبة نماذج الموافقة" sub="نموذج لكل خدمة فعّالة" className={t.side}>
             {!services?.length ? <div style={{ fontSize: 13, color: C.muted }}>أضيفي الخدمات من الإعدادات لتظهر نماذجها هنا.</div> : services.map((s) => (
               <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: "1px solid #EDE2F1" }}>
                 <Icon name="file" size={18} color={C.accentMid} />
@@ -78,7 +79,7 @@ export default function ConsentsPage() {
 
 function Row({ pid, name, fileNo, form, date, method, tag }: { pid: string; name?: string; fileNo?: number; form: string; date: string; method: string; tag: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 54, borderTop: "1px solid #EDE2F1", fontSize: 13.5 }}>
+    <div className={t.row} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 54, borderTop: "1px solid #EDE2F1", fontSize: 13.5 }}>
       <Link href={fileHref(R.W_Record, "id", pid)} style={{ flex: 1.4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         <Initials name={name ?? ""} size={32} />
         <span style={{ fontWeight: 700 }}>{displayName(name)}</span>{fileNo && <span className="latin" style={{ fontSize: 12, color: C.sub2 }}>{fileNo}</span>}

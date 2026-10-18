@@ -47,8 +47,8 @@ export default function RolesPage() {
   return (
     <AdminShell active="الإعدادات" title="الأدوار والصلاحيات" subtitle="الصلاحيات مطبّقة في قاعدة البيانات نفسها؛ لتغيير صلاحيات موظفة غيّري دورها من صفحة الفريق">
       <TeamTabs />
-      <Card padding="10px 20px">
-        <div role="table" style={{ display: "grid", gridTemplateColumns: `2.2fr repeat(${ROLES.length}, 1fr)` }}>
+      <Card padding="10px 20px" style={{ overflowX: "auto" }}>
+        <div role="table" style={{ display: "grid", gridTemplateColumns: `2.2fr repeat(${ROLES.length}, 1fr)`, minWidth: 640 }}>
           <div role="columnheader" style={{ padding: "12px 0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>القسم</div>
           {ROLES.map((r) => <div role="columnheader" key={r} style={{ padding: "12px 0", fontSize: 13, fontWeight: 700, textAlign: "center" }}>{ROLE_LABEL[r]}</div>)}
           {MATRIX.map(([area, levels]) => (
@@ -72,7 +72,7 @@ export default function RolesPage() {
 
       <SectionTitle>أعضاء كل دور</SectionTitle>
       {team.loading ? <Loading /> : team.error ? <ErrorNote>{team.error}</ErrorNote> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
           {ROLES.map((r) => {
             const members = team.active.filter((s) => s.role === r);
             return (

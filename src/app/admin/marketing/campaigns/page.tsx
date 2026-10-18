@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Campaigns.dc.html — message campaigns. Saved as drafts; sending is not connected yet. Audience sizes are real. */
+import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Select, SubmitButton, Tag, TextArea, TextInput } from "@/components/ui";
@@ -32,12 +33,12 @@ export default function CampaignsPage() {
       </div>
 
       {lc ? <Loading /> : ec ? <ErrorNote>تعذّر حساب الشرائح: {ec}</ErrorNote> : counts && (
-        <div style={{ display: "flex", gap: 14 }}>
+        <div className="adm-row" style={{ display: "flex", gap: 14 }}>
           {AUDIENCES.map((a, i) => <Kpi key={a.value} dark={i === 0} label={a.label} value={counts[a.value]} icon="users" />)}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1.2, minWidth: 0 }}>
           <Editor key={cur?.id ?? "new"} campaign={cur} counts={counts} onSaved={() => setCur(null)} />
         </div>

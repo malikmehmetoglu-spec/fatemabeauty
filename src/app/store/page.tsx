@@ -12,6 +12,7 @@ import { useQuery } from "@/lib/db/query";
 import { listStore, type Product } from "@/lib/db/products";
 import { cartCount, cartStore, useCart } from "@/lib/db/orders";
 import { ProductPic } from "./c1ui";
+import css from "./store.module.css";
 
 const chip = (on: boolean): CSSProperties => ({
   height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex",
@@ -34,15 +35,17 @@ export default function StorePage() {
   const recPrice = recommended.reduce((s, p) => s + (p.price ?? 0), 0);
 
   const query = q.trim();
+  const needle = query.toLowerCase();
   const shown = products.filter((p) =>
-    query ? p.name.includes(query) || p.category.includes(query) : cat === "الكل" ? true : p.category.trim() === cat);
+    query ? [p.name, p.category, p.size, p.description].some((t) => t.toLowerCase().includes(needle)) : cat === "الكل" ? true : p.category.trim() === cat);
 
   const toggle = (p: Product) => cartStore.set(p.key, cart[p.key] ? 0 : 1);
   const addRecommended = () => recommended.forEach((p) => { if (!cart[p.key]) cartStore.add(p.key); });
 
   return (
-    <PhoneScreen tab="المتجر" gap={12}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
+    <PhoneScreen tab="المتجر" gap={12} wide>
+      <div className={css.top}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", gap: 16 }}>
         <div style={{ lineHeight: 1.25 }}>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.ink }}>المتجر</h1>
           <div style={{ fontSize: 12.5, color: C.sub2, display: "flex", alignItems: "center", gap: 5 }}>
@@ -68,18 +71,19 @@ export default function StorePage() {
         </div>
       </header>
 
-      <div style={{ position: "relative", display: "flex", alignItems: "center", height: 46, borderRadius: 23, background: C.white, border: `1px solid ${C.borderSoft}`, boxShadow: SH_SOFT, padding: "0 16px", gap: 8 }}>
+      <div className={css.search} style={{ position: "relative", display: "flex", alignItems: "center", height: 46, borderRadius: 23, background: C.white, border: `1px solid ${C.borderSoft}`, boxShadow: SH_SOFT, padding: "0 16px", gap: 8 }}>
         <Icon name="search" color={C.muted} size={18} />
         <label htmlFor="q" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>ابحثي في المتجر</label>
         <input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحثي عن غسول، سيروم، واقي شمس"
           style={{ border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.ink, flex: 1, minWidth: 0, height: "100%" }} />
       </div>
+      </div>
 
-      <div style={{ display: "flex", gap: 8, margin: "-4px -20px -6px", padding: "4px 20px 12px", flexShrink: 0, overflowX: "auto" }}>
+      {cats.length > 1 && <div className={css.cats}>
         {cats.length > 1 && cats.map((c) => (
           <button key={c} type="button" aria-pressed={cat === c} onClick={() => { setCat(c); setQ(""); }} style={chip(cat === c && !query)}>{c}</button>
         ))}
-      </div>
+      </div>}
 
       {recommended.length > 0 && !query && cat === "الكل" && (
         <div style={{ ...DARK, borderRadius: 28, padding: "14px 16px", position: "relative", overflow: "hidden", flexShrink: 0 }}>
@@ -124,20 +128,20 @@ export default function StorePage() {
             text="ستظهر هنا منتجات العناية التي يعتمدها المركز فور إضافتها. يمكنكِ السؤال عن أي منتج عبر المحادثة."
             action={<Link href={R.P_Chat} style={{ color: C.accent, fontWeight: 700, fontSize: 14 }}>راسلي المركز</Link>} />
         ) : shown.length === 0 && <div style={{ fontSize: 13, color: C.sub2 }}>لا توجد منتجات مطابقة</div>}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+        <div className={css.grid}>
           {shown.map((p) => {
             const on = !!cart[p.key];
             const out = Number(p.stock) <= 0;
             const href = `${R.P_Product}?key=${encodeURIComponent(p.key)}`;
             const art = (
-              <div style={{ height: 74, borderRadius: 18, overflow: "hidden", position: "relative", background: "radial-gradient(circle at 50% 45%, #FFFFFF 0%, #F3EAF6 80%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 -8px 16px rgba(150,100,170,0.08)", opacity: out ? 0.6 : 1 }}>
-                <ProductPic p={p} width={58} />
+              <div className={css.art} style={{ borderRadius: 18, overflow: "hidden", position: "relative", background: "radial-gradient(circle at 50% 45%, #FFFFFF 0%, #F3EAF6 80%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 -8px 16px rgba(150,100,170,0.08)", opacity: out ? 0.6 : 1 }}>
+                <ProductPic p={p} width={64} fill artClass={css.artSvg} alt={p.name} />
                 {p.recommended && <span style={{ position: "absolute", top: 5, right: 5, height: 20, padding: "0 7px", borderRadius: 10, background: "rgba(255,255,255,0.92)", color: C.accent, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 3, boxShadow: "0 2px 6px rgba(123,70,135,0.15)" }}><Icon name="sparkle" color={C.accent} size={11} />توصية الأخصائية</span>}
               </div>
             );
             const name = <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>;
             return (
-              <div key={p.key} style={{ ...CARD, borderRadius: 24, padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
+              <div key={p.key} className={css.card} style={{ ...CARD, borderRadius: 24, padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
                 <Link href={href} aria-label={`تفاصيل ${p.name}`} style={{ display: "block" }}>{art}</Link>
                 <div style={{ padding: "0 4px" }}>
                   <Link href={href}>{name}</Link>

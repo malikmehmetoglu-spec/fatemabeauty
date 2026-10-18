@@ -10,6 +10,7 @@ import { useQuery } from "@/lib/db/query";
 import { callNext, callPatient, listTodayQueue, personName, setStatus, STATUS_KIND, useLiveAppointments, STATUS_LABEL, timeOf, type Appointment, type Status } from "@/lib/db/appointments";
 import { arDate, clock } from "@/lib/format";
 import { C, DARK, ICON_FILL, SH } from "@/lib/tokens";
+import css from "../calendar/appts.module.css";
 
 const mins = (iso: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
 
@@ -44,7 +45,7 @@ export default function QueuePage() {
           <Icon name="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" size={18} color="#FFFFFF" />نداء التالي
         </SubmitButton>
       </>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="في الانتظار" value={waiting.length} sub={waiting.length ? `متوسط الانتظار ${avg} دقيقة` : "لا أحد في صالة الانتظار"} icon="users" />
         <Kpi label="في الجلسة" value={inSession.length} sub={inSession.map((a) => a.room?.name).filter(Boolean).join(" · ") || "الغرف فارغة"} icon="sparkle" />
         <Kpi label="انتهت اليوم" value={done.length} sub={`من ${list.length} وصلن اليوم`} icon="check" />
@@ -58,11 +59,11 @@ export default function QueuePage() {
         <EmptyState icon="users" title="لم تصل أي مراجِعة اليوم بعد"
           text="عند تسجيل الوصول (من تابلت الاستقبال أو من التقويم) تأخذ المراجِعة رقم دور وتظهر هنا، ويظهر رقمها على شاشة الانتظار." />
       ) : (
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div className={css.split}>
           <div style={{ flex: 1.6, minWidth: 0, borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>صالة الانتظار والجلسات</div>
             {list.filter((a) => a.status !== "done" && a.status !== "no_show" && a.status !== "cancelled").map((a) => (
-              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: "1px solid #EDE2F1" }}>
+              <div key={a.id} className={css.qrow}>
                 <span className="latin" style={{ width: 46, height: 46, borderRadius: 16, background: a.called_at && a.status === "checked_in" ? C.accent : ICON_FILL, color: a.called_at && a.status === "checked_in" ? C.white : C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{a.queue_no}</span>
                 <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{personName(a)}</div>
@@ -72,12 +73,12 @@ export default function QueuePage() {
                   </div>
                 </div>
                 <Tag kind={a.called_at && a.status === "checked_in" ? "pink" : STATUS_KIND[a.status]}>{a.called_at && a.status === "checked_in" ? "نُوديت" : STATUS_LABEL[a.status]}</Tag>
-                {a.status === "checked_in" && <>
+                {(a.status === "checked_in" || a.status === "in_session") && <div className={css.qacts}>{a.status === "checked_in" && <>
                   <GhostButton icon="bell" onClick={() => run(a.id + "call", () => callPatient(a.id))} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>
                   <GhostButton icon="sparkle" onClick={() => act(a, "in_session")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>بدء</GhostButton>
                   <GhostButton color={C.danger} onClick={() => act(a, "no_show")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>غادرت</GhostButton>
                 </>}
-                {a.status === "in_session" && <GhostButton icon="check" onClick={() => act(a, "done")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>إنهاء</GhostButton>}
+                {a.status === "in_session" && <GhostButton icon="check" onClick={() => act(a, "done")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>إنهاء</GhostButton>}</div>}
               </div>
             ))}
             {waiting.length === 0 && inSession.length === 0 && <div style={{ fontSize: 13.5, color: C.sub2, padding: "10px 0" }}>لا أحد في الانتظار الآن.</div>}

@@ -141,5 +141,5 @@ export async function removeDevice(id: string) {
 
 /** The signed-in patient's packages (RLS limits to her own rows). */
 export async function listMyPackages(patientId: string) {
-  return must(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).order("purchased_at", { ascending: false }));
+  return must(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).gt("sessions_total", 0).order("purchased_at", { ascending: false }));
 }

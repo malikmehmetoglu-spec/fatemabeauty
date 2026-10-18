@@ -5,6 +5,7 @@ import { BG, C, SELECTED } from "@/lib/tokens";
 import { R } from "@/lib/routes";
 import { Icon, IconButton } from "@/components/ui";
 import Link from "next/link";
+import ps from "./phone.module.css";
 
 /** Soft lilac + white halos behind the content (design-system §3). */
 export function Blobs({ width = 390 }: { width?: number }) {
@@ -26,8 +27,8 @@ const TABS: [string, TabLabel, string][] = [
 /** Floating glass tab bar for the five root phone screens. */
 export function TabBar({ active }: { active: TabLabel }) {
   return (
-    <nav aria-label="التنقل الرئيسي" style={{
-      position: "fixed", bottom: "calc(18px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)",
+    <nav aria-label="التنقل الرئيسي" className={ps.tab} style={{
+      position: "fixed", left: "50%", transform: "translateX(-50%)",
       width: "min(calc(100% - 32px), 448px)", height: 68, borderRadius: 34, background: "rgba(255,255,255,0.78)",
       backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)",
       boxShadow: "0 14px 34px rgba(123,70,135,0.16)", display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -75,10 +76,9 @@ export function PhoneScreen({
   const top = "calc(env(safe-area-inset-top, 0px) + 22px)";
   const bottom = tab ? "calc(env(safe-area-inset-bottom, 0px) + 104px)" : "calc(env(safe-area-inset-bottom, 0px) + 22px)";
   return (
-    <div style={{ minHeight: "100dvh", background: "#E9DDEE", display: "flex", justifyContent: "center" }}>
-      <main dir="rtl" style={{
-        width: "100%", maxWidth: wide ? 1180 : 480, minHeight: "100dvh", background, color: C.ink, position: "relative",
-        isolation: "isolate", overflow: "hidden", display: "flex", flexDirection: "column", gap,
+    <div className={ps.page}>
+      <main dir="rtl" className={`${ps.col} ${wide ? "" : ps.narrow}`} style={{
+        maxWidth: wide ? 1180 : 480, background, color: C.ink, gap,
         padding: padding ?? `${top} 20px ${bottom}`, ...style,
       }}>
         {blobs && <Blobs />}

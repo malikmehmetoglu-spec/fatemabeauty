@@ -1,0 +1,46 @@
+/* Store as a web app: phone first (PhoneScreen `wide`), multi-column on tablets and desktop. */
+
+/* ---------- store (catalogue) ---------- */
+.top { display: flex; flex-direction: column; gap: 12px; }
+.search { flex: 1 1 auto; }
+.cats { display: flex; gap: 8px; margin: -4px -20px -6px; padding: 4px 20px 12px; flex-shrink: 0; overflow-x: auto; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { transition: transform .18s ease, box-shadow .18s ease; }
+.art { height: 96px; }
+.artSvg { display: flex; align-items: center; justify-content: center; }
+
+@media (min-width: 700px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .art { height: 170px; }
+  .artSvg { transform: scale(1.7); }
+  .cats { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+}
+@media (min-width: 1000px) {
+  .top { flex-direction: row; align-items: center; gap: 24px; }
+  .top > header { flex: 0 0 auto; }
+  .search { order: 0; max-width: 520px; margin-inline-start: auto; }
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+}
+@media (hover: hover) {
+  .card:hover { transform: translateY(-3px); box-shadow: 0 18px 34px rgba(123, 70, 135, 0.14); }
+}
+
+/* ---------- two-column pages (product, cart, checkout, order) ---------- */
+.split { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; flex: 1 1 auto; }
+.hero { height: 262px; }
+.heroSvg { display: flex; align-items: center; justify-content: center; }
+
+@media (min-width: 900px) {
+  .split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr); gap: 28px; align-items: start; flex: 0 0 auto; }
+  .aside { position: sticky; top: 24px; flex: 0 0 auto; }
+  .hero { height: 520px; }
+  .heroSvg { transform: scale(1.6); }
+  /* the primary action stays under the summary instead of being pinned to the page bottom */
+  .aside > .pin { margin-top: 0 !important; }
+}
+
+/* page width limits on desktop so lines stay readable */
+.narrow { width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; }

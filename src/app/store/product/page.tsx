@@ -10,8 +10,9 @@ import { money } from "@/lib/format";
 import { C, CARD, GLASS, SH } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { getProduct, type Product } from "@/lib/db/products";
-import { cartStore } from "@/lib/db/orders";
+import { cartStore, useCart } from "@/lib/db/orders";
 import { ProductPic, QtyStepper } from "../c1ui";
+import css from "../store.module.css";
 
 export default function ProductPage() {
   return <Suspense fallback={<PhoneScreen><Loading /></PhoneScreen>}><ProductLoader /></Suspense>;
@@ -22,14 +23,14 @@ function ProductLoader() {
   const { data, loading, error } = useQuery(["products", "one", key], () => getProduct(key), { enabled: !!key });
   if (!key || (!loading && !error && !data)) {
     return (
-      <PhoneScreen>
+      <PhoneScreen wide>
         <TopBar title="تفاصيل المنتج" back={R.P_Store} />
         <EmptyState icon="bag" title="المنتج غير موجود" text="ربما أُزيل من المتجر. تصفّحي المنتجات المتوفرة الآن." />
         <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto" }}>العودة إلى المتجر</SecondaryButton>
       </PhoneScreen>
     );
   }
-  if (loading || !data) return <PhoneScreen><TopBar title="تفاصيل المنتج" back={R.P_Store} />{error ? <ErrorNote>تعذّر التحميل: {error}</ErrorNote> : <Loading />}</PhoneScreen>;
+  if (loading || !data) return <PhoneScreen wide><TopBar title="تفاصيل المنتج" back={R.P_Store} />{error ? <ErrorNote>تعذّر التحميل: {error}</ErrorNote> : <Loading />}</PhoneScreen>;
   return <ProductView p={data} />;
 }
 
@@ -39,19 +40,23 @@ function ProductView({ p }: { p: Product }) {
   const out = stock <= 0;
   const [qty, setQty] = useState(1);
   const router = useRouter();
+  const inCart = useCart()[p.key] ?? 0;
+  const room = Math.max(0, Math.floor(stock) - inCart);
   const steps = p.usage.split(/\n+/).map((t) => t.trim()).filter(Boolean);
 
   return (
-    <PhoneScreen>
+    <PhoneScreen wide>
       <TopBar title="تفاصيل المنتج" back={R.P_Store} />
 
-      <div style={{
-        height: 262, borderRadius: 32, position: "relative", overflow: "hidden", flexShrink: 0,
+      <div className={css.split}>
+      <div className={css.col}>
+      <div className={css.hero} style={{
+        borderRadius: 32, position: "relative", overflow: "hidden", flexShrink: 0,
         background: "radial-gradient(circle at 50% 46%, #FFFFFF 0%, #F6EBF8 52%, #EAD4EF 100%)", border: "1px solid #FFFFFF", boxShadow: SH,
       }}>
         <div aria-hidden style={{ position: "absolute", top: 34, left: "50%", width: 170, height: 170, marginLeft: -85, borderRadius: 85, background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%)" }} />
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 6 }}>
-          <ProductPic p={p} width={166} height={262} />
+          <ProductPic p={p} width={166} fill radius={32} artClass={css.heroSvg} alt={p.name} />
         </div>
         {p.recommended && (
           <div style={{ ...GLASS, position: "absolute", top: 14, right: 14, height: 40, padding: "0 12px 0 6px", borderRadius: 20, display: "flex", alignItems: "center", gap: 7, boxShadow: "0 6px 16px rgba(123,70,135,0.10)" }}>
@@ -61,6 +66,9 @@ function ProductView({ p }: { p: Product }) {
         )}
         {out && <div style={{ position: "absolute", bottom: 14, left: 14 }}><Tag kind="gray">غير متوفر حالياً</Tag></div>}
       </div>
+      </div>
+
+      <div className={css.aside}>
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
         <div style={{ lineHeight: 1.3, minWidth: 0 }}>
@@ -99,16 +107,22 @@ function ProductView({ p }: { p: Product }) {
         </div>
       )}
 
-      <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+      {!out && p.price != null && stock <= 5 && <div style={{ fontSize: 12.5, fontWeight: 600, color: C.danger }}>بقي <span className="latin">{stock}</span> فقط</div>}
+      {inCart > 0 && <div style={{ fontSize: 12.5, color: C.sub2 }}>في سلتكِ الآن: <span className="latin">{inCart}</span></div>}
+      <div className={css.pin} style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10 }}>
         {out || p.price == null ? (
           <SecondaryButton href={R.P_Chat} icon="msg" style={{ flex: 1 }}>{out ? "غير متوفر حالياً · اسألي المركز" : "اسألي عن السعر"}</SecondaryButton>
+        ) : room <= 0 ? (
+          <SecondaryButton href={R.P_Cart} icon="bag" style={{ flex: 1 }}>كل الكمية المتوفرة في سلتكِ · افتحي السلة</SecondaryButton>
         ) : <>
-          <QtyStepper qty={qty} onChange={setQty} btn={34} radius={21} max={Math.max(1, Math.floor(stock))} />
+          <QtyStepper qty={Math.min(qty, room)} onChange={setQty} btn={34} radius={21} max={Math.max(1, room)} />
           <PrimaryButton icon="bag" style={{ flex: 1, fontSize: "clamp(14px, 4.1vw, 16px)", gap: 6, padding: "0 10px", minWidth: 0, whiteSpace: "nowrap" }}
-            onClick={() => { cartStore.add(p.key, qty); router.push(R.P_Cart); }}>
-            أضيفي إلى السلة · <span className="latin">{money(qty * price, false)}</span>
+            onClick={() => { cartStore.add(p.key, Math.min(qty, room)); router.push(R.P_Cart); }}>
+            أضيفي إلى السلة · <span className="latin">{money(Math.min(qty, room) * price, false)}</span>
           </PrimaryButton>
         </>}
+      </div>
+      </div>
       </div>
     </PhoneScreen>
   );

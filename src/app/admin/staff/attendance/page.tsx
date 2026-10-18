@@ -48,9 +48,9 @@ export default function AttendancePage() {
     <AdminShell active="فريق العمل" title="الحضور والإجازات" subtitle={`${arDate(new Date())} · الآن ${clock()}`}
       actions={<GhostButton icon="cal" onClick={() => setAsking(true)}>طلب إجازة</GhostButton>}>
       <TeamTabs />
-      <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-        <Card style={{ flex: 1.9, display: "flex", alignItems: "center", gap: 14 }} padding="18px 20px">
-          <div style={{ flex: 1, lineHeight: 1.5 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
+        <Card style={{ flex: "2 1 320px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }} padding="18px 20px">
+          <div style={{ flex: "1 1 160px", lineHeight: 1.5 }}>
             <div style={{ fontSize: 13, color: C.sub2 }}>حضوري اليوم</div>
             <div style={{ fontSize: 17, fontWeight: 700 }}>
               {mineToday?.check_in ? <>دخول <span className="latin">{clock(mineToday.check_in)}</span>{mineToday.check_out && <> · خروج <span className="latin">{clock(mineToday.check_out)}</span></>}</> : "لم تسجّلي الدخول بعد"}

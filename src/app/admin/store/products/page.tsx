@@ -28,7 +28,8 @@ export default function Page() {
 
   const list = useMemo(() => (data ?? []).filter((p) => p.kind === "retail"), [data]);
   const shown = list.filter((p) => {
-    if (q && !p.name.includes(q) && !p.category.includes(q)) return false;
+    const needle = q.trim().toLowerCase();
+    if (needle && ![p.name, p.category, p.sku ?? ""].some((t) => t.toLowerCase().includes(needle))) return false;
     if (filter === "shown") return p.show_in_store;
     if (filter === "hidden") return !p.show_in_store;
     if (filter === "rec") return p.recommended;
@@ -49,7 +50,7 @@ export default function Page() {
         </Link>
         <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة منتج</GhostButton>
       </>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="منتجات البيع" value={list.length} sub="في المخزون" icon="bag" />
         <Kpi label="ظاهرة في المتجر" value={list.filter((p) => p.show_in_store).length} sub="تراها المراجِعات الآن" icon="eye" />
         <Kpi label="توصية الأخصائية" value={list.filter((p) => p.recommended).length} sub="تظهر بشارة في المتجر" icon="sparkle" />
@@ -61,7 +62,7 @@ export default function Page() {
           <Chip key={k} selected={filter === k} onClick={() => setFilter(k)}>{t}</Chip>
         ))}
         <input aria-label="بحث في المنتجات" placeholder="ابحثي باسم المنتج أو الفئة" value={q} onChange={(e) => setQ(e.target.value)}
-          style={{ marginInlineStart: "auto", height: 40, width: 260, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 16px", fontSize: 13.5 }} />
+          style={{ marginInlineStart: "auto", height: 40, width: "min(260px, 100%)", boxSizing: "border-box", borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 16px", fontSize: 13.5 }} />
       </div>
 
       {err && <ErrorNote>{err}</ErrorNote>}
@@ -70,7 +71,7 @@ export default function Page() {
           text="أضيفي منتجاً للبيع مع سعره وصورته وكميته؛ يظهر في متجر التطبيق تلقائياً ويُخصم من المخزون عند كل طلب."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة منتج</GhostButton>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا منتجات تطابق هذا الاختيار" /> : (
-        <DataTable
+        <DataTable minWidth={820}
           headers={["المنتج", "السعر", "الكمية", "في المتجر", "توصية", ""]}
           widths={[2.6, 1, 1.3, 0.8, 0.7, 1.4]}
           rowHeight={64}

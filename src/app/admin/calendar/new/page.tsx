@@ -14,6 +14,7 @@ import {
 import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
+import css from "../appts.module.css";
 
 type Mode = "existing" | "new" | "walkin";
 
@@ -123,13 +124,13 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
           ))}
 
           {mode !== "existing" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className={css.grid2}>
               <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
               <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div className={css.grid3}>
             <Select label="الخدمة" value={svc?.key ?? ""} onChange={(v) => setSvcKey(v)} options={(services.data ?? []).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
             <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...(team.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
             <Select label="الغرفة" value={room} onChange={setRoom} options={[{ value: "", label: "بدون غرفة" }, ...(rooms.data ?? []).map((r) => ({ value: r.id, label: r.name }))]} />
@@ -142,7 +143,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
             </label>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className={css.grid2}>
                 <TextInput label="اليوم" type="date" dir="ltr" value={day} onChange={(v) => { setDay(v); setTime(""); }} />
                 <TextInput label="الوقت" type="time" dir="ltr" value={time} onChange={setTime} hint="أو اختاري من الأوقات المتاحة" />
               </div>

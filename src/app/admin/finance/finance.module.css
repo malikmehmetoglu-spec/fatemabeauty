@@ -1,0 +1,72 @@
+/* Finance screens — responsive layouts inside AdminShell (390 / 768 / 1024 / 1440) and the printed receipt. */
+
+/* rows of stat cards: 4 → 2 → 1 */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr 1fr; gap: 10px; } }
+@media (max-width: 420px) { .stats { grid-template-columns: 1fr; } }
+
+/* main + side panel (side panel drops under the main one) */
+.split { display: flex; gap: 16px; align-items: flex-start; }
+.split > * { min-width: 0; }
+.side { width: 360px; flex-shrink: 0; }
+.sideNarrow { width: 400px; flex-shrink: 0; }
+@media (max-width: 1280px) { .split { flex-direction: column; align-items: stretch; } .side, .sideNarrow { width: auto; } }
+
+/* three panels of the reports */
+.three { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 1280px) { .three { grid-template-columns: 1fr 1fr; } .three > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .three { grid-template-columns: 1fr; } }
+
+/* tables: a header row + rows that become cards on phones */
+.table { overflow-x: auto; }
+.thead { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+.thead > div { font-size: 12px; color: var(--sub2, #866F8D); font-weight: 600; min-width: 0; }
+.tr { display: flex; align-items: center; gap: 12px; min-height: 52px; border-top: 1px solid #EDE2F1; font-size: 13.5px; }
+.tr > div { min-width: 0; }
+.cellLabel { display: none; }
+@media (max-width: 760px) {
+  .thead { display: none; }
+  .tr { flex-wrap: wrap; gap: 6px 12px; padding: 12px 0; align-items: center; }
+  .tr > div { flex: 1 1 40% !important; }
+  .tr > .wide { flex-basis: 100% !important; }
+  .tr > .tight { flex: 0 0 auto !important; }
+  .cellLabel { display: inline; font-size: 11.5px; color: #866F8D; margin-inline-end: 6px; }
+  .tfoot { flex-wrap: wrap; }
+}
+
+/* toolbar (filters + search + date + export) */
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.toolbarEnd { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 640px) { .toolbarEnd { width: 100%; } .toolbarEnd > input { flex: 1 1 160px; width: auto !important; } }
+
+/* cashier: who | invoice | totals */
+.cashier {
+  display: grid; gap: 16px; align-items: start;
+  grid-template-columns: 310px minmax(0, 1fr) 310px; grid-template-areas: "who bill sum";
+}
+.cWho { grid-area: who; } .cBill { grid-area: bill; } .cSum { grid-area: sum; }
+@media (max-width: 1360px) {
+  .cashier { grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "who who" "bill sum"; }
+}
+@media (max-width: 900px) {
+  .cashier { grid-template-columns: minmax(0, 1fr); grid-template-areas: "who" "bill" "sum"; }
+}
+.modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pair { display: flex; gap: 10px; flex-wrap: wrap; }
+.pair > * { flex: 1 1 180px; min-width: 0; }
+
+/* cash box */
+.moveTime { white-space: nowrap; }
+.histRow { display: flex; align-items: center; gap: 12px; min-height: 50px; border-top: 1px solid #EDE2F1; font-size: 13.5px; flex-wrap: wrap; padding: 6px 0; }
+.histRow > div { min-width: 0; }
+
+/* ---------- print: only the receipt (or, without one, the page without the admin frame) ---------- */
+.receipt { display: none; }
+@media print {
+  .receipt { display: block; visibility: visible !important; position: absolute; inset: 0 0 auto 0; padding: 12mm; background: #fff; color: #000; font-size: 12pt; }
+  .receipt * { visibility: visible !important; }
+  .noPrint { display: none !important; }
+}
+.receipt table { width: 100%; border-collapse: collapse; }
+.receipt td, .receipt th { padding: 4px 0; text-align: start; border-bottom: 1px solid #ddd; }
+.receipt .num { text-align: end; font-family: var(--font-rubik), sans-serif; }

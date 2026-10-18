@@ -239,7 +239,7 @@ export function Kpi({ label, value, sub, icon = "chart", dark = false }: {
 }) {
   if (dark) {
     return (
-      <div style={{ ...DARK, flex: 1, minWidth: 0, borderRadius: 26, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ ...DARK, flex: "1 1 160px", minWidth: 0, borderRadius: 26, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
         <DarkGlow />
         <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ fontSize: 13, color: C.onDark }}>{label}</div>
@@ -251,7 +251,7 @@ export function Kpi({ label, value, sub, icon = "chart", dark = false }: {
     );
   }
   return (
-    <div style={{ ...CARD, flex: 1, minWidth: 0, borderRadius: 26, padding: "18px 20px" }}>
+    <div style={{ ...CARD, flex: "1 1 160px", minWidth: 0, borderRadius: 26, padding: "18px 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ fontSize: 13, color: C.sub2 }}>{label}</div>
         <Circ icon={icon} size={36} />
@@ -262,13 +262,17 @@ export function Kpi({ label, value, sub, icon = "chart", dark = false }: {
   );
 }
 
-/** Card table. `widths` are CSS flex values per column. */
-export function DataTable({ headers, rows, widths, rowHeight = 54, style }: {
-  headers: ReactNode[]; rows: ReactNode[][]; widths?: (string | number)[]; rowHeight?: number; style?: CSSProperties;
+/**
+ * Card table. `widths` are CSS flex values per column.
+ * On narrow screens the columns keep at least `minWidth` (default ~110px per column) and the card scrolls sideways.
+ */
+export function DataTable({ headers, rows, widths, rowHeight = 54, style, minWidth }: {
+  headers: ReactNode[]; rows: ReactNode[][]; widths?: (string | number)[]; rowHeight?: number; style?: CSSProperties; minWidth?: number;
 }) {
   const w = widths ?? headers.map(() => 1);
   return (
-    <div role="table" style={{ ...CARD, borderRadius: 26, padding: "8px 20px", ...style }}>
+    <div style={{ ...CARD, borderRadius: 26, padding: "8px 20px", overflowX: "auto", overscrollBehaviorX: "contain", ...style }}>
+    <div role="table" style={{ minWidth: minWidth ?? headers.length * 110 }}>
       <div role="row" style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
         {headers.map((h, i) => (
           <div role="columnheader" key={i} style={{ flex: w[i], minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{h}</div>
@@ -281,6 +285,7 @@ export function DataTable({ headers, rows, widths, rowHeight = 54, style }: {
           ))}
         </div>
       ))}
+    </div>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function StaffPage() {
     <AdminShell active="فريق العمل" title="فريق العمل" subtitle={arDate(new Date())}
       actions={canManage ? <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة موظفة</GhostButton> : undefined}>
       <TeamTabs />
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="الفريق النشط" value={active.length} sub={list.length > active.length ? `${list.length - active.length} موقوفة` : "كل الحسابات نشطة"} icon="users" />
         <Kpi label="أخصائيات" value={count(["specialist"])} sub="يظهرن في الحجز" icon="sparkle" />
         <Kpi label="استقبال ومحاسبة" value={count(["reception", "accountant"])} icon="cash" />

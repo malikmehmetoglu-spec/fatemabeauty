@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import t from "../adminPages.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, Tag } from "@/components/ui";
@@ -60,12 +61,12 @@ export default function CarePlansPage() {
           {kpi("alert", "منقطعات", lapsed?.length ?? 0, `لم يزرن منذ ${gap} يوماً أو أكثر`)}
         </div>
 
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <Panel title="باقات قيد التنفيذ" style={{ flex: 1, minWidth: 560 }}>
+        <div className={t.split}>
+          <Panel title="باقات قيد التنفيذ" className={t.grow}>
             {error ? <ErrorNote>{error}</ErrorNote> : loading ? <Loading /> : !all.length ? (
               <EmptyState compact icon="layers" title="لا باقات نشطة" text="عندما تشتري مراجعة باقة جلسات تظهر هنا مع تقدّمها وموعدها القادم." />
             ) : (
-              <>
+              <div className={t.scroll}><div className={t.inner} style={{ minWidth: 620 }}>
                 <div style={{ display: "flex", gap: 12, height: 34, alignItems: "center", fontSize: 12, color: C.sub2, fontWeight: 600 }}>
                   <span style={{ flex: 1.4 }}>المراجعة</span><span style={{ flex: 1.2 }}>الخطة</span><span style={{ flex: 1 }}>التقدم</span><span style={{ flex: 1 }}>الموعد القادم</span><span style={{ flex: 0.8 }}>الحالة</span>
                 </div>
@@ -86,12 +87,12 @@ export default function CarePlansPage() {
                     </div>
                   );
                 })}
-              </>
+              </div></div>
             )}
           </Panel>
 
-          <div style={{ width: 360, maxWidth: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
-            <Panel title="منقطعات يحتجن اتصالاً" right={<div style={{ display: "flex", gap: 4 }}>{GAPS.map((g) => <button key={g} type="button" onClick={() => setGap(g)} className="latin" style={{ ...chip(gap === g, 30), padding: "0 10px", fontSize: 12 }}>{g}</button>)}</div>}>
+          <div className={t.side} style={{ ["--side" as string]: "360px", display: "flex", flexDirection: "column", gap: 14 }}>
+            <Panel title="منقطعات يحتجن اتصالاً" right={<div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{GAPS.map((g) => <button key={g} type="button" onClick={() => setGap(g)} className="latin" style={{ ...chip(gap === g, 30), padding: "0 10px", fontSize: 12 }}>{g}</button>)}</div>}>
               {ll ? <Loading /> : !lapsed?.length ? <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>لا مراجعات انقطعن أكثر من {gap} يوماً بدون موعد قادم.</div> : lapsed.map((l) => (
                 <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: "1px solid #EDE2F1" }}>
                   <Initials name={l.name} size={32} />

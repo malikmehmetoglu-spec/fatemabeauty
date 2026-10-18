@@ -1,0 +1,47 @@
+/* Responsive helpers shared by the admin screens (staff, settings, patients, care plans, marketing, reports). */
+
+/* Wide row-lists: keep their columns and scroll sideways inside the card on narrow screens. */
+.scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+/* .inner carries an inline minWidth (the width the columns need); on wide screens it just fills the card. */
+@media (min-width: 1101px) { .inner { min-width: 0 !important; } }
+
+/* Two form fields side by side → stacked on phones. */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+
+/* Main column + side column → side column goes under the main one below 1000px. */
+.split { display: flex; gap: 16px; align-items: flex-start; }
+.split > .grow { flex: 1 1 0; min-width: 0; }
+.split > .side { flex: 0 0 var(--side, 320px); min-width: 0; max-width: 100%; }
+@media (max-width: 1000px) {
+  .split { flex-direction: column; align-items: stretch; }
+  .split > .side, .split > .grow { flex: 1 1 auto; width: 100%; }
+}
+
+/* Panel headers whose actions wrap under the title on phones. */
+.wrapRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* Header-less row lists: on phones each row becomes a small card (first cell full width, the rest two per line). */
+@media (max-width: 700px) {
+  .row { flex-wrap: wrap !important; row-gap: 6px !important; padding: 10px 0; }
+  .row > * { flex: 1 1 42% !important; min-width: 0 !important; }
+  .row > :first-child { flex-basis: 100% !important; }
+}
+
+/* Prescription item row: number + name + how on one line, timing chips + delete on the next (phones). */
+@media (max-width: 700px) {
+  .rxRow { flex-wrap: wrap; }
+  .rxRow > input { flex: 1 1 calc(100% - 40px) !important; }
+}
+
+/* KPI rows and panel rows built from components with inline `flex: 1`: let them wrap instead of squeezing. */
+.kpis { display: flex; flex-wrap: wrap; gap: 14px; }
+.kpis > * { flex-basis: 170px !important; min-width: 0 !important; }
+.panels { display: flex; flex-wrap: wrap; gap: 16px; }
+.panels > * { flex-basis: 300px !important; min-width: 0 !important; }
+
+/* Side-by-side columns that stack under 900px. */
+@media (max-width: 900px) {
+  .stack { flex-direction: column !important; align-items: stretch !important; }
+  .stack > * { width: auto !important; max-width: 100% !important; flex: 1 1 auto !important; }
+}

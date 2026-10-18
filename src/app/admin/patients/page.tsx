@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, Modal, SubmitButton, GhostButton, Tag, TextArea, TextInput, Select } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -9,6 +10,7 @@ import { arDate, clock, dayKey, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
 import { C, SH } from "@/lib/tokens";
+import t from "../adminPages.module.css";
 import { Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
 
 const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً"];
@@ -24,9 +26,16 @@ function matches(p: PatientRow, f: number) {
 
 /** W_Patients.dc.html */
 export default function PatientsPage() {
+  return <Suspense><Patients /></Suspense>;
+}
+
+function Patients() {
+  const urlQ = useSearchParams().get("q") ?? "";
   const { data, loading, error } = useQuery(["patients", "list"], listPatients);
   const [f, setF] = useState(0);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(urlQ);
+  // the global search in the admin top bar submits to ?q=… (also while this page is already open)
+  useEffect(() => { setQ(urlQ); setPage(0); }, [urlQ]);
   const [page, setPage] = useState(0);
   const [adding, setAdding] = useState(false);
 
@@ -71,7 +80,8 @@ export default function PatientsPage() {
             action={<SubmitButton onClick={() => setAdding(true)}>فتح ملف جديد</SubmitButton>} />
         ) : (
           <>
-            <div style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+            <div className={t.scroll} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+             <div className={t.inner} style={{ minWidth: 820 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
                 {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
               </div>
@@ -110,8 +120,9 @@ export default function PatientsPage() {
                   </div>
                 );
               })}
+             </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: C.sub2 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, fontSize: 13, color: C.sub2 }}>
               <span>عرض {shown.length} من {rows.length} · مرتّبة حسب آخر زيارة</span>
               {pages > 1 && (
                 <div style={{ display: "flex", gap: 6 }}>
@@ -156,7 +167,7 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} title="فتح ملف مراجعة" footer={<><SubmitButton onClick={save} busy={busy}>حفظ الملف</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
       <TextInput label="الاسم الكامل" value={name} onChange={setName} required />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className={t.two}>
         <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09xx xxx xxx" hint="تربط الملف بحسابها عند تسجيل الدخول بهذا الرقم" />
         <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
       </div>

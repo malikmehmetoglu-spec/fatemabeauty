@@ -47,9 +47,9 @@ export default function CommissionsPage() {
         <GhostButton icon="back" onClick={() => setPeriod(shiftMonth(period, 1))}>التالي</GhostButton>
       </>}>
       <TeamTabs />
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="العمولات المستحقة" value={money(totalDue)} sub={monthLabel(period)} icon="percent" />
-        <Kpi label="قيمة الجلسات المدفوعة" value={money(totalSales)} sub="المرتبطة بأخصائية" icon="receipt" />
+        <Kpi label="قيمة الجلسات المدفوعة" value={money(totalSales)} sub="صافي بنود الخدمات بعد الخصم" icon="receipt" />
         <Kpi label="أخصائيات لهن نسبة" value={rows.filter((x) => x.r).length} sub={`من ${rows.length}`} icon="users" />
       </div>
       {team.loading || rules.loading || base.loading ? <Loading /> : rules.error || base.error ? <ErrorNote>تعذّر تحميل العمولات: {rules.error || base.error}</ErrorNote> : rows.length === 0 ? (
@@ -65,7 +65,7 @@ export default function CommissionsPage() {
             canManage ? <RowBtn key="e" icon={x.r ? "edit" : "plus"} label={x.r ? "تعديل النسبة" : "تحديد النسبة"} onClick={() => setEditing({ s: x.s, r: x.r })} /> : <span key="e" />,
           ])} />
       )}
-      <div style={{ fontSize: 12.5, color: C.sub2 }}>العمولة = النسبة × مجموع الفواتير المدفوعة هذا الشهر للمواعيد التي نفّذتها الأخصائية. سجّليها في الراتب من صفحة الرواتب.</div>
+      <div style={{ fontSize: 12.5, color: C.sub2 }}>العمولة = النسبة × صافي بنود الخدمات (بعد الخصم، بدون المنتجات والباقات) في الفواتير المدفوعة بالكامل وغير الملغاة هذا الشهر للمواعيد التي نفّذتها الأخصائية. جلسات الباقات قيمتها 0 هنا لأن ثمن الباقة يُحتسب عند بيعها. سجّليها في الراتب من صفحة الرواتب.</div>
       <RuleDialog target={editing} onClose={() => setEditing(null)} />
     </AdminShell>
   );

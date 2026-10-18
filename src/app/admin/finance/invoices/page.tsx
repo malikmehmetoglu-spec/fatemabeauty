@@ -13,6 +13,7 @@ import { arDate, clock, dayKey, dayRange, money } from "@/lib/format";
 import { C, SHB } from "@/lib/tokens";
 import { Amount, Big, DeepBtn, LATIN, LightBtn, Pill, PANEL, StatCard, downloadCsv } from "../parts";
 import { InvoiceDialog } from "./InvoiceDialog";
+import css from "../finance.module.css";
 
 type F = "all" | "cash" | "card" | "package" | "open" | "void";
 const METHOD_TAG: Record<string, TagKind> = { cash: "pink", card: "gray", package: "lilac", points: "plum" };
@@ -43,20 +44,20 @@ export default function Page() {
     <AdminShell active="المالية" title="الفواتير" subtitle={`${arDate(new Date(`${day}T12:00:00`))}${isToday ? ` · آخر تحديث ${clock()}` : ""}`} actions={
       <Link href={R.W_Cashier} style={{ textDecoration: "none" }}><DeepBtn icon="plus">فاتورة جديدة</DeepBtn></Link>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", gap: 16 }}>
+        <div className={css.stats}>
           <StatCard label={isToday ? "فواتير اليوم" : "فواتير اليوم المختار"} value={live.length} sub={all.length - live.length ? `${all.length - live.length} ملغاة` : "صادرة في هذا اليوم"} icon="receipt" />
-          <StatCard label="نقدي" value={<Big n={m.cash} />} sub="في الصندوق" icon="cash" />
+          <StatCard label="نقدي" value={<Big n={m.cash} />} sub="مقبوض على فواتير هذا اليوم" icon="cash" />
           <StatCard label="بطاقة" value={<Big n={m.card} />} sub={m.package ? `و ${live.filter((i) => i.patient_package_id).length} جلسة من باقات` : "خارج الدرج"} icon="card" />
           <StatCard dark label="إجمالي المقبوض" value={<Big n={received} />} sub={due ? `متبقٍ غير مدفوع ${money(due)}` : "لا مبالغ متبقية"} icon="wallet" />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div className={css.toolbar}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {([["all", "الكل"], ["cash", "نقدي"], ["card", "بطاقة"], ["package", "باقة"], ["open", "غير مكتملة"], ["void", "ملغاة"]] as [F, string][]).map(([k, t]) => (
               <Pill key={k} on={f === k} onClick={() => setF(k)}>{t} ({count(k)})</Pill>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div className={css.toolbarEnd}>
             <input aria-label="بحث" value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم، رقم ملف أو فاتورة" style={{ height: 40, width: 200, borderRadius: 20, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 13 }} />
             <label style={{ height: 40, borderRadius: 20, background: C.white, boxShadow: SHB, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 12px", color: C.accent }}>
               <Icon name="cal" color={C.accent} size={17} />
@@ -71,37 +72,38 @@ export default function Page() {
             action={<Link href={R.W_Cashier}><DeepBtn icon="plus">فتح الكاشير</DeepBtn></Link>} />
         ) : list.length === 0 ? <EmptyState compact icon="search" title="لا فواتير تطابق هذا الاختيار" /> : (
           <div style={{ ...PANEL, padding: "8px 20px 14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
+            <div className={css.thead}>
               {[["رقم الفاتورة", 1.3], ["الوقت", 0.7], ["المراجعة", 1.7], ["البنود", 1.7], ["الأخصائية", 1.1], ["الدفع", 0.9], ["المبلغ", 1.1], ["الحالة", 1], ["", 0.4]].map(([h, w], i) => (
-                <div key={i} style={{ flex: w as number, minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{h}</div>
+                <div key={i} style={{ flex: w as number }}>{h}</div>
               ))}
             </div>
             {list.map((i) => {
               const name = customerName(i);
               return (
-                <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 12, height: 52, borderTop: `1px solid ${C.line}`, fontSize: 13.5, opacity: i.void ? 0.55 : 1 }}>
+                <div key={i.id} className={css.tr} style={{ opacity: i.void ? 0.55 : 1 }}>
                   <div style={{ flex: 1.3, minWidth: 0 }}><span dir="ltr" style={{ ...LATIN, fontSize: 13, fontWeight: 500 }}>{i.no}</span></div>
                   <div style={{ flex: 0.7, minWidth: 0 }}><span style={{ ...LATIN, fontSize: 13, color: C.sub }}>{clock(i.created_at)}</span></div>
-                  <div style={{ flex: 1.7, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className={css.wide} style={{ flex: 1.7, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent }}>{initials(name)}</span>
                     <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
                   </div>
-                  <div style={{ flex: 1.7, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{invoiceTitle(i)}</div>
-                  <div style={{ flex: 1.1, minWidth: 0, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{i.appointments?.staff?.name ?? "—"}</div>
+                  <div style={{ flex: 1.7, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>البنود</span>{invoiceTitle(i)}</div>
+                  <div style={{ flex: 1.1, minWidth: 0, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>الأخصائية</span>{i.appointments?.staff?.name ?? "—"}</div>
                   <div style={{ flex: 0.9, minWidth: 0 }}><Tag kind={METHOD_TAG[i.method]}>{(i.invoice_payments?.length ?? 0) > 1 ? "مقسّم" : PAY_LABEL[i.method]}</Tag></div>
                   <div style={{ flex: 1.1, minWidth: 0 }}><Amount n={i.total} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}><Status i={i} /></div>
-                  <div style={{ flex: 0.4, minWidth: 0 }}>
+                  <div className={css.tight} style={{ flex: 0.4, minWidth: 0 }}>
                     <button type="button" aria-label="عرض الفاتورة" onClick={() => setOpen(i)} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="eye" color={C.accent} size={16} /></button>
                   </div>
                 </div>
               );
             })}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, height: 54, margin: "4px -12px 0", padding: "0 12px", borderRadius: 18, background: "linear-gradient(145deg,#F6EEF9,#F2E4F5)" }}>
-              <div style={{ flex: 1.3, fontWeight: 700, fontSize: 14 }}>الإجمالي</div>
-              <div style={{ flex: 0.7 }} /><div style={{ flex: 1.7, fontSize: 13, color: C.sub }}>{list.length} فاتورة</div><div style={{ flex: 1.7 }} /><div style={{ flex: 1.1 }} /><div style={{ flex: 0.9 }} />
-              <div style={{ flex: 1.1 }}><Amount n={list.filter((i) => !i.void).reduce((s, i) => s + i.total, 0)} size={16} color={C.accent} /></div>
-              <div style={{ flex: 1 }} /><div style={{ flex: 0.4 }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, minHeight: 54, margin: "4px -12px 0", padding: "6px 12px", borderRadius: 18, background: "linear-gradient(145deg,#F6EEF9,#F2E4F5)" }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>الإجمالي <span style={{ fontSize: 13, color: C.sub, fontWeight: 400 }}>· {list.length} فاتورة{f === "void" ? " ملغاة (لا تدخل في المجموع)" : ""}</span></div>
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
+                <span>الصافي <Amount n={list.filter((i) => !i.void).reduce((s, i) => s + i.total, 0)} size={16} color={C.accent} /></span>
+                <span>المقبوض <Amount n={list.reduce((s, i) => s + collected(i), 0)} /></span>
+              </div>
             </div>
           </div>
         )}

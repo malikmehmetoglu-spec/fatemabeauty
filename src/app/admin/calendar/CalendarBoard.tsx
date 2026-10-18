@@ -8,7 +8,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
-  dateOfKey, endsAt, getHours, listRange, personName, saveHours, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
+  bookingError, dateOfKey, endsAt, getHours, listRange, personName, saveHours, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
   type Appointment, type Hours, type Status,
 } from "@/lib/db/appointments";
 import { AR_DAYS } from "@/lib/data";
@@ -191,9 +191,10 @@ function WeekGrid({ from, list, onOpen }: { from: string; list: Appointment[]; o
 const NEXT: Partial<Record<Status, { to: Status; label: string }[]>> = {
   pending: [{ to: "confirmed", label: "تأكيد الموعد" }, { to: "cancelled", label: "إلغاء" }],
   confirmed: [{ to: "checked_in", label: "تسجيل الوصول" }, { to: "no_show", label: "لم تحضر" }, { to: "cancelled", label: "إلغاء" }],
-  checked_in: [{ to: "in_session", label: "بدء الجلسة" }, { to: "no_show", label: "لم تحضر" }],
+  checked_in: [{ to: "in_session", label: "بدء الجلسة" }, { to: "confirmed", label: "التراجع عن تسجيل الوصول" }, { to: "no_show", label: "لم تحضر" }],
   in_session: [{ to: "done", label: "إنهاء الجلسة" }],
   no_show: [{ to: "confirmed", label: "إرجاع إلى مؤكد" }],
+  cancelled: [{ to: "confirmed", label: "استعادة الموعد" }],
 };
 
 /** Appointment card: details + status actions. */
@@ -205,7 +206,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   const a = appt;
   async function go(to: Status) {
     setBusy(true); setError("");
-    try { await setStatus(a.id, to); onClose(); } catch (e) { setError("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+    try { await setStatus(a.id, to); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); }
   }
   const row = (label: string, value: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.line}`, fontSize: 14 }}>
@@ -214,7 +215,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   );
   return (
     <Modal open onClose={onClose} title={personName(a)} width={520}
-      footer={<>{(NEXT[a.status] ?? []).map((n, i) => i === 0
+      footer={<>{(NEXT[a.status] ?? []).filter((n) => (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
         ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
         : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

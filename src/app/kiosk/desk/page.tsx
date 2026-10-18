@@ -162,7 +162,7 @@ export default function Page() {
             </div>
             <div style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.25, marginTop: 4, color: C.ink }}>{K.arrived}
             </div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>من {K.due} حتى الآن
+            <div style={{ fontSize: 12, color: C.sub2 }}>من {K.total - K.noShow.length} موعداً اليوم
             </div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>

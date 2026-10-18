@@ -6,7 +6,7 @@ import { DarkGlow, EmptyState, ErrorNote, Icon, Loading, Progress, SecondaryButt
 import { useQuery } from "@/lib/db/query";
 import { collected, myInvoices, myPackages, outstanding, PAY_LABEL } from "@/lib/db/finance";
 import { AR_MONTHS } from "@/lib/data";
-import { arDate, dayName, money } from "@/lib/format";
+import { arDate, dayKey, dayName, money } from "@/lib/format";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK, ICON_FILL } from "@/lib/tokens";
 
@@ -60,7 +60,7 @@ export default function PaymentsPage() {
                 <span style={{ color: C.accent }}>{p.sessions_used} / {p.sessions_total}</span>
               </div>
               <div style={{ fontSize: 12, color: C.sub2, margin: "2px 0 8px" }}>منذ {arDate(new Date(p.purchased_at), { day: false, year: true })} · متبقٍ {Math.max(0, p.sessions_total - p.sessions_used)} جلسات</div>
-              <Progress pct={(p.sessions_used / p.sessions_total) * 100} />
+              <Progress pct={p.sessions_total ? (p.sessions_used / p.sessions_total) * 100 : 0} />
             </div>
           ))}
         </div>
@@ -73,6 +73,7 @@ export default function PaymentsPage() {
         <div style={{ ...CARD, border: "none", position: "relative", borderRadius: 26, padding: "2px 16px" }}>
           {list.map((r, i) => {
             const d = new Date(r.created_at);
+            const dk = dayKey(d); // Damascus day, not the phone's time zone
             const title = r.appointments?.services?.name ?? r.invoice_items?.[0]?.label ?? "فاتورة";
             const more = (r.invoice_items?.length ?? 0) - 1;
             const byPkg = !!r.patient_package_id;
@@ -80,8 +81,8 @@ export default function PaymentsPage() {
             return (
               <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i ? `1px solid ${C.line}` : undefined }}>
                 <div style={{ width: 56, height: 52, borderRadius: 14, flexShrink: 0, background: ICON_FILL, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.1 }}>
-                  <span style={{ fontSize: 17, fontWeight: 700, color: C.accent }}>{d.getDate()}</span>
-                  <span style={{ fontSize: 10, color: C.sub2, whiteSpace: "nowrap" }}>{AR_MONTHS[d.getMonth()]}</span>
+                  <span style={{ fontSize: 17, fontWeight: 700, color: C.accent }}>{Number(dk.slice(8))}</span>
+                  <span style={{ fontSize: 10, color: C.sub2, whiteSpace: "nowrap" }}>{AR_MONTHS[Number(dk.slice(5, 7)) - 1]}</span>
                 </div>
                 <div style={{ flexGrow: 1, minWidth: 0, lineHeight: 1.4 }}>
                   <div style={{ fontSize: 14.5, fontWeight: 700 }}>{title}{more > 0 ? ` + ${more}` : ""}</div>

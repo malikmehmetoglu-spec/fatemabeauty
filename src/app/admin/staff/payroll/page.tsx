@@ -42,7 +42,7 @@ export default function PayrollPage() {
         <GhostButton icon="back" onClick={() => setPeriod(shiftMonth(period, 1))}>التالي</GhostButton>
       </>}>
       <TeamTabs />
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="صافي الرواتب المسجّلة" value={money(total)} sub={`${entries.length} موظفة في مسير ${monthLabel(period)}`} icon="wallet" />
         <Kpi label="مدفوعة" value={paid.length} sub={money(paid.reduce((n, p) => n + netPay(p), 0))} icon="check" />
         <Kpi label="غير مدفوعة" value={entries.length - paid.length} icon="clock" />

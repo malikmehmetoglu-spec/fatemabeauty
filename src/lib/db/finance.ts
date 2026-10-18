@@ -40,12 +40,34 @@ export function financeError(e: unknown) {
     ["paid more than total", "المبلغ المدفوع أكبر من المطلوب."],
     ["empty invoice", "أضيفي بنداً واحداً على الأقل."],
     ["a shift is already open", "هناك وردية مفتوحة بالفعل."],
-    ["no open shift", "لا توجد وردية مفتوحة."],
+    ["no open shift", "الصندوق مغلق — افتحي وردية من «الصندوق اليومي» قبل أي حركة نقدية."],
     ["bad amount", "المبلغ غير صحيح."],
+    ["bad quantity", "الكمية يجب أن تكون عدداً صحيحاً موجباً."],
     ["not allowed", "لا تملكين صلاحية هذه العملية."],
+    ["package does not cover this service", "الباقة المختارة لا تشمل أي خدمة في هذه الفاتورة."],
+    ["one package per invoice", "باقة واحدة فقط لكل فاتورة."],
+    ["custom lines need admin", "البنود اليدوية بسعر حر تحتاج حساب إدارة."],
+    ["unknown service", "الخدمة غير موجودة أو موقوفة."],
+    ["unknown package", "الباقة غير موجودة أو موقوفة."],
+    ["unknown patient", "ملف المراجعة غير موجود."],
+    ["unknown appointment", "الموعد غير موجود."],
+    ["appointment not billable", "لا يمكن إصدار فاتورة لموعد ملغى أو لم تحضر صاحبته."],
+    ["unknown invoice", "الفاتورة غير موجودة أو ملغاة."],
+    ["discount larger than subtotal", "الخصم أكبر من مجموع الفاتورة."],
+    ["cash or card only", "الدفعة اللاحقة نقداً أو بالبطاقة فقط."],
+    ["points payment not supported", "الدفع بالنقاط غير متاح بعد."],
+    ["bad payment method", "طريقة الدفع غير صحيحة."],
+    ["bad price", "السعر غير صحيح."],
+    ["bad item", "بند غير معروف في الفاتورة."],
+    ["void reason required", "اكتبي سبب الإلغاء."],
+    ["sold package already used", "لا يمكن إلغاء فاتورة باقة استُخدمت منها جلسات أو حُجزت عليها مواعيد."],
+    ["difference needs a reason", "يوجد فرق بين المعدود والمتوقع — اكتبي السبب قبل الإغلاق."],
+    ["shift closed", "هذا المصروف ضمن وردية مغلقة ولا يمكن تعديله أو حذفه (المالكة فقط)."],
+    ["cash_shifts_one_open", "هناك وردية مفتوحة بالفعل."],
+    ["Failed to fetch", "تعذّر الاتصال بالخادم — تحققي من الإنترنت وأعيدي المحاولة."],
   ];
   for (const [k, v] of map) if (m.includes(k)) return v.endsWith(": ") ? v + m.split(": ").slice(1).join(": ") : v;
-  return m;
+  return /[\u0600-\u06FF]/.test(m) ? m : "تعذّرت العملية، أعيدي المحاولة. (" + m + ")";
 }
 
 /* ---------- periods ---------- */
@@ -102,7 +124,8 @@ export async function searchPatients(q: string) {
 }
 
 export async function listPatientPackages(patientId: string) {
-  return rows(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).order("purchased_at", { ascending: false }));
+  // packages emptied by a voided sale have 0 sessions → hidden
+  return rows(await supabase.from("patient_packages").select("*, packages(name, service_key)").eq("patient_id", patientId).gt("sessions_total", 0).order("purchased_at", { ascending: false }));
 }
 
 /* ---------- cashier ---------- */
@@ -135,7 +158,8 @@ export async function createInvoice(a: InvoiceArgs) {
   const inv = must(await supabase.rpc("create_invoice", {
     p_patient: (a.patientId ?? null) as string,
     p_appointment: (a.appointmentId ?? null) as string,
-    p_items: a.lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, label: l.label, ...(l.kind === "custom" || l.kind === "service" ? { unit_price: l.unit_price } : {}) })),
+    // prices come from the DB; only a custom line (admin) carries its own price
+    p_items: a.lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, label: l.label, ...(l.kind === "custom" ? { unit_price: l.unit_price } : {}) })),
     p_discount: Math.max(0, Math.round(a.discount)),
     p_payments: a.payments.filter((p) => p.amount > 0 || p.method === "package"),
     p_patient_package: a.patientPackageId ?? undefined,
@@ -143,19 +167,19 @@ export async function createInvoice(a: InvoiceArgs) {
     p_due_on: a.dueOn ?? undefined,
     p_walk_in_name: a.walkInName ?? undefined,
   }));
-  ["invoices", "finance", "queue", "products", "patients", "appointments"].forEach(invalidate);
+  ["invoices", "finance", "queue", "products", "patients", "appointments", "commissions"].forEach(invalidate);
   return inv;
 }
 
 export async function payInvoice(id: string, amount: number, method: "cash" | "card") {
   const inv = must(await supabase.rpc("pay_invoice", { p_invoice: id, p_amount: Math.round(amount), p_method: method }));
-  invalidate("invoices"); invalidate("finance");
+  ["invoices", "finance", "patients", "commissions"].forEach(invalidate);
   return inv;
 }
 
-export async function voidInvoice(id: string, reason?: string) {
+export async function voidInvoice(id: string, reason: string) {
   must(await supabase.rpc("void_invoice", { p_invoice: id, p_reason: reason }));
-  invalidate("invoices"); invalidate("finance"); invalidate("products");
+  ["invoices", "finance", "products", "patients", "queue", "appointments", "commissions"].forEach(invalidate);
 }
 
 /* ---------- invoices ---------- */
@@ -166,6 +190,9 @@ export async function listInvoices(from: string, to: string) {
   return rows(await supabase.from("invoices").select(INV_SELECT).gte("created_at", from).lt("created_at", to).order("created_at", { ascending: false }));
 }
 export type InvoiceRow = Awaited<ReturnType<typeof listInvoices>>[number];
+export async function getInvoice(id: string) {
+  return must(await supabase.from("invoices").select(INV_SELECT).eq("id", id).single());
+}
 type Pay = { amount: number; method: PayMethod };
 
 /** Money actually received for an invoice (falls back to the total for invoices recorded without payment rows). */
@@ -209,15 +236,21 @@ export async function getOpenShift() {
 export async function listShifts(limit = 10) {
   return rows(await supabase.from("cash_shifts").select("*").order("opened_at", { ascending: false }).limit(limit));
 }
-/** Everything that went through the open shift: payments (all methods, from its start) and till expenses. */
+/**
+ * Everything that went through a shift: cash payments of the shift (shift_id), card / package payments taken while it was
+ * open (shown for information, outside the drawer), till expenses and cash refunds of invoices voided during the shift.
+ * expected = opening + cash − till expenses − refunds (computed on the server).
+ */
 export async function shiftActivity(shift: CashShift) {
   const end = shift.closed_at ?? new Date(Date.now() + 60_000).toISOString();
-  const [pays, exps, expected] = await Promise.all([
-    supabase.from("invoice_payments").select("*, invoices(no, walk_in_name, patients(name))").gte("paid_at", shift.opened_at).lt("paid_at", end).order("paid_at", { ascending: false }),
+  const [cashPays, otherPays, exps, refunds, expected] = await Promise.all([
+    supabase.from("invoice_payments").select("*, invoices(no, walk_in_name, patients(name))").eq("shift_id", shift.id).order("paid_at", { ascending: false }),
+    supabase.from("invoice_payments").select("*, invoices(no, walk_in_name, patients(name))").neq("method", "cash").gte("paid_at", shift.opened_at).lt("paid_at", end).order("paid_at", { ascending: false }),
     supabase.from("expenses").select("*").eq("shift_id", shift.id).order("created_at", { ascending: false }),
+    supabase.from("invoices").select("id, no, refund_cash, void_at, walk_in_name, patients(name)").eq("refund_shift_id", shift.id).order("void_at", { ascending: false }),
     shift.closed_at ? Promise.resolve({ data: shift.expected_cash ?? 0, error: null }) : supabase.rpc("cash_shift_expected", { p_shift: shift.id }),
   ]);
-  return { payments: rows(pays), expenses: rows(exps), expected: Number(must(expected) ?? 0) };
+  return { payments: [...rows(cashPays), ...rows(otherPays)], expenses: rows(exps), refunds: rows(refunds), expected: Number(must(expected) ?? 0) };
 }
 export async function openShift(opening: number) {
   const s = must(await supabase.rpc("open_cash_shift", { p_opening: Math.round(opening) }));
@@ -250,10 +283,22 @@ export async function deleteExpense(id: string) {
 
 /* ---------- reports ---------- */
 
-/** Rows for a finance report over [from, to). Everything else is computed on the page. */
+/**
+ * Rows for a finance report over [from, to): invoices issued in the period (sales), money received in the period
+ * (payment rows by paid_at, whatever the invoice date; voided invoices excluded) and expenses. Computed on the page.
+ */
 export async function financeData(r: { from: string; to: string; fromDay: string; toDay: string }) {
-  const [invs, exps] = await Promise.all([listInvoices(r.from, r.to), listExpenses(r.fromDay, r.toDay)]);
-  return { invoices: invs.filter((i) => !i.void), expenses: exps };
+  const [invs, exps, pays] = await Promise.all([
+    listInvoices(r.from, r.to), listExpenses(r.fromDay, r.toDay),
+    supabase.from("invoice_payments").select("amount, method, paid_at, invoices!inner(void)").eq("invoices.void", false).gte("paid_at", r.from).lt("paid_at", r.to),
+  ]);
+  return { invoices: invs.filter((i) => !i.void), expenses: exps, payments: rows(pays).map(({ amount, method, paid_at }) => ({ amount, method, paid_at })) };
+}
+export type ReceivedRow = { amount: number; method: PayMethod; paid_at: string };
+export function receivedByMethod(p: ReceivedRow[]) {
+  const out: Record<PayMethod, number> = { cash: 0, card: 0, package: 0, points: 0 };
+  p.forEach((x) => { out[x.method] += x.amount; });
+  return out;
 }
 
 /** Operational rows over [from, to): appointments (with service), new patients, reviews. */
@@ -279,7 +324,7 @@ export async function myInvoices(patientId: string) {
   return rows(await supabase.from("invoices").select("*, invoice_items(*), invoice_payments(*), appointments(services(name), staff(name))").eq("patient_id", patientId).eq("void", false).order("created_at", { ascending: false }));
 }
 export async function myPackages(patientId: string) {
-  return rows(await supabase.from("patient_packages").select("*, packages(name)").eq("patient_id", patientId).order("purchased_at", { ascending: false }));
+  return rows(await supabase.from("patient_packages").select("*, packages(name)").eq("patient_id", patientId).gt("sessions_total", 0).order("purchased_at", { ascending: false }));
 }
 
 /* ---------- helpers ---------- */

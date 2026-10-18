@@ -12,6 +12,7 @@ import { initials } from "@/lib/data";
 import { arDate, clock } from "@/lib/format";
 import { ROLE_LABEL, useSession } from "@/lib/supabase/session";
 import { C, DARK, ICON_FILL, SELECTED, SH } from "@/lib/tokens";
+import css from "../calendar/appts.module.css";
 
 export default function MyDayPage() {
   useLiveAppointments("my-day");
@@ -42,9 +43,9 @@ export default function MyDayPage() {
         <EmptyState icon="cal" title="لا مواعيد لكِ اليوم" text="تظهر هنا المواعيد المسندة إليكِ اليوم بالترتيب، مع الجلسة الحالية والمراجِعة التالية."
           action={<Link href={R.W_Calendar} style={{ color: C.accent, fontWeight: 700 }}>فتح التقويم</Link>} />
       ) : (
-        <div style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: 0 }}>
+        <div className={css.split} style={{ gap: 18, flexGrow: 1, minHeight: 0, alignItems: "stretch" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1.15, minWidth: 0 }}>
-            <div style={{ display: "flex", gap: 14 }}>
+            <div className="adm-row">
               {[["مواعيدي اليوم", mine.length], ["انتهت", done], ["متبقية", left.length]].map(([l, v]) => (
                 <div key={l} style={{ flex: 1, borderRadius: 22, padding: "14px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
                   <div style={{ fontSize: 13, color: C.sub2 }}>{l}</div>
@@ -58,7 +59,7 @@ export default function MyDayPage() {
                 <div style={{ fontSize: 13, color: C.onDark }}>الجلسة الحالية · منذ {clock(current.started_at ?? current.starts_at)}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{personName(current)}</div>
                 <div style={{ fontSize: 14, color: "#F2E6F4" }}>{current.service?.name} · {current.room?.name ?? "بدون غرفة"} · حتى {clock(endsAt(current))}</div>
-                <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
                   <SubmitButton busy={busy === current.id + "done"} onClick={() => go(current, "done")} style={{ background: C.white, color: C.accent }}>إنهاء الجلسة</SubmitButton>
                   <Link href={`${R.W_SessionNote}?appointment=${current.id}${current.patient_id ? `&patient=${current.patient_id}` : ""}`} style={{ height: 50, borderRadius: 25, padding: "0 20px", border: "1px solid rgba(255,255,255,0.4)", color: C.white, display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
                     <Icon name="clip" color="#FFFFFF" size={17} />ملاحظات الجلسة

@@ -1,5 +1,6 @@
 "use client";
 
+import ac from "../../adminPages.module.css";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -65,19 +66,19 @@ function SessionNote() {
   return shell(
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
       {allergies.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 18, background: "linear-gradient(90deg,#F4E6F8,#FAF3FB)", border: "1px solid #DEC6E8" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderRadius: 18, background: "linear-gradient(90deg,#F4E6F8,#FAF3FB)", border: "1px solid #DEC6E8" }}>
           <span style={{ width: 32, height: 32, borderRadius: 16, background: C.danger, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="alert" size={17} color={C.white} stroke={2} /></span>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: C.danger }}>تنبيه حساسية: {allergies.map((a) => a.name).join("، ")}</div>
           <div style={{ fontSize: 12.5, color: C.sub }}>تجنّبي المستحضرات التي تحتوي عليها.</div>
         </div>
       )}
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <Panel title="ملاحظة الجلسة" style={{ flex: 1, minWidth: 480 }} right={
+      <div className={ac.split}>
+        <Panel title="ملاحظة الجلسة" className={ac.grow} right={
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, color: C.sub2 }}>قوالب سريعة:</span>
             {TEMPLATES.map(([t, v]) => <button key={t} type="button" onClick={() => setF({ ...f, ...v })} style={{ ...chip(false, 32), fontSize: 12, padding: "0 10px" }}>{t}</button>)}
           </div>}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className={ac.two}>
             {FIELDS.map(([k, label, ph]) => (
               <div key={k} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, gridColumn: k === "plan" ? "1 / -1" : undefined }}>
                 <label htmlFor={k} style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>{label}</label>
@@ -86,13 +87,13 @@ function SessionNote() {
             ))}
           </div>
           {err && <ErrorNote style={{ marginTop: 12 }}>{err}</ErrorNote>}
-          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
             <SubmitButton onClick={save} busy={busy} disabled={empty}>حفظ الملاحظة</SubmitButton>
             <Link href={fileHref(R.W_Prescription, "patient", p.id)} style={outlineBtn(50)}><Icon name="pill" size={16} color={C.accent} />كتابة وصفة</Link>
           </div>
         </Panel>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, width: 320, maxWidth: "100%" }}>
+        <div className={ac.side} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Panel>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Initials name={p.name} size={44} />

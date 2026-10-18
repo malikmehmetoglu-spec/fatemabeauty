@@ -32,15 +32,15 @@ export async function listPatients(): Promise<PatientRow[]> {
   const [pats, conds, pkgs, appts, inv] = await Promise.all([
     supabase.from("patients").select("*").order("created_at", { ascending: false }),
     supabase.from("patient_conditions").select("patient_id, kind, name"),
-    supabase.from("patient_packages").select("patient_id, sessions_total, sessions_used, packages(name)"),
+    supabase.from("patient_packages").select("patient_id, sessions_total, sessions_used, packages(name)").gt("sessions_total", 0),
     supabase.from("appointments").select("patient_id, starts_at").eq("status", "done").not("patient_id", "is", null),
-    supabase.from("invoices").select("patient_id, total").eq("paid", false).not("patient_id", "is", null),
+    supabase.from("invoices").select("patient_id, total, amount_paid").eq("paid", false).eq("void", false).not("patient_id", "is", null),
   ]);
   const rows = must(pats) ?? [];
   const last = new Map<string, string>();
   for (const a of must(appts) ?? []) if (a.patient_id && (!last.has(a.patient_id) || a.starts_at > last.get(a.patient_id)!)) last.set(a.patient_id, a.starts_at);
   const due = new Map<string, number>();
-  for (const i of must(inv) ?? []) if (i.patient_id) due.set(i.patient_id, (due.get(i.patient_id) ?? 0) + i.total);
+  for (const i of must(inv) ?? []) if (i.patient_id) due.set(i.patient_id, (due.get(i.patient_id) ?? 0) + Math.max(0, i.total - i.amount_paid));
   const cs = must(conds) ?? [], ps = must(pkgs) ?? [];
   return rows.map((p) => ({
     ...p,

@@ -1,0 +1,13 @@
+/* Staff login: two panes on desktop; the illustration pane hides and the form fills the screen below 1100px. */
+.root { min-width: 0 !important; }
+@media (max-width: 1100px) {
+  .root { justify-content: center; align-items: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
+  .form { width: 100% !important; flex-shrink: 1 !important; }
+  .art { display: none !important; }
+}
+@media (max-width: 560px) {
+  .card { padding: 28px 20px 24px !important; border-radius: 30px !important; }
+  .card h1 { font-size: 25px !important; }
+  .roles { grid-template-columns: repeat(2, 1fr) !important; }
+}
+.card { width: 470px; max-width: 100%; }

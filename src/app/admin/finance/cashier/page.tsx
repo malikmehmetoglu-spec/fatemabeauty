@@ -13,14 +13,15 @@ import { EmptyState, ErrorNote, Icon, Loading, NumberInput, TextInput } from "@/
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import {
-  createInvoice, financeError, getOpenShift, getPolicies, listCashierQueue, listInvoices, listPatientPackages, listSellables, searchPatients,
-  customerName, type CartLine, type CashierAppt, type Invoice, type PayMethod,
+  createInvoice, financeError, getInvoice, getOpenShift, getPolicies, listCashierQueue, listInvoices, listPatientPackages, listSellables, searchPatients,
+  customerName, type CartLine, type CashierAppt, type InvoiceRow, type PayMethod,
 } from "@/lib/db/finance";
 import { initials } from "@/lib/data";
 import { arDate, clock, dayRange, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
-import { Amount, LATIN, OFF, PANEL } from "../parts";
+import { Amount, LATIN, OFF, PANEL, Receipt } from "../parts";
+import css from "../finance.module.css";
 
 type Who =
   | { type: "appt"; appt: CashierAppt }
@@ -50,6 +51,8 @@ export default function Page() {
   const [who, setWho] = useState<Who | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [pct, setPct] = useState(0);
+  const [discMode, setDiscMode] = useState<"pct" | "amt">("pct");
+  const [discAmt, setDiscAmt] = useState("");
   const [mode, setMode] = useState<Mode>("cash");
   const [splitCash, setSplitCash] = useState("");
   const [paidNow, setPaidNow] = useState("");
@@ -58,14 +61,15 @@ export default function Page() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [issued, setIssued] = useState<Invoice | null>(null);
+  const [issued, setIssued] = useState<InvoiceRow | null>(null);
 
   const patientId = who?.type === "appt" ? who.appt.patient_id : who?.type === "patient" ? who.id : null;
   const pkgs = useQuery(["patients", "packages", patientId], () => listPatientPackages(patientId as string), { enabled: !!patientId });
   const usable = (pkgs.data ?? []).filter((p) => p.sessions_used < p.sessions_total);
 
+  const stockOf = (key?: string) => Number(sellables.data?.products.find((x) => x.key === key)?.stock ?? 0);
   const reset = (w: Who | null, l: CartLine[] = []) => {
-    setWho(w); setLines(l); setPct(0); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
+    setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
   };
   const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: a.services?.name ?? "جلسة", unit_price: a.price || a.services?.price || 0 }]);
 
@@ -74,16 +78,19 @@ export default function Page() {
   const coveredIdx = mode === "package" && pkg ? lines.findIndex((l) => l.kind === "service" && l.ref === pkg.packages?.service_key) : -1;
   const priced = lines.map((l, i) => (i === coveredIdx ? { ...l, unit_price: 0, qty: 1 } : l));
   const sub = priced.reduce((s, l) => s + l.qty * l.unit_price, 0);
-  const dAmt = Math.round((sub * pct) / 100);
+  // discount: a % button or a fixed amount; the server allows up to round(subtotal × policy %) without approval
+  const dAmt = discMode === "pct" ? Math.round((sub * pct) / 100) : Math.min(sub, Math.max(0, Math.round(Number(discAmt) || 0)));
+  const dPct = sub ? Math.round((dAmt / sub) * 1000) / 10 : 0;
   const total = sub - dAmt;
   const maxPct = policies.data?.maxDiscount ?? 0;
-  const needApproval = pct > maxPct;
+  const needApproval = dAmt > Math.round((sub * maxPct) / 100);
   const blockedByApproval = needApproval && !isAdmin;
 
   const payments = useMemo((): { method: PayMethod; amount: number }[] => {
     if (mode === "cash" || mode === "card") return [{ method: mode, amount: total }];
     if (mode === "split") { const c = Math.min(total, Number(splitCash) || 0); return [{ method: "cash", amount: c }, { method: "card", amount: total - c }]; }
     if (mode === "package") return [{ method: "package", amount: 0 }, { method: "cash", amount: total }];
+    // deferred: paid now in cash, the rest stays receivable
     return [{ method: "cash", amount: Math.min(total, Number(paidNow) || 0) }];
   }, [mode, total, splitCash, paidNow]);
 
@@ -94,6 +101,10 @@ export default function Page() {
   if (mode === "deferred" && !patientId) problems.push("الدفع الآجل يحتاج ملف مراجعة");
   if (lines.some((l) => l.kind === "package") && !patientId) problems.push("بيع باقة يحتاج ملف مراجعة");
   if (blockedByApproval) problems.push("الخصم يحتاج موافقة الإدارة");
+  if (discMode === "amt" && Number(discAmt) > sub) problems.push("الخصم أكبر من المجموع");
+  if (mode === "split" && (Number(splitCash) || 0) > total) problems.push("المبلغ النقدي أكبر من المطلوب");
+  if (mode === "deferred" && (Number(paidNow) || 0) > total) problems.push("المدفوع أكبر من المطلوب");
+  if (!shift.loading && !shift.data && payments.some((p) => p.method === "cash" && p.amount > 0)) problems.push("الصندوق مغلق — افتحي وردية من «الصندوق اليومي» أو اختاري البطاقة");
 
   const issue = async () => {
     if (!who || problems.length || busy) return;
@@ -103,7 +114,8 @@ export default function Page() {
         patientId, appointmentId: who.type === "appt" ? who.appt.id : null, walkInName: who.type === "walkin" ? who.name : null,
         lines: priced, discount: dAmt, payments, patientPackageId: mode === "package" ? pkgId : null, note, dueOn: mode === "deferred" && dueOn ? dueOn : null,
       });
-      setIssued(inv);
+      // the invoice exists now: never let a failed re-read look like a failed issue (it could be issued twice)
+      if (inv) setIssued(await getInvoice(inv.id).catch(() => ({ ...inv, patients: null, invoice_items: [], invoice_payments: [], appointments: null }) as InvoiceRow));
     } catch (e) { setErr(financeError(e)); } finally { setBusy(false); }
   };
 
@@ -114,16 +126,16 @@ export default function Page() {
   const whoName = who ? (who.type === "appt" ? customerName({ patients: who.appt.patients, walk_in_name: who.appt.walk_in_name }) : who.name) : "";
   const whoPhone = who?.type === "appt" ? who.appt.patients?.phone : who?.type === "patient" ? who.phone : null;
   const nowLabel = `${arDate(new Date())} · ${clock()}`;
-  const shiftLabel = shift.data ? `الصندوق مفتوح منذ ${clock(shift.data.opened_at)}` : "الصندوق مغلق — النقد لن يُنسب إلى وردية";
+  const shiftLabel = shift.data ? `الصندوق مفتوح منذ ${clock(shift.data.opened_at)}` : "الصندوق مغلق — افتحيه قبل قبض النقد";
 
   return (
     <AdminShell active="المالية" title="الكاشير" subtitle={`${nowLabel} · ${shiftLabel}`} actions={
       <Link href={R.W_CashBox} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
         <Icon name="cash" color={C.accent} size={17} stroke={1.9} />الصندوق اليومي
       </Link>}>
-      <div style={{ display: "flex", gap: 16, alignItems: "stretch", flex: 1, minHeight: 0 }}>
+      <div className={css.cashier}>
         {/* ---------- left: who pays ---------- */}
-        <div style={{ ...PANEL, width: 310, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={css.cWho} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>جلسات بانتظار الدفع</div>
             {!!ready.length && <span style={{ height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "#FBEAF1", color: C.danger, display: "inline-flex", alignItems: "center" }}>{ready.length} جاهزة</span>}
@@ -146,7 +158,7 @@ export default function Page() {
         </div>
 
         {/* ---------- middle: invoice ---------- */}
-        <div style={{ ...PANEL, flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className={css.cBill} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
           {!who ? (
             <EmptyState icon="receipt" title="اختاري من ستدفع" style={{ boxShadow: "none", border: "none", margin: "auto" }}
               text="اختاري جلسة منتهية من القائمة، أو ابحثي عن ملف مراجعة، أو سجّلي بيعاً لزبونة بلا ملف. تُضاف الخدمة تلقائياً ويمكنكِ إضافة منتجات وباقات." />
@@ -186,7 +198,7 @@ export default function Page() {
                     {l.kind === "service" ? <span style={LATIN}>{l.qty}</span> : <>
                       <QtyBtn icon="minus" onClick={() => setLines(lines.map((x, j) => (j === i ? { ...x, qty: Math.max(1, x.qty - 1) } : x)))} />
                       <span style={{ ...LATIN, minWidth: 18, textAlign: "center" }}>{l.qty}</span>
-                      <QtyBtn icon="plus" onClick={() => setLines(lines.map((x, j) => (j === i ? { ...x, qty: x.qty + 1 } : x)))} />
+                      <QtyBtn icon="plus" disabled={l.kind === "product" && l.qty >= stockOf(l.ref)} onClick={() => setLines(lines.map((x, j) => (j === i ? { ...x, qty: x.qty + 1 } : x)))} />
                     </>}
                   </div>
                   <div style={{ flex: 1.3, textAlign: "left" }}><Amount n={l.qty * l.unit_price} /></div>
@@ -196,6 +208,7 @@ export default function Page() {
             </div>
             <ItemSearch sellables={sellables.data} onAdd={(l) => {
               const j = lines.findIndex((x) => x.kind === l.kind && x.ref === l.ref && l.kind !== "service");
+              if (j >= 0 && l.kind === "product" && lines[j].qty >= stockOf(l.ref)) { setErr("لا توجد كمية إضافية من هذا المنتج في المخزون."); return; }
               setLines(j >= 0 ? lines.map((x, k) => (k === j ? { ...x, qty: x.qty + 1 } : x)) : [...lines, l]);
             }} />
 
@@ -205,8 +218,10 @@ export default function Page() {
                 <span style={{ fontSize: 12, color: C.sub2 }}>بدون موافقة حتى {maxPct}%</span>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                {PCTS.map((p) => <button key={p} type="button" onClick={() => setPct(p)} style={{ height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(pct === p ? SELECTED : OFF) }}>{p === 0 ? "بدون خصم" : `${p}%`}</button>)}
+                {PCTS.map((p) => <button key={p} type="button" onClick={() => { setDiscMode("pct"); setPct(p); }} style={{ height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(discMode === "pct" && pct === p ? SELECTED : OFF) }}>{p === 0 ? "بدون خصم" : `${p}%`}</button>)}
+                <button type="button" onClick={() => setDiscMode("amt")} style={{ height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(discMode === "amt" ? SELECTED : OFF) }}>مبلغ محدد</button>
               </div>
+              {discMode === "amt" && <NumberInput label="قيمة الخصم" value={discAmt} onChange={setDiscAmt} suffix="ل.س" style={{ marginTop: 10 }} hint={sub ? `= ${dPct}% من المجموع · بدون موافقة حتى ${money(Math.round((sub * maxPct) / 100))}` : undefined} />}
               {needApproval ? (
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, borderRadius: 16, padding: "10px 12px", background: "#FCF1DE", color: "#7A4F10", fontSize: 12.5, fontWeight: 600 }}>
                   <Icon name="lock" color="#B07A1E" size={18} />
@@ -222,12 +237,12 @@ export default function Page() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>طريقة الدفع</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              <div className={css.modes}>
                 {MODES.map((m) => {
                   const on = mode === m.k;
                   const dis = m.k === "package" ? !usable.length : m.k === "deferred" ? !patientId : false;
                   return (
-                    <button key={m.k} type="button" disabled={dis} onClick={() => setMode(m.k)} style={{ width: "calc(33.33% - 7px)", height: 46, borderRadius: 23, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, color: C.ink, opacity: dis ? 0.45 : 1, ...(on ? SELECTED : OFF) }}>
+                    <button key={m.k} type="button" disabled={dis} onClick={() => setMode(m.k)} style={{ height: 46, borderRadius: 23, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, color: C.ink, opacity: dis ? 0.45 : 1, ...(on ? SELECTED : OFF) }}>
                       <span style={{ width: 14, height: 14, borderRadius: 7, flexShrink: 0, ...(on ? { background: C.accent, border: "3px solid #F1E3F6", boxShadow: "0 0 0 1.5px #7B4687" } : { border: "1.5px solid #D1C0D5", background: C.white }) }} />
                       <span style={{ flex: 1, textAlign: "right", fontSize: 14, fontWeight: 700 }}>{m.label}</span>
                     </button>
@@ -248,7 +263,7 @@ export default function Page() {
                 </div>
               )}
               {mode === "deferred" && (
-                <div style={{ display: "flex", gap: 10 }}>
+                <div className={css.pair}>
                   <NumberInput label="المدفوع الآن (نقداً)" value={paidNow} onChange={setPaidNow} suffix="ل.س" style={{ flex: 1 }} hint={`المتبقي ذمة: ${money(Math.max(0, total - (Number(paidNow) || 0)))}`} />
                   <TextInput label="تاريخ الاستحقاق" type="date" dir="ltr" value={dueOn} onChange={setDueOn} style={{ flex: 1 }} />
                 </div>
@@ -265,11 +280,11 @@ export default function Page() {
         </div>
 
         {/* ---------- right: totals ---------- */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, width: 310, flexShrink: 0 }}>
+        <div className={css.cSum} style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
           <div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
             <Row dark label="المجموع الفرعي" value={`${money(sub, false)} ل.س`} />
-            <Row dark label={`الخصم (${pct}%)`} value={`− ${money(dAmt, false)} ل.س`} />
+            <Row dark label={`الخصم (${dPct}%)`} value={`− ${money(dAmt, false)} ل.س`} />
             {mode === "deferred" && <Row dark label="يبقى ذمة" value={`${money(Math.max(0, total - (Number(paidNow) || 0)), false)} ل.س`} />}
             <div style={{ position: "relative", height: 1, background: "rgba(255,255,255,0.18)", margin: "12px 0" }} />
             <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>المطلوب</div>
@@ -285,7 +300,7 @@ export default function Page() {
             <SumRow label="البنود" value={priced.length ? `${priced.reduce((s, l) => s + l.qty, 0)} بند` : "—"} />
             {who?.type === "appt" && <SumRow label="الأخصائية" value={who.appt.staff?.name ?? "—"} />}
             <SumRow label="طريقة الدفع" value={MODES.find((m) => m.k === mode)?.label} />
-            <SumRow label="الخصم" value={`${pct}%`} />
+            <SumRow label="الخصم" value={dAmt ? `${money(dAmt)} (${dPct}%)` : "—"} />
           </div>
 
           {prev && (
@@ -300,6 +315,7 @@ export default function Page() {
           )}
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+            {issued && <Receipt inv={issued} issuer={staff?.name} />}
             {err && <ErrorNote>{err}</ErrorNote>}
             {issued ? (
               <div style={{ borderRadius: 18, padding: "12px 14px", background: "#E6F4EC", color: C.okDeep, fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
@@ -335,8 +351,8 @@ function Row({ label, value, dark }: { label: string; value: string; dark?: bool
 function SumRow({ label, value }: { label: string; value: React.ReactNode }) {
   return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: `1px solid ${C.line}`, fontSize: 13 }}><span style={{ color: C.sub2 }}>{label}</span><span style={{ fontWeight: 700 }}>{value}</span></div>;
 }
-function QtyBtn({ icon, onClick }: { icon: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} style={{ width: 26, height: 26, borderRadius: 13, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={icon} color={C.accent} size={13} stroke={2.2} /></button>;
+function QtyBtn({ icon, onClick, disabled }: { icon: string; onClick: () => void; disabled?: boolean }) {
+  return <button type="button" onClick={onClick} disabled={disabled} style={{ opacity: disabled ? 0.4 : 1, width: 26, height: 26, borderRadius: 13, border: "1px solid #EADCF0", background: C.white, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={icon} color={C.accent} size={13} stroke={2.2} /></button>;
 }
 
 function ApptRow({ a, on, onClick }: { a: CashierAppt; on: boolean; onClick: () => void }) {

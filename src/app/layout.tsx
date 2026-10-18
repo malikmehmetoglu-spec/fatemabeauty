@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorker } from "@/components/pwa/ServiceWorker";
 import { InstallPopup } from "@/components/pwa/InstallPopup";
 import { InstallTracker } from "@/components/pwa/InstallTracker";
+import { ManifestSwitch } from "@/components/pwa/ManifestSwitch";
 
 const messiri = localFont({
   src: [
@@ -44,7 +45,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={`${messiri.variable} ${rubik.variable}`}>
-      <body>{children}<ServiceWorker /><InstallPopup /><InstallTracker /></body>
+      <body>{children}<ServiceWorker /><InstallPopup /><InstallTracker /><ManifestSwitch /></body>
     </html>
   );
 }

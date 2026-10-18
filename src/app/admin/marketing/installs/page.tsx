@@ -4,6 +4,7 @@
  * تثبيت التطبيق — who installed the patient app (web install, Google Play, App Store).
  * Live data from Supabase `app_installs` (written by the installed app on every launch).
  */
+import ac from "../../adminPages.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Avatar, Card, Chip, DataTable, Icon, Kpi, SectionTitle, Tag } from "@/components/ui";
@@ -70,14 +71,14 @@ export default function InstallsPage() {
 
   return (
     <AdminShell active="تثبيت التطبيق" title="تثبيت التطبيق" subtitle="من ثبّتت تطبيق المراجِعة، ومن أين، ومتى فتحته آخر مرة">
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="إجمالي التثبيتات" value={stats.total} sub={`${stats.week} هذا الأسبوع`} icon="download" />
         <Kpi label="مراجِعات ثبّتن التطبيق" value={`${pct}%`} sub={`${stats.linked} من ${patientsCount} مراجِعة`} icon="users" />
         <Kpi label="فتحن التطبيق آخر 7 أيام" value={stats.active7} sub="مستخدمات نشطات" icon="refresh" />
         <Kpi label="دون تسجيل دخول" value={stats.total - stats.linked} sub="ثبّتن ولم يدخلن بعد" icon="user" />
       </div>
 
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className={ac.stack} style={{ display: "flex", gap: 14 }}>
         <Card radius={26} padding="18px 20px" style={{ flex: 2, minWidth: 0 }}>
           <SectionTitle>التثبيتات آخر 30 يوماً</SectionTitle>
           <div role="img" aria-label="عدد التثبيتات يومياً" style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 150, marginTop: 16 }}>

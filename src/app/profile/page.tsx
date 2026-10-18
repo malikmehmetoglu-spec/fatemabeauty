@@ -48,7 +48,11 @@ export default function ProfilePage() {
     ];
     if (!e && conds.length) await supabase.from("patient_conditions").insert(conds);
     setBusy(false);
-    if (e) setError("تعذّر الحفظ. حاولي مرة أخرى."); else router.replace(R.Main);
+    if (e) { setError("تعذّر الحفظ. حاولي مرة أخرى."); return; }
+    // Came here from a sign-in started elsewhere (e.g. checkout): continue there.
+    let next: string | null = null;
+    try { next = sessionStorage.getItem("fb.after_login"); sessionStorage.removeItem("fb.after_login"); } catch {}
+    router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : R.Main);
   }
   const [answers, setAnswers] = useState<Record<string, string>>({ preg: "no", iso: "no" });
   const [consent, setConsent] = useState(true);

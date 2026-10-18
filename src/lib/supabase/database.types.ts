@@ -585,10 +585,14 @@ export type Database = {
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
+          refund_cash: number
+          refund_shift_id: string | null
           shift_id: string | null
           subtotal: number
           total: number
           void: boolean
+          void_at: string | null
+          void_by: string | null
           walk_in_name: string | null
         }
         Insert: {
@@ -606,10 +610,14 @@ export type Database = {
           paid?: boolean
           patient_id?: string | null
           patient_package_id?: string | null
+          refund_cash?: number
+          refund_shift_id?: string | null
           shift_id?: string | null
           subtotal?: number
           total?: number
           void?: boolean
+          void_at?: string | null
+          void_by?: string | null
           walk_in_name?: string | null
         }
         Update: {
@@ -627,10 +635,14 @@ export type Database = {
           paid?: boolean
           patient_id?: string | null
           patient_package_id?: string | null
+          refund_cash?: number
+          refund_shift_id?: string | null
           shift_id?: string | null
           subtotal?: number
           total?: number
           void?: boolean
+          void_at?: string | null
+          void_by?: string | null
           walk_in_name?: string | null
         }
         Relationships: [
@@ -653,6 +665,13 @@ export type Database = {
             columns: ["patient_package_id"]
             isOneToOne: false
             referencedRelation: "patient_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_refund_shift_id_fkey"
+            columns: ["refund_shift_id"]
+            isOneToOne: false
+            referencedRelation: "cash_shifts"
             referencedColumns: ["id"]
           },
           {
@@ -906,6 +925,7 @@ export type Database = {
           patient_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           total: number
+          updated_at: string
         }
         Insert: {
           address?: string | null
@@ -916,6 +936,7 @@ export type Database = {
           patient_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
+          updated_at?: string
         }
         Update: {
           address?: string | null
@@ -926,6 +947,7 @@ export type Database = {
           patient_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1007,6 +1029,7 @@ export type Database = {
       patient_packages: {
         Row: {
           id: string
+          invoice_id: string | null
           package_id: string
           patient_id: string
           price_paid: number
@@ -1016,6 +1039,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          invoice_id?: string | null
           package_id: string
           patient_id: string
           price_paid?: number
@@ -1025,6 +1049,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          invoice_id?: string | null
           package_id?: string
           patient_id?: string
           price_paid?: number
@@ -1033,6 +1058,13 @@ export type Database = {
           sessions_used?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "patient_packages_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patient_packages_package_id_fkey"
             columns: ["package_id"]
@@ -1627,6 +1659,39 @@ export type Database = {
           },
         ]
       }
+      stock_batch_takes: {
+        Row: {
+          batch_id: string
+          movement_id: number
+          qty: number
+        }
+        Insert: {
+          batch_id: string
+          movement_id: number
+          qty: number
+        }
+        Update: {
+          batch_id?: string
+          movement_id?: number
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_batch_takes_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "stock_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_batch_takes_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_batches: {
         Row: {
           created_by: string | null
@@ -1636,6 +1701,7 @@ export type Database = {
           qty_left: number
           qty_received: number
           received_at: string
+          source: string
           supplier: string | null
           unit_cost: number | null
         }
@@ -1647,6 +1713,7 @@ export type Database = {
           qty_left: number
           qty_received: number
           received_at?: string
+          source?: string
           supplier?: string | null
           unit_cost?: number | null
         }
@@ -1658,6 +1725,7 @@ export type Database = {
           qty_left?: number
           qty_received?: number
           received_at?: string
+          source?: string
           supplier?: string | null
           unit_cost?: number | null
         }
@@ -1966,10 +2034,14 @@ export type Database = {
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
+          refund_cash: number
+          refund_shift_id: string | null
           shift_id: string | null
           subtotal: number
           total: number
           void: boolean
+          void_at: string | null
+          void_by: string | null
           walk_in_name: string | null
         }
         SetofOptions: {
@@ -2080,10 +2152,14 @@ export type Database = {
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
+          refund_cash: number
+          refund_shift_id: string | null
           shift_id: string | null
           subtotal: number
           total: number
           void: boolean
+          void_at: string | null
+          void_by: string | null
           walk_in_name: string | null
         }
         SetofOptions: {
@@ -2104,6 +2180,7 @@ export type Database = {
           patient_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           total: number
+          updated_at: string
         }
         SetofOptions: {
           from: "*"
@@ -2122,6 +2199,37 @@ export type Database = {
         }
         Returns: undefined
       }
+      store_products: {
+        Args: { p_keys?: string[] }
+        Returns: {
+          active: boolean
+          category: string
+          cost: number | null
+          created_at: string
+          description: string
+          image_path: string | null
+          key: string
+          kind: string
+          min_stock: number
+          name: string
+          price: number | null
+          recommended: boolean
+          show_in_store: boolean
+          size: string
+          sku: string | null
+          sort: number
+          stock: number
+          unit: string
+          updated_at: string
+          usage: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       today_queue: {
         Args: never
         Returns: {
@@ -2138,6 +2246,15 @@ export type Database = {
       }
       void_invoice: {
         Args: { p_invoice: string; p_reason?: string }
+        Returns: undefined
+      }
+      waste_stock: {
+        Args: {
+          p_batch?: string
+          p_note?: string
+          p_product: string
+          p_qty: number
+        }
         Returns: undefined
       }
     }

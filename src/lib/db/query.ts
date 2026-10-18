@@ -57,6 +57,8 @@ export function useQuery<T>(key: unknown[], fetcher: () => Promise<T>, opts: { e
     error: e?.error,
     loading: enabled && (!e || (e.data === undefined && !e.error)),
     reload: () => { cache.delete(id); return run(); },
+    /** Re-fetches in the background, keeping the current data on screen until the new data arrives. */
+    refresh: run,
   };
 }
 

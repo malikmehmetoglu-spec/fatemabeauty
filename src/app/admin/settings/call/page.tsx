@@ -1,6 +1,7 @@
 "use client";
 
 /** W_CallSettings.dc.html — إعدادات النداء والشاشة. */
+import ac from "../../adminPages.module.css";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -88,8 +89,8 @@ export default function Page() {
       }
     >
       {err && <ErrorNote>{err}</ErrorNote>}
-      <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0", flex: 1 }}>
+      <div className={ac.split} style={{ alignItems: "stretch", flex: 1 }}>
+        <div className={ac.grow} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
@@ -175,7 +176,7 @@ export default function Page() {
               <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0", flex: 1 }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>سرعة النطق</div>
-                  <div style={{ display: "flex", gap: 7 }}>
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                     {[["هادئة", 0.85], ["عادية", 1]].map(([name, r]) => (
                       <button key={name} type="button" onClick={() => set({ rate: r as number })} style={css(ch((s.rate ?? 0.9) < 0.95 ? r === 0.85 : r === 1, 34), "button")}>{name}</button>
                     ))}
@@ -183,7 +184,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", minHeight: "0", flex: 1.3 }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>يُشغَّل على</div>
-                  <div style={{ display: "flex", gap: 7 }}>
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                     <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, boxSizing: "content-box" }}>شاشة الصالة</span>
                     <span style={{ height: 34, padding: "0 14px", borderRadius: 17, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>سماعة الاستقبال</span>
                   </div>
@@ -277,8 +278,8 @@ export default function Page() {
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: "0", minHeight: "0", width: 470, flexShrink: 0 }}>
-          <div style={{ width: 470, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={ac.side} style={{ ["--side" as string]: "470px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ borderRadius: 22, padding: 8, background: "#281B2B", boxShadow: "0 22px 44px rgba(53,33,61,0.35)" }}>
               <div style={{ height: 254, borderRadius: 15, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />

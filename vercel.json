@@ -16,6 +16,27 @@
           "value": "/"
         }
       ]
+    },
+    {
+      "source": "/(.*).webmanifest",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/manifest.webmanifest",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.fatema.beauty"
+        }
+      ],
+      "destination": "/admin.webmanifest"
     }
   ]
 }

@@ -28,7 +28,7 @@ export default function OffersPage() {
     <AdminShell active="التسويق والولاء" title="العروض وأكواد الخصم" subtitle="العروض الموسمية وأكواد الخصم ومرات استخدامها"
       actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>عرض جديد</GhostButton>}>
       <MarketingTabs active={R.W_Offers} />
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="العروض والأكواد" value={list.length} sub={`${live.length} فعّال الآن`} icon="percent" />
         <Kpi label="مرات الاستخدام" value={uses} sub="مجموع استخدام كل الأكواد" icon="calcheck" />
         <Link href={R.W_Services} style={{ flex: 1, minWidth: 0, borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px dashed #D8BFDE", display: "flex", alignItems: "center", gap: 12, color: C.accent }}>

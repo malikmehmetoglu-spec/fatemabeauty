@@ -57,7 +57,9 @@ export default function DashboardPage() {
     return { name: r.name, pct: openMin ? Math.min(100, Math.round((booked / openMin) * 100)) : 0 };
   });
 
-  const firstH = h ? Math.floor(toMin(h.from) / 60) : 10, lastH = h ? Math.ceil(toMin(h.to) / 60) : 18;
+  // opening hours, widened to include any booking/walk-in outside them so the bars always add up to the day's total
+  const apptH = all.map((a) => Math.floor(toMin(timeOf(a)) / 60));
+  const firstH = Math.min(h ? Math.floor(toMin(h.from) / 60) : 10, ...apptH), lastH = Math.max(h ? Math.ceil(toMin(h.to) / 60) : 18, ...apptH.map((x) => x + 1));
   const hourBars = Array.from({ length: Math.max(0, lastH - firstH) }, (_, i) => {
     const hr = firstH + i;
     const n = all.filter((a) => Math.floor(toMin(timeOf(a)) / 60) === hr).length;

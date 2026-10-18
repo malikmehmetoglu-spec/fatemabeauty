@@ -27,8 +27,10 @@ export default function OtpPage() {
     setBusy(false);
     if (r.error) { setError(r.error); return; }
     let next: string | null = null;
-    try { next = sessionStorage.getItem("fb.after_login"); sessionStorage.removeItem("fb.after_login"); } catch {}
-    router.replace(r.patient && r.patient.name ? (next && next.startsWith("/") ? next : R.Main) : R.P_Profile);
+    const done = !!(r.patient && r.patient.name);
+    // A first-time patient completes her profile first; the profile page then continues to `next` (e.g. checkout).
+    try { next = sessionStorage.getItem("fb.after_login"); if (done) sessionStorage.removeItem("fb.after_login"); } catch {}
+    router.replace(done ? (next && next.startsWith("/") && !next.startsWith("//") ? next : R.Main) : R.P_Profile);
   }
   async function resend() {
     setError(""); setSec(59);

@@ -1,6 +1,7 @@
 "use client";
 
 /** P_Cart.dc.html — cart. Keys + quantities from localStorage; names, prices and stock are re-read live. */
+import Link from "next/link";
 import { useEffect } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, DarkCard, ErrorNote, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
@@ -8,23 +9,28 @@ import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { cartLines, cartStore, getProductsByKeys, setMode, useCart, useMode } from "@/lib/db/orders";
+import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, setMode, useCart, useMode } from "@/lib/db/orders";
 import { ArtThumb, QtyStepper, Segmented } from "../store/c1ui";
+import css from "../store/store.module.css";
 
 export default function CartPage() {
   const cart = useCart();
   const mode = useMode();
   const keys = Object.keys(cart).sort();
-  const { data, loading, error } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
+  const { data, loading, error, refresh } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
+  // Prices and stock are always live: re-read when the page opens and when the tab comes back into focus.
+  useLiveRefresh(keys.length > 0 ? refresh : null);
   const { lines, missing, count, sub, canOrder } = cartLines(cart, data);
   const d = mode === "d";
   // Drop items that are no longer sold.
   useEffect(() => { if (data) missing.forEach((k) => cartStore.set(k, 0)); }, [data, missing]);
 
   return (
-    <PhoneScreen>
+    <PhoneScreen wide>
       <TopBar title="السلة" back={R.P_Store} />
 
+      <div className={css.split}>
+      <div className={css.col}>
       <div style={{ ...CARD, borderRadius: 24, padding: "12px 16px 4px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Circ icon="bag" size={28} iconSize={14} />
@@ -32,10 +38,10 @@ export default function CartPage() {
         </div>
         {keys.length > 0 && loading && <Loading />}
         {error && <ErrorNote style={{ margin: "10px 0" }}>تعذّر تحميل السلة: {error}</ErrorNote>}
-        {!loading && lines.length === 0 && <div style={{ padding: "16px 0", fontSize: 13.5, color: C.sub2 }}>سلتكِ فارغة</div>}
+        {!loading && !error && lines.length === 0 && <div style={{ padding: "16px 0", fontSize: 13.5, color: C.sub2 }}>سلتكِ فارغة</div>}
         {lines.map(({ p, qty, line, problem }, i) => (
           <div key={p.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i ? `1px solid ${C.line}` : undefined }}>
-            <ArtThumb p={p} box={60} art={43} radius={20} />
+            <Link href={`${R.P_Product}?key=${encodeURIComponent(p.key)}`} aria-label={p.name}><ArtThumb p={p} box={60} art={43} radius={20} /></Link>
             <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
               <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
               <div style={{ fontSize: 12, color: C.muted }}>{p.size}</div>
@@ -46,7 +52,9 @@ export default function CartPage() {
           </div>
         ))}
       </div>
+      </div>
 
+      <div className={css.aside}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>طريقة الاستلام</h2>
         <Segmented value={mode} onChange={setMode} options={[
@@ -69,9 +77,13 @@ export default function CartPage() {
       </DarkCard>
 
       {lines.length > 0 && !canOrder && <ErrorNote>عدّلي الكميات المعلَّمة قبل المتابعة.</ErrorNote>}
-      {lines.length > 0
-        ? <PrimaryButton href={canOrder ? R.P_Checkout : undefined} disabled={!canOrder} style={{ marginTop: "auto", flexShrink: 0 }}>متابعة الدفع</PrimaryButton>
-        : <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>تصفّحي المتجر</SecondaryButton>}
+      <div className={css.pin} style={{ marginTop: "auto", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        {lines.length > 0
+          ? <PrimaryButton href={canOrder ? R.P_Checkout : undefined} disabled={!canOrder}>متابعة الدفع</PrimaryButton>
+          : <SecondaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</SecondaryButton>}
+      </div>
+      </div>
+      </div>
     </PhoneScreen>
   );
 }

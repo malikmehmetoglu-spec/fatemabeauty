@@ -32,11 +32,11 @@ export const PILL_GRAY = pill("#F0EDF0", "#695D6B");
 export const PLUS = "M12 5v14M5 12h14";
 export const BACK = "M9 6l6 6-6 6";
 
-export function Panel({ title, sub, right, children, style }: { title?: ReactNode; sub?: ReactNode; right?: ReactNode; children: ReactNode; style?: CSSProperties }) {
+export function Panel({ title, sub, right, children, style, className }: { title?: ReactNode; sub?: ReactNode; right?: ReactNode; children: ReactNode; style?: CSSProperties; className?: string }) {
   return (
-    <div style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative", minWidth: 0, ...style }}>
+    <div className={className} style={{ borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative", minWidth: 0, ...style }}>
       {(title || right) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.ink }}>{title}</div>
             {sub && <div style={{ fontSize: 12, color: C.sub2 }}>{sub}</div>}

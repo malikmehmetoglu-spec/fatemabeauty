@@ -2,7 +2,7 @@
 
 /** P_Checkout.dc.html — delivery / pickup + payment + order summary. Places a real order (place_order). */
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -10,9 +10,10 @@ import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { placeOrder } from "@/lib/db/products";
-import { cartLines, cartStore, getProductsByKeys, orderError, rememberReturn, setMode, useCart, useMode } from "@/lib/db/orders";
+import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, orderError, rememberReturn, setMode, useCart, useMode } from "@/lib/db/orders";
 import { useSession } from "@/lib/supabase/session";
 import { ArtThumb, Field, Segmented } from "../store/c1ui";
+import css from "../store/store.module.css";
 
 type Pay = "cash";
 const PAYS: { k: Pay; icon: string; title: string; sub: string }[] = [
@@ -24,8 +25,12 @@ export default function CheckoutPage() {
   const [pay, setPay] = useState<Pay>("cash");
   const cart = useCart();
   const keys = Object.keys(cart).sort();
-  const { data, loading } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
-  const { lines, count, sub, canOrder } = cartLines(cart, data);
+  const { data, loading, refresh } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
+  // Prices and stock are always live: re-read when the page opens and when the tab comes back into focus.
+  useLiveRefresh(keys.length > 0 ? refresh : null);
+  const { lines, missing, count, sub, canOrder } = cartLines(cart, data);
+  // Items hidden / removed since they were added leave the cart (same as on the cart page).
+  useEffect(() => { if (data) missing.forEach((k) => cartStore.set(k, 0)); }, [data, missing]);
   const d = mode === "d";
   const session = useSession();
   const router = useRouter();
@@ -52,8 +57,10 @@ export default function CheckoutPage() {
   }
 
   return (
-    <PhoneScreen gap={12}>
+    <PhoneScreen gap={12} wide>
       <TopBar title="الدفع والتوصيل" back={R.P_Cart} />
+      <div className={css.split}>
+      <div className={css.col}>
       <Segmented value={mode} onChange={setMode} options={[
         { value: "d", label: "توصيل للمنزل", icon: "truck" },
         { value: "p", label: "استلام من المركز", icon: "home" },
@@ -61,7 +68,7 @@ export default function CheckoutPage() {
 
       {d ? (
         <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Field id="city" value={addr.city} onChange={setA("city")} label="المدينة" placeholder="مثلاً: دمشق" />
             <Field id="area" value={addr.area} onChange={setA("area")} label="المنطقة" placeholder="اسم الحي" />
           </div>
@@ -112,6 +119,9 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      </div>
+
+      <div className={css.aside}>
       <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>ملخص الطلب</h2>
@@ -129,18 +139,22 @@ export default function CheckoutPage() {
       </div>
 
       {error && <ErrorNote>{error}</ErrorNote>}
+      <div className={css.pin} style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
       {keys.length === 0 ? (
-        <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>سلتكِ فارغة · تصفّحي المتجر</SecondaryButton>
-      ) : session.loading || loading ? <Loading style={{ marginTop: "auto" }} /> : !session.session ? (
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+        <SecondaryButton href={R.P_Store} icon="bag" style={{ flexShrink: 0 }}>سلتكِ فارغة · تصفّحي المتجر</SecondaryButton>
+      ) : session.loading || loading ? <Loading /> : !session.session ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ fontSize: 12.5, color: C.sub2, textAlign: "center" }}>سجّلي الدخول برقم هاتفكِ لإرسال الطلب، ثم تعودين إلى هذه الصفحة.</div>
           <PrimaryButton icon="user" onClick={login} style={{ flexShrink: 0 }}>تسجيل الدخول للمتابعة</PrimaryButton>
         </div>
       ) : !session.patient ? (
-        <ErrorNote style={{ marginTop: "auto" }}>هذا الحساب حساب موظفة. الطلب من المتجر متاح لحسابات المراجِعات فقط.</ErrorNote>
+        <ErrorNote>هذا الحساب حساب موظفة. الطلب من المتجر متاح لحسابات المراجِعات فقط.</ErrorNote>
       ) : (
-        <PrimaryButton onClick={submit} disabled={busy || !canOrder} style={{ marginTop: "auto", flexShrink: 0 }}>{busy ? "جارٍ إرسال الطلب…" : !canOrder ? "عدّلي السلة أولاً" : "تأكيد الطلب"}</PrimaryButton>
+        <PrimaryButton onClick={submit} disabled={busy || !canOrder} style={{ flexShrink: 0 }}>{busy ? "جارٍ إرسال الطلب…" : !canOrder ? "عدّلي السلة أولاً" : "تأكيد الطلب"}</PrimaryButton>
       )}
+      </div>
+      </div>
+      </div>
     </PhoneScreen>
   );
 }

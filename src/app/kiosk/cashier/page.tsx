@@ -37,8 +37,8 @@ export default function Page() {
   if (k.gate) return k.gate;
   const doneCount = (q.data ?? []).filter((a) => a.status === "done").length;
   const pkg0 = (pk.data ?? []).find((p) => p.sessions_used < p.sessions_total && p.packages?.service_key === A?.service_key);
-  const TOTAL = A?.price ?? 0;
-  const methods = [0, 1, 2].map((i) => ({ pick: () => setSt({ ...st, m: i }),
+  const TOTAL = A?.price || A?.services?.price || 0; // same rule as the server (booked price, else the service price)
+  const methods = [0, 1, 2].map((i) => ({ pick: () => { if (i !== 2 || pkg0) setSt({ ...st, m: i }); },
     style: css("flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" + (i === 2 && !pkg0 ? "opacity:0.45;" : "") +
       (st.m === i ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 4px 12px rgba(123,70,135,0.06)")) }));
   const press = (k: string) => { let r = st.recv;
@@ -62,12 +62,16 @@ export default function Page() {
     try {
       const inv = await createInvoice({
         patientId: A.patient_id, appointmentId: A.id, walkInName: A.patient_id ? null : A.walk_in_name,
+        // the price comes from the appointment on the server; with a package the server makes this line 0
         lines: [{ kind: "service", ref: A.service_key, qty: 1, label: A.services?.name ?? A.service_key, unit_price: TOTAL }],
-        discount: pkg ? TOTAL : 0,
+        discount: 0,
         payments: pkg ? [{ method: "package", amount: 0 }] : [{ method: cash ? "cash" : "card", amount: TOTAL }],
         patientPackageId: pkg ? pkg0?.id : null,
       });
-      setDoneNo((inv as { no?: string } | null)?.no ?? "✓");
+      const no = (inv as { no?: string } | null)?.no ?? "";
+      setDoneNo(no || "✓");
+      const phone = A.patients?.phone;
+      if (wa && phone) window.open(`https://wa.me/${phone.replace(/\D/g, "").replace(/^0/, "963")}?text=${encodeURIComponent(`فاتورة ${no} — المبلغ ${money(pkg ? 0 : TOTAL)}. شكراً لزيارتكِ Fatema Beauty.`)}`, "_blank");
       setSelId(null); setSt({ m: 0, recv: "" });
       if (print) setTimeout(() => window.print(), 100);
     } catch (e) { setErr(financeError(e)); }

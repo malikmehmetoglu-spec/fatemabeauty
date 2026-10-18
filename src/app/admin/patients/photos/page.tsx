@@ -1,5 +1,6 @@
 "use client";
 
+import ac from "../../adminPages.module.css";
 import Link from "next/link";
 import { Suspense, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -22,7 +23,7 @@ export default function PhotosPage() {
 
 function Frame({ label, photo }: { label: string; photo?: PhotoRow }) {
   return (
-    <div style={{ flex: 1, minWidth: 0, height: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4E6F8 0%, #E9D8EF 60%, #DCC5E4 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}>
+    <div style={{ flex: 1, minWidth: 0, aspectRatio: "3 / 4", maxHeight: 470, borderRadius: 26, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse 60% 55% at 50% 45%, #F4E6F8 0%, #E9D8EF 60%, #DCC5E4 100%)", boxShadow: "inset 0 0 60px rgba(123,70,135,0.12), 0 12px 30px rgba(123,70,135,0.10)" }}>
       {photo?.url
         ? <img src={photo.url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : <svg width={220} height={220} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.7 }}><path d={FACE} /></svg>}
@@ -66,14 +67,14 @@ function Photos() {
   }
 
   return shell(<>ملف <span className="latin">{p.file_no}</span> · {displayName(p.name)} · {sessions} جلسات مصوّرة</>,
-    <div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: 0, flexWrap: "wrap", alignItems: "flex-start" }}>
-      <Panel title="مقارنة قبل/بعد" style={{ flex: 1, minWidth: 520 }} right={
-        <div role="tablist" style={{ display: "flex", gap: 6 }}>
+    <div className={ac.split} style={{ flexGrow: 1 }}>
+      <Panel title="مقارنة قبل/بعد" className={ac.grow} right={
+        <div role="tablist" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANGLES.map((a) => <button key={a.key} type="button" role="tab" aria-selected={angle === a.key} onClick={() => { setAngle(a.key); setPick({}); }} style={{ ...chip(angle === a.key, 34), fontSize: 12.5, padding: "0 12px" }}>{a.label}</button>)}
         </div>}>
         {error && <ErrorNote>{error}</ErrorNote>}
         {!list.length ? (
-          <EmptyState compact icon="camera" title={`لا صور بزاوية «${angleLabel(angle)}»`} text="ارفعي صورة من اليمين أو التقطيها من جهاز الاستقبال قبل الجلسة." />
+          <EmptyState compact icon="camera" title={`لا صور بزاوية «${angleLabel(angle)}»`} text="ارفعي صورة من لوحة «إضافة صورة» أو التقطيها من جهاز الاستقبال قبل الجلسة." />
         ) : (
           <>
             <div style={{ display: "flex", gap: 14 }}>
@@ -97,9 +98,9 @@ function Photos() {
           </>
         )}
       </Panel>
-      <Panel title="إضافة صورة" style={{ width: 280 }}>
+      <Panel title="إضافة صورة" className={ac.side} style={{ ["--side" as string]: "280px" }}>
         <div style={{ fontSize: 12.5, color: C.sub2, marginBottom: 8 }}>الزاوية: <b style={{ color: C.ink }}>{angleLabel(angle)}</b></div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
           {(["before", "after", "progress"] as const).map((s) => <button key={s} type="button" onClick={() => setStage(s)} style={{ ...chip(stage === s, 34), fontSize: 12.5 }}>{STAGE_LABEL[s]}</button>)}
         </div>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />

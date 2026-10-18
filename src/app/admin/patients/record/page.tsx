@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import t from "../../adminPages.module.css";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/shell";
@@ -39,7 +40,7 @@ function Record() {
         <Panel>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <Initials name={p.name} size={72} />
-            <div style={{ flex: 1, lineHeight: 1.4, minWidth: 260 }}>
+            <div style={{ flex: "1 1 220px", lineHeight: 1.4, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                 <span style={PILL_DANGER} className="latin">ملف {p.file_no}</span>
@@ -68,8 +69,8 @@ function Record() {
           {p.notes && <div style={{ marginTop: 12, fontSize: 13, color: C.sub, background: "#FAF5FB", borderRadius: 14, padding: "8px 12px" }}>{p.notes}</div>}
         </Panel>
 
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, width: 340, maxWidth: "100%", flexShrink: 0 }}>
+        <div className={t.split}>
+          <div className={t.side} style={{ ["--side" as string]: "340px", display: "flex", flexDirection: "column", gap: 16 }}>
             <Conditions patientId={p.id} />
             <Packages patientId={p.id} />
           </div>
@@ -106,9 +107,9 @@ function Conditions({ patientId }: { patientId: string }) {
           ))}
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
         <Select label="النوع" value={kind} onChange={setKind} options={(Object.keys(KIND_LABEL) as ConditionKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))} style={{ width: 110 }} />
-        <TextInput label="الاسم" value={name} onChange={setName} style={{ flex: 1 }} />
+        <TextInput label="الاسم" value={name} onChange={setName} style={{ flex: "1 1 120px", minWidth: 0 }} />
         <button type="button" onClick={add} aria-label="إضافة" style={{ ...outlineBtn(46), padding: "0 12px" }}><Icon name={PLUS} size={16} color={C.accent} /></button>
       </div>
     </Panel>
@@ -137,17 +138,17 @@ function Packages({ patientId }: { patientId: string }) {
 }
 
 function History({ p }: { p: Patient }) {
-  const [t, setT] = useState(0);
+  const [tab, setT] = useState(0);
   return (
-    <Panel style={{ flex: 1, minWidth: 420 }}>
+    <Panel className={t.grow}>
       <div role="tablist" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        {TABS.map((x, i) => <button key={x} type="button" role="tab" aria-selected={t === i} onClick={() => setT(i)} style={chip(t === i, 36)}>{x}</button>)}
+        {TABS.map((x, i) => <button key={x} type="button" role="tab" aria-selected={tab === i} onClick={() => setT(i)} style={chip(tab === i, 36)}>{x}</button>)}
       </div>
-      {t === 0 && <Visits id={p.id} />}
-      {t === 1 && <Notes id={p.id} />}
-      {t === 2 && <Rx id={p.id} />}
-      {t === 3 && <Consents id={p.id} />}
-      {t === 4 && <Photos id={p.id} />}
+      {tab === 0 && <Visits id={p.id} />}
+      {tab === 1 && <Notes id={p.id} />}
+      {tab === 2 && <Rx id={p.id} />}
+      {tab === 3 && <Consents id={p.id} />}
+      {tab === 4 && <Photos id={p.id} />}
     </Panel>
   );
 }
@@ -160,7 +161,7 @@ function Visits({ id }: { id: string }) {
   if (loading) return <Loading />;
   if (!data?.length) return <EmptyState compact icon="cal" title="لا زيارات بعد" text="تظهر هنا مواعيدها وزياراتها السابقة." />;
   return <div>{data.map((v) => (
-    <div key={v.id} style={rowStyle}>
+    <div key={v.id} className={t.row} style={rowStyle}>
       <span style={{ flex: 1.2, color: C.sub }}>{when(v.starts_at)}</span>
       <span style={{ flex: 1.3, fontWeight: 700 }}>{v.services?.name ?? v.service_key}</span>
       <span style={{ flex: 1, color: C.sub }}>{v.staff?.name ?? "—"}{v.rooms ? ` · ${v.rooms.name}` : ""}</span>
@@ -227,6 +228,13 @@ function Photos({ id }: { id: string }) {
   );
 }
 
+/** Same shape createPatient stores (+963…), so the patient's app login still matches the file. */
+function normPhone(v: string) {
+  const d = v.replace(/\D/g, "");
+  if (!d) return null;
+  return v.trim().startsWith("+") && !d.startsWith("963") ? `+${d}` : `+963${d.replace(/^(963|0)/, "")}`;
+}
+
 function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
   const [name, setName] = useState(p.name);
   const [phone, setPhone] = useState(p.phone ?? "");
@@ -240,7 +248,7 @@ function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
   async function save() {
     setBusy(true); setErr("");
     try {
-      await updatePatient(p.id, { name: name.trim(), phone: phone.trim() || null, birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
+      await updatePatient(p.id, { name: name.trim(), phone: normPhone(phone), birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
       onClose();
     } catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الحفظ"); }
     setBusy(false);
@@ -248,7 +256,7 @@ function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
   return (
     <Modal open onClose={onClose} title={`تعديل ملف ${p.file_no}`} footer={<><SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
       <TextInput label="الاسم" value={name} onChange={setName} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className={t.two}>
         <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" />
         <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
       </div>

@@ -2,6 +2,7 @@
 
 /** W_Reports.dc.html — التقارير (live): appointments, no-shows, new vs returning patients, top services, satisfaction — all computed. */
 import { useState } from "react";
+import ac from "../adminPages.module.css";
 import { AdminShell } from "@/components/shell";
 import { ErrorNote, Loading } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
@@ -70,9 +71,9 @@ export default function Page() {
 
   return (
     <AdminShell active="التقارير" title="التقارير" subtitle={`نظرة تحليلية على المواعيد والغياب والخدمات والرضا · ${P_LABEL[p]}`} actions={
-      <div style={{ display: "flex", gap: 8 }}>{(Object.keys(P_LABEL) as P[]).map((k) => <Pill key={k} on={p === k} onClick={() => setP(k)} style={{ height: 44 }}>{P_LABEL[k]}</Pill>)}</div>}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{(Object.keys(P_LABEL) as P[]).map((k) => <Pill key={k} on={p === k} onClick={() => setP(k)} style={{ height: 44 }}>{P_LABEL[k]}</Pill>)}</div>}>
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل التقارير: {error}</ErrorNote> : (<>
-        <div style={{ display: "flex", gap: 14 }}>
+        <div className={ac.kpis}>
           <StatCard dark label={`المواعيد · ${P_LABEL[p]}`} value={appts.length - cancelled} sub={`${attended.length} حضرت · ${cancelled} ملغاة`} icon="cal" />
           <StatCard label="نسبة الغياب" value={<>{noShowRate}<span style={{ fontSize: 16 }}>%</span></>} sub={`${noShows} لم تحضر من ${concluded} موعداً مضى`} icon="calx" />
           <StatCard label="مراجعات جديدات" value={(ops.data?.newPatients ?? []).length} sub={`ملفات فُتحت ${P_LABEL[p]}`} icon="users" />
@@ -80,7 +81,7 @@ export default function Page() {
           <StatCard label="متوسط التقييم" value={reviews.length ? <span style={LATIN}>{avgStars.toFixed(1)}</span> : "—"} sub={`من ${reviews.length} تقييم`} icon="star" />
         </div>
 
-        <div style={{ display: "flex", gap: 16 }}>
+        <div className={ac.panels}>
           <div style={{ ...PANEL, flex: 1.5 }}>
             <PanelTitle right={daily ? "يومياً" : "أسبوعياً · تبدأ الأسابيع يوم الإثنين"}>المواعيد</PanelTitle>
             <Bars data={apptBars} fmt={(n) => `${n} موعد`} highlight={apptBars.length - 1} />
@@ -91,12 +92,12 @@ export default function Page() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 16 }}>
+        <div className={ac.panels}>
           <div style={{ ...PANEL, flex: 1 }}>
             <PanelTitle right="بين من حضرن">جديدات مقابل عائدات</PanelTitle>
-            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
               <Donut size={130} data={[["عائدات", returning], ["جديدات", fresh], ["بدون ملف", walkIns]]} center={<><b style={{ ...LATIN, fontSize: 18 }}>{attendees.length ? Math.round((returning / attendees.length) * 100) : 0}%</b><span style={{ fontSize: 11, color: C.sub2 }}>احتفاظ</span></>} />
-              <div style={{ flex: 1 }}><ShareList data={[["عائدات", returning], ["جديدات", fresh], ["بدون ملف", walkIns]]} fmt={(n) => String(n)} empty="لا زيارات بعد" /></div>
+              <div style={{ flex: "1 1 140px", minWidth: 0 }}><ShareList data={[["عائدات", returning], ["جديدات", fresh], ["بدون ملف", walkIns]]} fmt={(n) => String(n)} empty="لا زيارات بعد" /></div>
             </div>
           </div>
           <div style={{ ...PANEL, flex: 1 }}>

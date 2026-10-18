@@ -52,15 +52,15 @@ export default function Page() {
         </Link>
         <GhostButton icon="plus" onClick={() => setPicking(true)}>استلام بضاعة</GhostButton>
       </>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="استلامات هذا الشهر" value={thisMonth.length} sub="دفعة مسجّلة" icon="download" />
         <Kpi label="قيمة المستلم هذا الشهر" value={money(thisMonth.reduce((s, b) => s + value(b), 0))} sub="بكلفة الوحدة المسجّلة" icon="wallet" />
         <Kpi label="الموردون" value={suppliers.length} sub="من سجلّ الاستلام" icon="users" />
         <Kpi label="دفعات تنتهي خلال 60 يوماً" value={expiring.length} sub="ما زال منها كمية" icon="clock" />
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>سجلّ الاستلام</h2>
             {supplier && <Tag kind="lilac">{supplier} <button type="button" aria-label="إزالة التصفية" onClick={() => setSupplier(null)} style={{ border: "none", background: "none", padding: 0, marginInlineStart: 4, color: C.accent }}>×</button></Tag>}
@@ -70,7 +70,7 @@ export default function Page() {
               text="عند وصول بضاعة اضغطي «استلام بضاعة»، اختاري الصنف واكتبي الكمية وتاريخ الانتهاء والمورّد. تُضاف الكمية إلى المخزون ويُصرف الأقرب انتهاءً أولاً."
               action={<GhostButton icon="plus" onClick={() => setPicking(true)}>استلام بضاعة</GhostButton>} />
           ) : (
-            <DataTable
+            <DataTable minWidth={760}
               headers={["التاريخ", "الصنف", "الكمية", "المتبقي", "الانتهاء", "كلفة الوحدة", "المورّد"]}
               widths={[1.1, 2, 0.8, 0.8, 1.1, 1, 1.2]}
               rows={shown.map((b) => {
@@ -90,7 +90,7 @@ export default function Page() {
           )}
         </div>
 
-        <Card style={{ width: 300, flexShrink: 0 }} padding={18}>
+        <Card style={{ flex: "1 1 280px", minWidth: 0 }} padding={18}>
           <h2 style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700 }}>الموردون</h2>
           {suppliers.length === 0 ? (
             <div style={{ fontSize: 13, color: C.sub2, lineHeight: 1.8 }}>تظهر هنا أسماء الموردين كما تكتبينها عند الاستلام، مع عدد الاستلامات وقيمتها.</div>

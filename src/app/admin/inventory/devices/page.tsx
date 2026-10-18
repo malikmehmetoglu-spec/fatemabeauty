@@ -27,7 +27,7 @@ export default function DevicesPage() {
   return (
     <AdminShell active="المخزون والأجهزة" title="الأجهزة والصيانة" subtitle="حالة كل جهاز وموعد صيانته والخدمات التي تعتمد عليه"
       actions={<GhostButton icon="plus" onClick={() => setEdit("new")}>جهاز جديد</GhostButton>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="الأجهزة" value={D.length} sub={`${D.length - D.filter((d) => d.in_maintenance).length} تعمل الآن`} icon="tool" />
         <Kpi label="تحت الصيانة" value={D.filter((d) => d.in_maintenance).length} sub="الخدمات المرتبطة غير متاحة" icon="alert" />
         <Kpi label="صيانة مستحقة" value={due.length} sub="موعدها اليوم أو قبله" icon="clock" />

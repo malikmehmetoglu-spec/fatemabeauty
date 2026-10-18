@@ -13,8 +13,9 @@ import { R } from "@/lib/routes";
 import { arDate, clock, money } from "@/lib/format";
 import { C, CARD, SHB } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { cancelOrder, getOrder, listMyOrders, orderSteps, STATUS_LABEL, type OrderFull } from "@/lib/db/orders";
+import { cancelOrder, getOrder, listMyOrders, orderError, orderSteps, STATUS_LABEL, type OrderFull } from "@/lib/db/orders";
 import { useRequirePatient } from "@/lib/supabase/session";
+import css from "../../store/store.module.css";
 
 export default function OrderTrackPage() {
   return <Suspense fallback={<PhoneScreen><Loading /></PhoneScreen>}><Router /></Suspense>;
@@ -23,19 +24,29 @@ export default function OrderTrackPage() {
 function Router() {
   const id = useSearchParams().get("id");
   const s = useRequirePatient();
-  if (s.loading || (!s.patient && !s.staff)) return <PhoneScreen><TopBar title="طلباتي" back={R.P_Store} /><Loading /></PhoneScreen>;
-  return id ? <Track id={id} /> : <MyOrders />;
+  if (s.loading || (!s.patient && !s.staff)) return <PhoneScreen wide><TopBar title="طلباتي" back={R.P_Store} /><Loading /></PhoneScreen>;
+  if (!s.patient) {
+    return (
+      <PhoneScreen wide>
+        <TopBar title="طلباتي" back={R.P_Store} />
+        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات المتجر كلها في لوحة الإدارة." />
+        <SecondaryButton href={R.W_Orders} icon="box" style={{ marginTop: "auto" }}>لوحة الطلبات</SecondaryButton>
+      </PhoneScreen>
+    );
+  }
+  return id ? <Track id={id} /> : <MyOrders patientId={s.patient.id} />;
 }
 
 const TAG: Record<string, "lilac" | "amber" | "green" | "gray" | "pink"> = {
   new: "lilac", preparing: "amber", ready: "green", out_for_delivery: "amber", delivered: "gray", cancelled: "pink",
 };
 
-function MyOrders() {
-  const { data, loading, error } = useQuery(["orders", "mine"], listMyOrders);
+function MyOrders({ patientId }: { patientId: string }) {
+  const { data, loading, error } = useQuery(["orders", "mine", patientId], () => listMyOrders(patientId));
   return (
-    <PhoneScreen>
+    <PhoneScreen wide>
       <TopBar title="طلباتي" back={R.P_Store} />
+      <div className={css.narrow}>
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الطلبات: {error}</ErrorNote> : !data?.length ? (
         <EmptyState icon="box" title="لا طلبات بعد" text="حين تطلبين منتجات من المتجر ستظهر طلباتكِ هنا مع حالة كل طلب." />
       ) : (
@@ -58,16 +69,17 @@ function MyOrders() {
         </div>
       )}
       <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>المتجر</SecondaryButton>
+      </div>
     </PhoneScreen>
   );
 }
 
 function Track({ id }: { id: string }) {
   const { data: o, loading, error } = useQuery(["orders", "one", id], () => getOrder(id));
-  if (loading) return <PhoneScreen><TopBar title="تتبع الطلب" back={R.P_OrderTrack} /><Loading /></PhoneScreen>;
+  if (loading) return <PhoneScreen wide><TopBar title="تتبع الطلب" back={R.P_OrderTrack} /><Loading /></PhoneScreen>;
   if (error || !o) {
     return (
-      <PhoneScreen>
+      <PhoneScreen wide>
         <TopBar title="تتبع الطلب" back={R.P_OrderTrack} />
         {error ? <ErrorNote>تعذّر تحميل الطلب: {error}</ErrorNote> : <EmptyState icon="box" title="الطلب غير موجود" text="تأكّدي من الرابط، أو افتحي قائمة طلباتكِ." />}
         <SecondaryButton href={R.P_OrderTrack} icon="box" style={{ marginTop: "auto" }}>طلباتي</SecondaryButton>
@@ -87,13 +99,15 @@ function TrackView({ o }: { o: OrderFull }) {
   async function cancel() {
     if (!confirm("إلغاء هذا الطلب؟")) return;
     setBusy(true); setError("");
-    try { await cancelOrder(o.id); } catch (e) { setError("تعذّر الإلغاء: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+    try { await cancelOrder(o.id); } catch (e) { setError("تعذّر الإلغاء: " + orderError(e).replace(/^تعذّر إرسال الطلب: /, "")); } finally { setBusy(false); }
   }
 
   return (
-    <PhoneScreen>
+    <PhoneScreen wide>
       <TopBar title="تتبع الطلب" back={R.P_OrderTrack} />
 
+      <div className={css.split}>
+      <div className={css.col}>
       <DarkCard radius={30} padding="18px 20px">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ lineHeight: 1.3 }}>
@@ -140,6 +154,9 @@ function TrackView({ o }: { o: OrderFull }) {
         </ol>
       )}
 
+      </div>
+
+      <div className={css.aside}>
       <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px 8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 2 }}>
           <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>المنتجات</h2>
@@ -158,9 +175,11 @@ function TrackView({ o }: { o: OrderFull }) {
       </div>
 
       {error && <ErrorNote>{error}</ErrorNote>}
-      <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+      <div className={css.pin} style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
         {o.status === "new" && <SecondaryButton icon="x" color={C.danger} onClick={busy ? undefined : cancel}>{busy ? "جارٍ الإلغاء…" : "إلغاء الطلب"}</SecondaryButton>}
         <SecondaryButton href={R.P_Chat} icon="msg">تواصلي مع المركز</SecondaryButton>
+      </div>
+      </div>
       </div>
     </PhoneScreen>
   );

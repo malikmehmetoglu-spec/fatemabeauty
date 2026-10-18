@@ -11,6 +11,7 @@ import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import { Amount, Big, LATIN, LightBtn, PANEL, PanelTitle, Pill, SERIES, StatCard, downloadCsv } from "../parts";
 import { PayDialog } from "./PayDialog";
+import css from "../finance.module.css";
 
 const daysBetween = (a: string, b: string) => Math.round((new Date(`${a}T12:00:00Z`).getTime() - new Date(`${b}T12:00:00Z`).getTime()) / 864e5);
 type Bucket = "notdue" | "d30" | "d60" | "old";
@@ -42,7 +43,7 @@ export default function Page() {
       <LightBtn icon="download" disabled={!all.length} style={{ height: 46, borderRadius: 23 }} onClick={() => downloadCsv(`receivables-${dayKey()}.csv`, ["الفاتورة", "المراجعة", "البنود", "الإجمالي", "المدفوع", "المتبقي", "الاستحقاق", "التأخير (يوم)"],
         all.map((i) => [i.no, customerName(i), invoiceTitle(i), i.total, collected(i), outstanding(i), i.due_on ?? "", Math.max(0, overdue(i))]))}>تصدير</LightBtn>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", gap: 16 }}>
+        <div className={css.stats}>
           <StatCard dark label="إجمالي الذمم المفتوحة" value={<Big n={totalOpen} />} sub={`${all.length} فاتورة`} icon="wallet" />
           <StatCard label="متأخرة" value={<Big n={late.reduce((s, i) => s + outstanding(i), 0)} />} sub={`${late.length} فاتورة تجاوزت تاريخ الاستحقاق`} icon="alert" />
           <StatCard label="غير مستحقة بعد" value={<Big n={sums.notdue} />} sub="أقساط بتاريخ قادم" icon="clock" />
@@ -73,24 +74,24 @@ export default function Page() {
           <EmptyState icon="wallet" title="لا ذمم مفتوحة" text="عندما تُصدر فاتورة بدفع آجل أو بقسط من الكاشير، تظهر هنا مع المبلغ المتبقي وتاريخ استحقاقه، ويمكن تسجيل الدفعات منها." />
         ) : list.length === 0 ? <EmptyState compact icon="search" title="لا فواتير في هذه الفئة" /> : (
           <div style={{ ...PANEL, padding: "8px 20px" }}>
-            <div style={{ display: "flex", gap: 12, height: 40, alignItems: "center" }}>
-              {[["المراجعة", 1.8], ["البنود", 1.8], ["المدفوع", 1.3], ["المتبقي", 1.1], ["القسط القادم", 1.2], ["العمر", 1], ["إجراء", 1]].map(([h, w]) => <div key={h} style={{ flex: w as number, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{h}</div>)}
+            <div className={css.thead}>
+              {[["المراجعة", 1.8], ["البنود", 1.8], ["المدفوع", 1.3], ["المتبقي", 1.1], ["القسط القادم", 1.2], ["العمر", 1], ["إجراء", 1]].map(([h, w]) => <div key={h} style={{ flex: w as number }}>{h}</div>)}
             </div>
             {list.map((i) => {
               const d = overdue(i), name = customerName(i);
               return (
-                <div key={i.id} style={{ display: "flex", gap: 12, alignItems: "center", minHeight: 58, borderTop: `1px solid ${C.line}`, fontSize: 13.5 }}>
-                  <div style={{ flex: 1.8, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={i.id} className={css.tr} style={{ minHeight: 58 }}>
+                  <div className={css.wide} style={{ flex: 1.8, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent }}>{initials(name)}</span>
                     <div style={{ lineHeight: 1.35, minWidth: 0 }}>
                       <div style={{ fontWeight: 700 }}>{name}</div>
                       <div style={{ fontSize: 11.5, color: C.sub2 }}>{i.patients?.phone ? <span dir="ltr" style={LATIN}>{i.patients.phone}</span> : <span dir="ltr" style={LATIN}>{i.no}</span>}</div>
                     </div>
                   </div>
-                  <div style={{ flex: 1.8, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{invoiceTitle(i)}</div>
-                  <div style={{ flex: 1.3, minWidth: 0, ...LATIN, fontSize: 13 }}>{money(collected(i), false)} من {money(i.total, false)}</div>
-                  <div style={{ flex: 1.1, minWidth: 0 }}><Amount n={outstanding(i)} color={C.accent} /></div>
-                  <div style={{ flex: 1.2, minWidth: 0, fontSize: 13 }}>{i.due_on ? arDate(new Date(`${i.due_on}T12:00:00`), { day: false }) : <span style={{ color: C.muted }}>غير محدد</span>}</div>
+                  <div style={{ flex: 1.8, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>البنود</span>{invoiceTitle(i)}</div>
+                  <div style={{ flex: 1.3, minWidth: 0, ...LATIN, fontSize: 13 }}><span className={css.cellLabel}>المدفوع</span>{money(collected(i), false)} من {money(i.total, false)}</div>
+                  <div style={{ flex: 1.1, minWidth: 0 }}><span className={css.cellLabel}>المتبقي</span><Amount n={outstanding(i)} color={C.accent} /></div>
+                  <div style={{ flex: 1.2, minWidth: 0, fontSize: 13 }}><span className={css.cellLabel}>الاستحقاق</span>{i.due_on ? arDate(new Date(`${i.due_on}T12:00:00`), { day: false }) : <span style={{ color: C.muted }}>غير محدد</span>}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: "inline-flex", height: 24, alignItems: "center", padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, ...(d > 30 ? { background: "#FBEAF1", color: C.danger } : d > 0 ? { background: "#FCF1DE", color: "#8A5A12" } : { background: "#E6F4EC", color: C.okDeep }) }}>
                       {d > 0 ? `متأخر ${d} يوماً` : d === 0 ? "يستحق اليوم" : `بعد ${-d} يوماً`}
