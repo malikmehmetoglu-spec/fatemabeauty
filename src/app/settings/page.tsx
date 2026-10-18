@@ -5,7 +5,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { prefsOf, updatePatient, useMe, type NotifyPrefs } from "@/lib/db/patients";
 import { Wait } from "../account/Wait";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, Icon, Toggle } from "@/components/ui";
+import { Circ, ErrorNote, Icon, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, CARD } from "@/lib/tokens";
 
@@ -38,10 +38,17 @@ function SwitchRow({ icon, title, sub, on, set, top = true }: { icon: string; ti
 export default function SettingsPage() {
   const { me, loading, error } = useMe();
   const [askDelete, setAskDelete] = useState(false);
+  const [askPhone, setAskPhone] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
+  const save = (patch: Parameters<typeof updatePatient>[1]) => {
+    if (!me) return;
+    setSaveErr("");
+    updatePatient(me.id, patch).catch(() => setSaveErr("تعذّر حفظ التغيير. تحققي من الاتصال وحاولي مجدداً."));
+  };
   const lang = me?.lang === "en" ? "en" : "ar";
-  const setLang = (v: "ar" | "en") => { if (me) updatePatient(me.id, { lang: v }); };
+  const setLang = (v: "ar" | "en") => save({ lang: v });
   const prefs = prefsOf(me?.notify);
-  const pref = (k: keyof NotifyPrefs) => (v: boolean) => { if (me) updatePatient(me.id, { notify: { ...prefs, [k]: v } }); };
+  const pref = (k: keyof NotifyPrefs) => (v: boolean) => save({ notify: { ...prefs, [k]: v } });
 
   const seg = (on: boolean): CSSProperties => ({
     flex: 1, height: 40, borderRadius: 20, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -55,10 +62,14 @@ export default function SettingsPage() {
       <TopBar title="الإعدادات" back={R.Account} />
       {!me ? <Wait loading={loading} error={error} /> : (<>
 
+      {saveErr && <ErrorNote>{saveErr}</ErrorNote>}
       <div style={{ ...CARD, borderRadius: 24, padding: "14px 16px", position: "relative", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Circ icon="lang" size={38} iconSize={17} />
-          <div style={{ fontSize: 15, fontWeight: 700 }}>اللغة</div>
+          <div style={{ lineHeight: 1.35 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>لغة الرسائل والتذكيرات</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>بها تصلكِ رسائل واتساب والرسائل النصية، والتطبيق بالعربية</div>
+          </div>
         </div>
         <div role="group" aria-label="اللغة" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 24, background: "#F8F2FA", border: "1px solid #FFFFFF", boxShadow: "0 8px 20px rgba(123,70,135,0.06)", marginTop: 10 }}>
           <button type="button" aria-pressed={lang === "ar"} onClick={() => setLang("ar")} style={seg(lang === "ar")}>العربية</button>
@@ -78,11 +89,15 @@ export default function SettingsPage() {
       </Group>
 
       <Group title="الحساب">
-        <Link href={R.P_OTP} style={rowStyle(false)}>
+        <button type="button" onClick={() => setAskPhone((v) => !v)} aria-expanded={askPhone} style={{ ...rowStyle(false), width: "100%", border: "none", background: "none", textAlign: "right" }}>
           <Circ icon="phone" size={38} iconSize={17} />
-          <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>تغيير رقم الهاتف</div>
+          <span style={{ flex: 1, lineHeight: 1.35 }}>
+            <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: C.ink }}>تغيير رقم الهاتف</span>
+            <span dir="ltr" className="latin" style={{ display: "block", fontSize: 12, color: C.sub2, textAlign: "right" }}>{me.phone ?? ""}</span>
+          </span>
           <Icon name="chev" color={C.muted} size={18} />
-        </Link>
+        </button>
+        {askPhone && <div role="status" style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, padding: "0 0 10px" }}>رقمكِ هو مفتاح دخولكِ وملفكِ الصحي، لذلك يُغيَّر من استقبال المركز بعد التحقق من هويتكِ. أخبري الاستقبال برقم ملفكِ <b className="latin">{me.file_no}</b> أو <Link href={R.P_Chat} style={{ color: C.accent, fontWeight: 700 }}>راسلي المركز</Link>.</div>}
         <button type="button" onClick={() => setAskDelete(true)} style={{ ...rowStyle(true), width: "100%", borderWidth: "1px 0 0", borderStyle: "solid", borderColor: C.line, background: "none", textAlign: "right" }}>
           <span style={{ width: 38, height: 38, borderRadius: 19, background: C.tint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Icon name="trash" color={C.danger} size={18} />

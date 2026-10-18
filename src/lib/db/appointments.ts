@@ -54,7 +54,7 @@ export function bookingError(e: unknown) {
   if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
   if (/failed to fetch|network|load failed/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
   if (/row-level security|permission denied|not allowed/i.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
-  if (/duplicate key.*phone|patients_phone_key/i.test(m)) return "يوجد ملف بهذا الرقم — ابحثي عنه في «مراجِعة مسجّلة».";
+  if (/duplicate key.*phone|patients_phone_key/i.test(m)) return "يوجد ملف بهذا الرقم — ابحثي عنه بالاسم أو الرقم.";
   console.error("booking error:", m);
   return "تعذّر الحفظ. حاولي مرة أخرى.";
 }

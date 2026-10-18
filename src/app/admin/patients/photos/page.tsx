@@ -27,8 +27,8 @@ function Frame({ label, photo }: { label: string; photo?: PhotoRow }) {
       {photo?.url
         ? <img src={photo.url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : <svg width={220} height={220} viewBox="0 0 100 100" fill="none" stroke={C.white} strokeWidth={1.1} strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%,-50%)", opacity: 0.7 }}><path d={FACE} /></svg>}
-      <span style={{ position: "absolute", top: 14, right: 14, height: 30, padding: "0 14px", borderRadius: 15, background: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center" }}>
-        {label}{photo ? ` · ${arDate(new Date(photo.created_at), { day: false, year: true })}` : ""}
+      <span style={{ position: "absolute", top: 10, right: 10, maxWidth: "calc(100% - 20px)", minHeight: 28, padding: "3px 12px", borderRadius: 14, background: "rgba(255,255,255,0.85)", fontSize: 12.5, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center", lineHeight: 1.35 }}>
+        {label}{photo ? ` · ${arDate(new Date(photo.created_at), { day: false })}` : ""}
       </span>
     </div>
   );
@@ -93,7 +93,7 @@ function Photos() {
                     <div style={{ height: 90, borderRadius: 12, overflow: "hidden", background: "#F3EAF6" }}>
                       {x.url && <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
                     </div>
-                    <div style={{ fontSize: 11.5, marginTop: 4, color: C.ink }}>{arDate(new Date(x.created_at), { day: false })} · {STAGE_LABEL[x.stage] ?? x.stage}{role ? ` · ${role}` : ""}</div>
+                    <div style={{ fontSize: 11.5, marginTop: 4, color: C.ink }}>{arDate(new Date(x.created_at), { day: false })} · {STAGE_LABEL[x.stage] ?? x.stage}{role && role !== STAGE_LABEL[x.stage] ? ` · ${role}` : ""}</div>
                   </button>
                 );
               })}

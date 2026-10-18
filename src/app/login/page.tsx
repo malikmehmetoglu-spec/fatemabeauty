@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "@/lib/supabase/session";
 import { useRouter } from "next/navigation";
 import { normalizePhone, sendCode } from "@/lib/supabase/phoneAuth";
 import { PhoneScreen } from "@/components/shell";
@@ -14,6 +15,13 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { patient } = useSession();
+  // Already signed in (e.g. «احجزي» on the public site): go straight on instead of asking for the phone again.
+  useEffect(() => {
+    if (!patient) return;
+    const n = new URLSearchParams(window.location.search).get("next");
+    router.replace(n && n.startsWith("/") && !n.startsWith("//") ? n : patient.name ? R.Main : R.P_Profile);
+  }, [patient, router]);
   async function next() {
     setError("");
     const p = normalizePhone(phone);

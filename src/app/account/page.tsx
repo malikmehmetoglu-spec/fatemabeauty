@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, Icon, Tag, Toggle } from "@/components/ui";
+import { Circ, ErrorNote, Icon, Tag, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, CARD, SHB } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
@@ -33,7 +33,12 @@ export default function AccountPage() {
   const { data: tiers } = useQuery(["settings", "tiers"], getTiers);
   const tier = me ? tierFor(me.points, tiers ?? []) : null;
   const prefs = prefsOf(me?.notify);
-  const setPref = (k: keyof NotifyPrefs, v: boolean) => { if (me) updatePatient(me.id, { notify: { ...prefs, [k]: v } }); };
+  const [saveErr, setSaveErr] = useState("");
+  const setPref = (k: keyof NotifyPrefs, v: boolean) => {
+    if (!me) return;
+    setSaveErr("");
+    updatePatient(me.id, { notify: { ...prefs, [k]: v } }).catch(() => setSaveErr("تعذّر حفظ التغيير. تحققي من الاتصال وحاولي مجدداً."));
+  };
   async function logout() { await signOut(); window.location.replace(R.Login); }
 
   return (
@@ -64,10 +69,9 @@ export default function AccountPage() {
             <Row icon="receipt" title="مدفوعاتي" sub="الفواتير وسجل الزيارات" href={R.Payments} last />
           </div>
 
+          {saveErr && <ErrorNote>{saveErr}</ErrorNote>}
           <div style={box}>
-            <Row icon="lang" title="اللغة" href={R.P_Settings} right={
-              <><span style={{ fontSize: 13, color: C.sub2 }}>{me.lang === "en" ? "English" : "العربية"}</span><Icon name="chev" color="#C0ADC5" size={18} stroke={2} /></>
-            } />
+            <Row icon="lang" title="الإعدادات" sub="لغة الرسائل، الإشعارات، الخصوصية" href={R.P_Settings} />
             <Row icon="msg" title="تذكيرات واتساب" sub="قبل الموعد بيوم وبساعتين" right={<Toggle on={prefs.whatsapp} onChange={(v) => setPref("whatsapp", v)} label="تذكيرات واتساب" />} />
             <Row icon="bell" title="العروض والباقات" sub="إشعارات بالعروض الموسمية" last right={<Toggle on={prefs.offers} onChange={(v) => setPref("offers", v)} label="إشعارات العروض" />} />
           </div>

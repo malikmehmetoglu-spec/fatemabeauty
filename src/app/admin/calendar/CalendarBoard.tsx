@@ -87,7 +87,7 @@ export function CalendarBody() {
           style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13 }} />
         <span style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
-          {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "حسب الغرفة" }, { value: "specialist", label: "حسب الأخصائية" }]} />}
+          {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "الغرف" }, { value: "specialist", label: "الأخصائيات" }]} />}
           <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
           {isAdmin && <GhostButton icon="clock" onClick={() => setEditHours(true)}>ساعات الدوام</GhostButton>}
         </span>

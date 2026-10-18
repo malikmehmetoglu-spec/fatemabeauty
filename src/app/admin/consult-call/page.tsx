@@ -47,13 +47,14 @@ export default function ConsultCallPage() {
           ) : !consults?.length ? (
             <EmptyState compact icon="cal" title="لا توجد استشارات محجوزة" text={`تظهر هنا حجوزات «${svc.name}» القادمة وآخر 7 أيام.`} />
           ) : (
-            <DataTable headers={["الموعد", "المراجعة", "الهاتف", "الأخصائية", "الحالة"]} widths={[1.4, 1.5, 1.2, 1.1, 1]}
+            <DataTable headers={["الموعد", "المراجعة", "الهاتف", "الأخصائية", "الحالة"]} widths={[1.4, 1.5, 1.2, 1.1, 1]} minWidth={640}
               rows={consults.map((a) => {
                 const st = STATUS[a.status] ?? [a.status, "gray"];
+                const phone = a.patients?.phone || a.walk_in_phone;
                 return [
                   <span key="d" style={{ fontSize: 13 }}>{arDate(new Date(a.starts_at))} · <span className="latin">{clock(a.starts_at)}</span></span>,
-                  <span key="p" style={{ fontWeight: 700 }}>{a.patients?.name || "—"} {a.patients && <span className="latin" style={{ fontSize: 11.5, color: C.muted }}>{a.patients.file_no}</span>}</span>,
-                  a.patients?.phone ? <a key="ph" href={`tel:${a.patients.phone}`} dir="ltr" className="latin" style={{ color: C.accent }}>{a.patients.phone}</a> : "—",
+                  <span key="p" style={{ fontWeight: 700 }}>{a.patients?.name || a.walk_in_name || "بدون اسم"} {a.patients && <span className="latin" style={{ fontSize: 11.5, color: C.muted }}>{a.patients.file_no}</span>}</span>,
+                  phone ? <a key="ph" href={`tel:${phone}`} dir="ltr" className="latin" style={{ color: C.accent }}>{phone}</a> : "—",
                   a.staff?.name ?? "—",
                   <Tag key="s" kind={st[1]}>{st[0]}</Tag>,
                 ];

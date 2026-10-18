@@ -82,6 +82,7 @@ export default function MyDayPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+                  {next.status === "confirmed" && <SubmitButton busy={busy === next.id + "checked_in"} onClick={() => go(next, "checked_in")}>تسجيل وصولها</SubmitButton>}
                   {next.status === "checked_in" && <GhostButton icon="bell" onClick={() => run(next.id + "call", () => callPatient(next.id))}>{next.called_at ? "إعادة النداء" : "نداء على الشاشة"}</GhostButton>}
                   {next.status === "checked_in" && !current && <SubmitButton busy={busy === next.id + "in_session"} onClick={() => go(next, "in_session")}>بدء الجلسة</SubmitButton>}
                   {next.patient_id && <Link href={`${R.W_Record}?id=${next.patient_id}`} style={{ height: 46, display: "inline-flex", alignItems: "center", color: C.accent, fontWeight: 700, fontSize: 14 }}>فتح الملف</Link>}

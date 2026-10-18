@@ -16,7 +16,7 @@ export async function getConsultService(): Promise<Service | null> {
 }
 
 export type ConsultAppt = {
-  id: string; starts_at: string; minutes: number; status: string;
+  id: string; starts_at: string; minutes: number; status: string; walk_in_name?: string | null; walk_in_phone?: string | null;
   patients: { name: string; file_no: number; phone: string | null } | null;
   staff: { name: string } | null;
 };
@@ -24,7 +24,7 @@ export type ConsultAppt = {
 /** Staff: upcoming and recent online consultations. */
 export async function listConsults(serviceKey: string) {
   const since = new Date(Date.now() - 7 * 864e5).toISOString();
-  const res = await supabase.from("appointments").select("id, starts_at, minutes, status, patients(name, file_no, phone), staff(name)")
+  const res = await supabase.from("appointments").select("id, starts_at, minutes, status, walk_in_name, walk_in_phone, patients(name, file_no, phone), staff(name)")
     .eq("service_key", serviceKey).gte("starts_at", since).neq("status", "cancelled").order("starts_at");
   return must(res) as unknown as ConsultAppt[];
 }

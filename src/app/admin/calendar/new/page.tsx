@@ -101,7 +101,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
-      setError(/patients_phone_key|duplicate key.*phone/.test(m) ? "يوجد ملف بهذا الرقم — ابحثي عنه في «مراجِعة مسجّلة»." : bookingError(e));
+      setError(/patients_phone_key|duplicate key.*phone/.test(m) ? "يوجد ملف بهذا الرقم — ابحثي عنه في «لها ملف»." : bookingError(e));
     } finally { setBusy(false); }
   }
 
@@ -114,7 +114,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
       ) : (
         <>
           <Segment label="نوع الحجز" value={mode} onChange={(v) => { setMode(v); setError(""); }}
-            options={[{ value: "existing", label: "مراجِعة مسجّلة" }, { value: "new", label: "مراجِعة جديدة" }, { value: "walkin", label: "حضور مباشر" }]} />
+            options={[{ value: "existing", label: "لها ملف" }, { value: "new", label: "ملف جديد" }, { value: "walkin", label: "حضور مباشر" }]} />
 
           {mode === "existing" && (patient ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 18, padding: "10px 14px", background: C.tint2 }}>
