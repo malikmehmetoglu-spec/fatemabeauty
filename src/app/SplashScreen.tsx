@@ -26,7 +26,7 @@ export function SplashScreen() {
           <span style={{ width: 5, height: 5, borderRadius: 3, background: C.gold }} />
           <span style={{ width: 26, height: 1, background: C.gold2 }} />
         </div>
-        <p style={{ margin: "14px 0 0", fontSize: 16, color: C.sub, lineHeight: 1.7 }}>عناية هادئة ببشرتكِ<br />بين يدين تعرفانها</p>
+        <p style={{ margin: "14px 0 0", fontSize: 16, color: C.sub, lineHeight: 1.7 }}>عناية تليق ببشرتكِ<br />وخبرة تمنحكِ إشراقة تدوم</p>
       </div>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, paddingBottom: 14 }}>
         <div role="progressbar" aria-label="جارٍ التحميل" style={{ display: "flex", gap: 7, justifyContent: "center" }}>

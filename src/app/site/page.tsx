@@ -50,7 +50,7 @@ export default function SitePage() {
         <section className={s.hero}>
           <div>
             <span className={s.eyebrow}>مركز العناية بالبشرة</span>
-            <h1 className={s.h1}>بشرتكِ تستحق <em>عناية هادئة</em><br />بين يدين تعرفانها</h1>
+            <h1 className={s.h1}><em>عناية</em> تليق ببشرتكِ<br />وخبرة تمنحكِ <em>إشراقة تدوم</em></h1>
             <p className={s.lead}>
               تنظيف عميق، هيدرافيشل، تقشير وليزر — بإشراف الأخصائية فاطمة طيبة.
               احجزي جلستكِ في دقيقة، وتابعي دوركِ ورحلة بشرتكِ من هاتفكِ.
