@@ -393,6 +393,7 @@ export type Database = {
       order_items: {
         Row: {
           id: string
+          name: string
           order_id: string
           product_key: string
           qty: number
@@ -400,6 +401,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          name?: string
           order_id: string
           product_key: string
           qty: number
@@ -407,6 +409,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          name?: string
           order_id?: string
           product_key?: string
           qty?: number
@@ -671,37 +674,70 @@ export type Database = {
       }
       products: {
         Row: {
+          active: boolean
           category: string
+          cost: number | null
+          created_at: string
+          description: string
+          image_path: string | null
           key: string
+          kind: string
+          min_stock: number
           name: string
           price: number | null
           recommended: boolean
+          show_in_store: boolean
           size: string
+          sku: string | null
           sort: number
           stock: number
-          visible: boolean
+          unit: string
+          updated_at: string
+          usage: string
         }
         Insert: {
-          category: string
-          key: string
+          active?: boolean
+          category?: string
+          cost?: number | null
+          created_at?: string
+          description?: string
+          image_path?: string | null
+          key?: string
+          kind?: string
+          min_stock?: number
           name: string
           price?: number | null
           recommended?: boolean
+          show_in_store?: boolean
           size?: string
+          sku?: string | null
           sort?: number
           stock?: number
-          visible?: boolean
+          unit?: string
+          updated_at?: string
+          usage?: string
         }
         Update: {
+          active?: boolean
           category?: string
+          cost?: number | null
+          created_at?: string
+          description?: string
+          image_path?: string | null
           key?: string
+          kind?: string
+          min_stock?: number
           name?: string
           price?: number | null
           recommended?: boolean
+          show_in_store?: boolean
           size?: string
+          sku?: string | null
           sort?: number
           stock?: number
-          visible?: boolean
+          unit?: string
+          updated_at?: string
+          usage?: string
         }
         Relationships: []
       }
@@ -937,15 +973,105 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_batches: {
+        Row: {
+          created_by: string | null
+          expires_on: string | null
+          id: string
+          product_key: string
+          qty_left: number
+          qty_received: number
+          received_at: string
+          supplier: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          product_key: string
+          qty_left: number
+          qty_received: number
+          received_at?: string
+          supplier?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          product_key?: string
+          qty_left?: number
+          qty_received?: number
+          received_at?: string
+          supplier?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_batches_product_key_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: number
+          note: string | null
+          product_key: string
+          reason: string
+          ref_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: never
+          note?: string | null
+          product_key: string
+          reason: string
+          ref_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: never
+          note?: string | null
+          product_key?: string
+          reason?: string
+          ref_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_key_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      adjust_stock: {
+        Args: { p_counted: number; p_note?: string; p_product: string }
+        Returns: undefined
+      }
       cancel_my_appointment: {
         Args: { p_id: string; p_reason: string }
         Returns: undefined
       }
+      cancel_order: { Args: { p_order: string }; Returns: undefined }
       ensure_patient: {
         Args: never
         Returns: {
@@ -972,7 +1098,53 @@ export type Database = {
       }
       link_my_staff: {
         Args: never
-        Returns: Database["public"]["Tables"]["staff"]["Row"]
+        Returns: {
+          active: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          photo_url: string | null
+          role: Database["public"]["Enums"]["staff_role"]
+          title: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      place_order: {
+        Args: { p_address?: string; p_delivery: boolean; p_items: Json }
+        Returns: {
+          address: string | null
+          created_at: string
+          delivery: boolean
+          id: string
+          no: number
+          patient_id: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      receive_stock: {
+        Args: {
+          p_expires?: string
+          p_product: string
+          p_qty: number
+          p_supplier?: string
+          p_unit_cost?: number
+        }
+        Returns: undefined
       }
       today_queue: {
         Args: never

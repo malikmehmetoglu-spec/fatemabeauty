@@ -46,3 +46,24 @@ export function useSession() {
 export const ROLE_LABEL: Record<Tables<"staff">["role"], string> = {
   owner: "المدير العام", admin: "الإدارة", specialist: "أخصائية", reception: "الاستقبال", accountant: "المحاسبة",
 };
+
+/**
+ * Patient-only page: redirects to the login screen when nobody is signed in.
+ * Returns the session state; render a loader while `loading` or while `patient` is null.
+ */
+export function useRequirePatient(loginPath = "/login/") {
+  const s = useSession();
+  useEffect(() => {
+    if (!s.loading && !s.patient && !s.staff) window.location.replace(loginPath);
+  }, [s.loading, s.patient, s.staff, loginPath]);
+  return s;
+}
+
+/** Staff-only screen outside AdminShell (reception tablet): redirects to the staff login. */
+export function useRequireStaff(loginPath = "/admin/login/") {
+  const s = useSession();
+  useEffect(() => {
+    if (!s.loading && !s.staff) window.location.replace(loginPath);
+  }, [s.loading, s.staff, loginPath]);
+  return s;
+}
