@@ -86,13 +86,13 @@ export default function Page() {
                       <div style={{ width: "50%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>3/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>3/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>الثلاثاء 10 تشرين الثاني</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>10:30</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>10:30</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -124,13 +124,13 @@ export default function Page() {
                       <div style={{ width: "66%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>4/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>4/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>الثلاثاء 10 تشرين الثاني</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>12:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>12:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -162,13 +162,13 @@ export default function Page() {
                       <div style={{ width: "100%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>6/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>6/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>10:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>10:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -200,13 +200,13 @@ export default function Page() {
                       <div style={{ width: "33%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>2/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>2/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>الثلاثاء 3 تشرين الثاني</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>11:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>11:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -238,13 +238,13 @@ export default function Page() {
                       <div style={{ width: "16%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>1/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>1/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>الأربعاء 14 تشرين الأول</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>11:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>11:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -276,13 +276,13 @@ export default function Page() {
                       <div style={{ width: "33%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>2/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>2/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>14:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>14:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -314,13 +314,13 @@ export default function Page() {
                       <div style={{ width: "66%", height: 8, borderRadius: 4, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }}></div>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>4/6</span>
+                  <span style={{ fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>4/6</span>
                 </div>
               </div>
               <div style={{ flex: 1.25, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35, whiteSpace: "nowrap" }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>15:00</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>15:00</div>
                 </div>
               </div>
               <div style={{ flex: 0.85, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>

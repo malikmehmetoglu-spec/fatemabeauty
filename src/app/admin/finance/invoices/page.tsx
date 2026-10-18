@@ -121,10 +121,10 @@ export default function Page() {
           {rows.map((r, i) => (<Fragment key={i}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, height: 52, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, fontWeight: 500 }}>{r.inv}</span>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, fontWeight: 500 }}>{r.inv}</span>
               </div>
               <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.sub }}>{r.time}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.sub }}>{r.time}</span>
               </div>
               <div style={{ flex: 1.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{r.ini}</span>
@@ -142,7 +142,7 @@ export default function Page() {
                 <Tag kind={r.mkind}>{r.method}</Tag>
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>{r.amount}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>{r.amount}</span>
                 <span style={{ fontSize: 11, color: C.sub2 }}>ل.س</span>
               </div>
               <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -163,7 +163,7 @@ export default function Page() {
             <div style={{ flex: 1.3 }}></div>
             <div style={{ flex: 1 }}></div>
             <div style={{ flex: 1.1, display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 16, color: C.accent }}>{total}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 16, color: C.accent }}>{total}</span>
               <span style={{ fontSize: 11, color: C.sub2 }}>ل.س</span>
             </div>
             <div style={{ flex: 1 }}></div>

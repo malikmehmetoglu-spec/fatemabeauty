@@ -65,7 +65,7 @@ export default function Page() {
                   <div style={{ width: `${Math.round(((toMinutes(NOW) - toMinutes(current.time)) / current.minutes) * 100)}%`, height: 8, borderRadius: 4, background: "linear-gradient(90deg, #E8D6F0, #FFFFFF)" }}></div>
                 </div>
               </div>
-              <span dir="ltr" style={{ fontSize: 13, fontFamily: "Rubik, sans-serif", unicodeBidi: "isolate" }}>{current.time} – {endOf(current.time)}</span>
+              <span dir="ltr" style={{ fontSize: 13, fontFamily: "var(--font-rubik), sans-serif", unicodeBidi: "isolate" }}>{current.time} – {endOf(current.time)}</span>
             </div>
             <div style={{ position: "relative", display: "flex", gap: 10, marginTop: 18 }}>
               <Link href={R.W_SessionNote} style={{ flex: 1, height: 46, borderRadius: 23, background: "linear-gradient(145deg,#FFFFFF,#E8D0ED)", color: C.accent, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 18px rgba(0,0,0,0.18)" }}>
@@ -84,7 +84,7 @@ export default function Page() {
           </div>
           <div style={{ borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <span style={{ width: 64, height: 64, borderRadius: 22, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, fontFamily: "Rubik, sans-serif" }}>{next.queueNo}</span>
+              <span style={{ width: 64, height: 64, borderRadius: 22, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif" }}>{next.queueNo}</span>
               <div style={{ flex: 1, lineHeight: 1.4 }}>
                 <div style={{ fontSize: 12.5, color: C.sub2 }}>المراجعة التالية · {next.time}</div>
                 <div style={{ fontSize: 18, fontWeight: 700 }}>
@@ -189,7 +189,7 @@ export default function Page() {
                 const fin = x.status === "انتهت", cur = x.status === "في الجلسة";
                 return (
                   <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 10px", borderRadius: 18, ...(cur ? SELECTED : {}) }}>
-                    <span style={{ width: 46, fontSize: 13, fontWeight: 700, fontFamily: "Rubik, sans-serif", color: fin ? C.muted : C.ink }}>{x.time}</span>
+                    <span style={{ width: 46, fontSize: 13, fontWeight: 700, fontFamily: "var(--font-rubik), sans-serif", color: fin ? C.muted : C.ink }}>{x.time}</span>
                     {fin ? <DoneDot size={28} /> : cur ? (
                       <span style={{ width: 28, height: 28, borderRadius: 14, background: C.white, border: "2px solid #A877B6", boxShadow: "0 0 0 5px rgba(150,100,170,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <span style={{ width: 10, height: 10, borderRadius: 5, background: C.accentMid }}></span>

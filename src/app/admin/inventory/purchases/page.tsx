@@ -114,7 +114,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-041
                 </span>
               </div>
@@ -130,13 +130,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   4
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     58,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -162,7 +162,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-040
                 </span>
               </div>
@@ -178,13 +178,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   3
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     22,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -210,7 +210,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-039
                 </span>
               </div>
@@ -226,13 +226,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   5
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     62,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -258,7 +258,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-038
                 </span>
               </div>
@@ -274,13 +274,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   1
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     12,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -306,7 +306,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-037
                 </span>
               </div>
@@ -322,13 +322,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   6
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     70,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -354,7 +354,7 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1.05, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                   PO-2026-036
                 </span>
               </div>
@@ -370,13 +370,13 @@ export default function Page() {
                 <ExampleTag />
               </div>
               <div style={{ flex: 0.45, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                   4
                 </span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     26,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -492,7 +492,7 @@ export default function Page() {
                   <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon name="minus" color="#7B4687" size={14} />
                   </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>
+                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
                     22
                   </span>
                   <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -513,7 +513,7 @@ export default function Page() {
                   <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon name="minus" color="#7B4687" size={14} />
                   </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>
+                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
                     10
                   </span>
                   <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -534,7 +534,7 @@ export default function Page() {
                   <button aria-label="إنقاص" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Icon name="minus" color="#7B4687" size={14} />
                   </button>
-                  <span style={{ width: 28, textAlign: "center", fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>
+                  <span style={{ width: 28, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
                     11
                   </span>
                   <button aria-label="زيادة" style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "#F3EAF6", display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -124,7 +124,7 @@ export default function Page() {
               <Fragment key={oI}>
                 <div style={{ borderRadius: 22, padding: "12px 14px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -164,7 +164,7 @@ export default function Page() {
               <Fragment key={oI}>
                 <div style={{ borderRadius: 22, padding: "12px 14px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -204,7 +204,7 @@ export default function Page() {
               <Fragment key={oI}>
                 <div style={{ borderRadius: 22, padding: "12px 14px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -244,7 +244,7 @@ export default function Page() {
               <Fragment key={oI}>
                 <div style={{ borderRadius: 22, padding: "12px 14px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>#{o.no}</span>
                     <span style={{ fontSize: 11.5, color: C.muted }}>{o.time}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

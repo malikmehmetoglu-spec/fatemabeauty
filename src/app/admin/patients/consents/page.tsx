@@ -78,7 +78,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>11:52</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>11:52</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -115,7 +115,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>11:53</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>11:53</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -152,7 +152,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>12:08</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>12:08</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -189,7 +189,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>12:24</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>12:24</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -223,7 +223,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>12:21</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>12:21</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -257,7 +257,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>—</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>—</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -291,7 +291,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>18 آب</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>10:41</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>10:41</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
@@ -328,7 +328,7 @@ export default function Page() {
               <div style={{ flex: 0.55, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div>اليوم</div>
-                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "Rubik, sans-serif" }}>11:24</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2, fontFamily: "var(--font-rubik), sans-serif" }}>11:24</div>
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>

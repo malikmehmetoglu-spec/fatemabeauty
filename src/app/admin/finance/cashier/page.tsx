@@ -67,7 +67,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>
                     {"تنظيف عميق · انتهت "}
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>{cur.issuedAt}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#795481", whiteSpace: "nowrap" }}>{cur.issuedAt}</span>
                   </div>
                 </div>
                 <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: C.accent, color: C.white }}>جاهزة</span>
@@ -82,7 +82,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>
                     {"تنظيف عميق · تنتهي "}
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:00</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:00</span>
                   </div>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>
                     {"ليزر · تنتهي "}
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:00</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:00</span>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>
                     {"تقشير · تنتهي "}
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:15</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>13:15</span>
                   </div>
                 </div>
               </div>
@@ -134,14 +134,14 @@ export default function Page() {
                 </div>
                 <div style={{ fontSize: 12.5, color: C.sub2 }}>
                   {"ملف "}
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.fileNo}</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.fileNo}</span>
                   {` · ${cur.room} · ${cur.specialist}`}
                   <ExampleTag />
                 </div>
               </div>
               <div style={{ textAlign: "left", lineHeight: 1.5 }}>
                 <div style={{ fontSize: 12, color: C.sub2 }}>رقم الفاتورة</div>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 14, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 14, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
               </div>
             </div>
             <div style={{ height: 1, background: C.line }}></div>
@@ -160,15 +160,15 @@ export default function Page() {
                     <div style={{ fontSize: 14, fontWeight: 700 }}>تنظيف عميق للبشرة</div>
                     <div style={{ fontSize: 11.5, color: C.sub2 }}>
                       {"جلسة "}
-                      <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.time}</span>
+                      <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{cur.time}</span>
                       {` · ${cur.minutes} دقيقة`}
                     </div>
                   </div>
                 </div>
-                <div style={{ flex: 1, textAlign: "center", fontFamily: "Rubik, sans-serif" }}>1</div>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-rubik), sans-serif" }}>1</div>
                 <div style={{ flex: 1.3, textAlign: "left" }}>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>{fmt(cur.price)}</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>{fmt(cur.price)}</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
@@ -221,7 +221,7 @@ export default function Page() {
                   <button onClick={p.pick} style={p.style}>
                     <span style={p.dot}></span>
                     <span style={{ flex: 1, textAlign: "right", fontSize: 14, fontWeight: 700 }}>{p.label}</span>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 14, fontWeight: 700 }}>{p.amount}</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 14, fontWeight: 700 }}>{p.amount}</span>
                   </button>
                 </Fragment>))}
               </div>
@@ -248,16 +248,16 @@ export default function Page() {
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }}></div>
             <div style={{ position: "relative", display: "flex", justifyContent: "space-between", fontSize: 13, color: C.onDark }}>
               <span>المجموع الفرعي</span>
-              <span style={{ fontFamily: "Rubik, sans-serif" }}>{subtotal}{" ل.س"}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>{subtotal}{" ل.س"}</span>
             </div>
             <div style={{ position: "relative", display: "flex", justifyContent: "space-between", fontSize: 13, color: C.onDark, marginTop: 6 }}>
               <span>الخصم ({discPct}%)</span>
-              <span style={{ fontFamily: "Rubik, sans-serif" }}>{"− "}{discAmt}{" ل.س"}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>{"− "}{discAmt}{" ل.س"}</span>
             </div>
             <div style={{ position: "relative", height: 1, background: "rgba(255,255,255,0.18)", margin: "12px 0" }}></div>
             <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>المطلوب</div>
             <div style={{ position: "relative", display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.2 }}>{totalStr}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.2 }}>{totalStr}</span>
               <span style={{ fontSize: 15 }}>ل.س</span>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: "1px solid #EDE2F1", fontSize: 13 }}>
                   <span style={{ color: C.sub2 }}>رقم الفاتورة</span>
                   <span style={{ fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>{cur.inv}</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 36, borderTop: "1px solid #EDE2F1", fontSize: 13 }}>
@@ -307,7 +307,7 @@ export default function Page() {
               <div style={{ flex: 1, lineHeight: 1.45 }}>
                 <div style={{ fontSize: 12, color: C.sub2 }}>
                   {"الفاتورة السابقة · "}
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>{prev.inv}</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>{prev.inv}</span>
                   {` · ${prev.issuedAt}`}
                 </div>
                 <div style={{ fontSize: 13.5 }}>
@@ -316,7 +316,7 @@ export default function Page() {
                 </div>
               </div>
               <span style={{ whiteSpace: "nowrap" }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>{fmt(prev.price)}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>{fmt(prev.price)}</span>
                 <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
               </span>
             </div>

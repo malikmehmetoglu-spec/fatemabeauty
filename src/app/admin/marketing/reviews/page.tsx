@@ -307,7 +307,7 @@ export default function Page() {
                           <ExampleTag />
                         </>
                       )}
-                      <span style={{ fontSize: 11.5, color: "#A595AC", marginInlineStart: "auto", fontFamily: "Rubik, sans-serif" }}>
+                      <span style={{ fontSize: 11.5, color: "#A595AC", marginInlineStart: "auto", fontFamily: "var(--font-rubik), sans-serif" }}>
                         {r.time}
                       </span>
                     </div>

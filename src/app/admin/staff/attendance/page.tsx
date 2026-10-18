@@ -79,12 +79,12 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
                       10:00 – 18:00
                     </span>
                   </div>
                   <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
                       09:52
                     </span>
                   </div>
@@ -145,12 +145,12 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
                       10:00 – 18:00
                     </span>
                   </div>
                   <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
                       09:45
                     </span>
                   </div>
@@ -211,12 +211,12 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
                       10:00 – 18:00
                     </span>
                   </div>
                   <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
                       10:07
                     </span>
                   </div>
@@ -277,12 +277,12 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
                       09:30 – 18:00
                     </span>
                   </div>
                   <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
                       09:28
                     </span>
                   </div>
@@ -343,12 +343,12 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E", whiteSpace: "nowrap" }}>
                       10:00 – 16:00
                     </span>
                   </div>
                   <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13.5, color: "#35213D", whiteSpace: "nowrap" }}>
                       09:58
                     </span>
                   </div>
@@ -483,7 +483,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 24, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
                     10
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -515,7 +515,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 24, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
                     8
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -547,7 +547,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 24, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
                     5
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -579,7 +579,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 24, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
                     11
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -609,7 +609,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 24, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 24, fontWeight: 700 }}>
                     9
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>

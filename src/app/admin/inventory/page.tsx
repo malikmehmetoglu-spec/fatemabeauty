@@ -84,7 +84,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>HA-2607-11</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>HA-2607-11</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -95,7 +95,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>18</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>18</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 20</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -121,7 +121,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>HF-2604-05</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>HF-2604-05</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -132,7 +132,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>14</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>14</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 6</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -157,7 +157,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>PL-2606-07</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>PL-2606-07</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -168,7 +168,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>6</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>6</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 8</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -193,7 +193,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>LG-2609-01</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>LG-2609-01</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -204,7 +204,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>9</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>9</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 10</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -229,7 +229,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>MS-2605-03</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>MS-2605-03</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -240,7 +240,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>24</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>24</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 10</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -265,7 +265,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>CL-2607-09</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>CL-2607-09</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -276,7 +276,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>20</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>20</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 8</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -301,7 +301,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>SP-2608-02</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>SP-2608-02</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -312,7 +312,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>35</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>35</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 12</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -337,7 +337,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>GL-2608-12</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub, whiteSpace: "nowrap" }}>GL-2608-12</span>
                 </div>
                 <div style={{ flex: 1.3, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ lineHeight: 1.35 }}>
@@ -348,7 +348,7 @@ export default function Page() {
                 <div style={{ flex: 1.6, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14 }}>12</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14 }}>12</span>
                       <span style={{ color: C.sub2 }}>الحد الأدنى 10</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: "#ECE2EF", overflow: "hidden" }}>
@@ -374,18 +374,18 @@ export default function Page() {
               <div style={{ fontSize: 13, fontWeight: 700 }}>مصل الهيالورونيك · 18 أمبولة في تشغيلتين</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 18, padding: "10px 12px", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>
                 <div style={{ flex: 1, lineHeight: 1.4 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>HA-2607-11</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>HA-2607-11</span>
                   <div style={{ fontSize: 12, color: C.sub2 }}>ينتهي 30 تشرين الثاني 2026</div>
                 </div>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>8</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>8</div>
                 <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: C.accent, color: C.white }}>يُصرف أولاً</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 18, padding: "10px 12px", background: "#FDF9FE", border: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 1, lineHeight: 1.4 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>HA-2609-04</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>HA-2609-04</span>
                   <div style={{ fontSize: 12, color: C.sub2 }}>ينتهي 31 أيار 2027</div>
                 </div>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>10</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>10</div>
                 <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>لاحقاً</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 14, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, background: "#FCF1DE", color: "#7A4F10" }}>

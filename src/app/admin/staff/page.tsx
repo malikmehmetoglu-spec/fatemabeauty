@@ -120,7 +120,7 @@ export default function Page() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 30, fontWeight: 700 }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 30, fontWeight: 700 }}>
                 8
               </span>
               <span style={{ fontSize: 12.5, color: "#866F8D" }}>
@@ -133,13 +133,13 @@ export default function Page() {
             <div style={{ marginTop: "auto", width: "100%", borderTop: "1px solid #EDE2F1", paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#866F8D" }}>
               <span>
                 الوردية{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   10:00–18:00
                 </span>
               </span>
               <span>
                 حضور{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   09:52
                 </span>
               </span>
@@ -166,7 +166,7 @@ export default function Page() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 30, fontWeight: 700 }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 30, fontWeight: 700 }}>
                 9
               </span>
               <span style={{ fontSize: 12.5, color: "#866F8D" }}>
@@ -179,13 +179,13 @@ export default function Page() {
             <div style={{ marginTop: "auto", width: "100%", borderTop: "1px solid #EDE2F1", paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#866F8D" }}>
               <span>
                 الوردية{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   10:00–18:00
                 </span>
               </span>
               <span>
                 حضور{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   09:45
                 </span>
               </span>
@@ -212,7 +212,7 @@ export default function Page() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 30, fontWeight: 700 }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 30, fontWeight: 700 }}>
                 9
               </span>
               <span style={{ fontSize: 12.5, color: "#866F8D" }}>
@@ -225,13 +225,13 @@ export default function Page() {
             <div style={{ marginTop: "auto", width: "100%", borderTop: "1px solid #EDE2F1", paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#866F8D" }}>
               <span>
                 الوردية{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   10:00–18:00
                 </span>
               </span>
               <span>
                 حضور{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   10:07
                 </span>
               </span>
@@ -268,13 +268,13 @@ export default function Page() {
             <div style={{ marginTop: "auto", width: "100%", borderTop: "1px solid #EDE2F1", paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#866F8D" }}>
               <span>
                 الوردية{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   09:30–18:00
                 </span>
               </span>
               <span>
                 حضور{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   09:28
                 </span>
               </span>
@@ -311,13 +311,13 @@ export default function Page() {
             <div style={{ marginTop: "auto", width: "100%", borderTop: "1px solid #EDE2F1", paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#866F8D" }}>
               <span>
                 الوردية{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   10:00–16:00
                 </span>
               </span>
               <span>
                 حضور{" "}
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: "#76607E", whiteSpace: "nowrap" }}>
                   09:58
                 </span>
               </span>
@@ -347,31 +347,31 @@ export default function Page() {
             </div>
             <div style={{ position: "relative" }}>
               <div style={{ marginRight: 162, position: "relative", height: 16 }}>
-                <span style={{ position: "absolute", right: "0.00%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "0.00%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   10:00
                 </span>
-                <span style={{ position: "absolute", right: "12.50%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "12.50%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   11:00
                 </span>
-                <span style={{ position: "absolute", right: "25.00%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "25.00%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   12:00
                 </span>
-                <span style={{ position: "absolute", right: "37.50%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "37.50%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   13:00
                 </span>
-                <span style={{ position: "absolute", right: "50.00%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "50.00%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   14:00
                 </span>
-                <span style={{ position: "absolute", right: "62.50%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "62.50%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   15:00
                 </span>
-                <span style={{ position: "absolute", right: "75.00%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "75.00%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   16:00
                 </span>
-                <span style={{ position: "absolute", right: "87.50%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "87.50%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   17:00
                 </span>
-                <span style={{ position: "absolute", right: "100.00%", transform: "translateX(50%)", fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                <span style={{ position: "absolute", right: "100.00%", transform: "translateX(50%)", fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                   18:00
                 </span>
               </div>

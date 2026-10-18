@@ -38,7 +38,7 @@ export default function Page() {
               <div>
                 <div style={{ fontSize: 13, color: C.onDark }}>النقد المتوقع في الدرج</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>{money(EXP, false)}</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>{money(EXP, false)}</span>
                   <span>ل.س</span>
                 </div>
                 <div style={{ fontSize: 12, color: C.onDark }}>500 افتتاحي + {money(CASH_TODAY, false)} مقبوضات − 150 مصروف</div>
@@ -46,7 +46,7 @@ export default function Page() {
               <div style={{ textAlign: "left", fontSize: 12, color: C.onDark, lineHeight: 1.6 }}>
                 مدفوعات البطاقة
                 <br />
-                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 18, color: C.white, fontWeight: 700 }}>{money(CARD_TODAY, false)}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 18, color: C.white, fontWeight: 700 }}>{money(CARD_TODAY, false)}</span>
                 {" ل.س"}
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function Page() {
                   <div style={{ fontSize: 12, color: C.sub2 }}>رصيد الافتتاح</div>
                   <div style={{ marginTop: 2 }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 18, color: C.ink }}>500</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 18, color: C.ink }}>500</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export default function Page() {
                   <div style={{ fontSize: 12, color: C.sub2 }}>مقبوضات نقدية</div>
                   <div style={{ marginTop: 2 }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 18, color: C.ok }}>{money(CASH_TODAY, false)}</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 18, color: C.ok }}>{money(CASH_TODAY, false)}</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -92,7 +92,7 @@ export default function Page() {
                   <div style={{ fontSize: 12, color: C.sub2 }}>مصروفات نثرية</div>
                   <div style={{ marginTop: 2 }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 18, color: "#B07A1E" }}>150</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 18, color: "#B07A1E" }}>150</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -111,7 +111,7 @@ export default function Page() {
                   <Icon name="minus" color={C.accent} size={18} />
                 </button>
                 <div style={{ flex: 1, height: 58, borderRadius: 20, border: "1.5px solid #E2CEE6", background: "#FEFCFE", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 28, fontWeight: 700 }}>{counted}</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 28, fontWeight: 700 }}>{counted}</span>
                   <span style={{ fontSize: 13, color: C.sub2 }}>ل.س</span>
                 </div>
                 <button onClick={inc} aria-label="زيادة" style={{ width: 46, height: 46, borderRadius: 23, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -121,7 +121,7 @@ export default function Page() {
               <div style={diffStyle}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>الفرق عن المتوقع</span>
                 <span>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 18, fontWeight: 700 }}>{diff}</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 18, fontWeight: 700 }}>{diff}</span>
                   <span style={{ fontSize: 12 }}>ل.س</span>
                 </span>
               </div>
@@ -133,7 +133,7 @@ export default function Page() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>توزيع مقبوضات اليوم</div>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>{money(REVENUE_SO_FAR, false)}</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>{money(REVENUE_SO_FAR, false)}</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -181,7 +181,7 @@ export default function Page() {
                   <Icon name="lock" color={C.accentMid} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>10:00</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>10:00</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
@@ -193,7 +193,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>رصيد افتتاحي</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>+500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ink }}>+500</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -201,11 +201,11 @@ export default function Page() {
                   <Icon name="card" color={"#8A7A84"} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>10:45</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>10:45</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-01</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-01</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>لمى حداد</span>
@@ -214,7 +214,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>جلسة ليزر · بطاقة (خارج الدرج)</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -222,11 +222,11 @@ export default function Page() {
                   <Icon name="cash" color={C.accentMid} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:00</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:00</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-02</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-02</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{INVOICES_TODAY[1].name}</span>
@@ -235,7 +235,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>تنظيف عميق للبشرة</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+1,500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+1,500</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -243,11 +243,11 @@ export default function Page() {
                   <Icon name="cash" color={C.accentMid} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:00</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:00</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-03</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-03</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>نور الأحمد</span>
@@ -256,7 +256,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>تقشير البشرة</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+2,000</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+2,000</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -264,11 +264,11 @@ export default function Page() {
                   <Icon name="card" color={"#8A7A84"} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:30</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:30</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-04</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-04</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>سارة يوسف</span>
@@ -277,7 +277,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>جلسة ليزر · بطاقة (خارج الدرج)</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -285,7 +285,7 @@ export default function Page() {
                   <Icon name="minus" color={"#B07A1E"} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:40</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>11:40</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
@@ -297,7 +297,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>مستلزمات ضيافة · مع إيصال</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: "#B07A1E" }}>−150</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: "#B07A1E" }}>−150</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -305,11 +305,11 @@ export default function Page() {
                   <Icon name="cash" color={C.accentMid} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:00</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:00</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-05</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-05</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>رنا خليل</span>
@@ -318,7 +318,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>هيدرافيشل</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+2,000</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+2,000</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <div style={{ position: "absolute", right: 15, top: 47, bottom: -23, width: 2, background: "#EEE2F0" }}></div>
@@ -326,11 +326,11 @@ export default function Page() {
                   <Icon name="card" color={"#8A7A84"} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:15</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:15</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-06</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-06</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>ميس عيسى</span>
@@ -339,18 +339,18 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>جلسة ليزر · بطاقة (خارج الدرج)</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.muted }}>3,500</div>
               </div>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 62 }}>
                 <span style={{ width: 32, height: 32, borderRadius: 16, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
                   <Icon name="cash" color={C.accentMid} size={15} />
                 </span>
                 <div style={{ width: 46 }}>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:30</span>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: C.sub2, whiteSpace: "nowrap" }}>12:30</span>
                 </div>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-07</span>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.ink, whiteSpace: "nowrap" }}>INV-1013-07</span>
                     <span style={{ fontWeight: 400, color: C.sub2, fontSize: 12.5 }}>
                       {" · "}
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>ديما شاهين</span>
@@ -359,7 +359,7 @@ export default function Page() {
                   </div>
                   <div style={{ fontSize: 11.5, color: C.sub2 }}>تنظيف عميق للبشرة</div>
                 </div>
-                <div dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+1,500</div>
+                <div dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 14, color: C.ok }}>+1,500</div>
               </div>
             </div>
           </div>

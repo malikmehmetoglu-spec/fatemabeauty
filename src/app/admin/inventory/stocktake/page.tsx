@@ -16,7 +16,7 @@ export default function Page() {
   const rows = STOCKTAKE.map((r) => ({
     name: r.name, lot: r.lot, sys: done ? r.cnt : r.sys, cnt: r.cnt,
     dLabel: r.diff === 0 ? "0" : r.diff > 0 ? "+" + r.diff : String(r.diff),
-    dStyle: r.diff === 0 ? "font-family:Rubik,sans-serif;color:#A595AC" : "font-family:Rubik,sans-serif;font-weight:700;" + tagStyle(r.diff < 0 ? "pink" : "amber"),
+    dStyle: r.diff === 0 ? "font-family:var(--font-rubik),sans-serif;color:#A595AC" : "font-family:var(--font-rubik),sans-serif;font-weight:700;" + tagStyle(r.diff < 0 ? "pink" : "amber"),
     noteText: r.diff === 0 ? "مطابق" : done ? "سُوّي" : r.diff < 0 ? "نقص — يحتاج سبباً" : "زيادة — راجعي الاستلام",
     rowStyle: "display:flex;align-items:center;gap:12px;height:66px;padding:0 10px;border-top:1px solid #EDE2F1;" + (r.diff !== 0 && !done ? "background:#FDF7FE;border-radius:14px" : ""),
   }));
@@ -92,17 +92,17 @@ export default function Page() {
                     </span>
                   </div>
                   <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 12.5, color: "#76607E" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5, color: "#76607E" }}>
                       {r.lot}
                     </span>
                   </div>
                   <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif" }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif" }}>
                       {r.sys}
                     </span>
                   </div>
                   <div style={{ flex: 0.8, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700 }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700 }}>
                       {r.cnt}
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export default function Page() {
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
                     محلول جلسات الهيدرافيشل
                   </span>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, color: "#8A5A12" }}>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#8A5A12" }}>
                     +1
                   </span>
                 </div>
@@ -192,7 +192,7 @@ export default function Page() {
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
                     منظف رغوي للبشرة
                   </span>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, color: "#B03D6A" }}>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#B03D6A" }}>
                     -1
                   </span>
                 </div>
@@ -201,7 +201,7 @@ export default function Page() {
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
                     واقي شمس للبيع
                   </span>
-                  <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, color: "#B03D6A" }}>
+                  <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#B03D6A" }}>
                     -2
                   </span>
                 </div>

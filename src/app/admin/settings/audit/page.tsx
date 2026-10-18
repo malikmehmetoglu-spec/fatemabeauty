@@ -92,7 +92,7 @@ export default function Page() {
           {v.rows.map((r, rI) => (
             <Fragment key={rI}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 48, borderTop: "1px solid #EDE2F1", boxSizing: "content-box" }}>
-                <div style={{ width: 56, fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.sub }}>{r.t}</div>
+                <div style={{ width: 56, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: C.sub }}>{r.t}</div>
                 <div style={{ flex: 1.5, display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
                   {r.fat && (
                     <>

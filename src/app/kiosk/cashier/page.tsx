@@ -31,12 +31,12 @@ export default function Page() {
     setSt({ ...st, recv: r }); };
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"].map((k) => ({ k: k === "del" ? "⌫" : k, aria: k === "del" ? "حذف" : k, press: () => press(k) }));
   const quick = [TOTAL, 2000, 5000].map((v) => ({ label: n(v), set: () => setSt({ ...st, recv: String(v) }),
-    style: css("height:56px;border-radius:28px;font-family:Rubik,sans-serif;font-size:17px;font-weight:500;" +
+    style: css("height:56px;border-radius:28px;font-family:var(--font-rubik),sans-serif;font-size:17px;font-weight:500;" +
       (Number(st.recv) === v ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#7B4687;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
   const r = Number(st.recv || 0), diff = r - TOTAL;
   const cash = st.m === 0, card = st.m === 1, pkg = st.m === 2;
   const recv = n(r), changeLabel = diff >= 0 ? "الباقي للمراجعة" : "المبلغ ناقص", change = n(Math.abs(diff)) + " ل.س";
-  const changeStyle = css("font-size:30px;font-weight:700;font-family:Rubik,sans-serif;line-height:1.3;color:" + (diff >= 0 ? "#2E7D50" : "#B03D6A"));
+  const changeStyle = css("font-size:30px;font-weight:700;font-family:var(--font-rubik),sans-serif;line-height:1.3;color:" + (diff >= 0 ? "#2E7D50" : "#B03D6A"));
   const due = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : "بدون خصم";
   return (
     <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>

@@ -92,10 +92,10 @@ export default function Page() {
                 </div>
               </div>
               <div style={{ position: "relative", paddingRight: 32 }}>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 243 }}>0k</div>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 172 }}>20k</div>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 100 }}>40k</div>
-                <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 29 }}>60k</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 243 }}>0k</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 172 }}>20k</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 100 }}>40k</div>
+                <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 10.5, color: C.muted, position: "absolute", right: "0", top: 29 }}>60k</div>
                 <svg width="100%" height="276" viewBox="0 0 700 276" preserveAspectRatio="none" style={{ display: "block", direction: "ltr" }}>
                   <line x1="0" x2="700" y1="250.0" y2="250.0" stroke="#EFE5F1" strokeWidth="1" />
                   <line x1="0" x2="700" y1="178.6" y2="178.6" stroke="#EFE5F1" strokeWidth="1" />
@@ -103,7 +103,7 @@ export default function Page() {
                   <line x1="0" x2="700" y1="35.7" y2="35.7" stroke="#EFE5F1" strokeWidth="1" />
                   <rect x="681.3" y="60.7" width="14.0" height="189.3" rx="4" fill="url(#gb)" />
                   <title>الثلاثاء 1 أيلول: 53,000 ل.س</title>
-                  <text x="688.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">1</text>
+                  <text x="688.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>1</text>
                   <rect x="658.0" y="62.5" width="14.0" height="187.5" rx="4" fill="url(#gb)" />
                   <title>الأربعاء 2 أيلول: 52,500 ل.س</title>
                   <rect x="634.7" y="58.9" width="14.0" height="191.1" rx="4" fill="url(#gb)" />
@@ -112,7 +112,7 @@ export default function Page() {
                   <title>الجمعة 4 أيلول: عطلة</title>
                   <rect x="588.0" y="57.1" width="14.0" height="192.9" rx="4" fill="url(#gb)" />
                   <title>السبت 5 أيلول: 54,000 ل.س</title>
-                  <text x="595.0" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">5</text>
+                  <text x="595.0" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>5</text>
                   <rect x="564.7" y="78.6" width="14.0" height="171.4" rx="4" fill="url(#gb)" />
                   <title>الأحد 6 أيلول: 48,000 ل.س</title>
                   <rect x="541.3" y="67.9" width="14.0" height="182.1" rx="4" fill="url(#gb)" />
@@ -123,7 +123,7 @@ export default function Page() {
                   <title>الأربعاء 9 أيلول: 51,000 ل.س</title>
                   <rect x="471.3" y="64.3" width="14.0" height="185.7" rx="4" fill="url(#gb)" />
                   <title>الخميس 10 أيلول: 52,000 ل.س</title>
-                  <text x="478.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">10</text>
+                  <text x="478.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>10</text>
                   <rect x="448.0" y="247" width="14.0" height="3" rx="1.5" fill="#E3D6E6" />
                   <title>الجمعة 11 أيلول: عطلة</title>
                   <rect x="424.7" y="35.7" width="14.0" height="214.3" rx="4" fill="url(#gb)" />
@@ -134,7 +134,7 @@ export default function Page() {
                   <title>الإثنين 14 أيلول: 50,000 ل.س</title>
                   <rect x="354.7" y="71.4" width="14.0" height="178.6" rx="4" fill="url(#gb)" />
                   <title>الثلاثاء 15 أيلول: 50,000 ل.س</title>
-                  <text x="361.7" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">15</text>
+                  <text x="361.7" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>15</text>
                   <rect x="331.3" y="71.4" width="14.0" height="178.6" rx="4" fill="url(#gb)" />
                   <title>الأربعاء 16 أيلول: 50,000 ل.س</title>
                   <rect x="308.0" y="44.6" width="14.0" height="205.4" rx="4" fill="url(#gb)" />
@@ -145,7 +145,7 @@ export default function Page() {
                   <title>السبت 19 أيلول: 58,500 ل.س</title>
                   <rect x="238.0" y="87.5" width="14.0" height="162.5" rx="4" fill="url(#gb)" />
                   <title>الأحد 20 أيلول: 45,500 ل.س</title>
-                  <text x="245.0" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">20</text>
+                  <text x="245.0" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>20</text>
                   <rect x="214.7" y="75.0" width="14.0" height="175.0" rx="4" fill="url(#gb)" />
                   <title>الإثنين 21 أيلول: 49,000 ل.س</title>
                   <rect x="191.3" y="51.8" width="14.0" height="198.2" rx="4" fill="url(#gb)" />
@@ -156,7 +156,7 @@ export default function Page() {
                   <title>الخميس 24 أيلول: 56,500 ل.س</title>
                   <rect x="121.3" y="247" width="14.0" height="3" rx="1.5" fill="#E3D6E6" />
                   <title>الجمعة 25 أيلول: عطلة</title>
-                  <text x="128.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">25</text>
+                  <text x="128.3" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>25</text>
                   <rect x="98.0" y="46.4" width="14.0" height="203.6" rx="4" fill="url(#gb)" />
                   <title>السبت 26 أيلول: 57,000 ل.س</title>
                   <rect x="74.7" y="71.4" width="14.0" height="178.6" rx="4" fill="url(#gb)" />
@@ -167,7 +167,7 @@ export default function Page() {
                   <title>الثلاثاء 29 أيلول: 54,000 ل.س</title>
                   <rect x="4.7" y="80.4" width="14.0" height="169.6" rx="4" fill="url(#gb)" />
                   <title>الأربعاء 30 أيلول: 47,500 ل.س</title>
-                  <text x="11.7" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">30</text>
+                  <text x="11.7" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>30</text>
                   <line x1="0" x2="700" y1="64.6" y2="64.6" stroke="#7B4687" strokeWidth="1.2" strokeDasharray="4 4" />
                   <defs>
                     <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1">
@@ -188,7 +188,7 @@ export default function Page() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 700, height: 32 }}>
                 <span>الإيرادات</span>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 15, color: C.ok }}>1,350,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 15, color: C.ok }}>1,350,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -196,42 +196,42 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>رواتب</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>221,500</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>221,500</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>مواد</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>96,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>96,000</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>إيجار</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>200,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>200,000</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>كهرباء</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>35,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>35,000</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>صيانة</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>25,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>25,000</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, height: 30 }}>
                   <span style={{ color: C.sub }}>تسويق</span>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>30,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>30,000</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
@@ -239,7 +239,7 @@ export default function Page() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 16, padding: "10px 14px", background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}>
                 <span style={{ fontWeight: 700 }}>صافي الربح</span>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 17, color: C.accent }}>742,500</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 17, color: C.accent }}>742,500</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -260,7 +260,7 @@ export default function Page() {
                   </div>
                   <div style={{ width: 92, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>665,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>665,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -273,7 +273,7 @@ export default function Page() {
                   </div>
                   <div style={{ width: 92, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>285,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>285,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -286,7 +286,7 @@ export default function Page() {
                   </div>
                   <div style={{ width: 92, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>200,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>200,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -299,7 +299,7 @@ export default function Page() {
                   </div>
                   <div style={{ width: 92, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>200,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>200,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
@@ -337,7 +337,7 @@ export default function Page() {
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: C.accent, flexShrink: 0 }}></span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>فاطمة طيبة</span>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>385,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>385,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                     <span style={{ width: 34, textAlign: "left", fontSize: 11.5, color: C.sub2 }}>29%</span>
@@ -349,7 +349,7 @@ export default function Page() {
                       <ExampleTag />
                     </span>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>665,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>665,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                     <span style={{ width: 34, textAlign: "left", fontSize: 11.5, color: C.sub2 }}>49%</span>
@@ -361,7 +361,7 @@ export default function Page() {
                       <ExampleTag />
                     </span>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>300,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 12.5, color: C.ink }}>300,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                     <span style={{ width: 34, textAlign: "left", fontSize: 11.5, color: C.sub2 }}>22%</span>

@@ -256,7 +256,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     12:32
                   </span>
                 </div>
@@ -296,7 +296,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     12:17
                   </span>
                 </div>
@@ -336,7 +336,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     12:02
                   </span>
                 </div>
@@ -376,7 +376,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     11:32
                   </span>
                 </div>
@@ -416,7 +416,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     11:20
                   </span>
                 </div>
@@ -456,7 +456,7 @@ export default function Page() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, borderTop: "1px solid #EDE2F1" }}>
                 <div style={{ flex: 0.5, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#866F8D", fontFamily: "Rubik, sans-serif", fontSize: 12.5 }}>
+                  <span style={{ color: "#866F8D", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12.5 }}>
                     11:02
                   </span>
                 </div>
@@ -522,7 +522,7 @@ export default function Page() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       جلسة تنظيف عميق
                     </span>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                       GC-4821
                     </span>
                   </div>
@@ -546,7 +546,7 @@ export default function Page() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       2,000 ل.س
                     </span>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                       GC-4817
                     </span>
                   </div>
@@ -570,7 +570,7 @@ export default function Page() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       جلسة هيدرافيشل
                     </span>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                       GC-4809
                     </span>
                   </div>
@@ -594,7 +594,7 @@ export default function Page() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       1,500 ل.س
                     </span>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                       GC-4802
                     </span>
                   </div>
@@ -618,7 +618,7 @@ export default function Page() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       جلسة تقشير
                     </span>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 11, color: "#A595AC" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, color: "#A595AC" }}>
                       GC-4796
                     </span>
                   </div>

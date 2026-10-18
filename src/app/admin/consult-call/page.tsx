@@ -56,7 +56,7 @@ export default function Page() {
             <span style={{ height: 36, padding: "0 14px", borderRadius: 18, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: C.accent, boxSizing: "content-box" }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, background: C.ok, boxShadow: "0 0 0 4px rgba(63,164,106,0.2)" }} />
               {"مباشر · "}
-              <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif" }}>{v.timer}</span>
+              <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>{v.timer}</span>
             </span>
             <span style={{ height: 36, padding: "0 14px", borderRadius: 18, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.accent, boxSizing: "content-box" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

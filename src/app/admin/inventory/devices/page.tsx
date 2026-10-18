@@ -61,7 +61,7 @@ export default function Page() {
                   العدّاد
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 28, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 28, fontWeight: 700 }}>
                     412
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -83,7 +83,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
                       {hydraDone}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -91,7 +91,7 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
                       {hydraNow}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -99,7 +99,7 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
                       {hydraLeft.length}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -147,7 +147,7 @@ export default function Page() {
                   العدّاد
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 28, fontWeight: 700 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 28, fontWeight: 700 }}>
                     186,420
                   </span>
                   <span style={{ fontSize: 12, color: "#866F8D" }}>
@@ -169,7 +169,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
                       3
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -177,7 +177,7 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#7B4687" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#7B4687" }}>
                       1
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -185,7 +185,7 @@ export default function Page() {
                     </div>
                   </div>
                   <div style={{ flex: 1, textAlign: "center", lineHeight: 1.3 }}>
-                    <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
+                    <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700, color: "#35213D" }}>
                       5
                     </div>
                     <div style={{ fontSize: 11.5, color: "#866F8D" }}>
@@ -375,7 +375,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       16:00
                     </span>
                   </span>
@@ -393,27 +393,27 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       13:00
                     </span>
                   </span>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       14:00
                     </span>
                   </span>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       15:00
                     </span>
                   </span>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       16:00
                     </span>
                   </span>
                   <span style={{ height: 34, padding: "0 12px", borderRadius: 17, background: "#FDF9FE", border: "1px solid #EDE2F1", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
+                    <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, color: "#35213D", whiteSpace: "nowrap" }}>
                       17:00
                     </span>
                   </span>

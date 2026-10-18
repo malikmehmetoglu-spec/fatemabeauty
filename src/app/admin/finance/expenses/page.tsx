@@ -38,11 +38,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>221,500</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>221,500</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>36%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>36%</div>
                 </div>
                 <div title="إيجار: 200,000 ل.س" style={{ display: "flex", alignItems: "center", gap: 12, height: 44 }}>
                   <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -54,11 +54,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>200,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>200,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>33%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>33%</div>
                 </div>
                 <div title="مواد: 96,000 ل.س" style={{ display: "flex", alignItems: "center", gap: 12, height: 44 }}>
                   <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -70,11 +70,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>96,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>96,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>16%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>16%</div>
                 </div>
                 <div title="كهرباء: 35,000 ل.س" style={{ display: "flex", alignItems: "center", gap: 12, height: 44 }}>
                   <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -86,11 +86,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>35,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>35,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>6%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>6%</div>
                 </div>
                 <div title="تسويق: 30,000 ل.س" style={{ display: "flex", alignItems: "center", gap: 12, height: 44 }}>
                   <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -102,11 +102,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>30,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>30,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>5%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>5%</div>
                 </div>
                 <div title="صيانة: 25,000 ل.س" style={{ display: "flex", alignItems: "center", gap: 12, height: 44 }}>
                   <span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -118,11 +118,11 @@ export default function Page() {
                   </div>
                   <div style={{ width: 108, textAlign: "left" }}>
                     <span style={{ whiteSpace: "nowrap" }}>
-                      <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>25,000</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>25,000</span>
                       <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                     </span>
                   </div>
-                  <div style={{ width: 40, textAlign: "left", fontFamily: "Rubik, sans-serif", fontSize: 12, color: C.sub2 }}>4%</div>
+                  <div style={{ width: 40, textAlign: "left", fontFamily: "var(--font-rubik), sans-serif", fontSize: 12, color: C.sub2 }}>4%</div>
                 </div>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function Page() {
               <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }}></div>
               <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>إجمالي مصاريف أيلول</div>
               <div style={{ position: "relative", display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 38, fontWeight: 700, lineHeight: 1.25 }}>607,500</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 38, fontWeight: 700, lineHeight: 1.25 }}>607,500</span>
                 <span>ل.س</span>
               </div>
               <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>45% من إيرادات الشهر (1,350,000 ل.س)</div>
@@ -145,7 +145,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ whiteSpace: "nowrap" }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 26, color: C.ink }}>324,150</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 26, color: C.ink }}>324,150</span>
                     <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>150</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>150</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -219,7 +219,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>15,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>15,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -245,7 +245,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>12,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>12,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -271,7 +271,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>62,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>62,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -297,7 +297,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>35,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>35,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>
@@ -323,7 +323,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>200,000</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: C.ink }}>200,000</span>
                   <span style={{ fontSize: 11, color: C.sub2, marginInlineStart: 4 }}>ل.س</span>
                 </span>
               </div>

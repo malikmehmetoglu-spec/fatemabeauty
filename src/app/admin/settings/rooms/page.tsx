@@ -96,7 +96,7 @@ export default function Page() {
                 </div>
                 <div style={{ textAlign: "left", lineHeight: "1.3" }}>
                   <div style={{ fontSize: 11, color: C.sub2 }}>حتى</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "Rubik, sans-serif" }}>13:00</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "var(--font-rubik), sans-serif" }}>13:00</div>
                 </div>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function Page() {
                   <span title="17:00" style={{ position: "absolute", top: "0", bottom: "0", right: "87.50%", width: "calc(12.50% - 2px)", borderRadius: 6, background: "linear-gradient(90deg,#E8CFEE,#C9A2D8)" }} />
                   <span style={{ position: "absolute", top: -4, bottom: -4, right: "31.25%", width: 2, background: C.danger, borderRadius: 1 }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "Rubik, sans-serif" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "var(--font-rubik), sans-serif" }}>
                   <span>10:00</span>
                   <span>12:00</span>
                   <span>14:00</span>
@@ -134,7 +134,7 @@ export default function Page() {
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600, marginBottom: 2 }}>القادمات</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>{PERSONA.name}</span>
                   <ExampleTag />
@@ -142,7 +142,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>غنى صباغ</span>
                   <ExampleTag />
@@ -150,7 +150,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>نغم إبراهيم</span>
                   <ExampleTag />
@@ -203,7 +203,7 @@ export default function Page() {
                 </div>
                 <div style={{ textAlign: "left", lineHeight: "1.3" }}>
                   <div style={{ fontSize: 11, color: C.sub2 }}>حتى</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "Rubik, sans-serif" }}>13:15</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "var(--font-rubik), sans-serif" }}>13:15</div>
                 </div>
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function Page() {
                   <span title="17:15" style={{ position: "absolute", top: "0", bottom: "0", right: "90.62%", width: "calc(9.38% - 2px)", borderRadius: 6, background: "linear-gradient(90deg,#E8CFEE,#C9A2D8)" }} />
                   <span style={{ position: "absolute", top: -4, bottom: -4, right: "31.25%", width: 2, background: C.danger, borderRadius: 1 }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "Rubik, sans-serif" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "var(--font-rubik), sans-serif" }}>
                   <span>10:00</span>
                   <span>12:00</span>
                   <span>14:00</span>
@@ -242,7 +242,7 @@ export default function Page() {
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600, marginBottom: 2 }}>القادمات</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:15</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:15</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>يارا حمدان</span>
                   <ExampleTag />
@@ -250,7 +250,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:15</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:15</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>آية الشامي</span>
                   <ExampleTag />
@@ -258,7 +258,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>تنظيف عميق</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:30</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:30</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>دانة عطار</span>
                   <ExampleTag />
@@ -306,7 +306,7 @@ export default function Page() {
                 </div>
                 <div style={{ textAlign: "left", lineHeight: "1.3" }}>
                   <div style={{ fontSize: 11, color: C.sub2 }}>حتى</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "Rubik, sans-serif" }}>13:00</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.accent, fontFamily: "var(--font-rubik), sans-serif" }}>13:00</div>
                 </div>
               </div>
             </div>
@@ -325,7 +325,7 @@ export default function Page() {
                   <span title="17:00" style={{ position: "absolute", top: "0", bottom: "0", right: "87.50%", width: "calc(9.38% - 2px)", borderRadius: 6, background: "linear-gradient(90deg,#E8CFEE,#C9A2D8)" }} />
                   <span style={{ position: "absolute", top: -4, bottom: -4, right: "31.25%", width: 2, background: C.danger, borderRadius: 1 }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "Rubik, sans-serif" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.muted, marginTop: 4, fontFamily: "var(--font-rubik), sans-serif" }}>
                   <span>10:00</span>
                   <span>12:00</span>
                   <span>14:00</span>
@@ -343,7 +343,7 @@ export default function Page() {
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600, marginBottom: 2 }}>القادمات</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>13:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>بتول درويش</span>
                   <ExampleTag />
@@ -351,7 +351,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>جلسة ليزر</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>14:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>ماريا جرجس</span>
                   <ExampleTag />
@@ -359,7 +359,7 @@ export default function Page() {
                 <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>جلسة ليزر</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span style={{ width: 44, fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
+                <span style={{ width: 44, fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: C.accent }}>15:00</span>
                 <div style={{ flex: 1, minWidth: "0", whiteSpace: "nowrap", overflow: "hidden" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap" }}>سلاف موسى</span>
                   <ExampleTag />

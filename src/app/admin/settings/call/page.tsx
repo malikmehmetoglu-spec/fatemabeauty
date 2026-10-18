@@ -236,7 +236,7 @@ export default function Page() {
                 <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
                 <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 14, fontWeight: 700 }}>فاطمة بيوتي</span>
-                  <span style={{ fontSize: 13, fontFamily: "Rubik, sans-serif", color: C.onDark }}>{NOW}</span>
+                  <span style={{ fontSize: 13, fontFamily: "var(--font-rubik), sans-serif", color: C.onDark }}>{NOW}</span>
                 </div>
                 <div style={{ position: "relative", display: "flex", gap: 8 }}>
                   <div style={{ flex: 1, borderRadius: 16, padding: "10px 8px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", textAlign: "center", lineHeight: "1.2" }}>

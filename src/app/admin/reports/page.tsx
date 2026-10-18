@@ -137,13 +137,13 @@ export default function Page() {
                   </linearGradient>
                 </defs>
                 <line x1="0" x2="560" y1="117.5" y2="117.5" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="113.5" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">110</text>
+                <text x="558" y="113.5" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>110</text>
                 <line x1="0" x2="560" y1="85.0" y2="85.0" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="81.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">120</text>
+                <text x="558" y="81.0" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>120</text>
                 <line x1="0" x2="560" y1="52.5" y2="52.5" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="48.5" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">130</text>
+                <text x="558" y="48.5" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>130</text>
                 <line x1="0" x2="560" y1="20.0" y2="20.0" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="16.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">140</text>
+                <text x="558" y="16.0" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>140</text>
                 <path d="M540.0,160 L540.0,111.0 L465.7,91.5 L391.4,81.8 L317.1,94.8 L242.9,65.5 L168.6,49.2 L94.3,59.0 L20.0,33.0 L20.0,160 Z" fill="url(#ag)" />
                 <polyline points="540.0,111.0 465.7,91.5 391.4,81.8 317.1,94.8 242.9,65.5 168.6,49.2 94.3,59.0 20.0,33.0" fill="none" stroke="#7B4687" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                 <circle cx="540.0" cy="111.0" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
@@ -154,17 +154,17 @@ export default function Page() {
                 <circle cx="168.6" cy="49.2" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
                 <circle cx="94.3" cy="59.0" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
                 <circle cx="20.0" cy="33.0" r="5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2.5" />
-                <text x="540.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">17/8</text>
-                <text x="465.7" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">24/8</text>
-                <text x="391.4" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">31/8</text>
-                <text x="317.1" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">7/9</text>
-                <text x="242.9" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">14/9</text>
-                <text x="168.6" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">21/9</text>
-                <text x="94.3" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">28/9</text>
-                <text x="20.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">5/10</text>
+                <text x="540.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>17/8</text>
+                <text x="465.7" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>24/8</text>
+                <text x="391.4" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>31/8</text>
+                <text x="317.1" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>7/9</text>
+                <text x="242.9" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>14/9</text>
+                <text x="168.6" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>21/9</text>
+                <text x="94.3" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>28/9</text>
+                <text x="20.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), serif" }}>5/10</text>
                 <g transform="translate(20.0,17.0)">
                   <rect x="-22" y="-20" width="44" height="22" rx="11" fill="#7B4687" />
-                  <text x="0" y="-5" fontSize="12" fill="#FFFFFF" textAnchor="middle" fontFamily="Rubik" fontWeight="700">136</text>
+                  <text x="0" y="-5" fontSize="12" fill="#FFFFFF" textAnchor="middle" style={{ fontFamily: "var(--font-rubik), sans-serif" }} fontWeight="700">136</text>
                 </g>
               </svg>
             </div>
@@ -334,11 +334,11 @@ export default function Page() {
             </div>
             <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none" style={{ marginTop: 6 }}>
               <line x1="0" x2="274" y1="136.0" y2="136.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="140.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">4.0</text>
+              <text direction="ltr" x="300" y="140.0" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>4.0</text>
               <line x1="0" x2="274" y1="75.0" y2="75.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="79.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">4.5</text>
+              <text direction="ltr" x="300" y="79.0" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>4.5</text>
               <line x1="0" x2="274" y1="14.0" y2="14.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="18.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">5.0</text>
+              <text direction="ltr" x="300" y="18.0" fontSize="10" fill="#A595AC" textAnchor="end" style={{ fontFamily: "var(--font-rubik), sans-serif" }}>5.0</text>
               <polyline points="262.0,75.0 225.7,62.8 189.4,87.2 153.1,62.8 116.9,75.0 80.6,50.6 44.3,62.8 8.0,87.2" fill="none" stroke="#A877B6" strokeWidth="2.4" strokeLinejoin="round" />
               <circle cx="262.0" cy="75.0" r="3.5" fill="#FFFFFF" stroke="#A877B6" strokeWidth="2" />
               <circle cx="225.7" cy="62.8" r="3.5" fill="#FFFFFF" stroke="#A877B6" strokeWidth="2" />

@@ -31,7 +31,7 @@ export default function Page() {
     dot: css("width:8px;height:8px;border-radius:4px;flex-shrink:0;margin-top:9px;background:" + (x.kind === "block" ? "#B03D6A" : "#C9962B")) }));
   const block = Q.some((q, i) => q[1] === "block" && st.ans[i]);
   const skins = SK.map((s, i) => ({ s, pick: () => setSt({ ...st, skin: i }),
-    style: css("flex:1;height:72px;border-radius:20px;font-family:Rubik,sans-serif;font-size:15px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;" +
+    style: css("flex:1;height:72px;border-radius:20px;font-family:var(--font-rubik),sans-serif;font-size:15px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;" +
       (st.skin === i ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687;font-weight:700" : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D")),
     sw: css("width:22px;height:22px;border-radius:11px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,0.15);background:" + COL[i]) }));
   const skinNote = st.skin >= 3 ? "بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى." : "تأكدي من النوع قبل ضبط إعدادات الجهاز.";

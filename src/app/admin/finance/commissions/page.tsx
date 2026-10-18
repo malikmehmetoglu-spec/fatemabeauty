@@ -21,7 +21,7 @@ export default function Page() {
     style: { height: 40, padding: "0 18px", borderRadius: 20, fontSize: 13.5, fontWeight: 600, ...(m === i ? SELECTED : OFF) } as CSSProperties }));
   const tag = (bg: string, color: string): CSSProperties => ({ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: bg, color });
   const rows = list.map((r) => ({ ...r, fat: !r.ex, revenue: fmt(r.revenue), comm: r.rate ? fmt(r.comm) : "—",
-    rateLabel: r.rate ? `${r.rate}%` : "غير مفعّلة", rateStyle: r.rate ? { fontFamily: "Rubik, sans-serif", fontWeight: 600 } : tag("#F0EDF0", "#695D6B"),
+    rateLabel: r.rate ? `${r.rate}%` : "غير مفعّلة", rateStyle: r.rate ? { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600 } : tag("#F0EDF0", "#695D6B"),
     status: !r.rate ? "—" : m === 0 ? "قيد الاحتساب" : "صُرفت مع الراتب",
     stStyle: !r.rate ? { color: C.muted } : m === 0 ? tag("#FCF1DE", "#8A5A12") : tag("#E6F4EC", C.okDeep) }));
   const totalComm = fmt(list.reduce((a, r) => a + r.comm, 0)), totalSessions = list.reduce((a, r) => a + r.sessions, 0), totalRev = fmt(list.reduce((a, r) => a + r.revenue, 0));
@@ -48,7 +48,7 @@ export default function Page() {
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }}></div>
             <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>{"إجمالي العمولات · "}{monthLabel}</div>
             <div style={{ position: "relative", display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>{totalComm}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 40, fontWeight: 700, lineHeight: 1.25 }}>{totalComm}</span>
               <span>ل.س</span>
             </div>
             <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>{heroSub}</div>
@@ -60,7 +60,7 @@ export default function Page() {
                 <Icon name="calcheck" color={C.accentMid} size={16} />
               </span>
             </div>
-            <div style={{ fontFamily: "Rubik, sans-serif", fontSize: 28, fontWeight: 700 }}>{totalSessions}</div>
+            <div style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 28, fontWeight: 700 }}>{totalSessions}</div>
             <div style={{ fontSize: 12, color: C.sub2 }}>{sessionsSub}</div>
           </div>
           <div style={{ flex: 1, borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
@@ -71,7 +71,7 @@ export default function Page() {
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-              <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 28, fontWeight: 700 }}>{totalRev}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 28, fontWeight: 700 }}>{totalRev}</span>
               <span style={{ fontSize: 13 }}>ل.س</span>
             </div>
             <div style={{ fontSize: 12, color: C.sub2 }}>أساس احتساب العمولة</div>
@@ -113,17 +113,17 @@ export default function Page() {
                 </div>
               </div>
               <div style={{ flex: 0.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600 }}>{r.sessions}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600 }}>{r.sessions}</span>
               </div>
               <div style={{ flex: 1.2, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600 }}>{r.revenue}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600 }}>{r.revenue}</span>
                 <span style={{ fontSize: 11, color: C.sub2 }}>ل.س</span>
               </div>
               <div style={{ flex: 0.9, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={r.rateStyle}>{r.rateLabel}</span>
               </div>
               <div style={{ flex: 1.1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, color: C.accent, fontSize: 15 }}>{r.comm}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: C.accent, fontSize: 15 }}>{r.comm}</span>
                 {r.rate && (<>
                   <span style={{ fontSize: 11, color: C.sub2 }}>ل.س</span>
                 </>)}

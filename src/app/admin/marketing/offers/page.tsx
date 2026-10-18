@@ -336,7 +336,7 @@ export default function Page() {
             </div>
             <div style={{ marginTop: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   AUTUMN15
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>
@@ -359,7 +359,7 @@ export default function Page() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   WELCOME10
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>
@@ -382,7 +382,7 @@ export default function Page() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   GLOW500
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>
@@ -405,7 +405,7 @@ export default function Page() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   FRIEND
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>
@@ -428,7 +428,7 @@ export default function Page() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   PEEL20
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>
@@ -451,7 +451,7 @@ export default function Page() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <span dir="ltr" style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
+                <span dir="ltr" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 700, color: "#7B4687", background: "#F3EAF6", border: "1px dashed #D8BFDE", borderRadius: 10, padding: "4px 10px", width: 92, textAlign: "center" }}>
                   HYDRA2026
                 </span>
                 <div style={{ flex: 1, minWidth: "0" }}>

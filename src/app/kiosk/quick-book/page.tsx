@@ -50,7 +50,7 @@ export default function Page() {
   if (slot === null || !cs.some((c) => c.t === slot && c.fits)) { const f = cs.find((c) => c.fits); slot = f ? f.t : null; }
   const cells = cs.map((c) => {
     const on = c.t === slot;
-    let style = "height:54px;border-radius:18px;font-family:Rubik,sans-serif;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;";
+    let style = "height:54px;border-radius:18px;font-family:var(--font-rubik),sans-serif;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;";
     if (on) style += SEL + ";font-weight:700";
     else if (c.fits) style += "background:#FFFFFF;border:1px solid #EADCF0;color:#35213D;box-shadow:0 4px 12px rgba(123,70,135,0.06)";
     else if (c.taken) style += "background:#F0EDF0;border:1px solid #F0EDF0;color:#B7ACB9;text-decoration:line-through";

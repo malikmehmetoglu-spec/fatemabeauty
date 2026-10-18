@@ -154,22 +154,22 @@ export default function Page() {
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#35213D" }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
                       {r.base}
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#35213D" }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
                       {r.comm}
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#B03D6A" }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#B03D6A" }}>
                       {r.ded}
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, color: "#7B4687" }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, color: "#7B4687" }}>
                       {r.net}
                     </span>
                   </div>
@@ -193,7 +193,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     131,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -203,7 +203,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#35213D" }}>
                     96,500
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -213,7 +213,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#B03D6A" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#B03D6A" }}>
                     6,000
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -223,7 +223,7 @@ export default function Page() {
               </div>
               <div style={{ flex: 1 }}>
                 <span style={{ whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#7B4687" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 700, fontSize: 13.5, color: "#7B4687" }}>
                     221,500
                   </span>
                   <span style={{ fontSize: 11, color: "#866F8D", marginInlineStart: 4 }}>
@@ -273,7 +273,7 @@ export default function Page() {
                 الراتب الأساسي (مثال)
               </span>
               <span>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#35213D" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
                   {v.p.base}
                 </span>
                 {" "}
@@ -287,7 +287,7 @@ export default function Page() {
                 العمولة
               </span>
               <span>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#35213D" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#35213D" }}>
                   {v.p.comm}
                 </span>
                 {" "}
@@ -304,7 +304,7 @@ export default function Page() {
                 الاستقطاع
               </span>
               <span>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontWeight: 600, color: "#B03D6A" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 600, color: "#B03D6A" }}>
                   {v.p.ded}
                 </span>
                 {" "}
@@ -321,7 +321,7 @@ export default function Page() {
                 الصافي
               </span>
               <span>
-                <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 22, fontWeight: 700 }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 22, fontWeight: 700 }}>
                   {v.p.net}
                 </span>
                 {" "}
