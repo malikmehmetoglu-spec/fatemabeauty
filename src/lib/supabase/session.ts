@@ -44,5 +44,5 @@ export function useSession() {
 }
 
 export const ROLE_LABEL: Record<Tables<"staff">["role"], string> = {
-  admin: "الإدارة", specialist: "أخصائية", reception: "الاستقبال", accountant: "المحاسبة",
+  owner: "المدير العام", admin: "الإدارة", specialist: "أخصائية", reception: "الاستقبال", accountant: "المحاسبة",
 };

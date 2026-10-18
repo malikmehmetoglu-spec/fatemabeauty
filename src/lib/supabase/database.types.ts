@@ -1006,7 +1006,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       pay_method: "cash" | "card" | "package" | "points"
-      staff_role: "admin" | "specialist" | "reception" | "accountant"
+      staff_role: "owner" | "admin" | "specialist" | "reception" | "accountant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1152,7 +1152,7 @@ export const Constants = {
         "cancelled",
       ],
       pay_method: ["cash", "card", "package", "points"],
-      staff_role: ["admin", "specialist", "reception", "accountant"],
+      staff_role: ["owner", "admin", "specialist", "reception", "accountant"],
     },
   },
 } as const
