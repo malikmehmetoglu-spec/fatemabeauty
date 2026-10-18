@@ -99,7 +99,7 @@ export default function Page() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {v.filters.map((f, fI) => (
             <Fragment key={fI}>
-              <button type="button" onClick={f.pick} style={css(f.style)}>{f.name}</button>
+              <button type="button" onClick={f.pick} style={css(f.style, "button")}>{f.name}</button>
             </Fragment>
           ))}
           <span style={{ marginInlineStart: "auto", fontSize: 12.5, color: C.sub2, display: "flex", alignItems: "center", gap: 6 }}>
@@ -138,7 +138,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -178,7 +178,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -218,7 +218,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>
@@ -258,7 +258,7 @@ export default function Page() {
                     <span style={{ fontSize: 11.5, color: C.sub2, whiteSpace: "nowrap" }}>{o.pay}</span>
                     {o.can && (
                       <>
-                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
+                        <button type="button" onClick={o.next} aria-label="نقل للمرحلة التالية" style={{ marginInlineStart: "auto", width: 30, height: 30, borderRadius: 15, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 6l-6 6 6 6" />
                           </svg>

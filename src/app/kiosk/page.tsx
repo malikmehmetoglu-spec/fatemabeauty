@@ -144,7 +144,7 @@ export default function Page() {
             <g filter="url(#phs)" transform="rotate(-6 215 215)">
               <rect x="128" y="62" width="174" height="306" rx="30" fill="url(#ph)" stroke="#FFFFFF" strokeWidth="3" />
               <rect x="190" y="76" width="50" height="7" rx="3.5" fill="#E9DCEE" />
-              <text x="215" y="114" textAnchor="middle" fontFamily="var(--font-messiri), 'El Messiri', serif" fontSize="13" fontWeight="700" fill="#7B4687">رمز الوصول
+              <text x="215" y="114" textAnchor="middle" style={{ fontFamily: "var(--font-messiri), 'El Messiri', serif" }} fontSize="13" fontWeight="700" fill="#7B4687">رمز الوصول
               </text>
               <rect x="150" y="128" width="130" height="130" rx="16" fill="#FFFFFF" stroke="#E9DCEE" />
               <g transform="translate(157 135) scale(5.428)">

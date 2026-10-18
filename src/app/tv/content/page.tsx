@@ -1,13 +1,15 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useState } from "react";
-import Link from "next/link";
 import { Stage } from "@/components/shell";
-import { R } from "@/lib/routes";
+import { APPOINTMENTS_TODAY, NOW, ROOMS } from "@/lib/data";
 import { C, SH, ICON_FILL, LOGO } from "@/lib/tokens";
 
-/** TV_Content.dc.html */
+const UPCOMING = APPOINTMENTS_TODAY.filter((a) => a.status === "في الانتظار" || a.status === "مؤكد" || a.status === "بانتظار التأكيد");
+const BOARD = ROOMS.map((room) => ({ room, cur: APPOINTMENTS_TODAY.find((a) => a.room === room && a.status === "في الجلسة")?.queueNo ?? "—" }));
+const NEXT = UPCOMING.slice(0, 3);
+
+/** TV_Content.dc.html — waiting-room screen between calls: a skin-care tip with a live queue strip. */
 export default function Page() {
   return (
     <Stage width={1920} height={1080}  padding="52px 72px 56px" direction="column" gap={28}>
@@ -110,9 +112,9 @@ export default function Page() {
               <rect x="232" y="130" width="136" height="92" rx="22" fill="url(#cap)" />
               <rect x="246" y="140" width="22" height="70" rx="11" fill="#FFFFFF" opacity="0.18" />
               <rect x="236" y="300" width="128" height="150" rx="20" fill="#FFFFFF" opacity="0.85" />
-              <text x="300" y="370" textAnchor="middle" fontFamily="var(--font-rubik), Rubik, sans-serif" fontSize="44" fontWeight="700" fill="#7B4687">SPF
+              <text x="300" y="370" textAnchor="middle" style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif" }} fontSize="44" fontWeight="700" fill="#7B4687">SPF
               </text>
-              <text x="300" y="420" textAnchor="middle" direction="ltr" unicodeBidi="embed" fontFamily="var(--font-rubik), Rubik, sans-serif" fontSize="40" fontWeight="500" fill="#A877B6">30+
+              <text x="300" y="420" textAnchor="middle" direction="ltr" unicodeBidi="embed" style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif" }} fontSize="40" fontWeight="500" fill="#A877B6">30+
               </text>
               <path d="M240 240c6 120 10 220 22 310" stroke="#FFFFFF" strokeWidth="10" strokeLinecap="round" opacity="0.6" fill="none" />
             </g>
@@ -135,33 +137,33 @@ export default function Page() {
         </span>
         <span style={{ width: 2, height: 44, background: "#7C5485" }} />
         <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ fontSize: 28, color: C.onDark }}>غرفة 1
+          <span style={{ fontSize: 28, color: C.onDark }}>{BOARD[0].room}
           </span>
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>9
-          </span>
-        </div>
-        <span style={{ width: 2, height: 44, background: "#7C5485" }} />
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ fontSize: 28, color: C.onDark }}>غرفة 2
-          </span>
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>11
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>{BOARD[0].cur}
           </span>
         </div>
         <span style={{ width: 2, height: 44, background: "#7C5485" }} />
         <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ fontSize: 28, color: C.onDark }}>غرفة 3
+          <span style={{ fontSize: 28, color: C.onDark }}>{BOARD[1].room}
           </span>
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>10
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>{BOARD[1].cur}
+          </span>
+        </div>
+        <span style={{ width: 2, height: 44, background: "#7C5485" }} />
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
+          <span style={{ fontSize: 28, color: C.onDark }}>{BOARD[2].room}
+          </span>
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>{BOARD[2].cur}
           </span>
         </div>
         <span style={{ width: 2, height: 44, background: "#7C5485" }} />
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, position: "relative" }}>
           <span style={{ fontSize: 28, color: C.onDark }}>التالي
           </span>
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 40, fontWeight: 500 }}>12 · 13 · 14
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 40, fontWeight: 500 }}>{NEXT.map((a) => a.queueNo).join(" · ")}
           </span>
         </div>
-        <span style={{ marginInlineStart: "auto", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 44, fontWeight: 500, position: "relative" }}>12:30
+        <span style={{ marginInlineStart: "auto", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 44, fontWeight: 500, position: "relative" }}>{NOW}
         </span>
       </div>
 

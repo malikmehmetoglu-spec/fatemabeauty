@@ -78,7 +78,7 @@ export default function Page() {
                 <div style={{ fontSize: 12, color: C.sub2 }}>8 جلسات اليوم · إشغال 97%</div>
                 <span style={{ display: "inline-block", marginTop: 4, ...css(v.rm[0].bst) }}>{v.rm[0].label}</span>
               </div>
-              <button type="button" aria-label="إتاحة غرفة 1" role="switch" aria-checked={v.rm[0].on} onClick={v.rm[0].toggle} style={css(v.rm[0].tg)}>
+              <button type="button" aria-label="إتاحة غرفة 1" role="switch" aria-checked={v.rm[0].on} onClick={v.rm[0].toggle} style={css(v.rm[0].tg, "button")}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
               </button>
             </div>
@@ -182,7 +182,7 @@ export default function Page() {
                 <div style={{ fontSize: 12, color: C.sub2 }}>9 جلسات اليوم · إشغال 82%</div>
                 <span style={{ display: "inline-block", marginTop: 4, ...css(v.rm[1].bst) }}>{v.rm[1].label}</span>
               </div>
-              <button type="button" aria-label="إتاحة غرفة 2" role="switch" aria-checked={v.rm[1].on} onClick={v.rm[1].toggle} style={css(v.rm[1].tg)}>
+              <button type="button" aria-label="إتاحة غرفة 2" role="switch" aria-checked={v.rm[1].on} onClick={v.rm[1].toggle} style={css(v.rm[1].tg, "button")}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
               </button>
             </div>
@@ -285,7 +285,7 @@ export default function Page() {
                 <div style={{ fontSize: 12, color: C.sub2 }}>9 جلسات اليوم · إشغال 84%</div>
                 <span style={{ display: "inline-block", marginTop: 4, ...css(v.rm[2].bst) }}>{v.rm[2].label}</span>
               </div>
-              <button type="button" aria-label="إتاحة غرفة 3" role="switch" aria-checked={v.rm[2].on} onClick={v.rm[2].toggle} style={css(v.rm[2].tg)}>
+              <button type="button" aria-label="إتاحة غرفة 3" role="switch" aria-checked={v.rm[2].on} onClick={v.rm[2].toggle} style={css(v.rm[2].tg, "button")}>
                 <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
               </button>
             </div>
@@ -404,7 +404,7 @@ export default function Page() {
               <div style={{ fontSize: 12, color: C.sub2 }}>{DEVICES[0].room} · {APPOINTMENTS_TODAY.filter((a) => a.service === "hydra").length} جلسات اليوم</div>
             </div>
             <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>يعمل</span>
-            <button type="button" aria-label="إتاحة جهاز الهيدرافيشل" role="switch" aria-checked={v.dv[0].on} onClick={v.dv[0].toggle} style={css(v.dv[0].tg)}>
+            <button type="button" aria-label="إتاحة جهاز الهيدرافيشل" role="switch" aria-checked={v.dv[0].on} onClick={v.dv[0].toggle} style={css(v.dv[0].tg, "button")}>
               <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
             </button>
           </div>
@@ -419,7 +419,7 @@ export default function Page() {
               <div style={{ fontSize: 12, color: C.sub2 }}>غرفة 3 · 9 جلسات اليوم</div>
             </div>
             <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", background: "#E6F4EC", color: C.okDeep, boxSizing: "content-box" }}>يعمل</span>
-            <button type="button" aria-label="إتاحة جهاز الليزر" role="switch" aria-checked={v.dv[1].on} onClick={v.dv[1].toggle} style={css(v.dv[1].tg)}>
+            <button type="button" aria-label="إتاحة جهاز الليزر" role="switch" aria-checked={v.dv[1].on} onClick={v.dv[1].toggle} style={css(v.dv[1].tg, "button")}>
               <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
             </button>
           </div>

@@ -122,42 +122,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>الحجز والتعديل والإلغاء</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — المديرة العامة" onClick={v.m[0][0].c} style={css(v.m[0][0].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — المديرة العامة" onClick={v.m[0][0].c} style={css(v.m[0][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — مديرة التشغيل" onClick={v.m[0][1].c} style={css(v.m[0][1].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — مديرة التشغيل" onClick={v.m[0][1].c} style={css(v.m[0][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — الأخصائية" onClick={v.m[0][2].c} style={css(v.m[0][2].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — الأخصائية" onClick={v.m[0][2].c} style={css(v.m[0][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — المحاسبة" onClick={v.m[0][3].c} style={css(v.m[0][3].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — المحاسبة" onClick={v.m[0][3].c} style={css(v.m[0][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — الاستقبال" onClick={v.m[0][4].c} style={css(v.m[0][4].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — الاستقبال" onClick={v.m[0][4].c} style={css(v.m[0][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الحجز والتعديل والإلغاء — مسؤولة المخزون" onClick={v.m[0][5].c} style={css(v.m[0][5].st)}>
+              <button type="button" aria-label="الحجز والتعديل والإلغاء — مسؤولة المخزون" onClick={v.m[0][5].c} style={css(v.m[0][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[0][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[0][5].p} />
                 </svg>
@@ -167,42 +167,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>إدارة الطابور والنداء</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — المديرة العامة" onClick={v.m[1][0].c} style={css(v.m[1][0].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — المديرة العامة" onClick={v.m[1][0].c} style={css(v.m[1][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — مديرة التشغيل" onClick={v.m[1][1].c} style={css(v.m[1][1].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — مديرة التشغيل" onClick={v.m[1][1].c} style={css(v.m[1][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — الأخصائية" onClick={v.m[1][2].c} style={css(v.m[1][2].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — الأخصائية" onClick={v.m[1][2].c} style={css(v.m[1][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — المحاسبة" onClick={v.m[1][3].c} style={css(v.m[1][3].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — المحاسبة" onClick={v.m[1][3].c} style={css(v.m[1][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — الاستقبال" onClick={v.m[1][4].c} style={css(v.m[1][4].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — الاستقبال" onClick={v.m[1][4].c} style={css(v.m[1][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إدارة الطابور والنداء — مسؤولة المخزون" onClick={v.m[1][5].c} style={css(v.m[1][5].st)}>
+              <button type="button" aria-label="إدارة الطابور والنداء — مسؤولة المخزون" onClick={v.m[1][5].c} style={css(v.m[1][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[1][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[1][5].p} />
                 </svg>
@@ -216,42 +216,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>البيانات التعريفية</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — المديرة العامة" onClick={v.m[2][0].c} style={css(v.m[2][0].st)}>
+              <button type="button" aria-label="البيانات التعريفية — المديرة العامة" onClick={v.m[2][0].c} style={css(v.m[2][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — مديرة التشغيل" onClick={v.m[2][1].c} style={css(v.m[2][1].st)}>
+              <button type="button" aria-label="البيانات التعريفية — مديرة التشغيل" onClick={v.m[2][1].c} style={css(v.m[2][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — الأخصائية" onClick={v.m[2][2].c} style={css(v.m[2][2].st)}>
+              <button type="button" aria-label="البيانات التعريفية — الأخصائية" onClick={v.m[2][2].c} style={css(v.m[2][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — المحاسبة" onClick={v.m[2][3].c} style={css(v.m[2][3].st)}>
+              <button type="button" aria-label="البيانات التعريفية — المحاسبة" onClick={v.m[2][3].c} style={css(v.m[2][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — الاستقبال" onClick={v.m[2][4].c} style={css(v.m[2][4].st)}>
+              <button type="button" aria-label="البيانات التعريفية — الاستقبال" onClick={v.m[2][4].c} style={css(v.m[2][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="البيانات التعريفية — مسؤولة المخزون" onClick={v.m[2][5].c} style={css(v.m[2][5].st)}>
+              <button type="button" aria-label="البيانات التعريفية — مسؤولة المخزون" onClick={v.m[2][5].c} style={css(v.m[2][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[2][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[2][5].p} />
                 </svg>
@@ -261,42 +261,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>الملف الطبي والصور والملاحظات</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — المديرة العامة" onClick={v.m[3][0].c} style={css(v.m[3][0].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — المديرة العامة" onClick={v.m[3][0].c} style={css(v.m[3][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — مديرة التشغيل" onClick={v.m[3][1].c} style={css(v.m[3][1].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — مديرة التشغيل" onClick={v.m[3][1].c} style={css(v.m[3][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — الأخصائية" onClick={v.m[3][2].c} style={css(v.m[3][2].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — الأخصائية" onClick={v.m[3][2].c} style={css(v.m[3][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — المحاسبة" onClick={v.m[3][3].c} style={css(v.m[3][3].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — المحاسبة" onClick={v.m[3][3].c} style={css(v.m[3][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — الاستقبال" onClick={v.m[3][4].c} style={css(v.m[3][4].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — الاستقبال" onClick={v.m[3][4].c} style={css(v.m[3][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الملف الطبي والصور والملاحظات — مسؤولة المخزون" onClick={v.m[3][5].c} style={css(v.m[3][5].st)}>
+              <button type="button" aria-label="الملف الطبي والصور والملاحظات — مسؤولة المخزون" onClick={v.m[3][5].c} style={css(v.m[3][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[3][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[3][5].p} />
                 </svg>
@@ -306,42 +306,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>إنشاء الوصفات وتوقيعها</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — المديرة العامة" onClick={v.m[4][0].c} style={css(v.m[4][0].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — المديرة العامة" onClick={v.m[4][0].c} style={css(v.m[4][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — مديرة التشغيل" onClick={v.m[4][1].c} style={css(v.m[4][1].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — مديرة التشغيل" onClick={v.m[4][1].c} style={css(v.m[4][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — الأخصائية" onClick={v.m[4][2].c} style={css(v.m[4][2].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — الأخصائية" onClick={v.m[4][2].c} style={css(v.m[4][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — المحاسبة" onClick={v.m[4][3].c} style={css(v.m[4][3].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — المحاسبة" onClick={v.m[4][3].c} style={css(v.m[4][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — الاستقبال" onClick={v.m[4][4].c} style={css(v.m[4][4].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — الاستقبال" onClick={v.m[4][4].c} style={css(v.m[4][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — مسؤولة المخزون" onClick={v.m[4][5].c} style={css(v.m[4][5].st)}>
+              <button type="button" aria-label="إنشاء الوصفات وتوقيعها — مسؤولة المخزون" onClick={v.m[4][5].c} style={css(v.m[4][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[4][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[4][5].p} />
                 </svg>
@@ -355,42 +355,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>القبض وإصدار الفواتير</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — المديرة العامة" onClick={v.m[5][0].c} style={css(v.m[5][0].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — المديرة العامة" onClick={v.m[5][0].c} style={css(v.m[5][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — مديرة التشغيل" onClick={v.m[5][1].c} style={css(v.m[5][1].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — مديرة التشغيل" onClick={v.m[5][1].c} style={css(v.m[5][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — الأخصائية" onClick={v.m[5][2].c} style={css(v.m[5][2].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — الأخصائية" onClick={v.m[5][2].c} style={css(v.m[5][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — المحاسبة" onClick={v.m[5][3].c} style={css(v.m[5][3].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — المحاسبة" onClick={v.m[5][3].c} style={css(v.m[5][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — الاستقبال" onClick={v.m[5][4].c} style={css(v.m[5][4].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — الاستقبال" onClick={v.m[5][4].c} style={css(v.m[5][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="القبض وإصدار الفواتير — مسؤولة المخزون" onClick={v.m[5][5].c} style={css(v.m[5][5].st)}>
+              <button type="button" aria-label="القبض وإصدار الفواتير — مسؤولة المخزون" onClick={v.m[5][5].c} style={css(v.m[5][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[5][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[5][5].p} />
                 </svg>
@@ -400,42 +400,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>الخصم الاستثنائي والاسترداد</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — المديرة العامة" onClick={v.m[6][0].c} style={css(v.m[6][0].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — المديرة العامة" onClick={v.m[6][0].c} style={css(v.m[6][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — مديرة التشغيل" onClick={v.m[6][1].c} style={css(v.m[6][1].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — مديرة التشغيل" onClick={v.m[6][1].c} style={css(v.m[6][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — الأخصائية" onClick={v.m[6][2].c} style={css(v.m[6][2].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — الأخصائية" onClick={v.m[6][2].c} style={css(v.m[6][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — المحاسبة" onClick={v.m[6][3].c} style={css(v.m[6][3].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — المحاسبة" onClick={v.m[6][3].c} style={css(v.m[6][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — الاستقبال" onClick={v.m[6][4].c} style={css(v.m[6][4].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — الاستقبال" onClick={v.m[6][4].c} style={css(v.m[6][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — مسؤولة المخزون" onClick={v.m[6][5].c} style={css(v.m[6][5].st)}>
+              <button type="button" aria-label="الخصم الاستثنائي والاسترداد — مسؤولة المخزون" onClick={v.m[6][5].c} style={css(v.m[6][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[6][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[6][5].p} />
                 </svg>
@@ -445,42 +445,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>المصاريف والسندات</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — المديرة العامة" onClick={v.m[7][0].c} style={css(v.m[7][0].st)}>
+              <button type="button" aria-label="المصاريف والسندات — المديرة العامة" onClick={v.m[7][0].c} style={css(v.m[7][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — مديرة التشغيل" onClick={v.m[7][1].c} style={css(v.m[7][1].st)}>
+              <button type="button" aria-label="المصاريف والسندات — مديرة التشغيل" onClick={v.m[7][1].c} style={css(v.m[7][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — الأخصائية" onClick={v.m[7][2].c} style={css(v.m[7][2].st)}>
+              <button type="button" aria-label="المصاريف والسندات — الأخصائية" onClick={v.m[7][2].c} style={css(v.m[7][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — المحاسبة" onClick={v.m[7][3].c} style={css(v.m[7][3].st)}>
+              <button type="button" aria-label="المصاريف والسندات — المحاسبة" onClick={v.m[7][3].c} style={css(v.m[7][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — الاستقبال" onClick={v.m[7][4].c} style={css(v.m[7][4].st)}>
+              <button type="button" aria-label="المصاريف والسندات — الاستقبال" onClick={v.m[7][4].c} style={css(v.m[7][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المصاريف والسندات — مسؤولة المخزون" onClick={v.m[7][5].c} style={css(v.m[7][5].st)}>
+              <button type="button" aria-label="المصاريف والسندات — مسؤولة المخزون" onClick={v.m[7][5].c} style={css(v.m[7][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[7][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[7][5].p} />
                 </svg>
@@ -490,42 +490,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>الربحية والرواتب</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — المديرة العامة" onClick={v.m[8][0].c} style={css(v.m[8][0].st)}>
+              <button type="button" aria-label="الربحية والرواتب — المديرة العامة" onClick={v.m[8][0].c} style={css(v.m[8][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — مديرة التشغيل" onClick={v.m[8][1].c} style={css(v.m[8][1].st)}>
+              <button type="button" aria-label="الربحية والرواتب — مديرة التشغيل" onClick={v.m[8][1].c} style={css(v.m[8][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — الأخصائية" onClick={v.m[8][2].c} style={css(v.m[8][2].st)}>
+              <button type="button" aria-label="الربحية والرواتب — الأخصائية" onClick={v.m[8][2].c} style={css(v.m[8][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — المحاسبة" onClick={v.m[8][3].c} style={css(v.m[8][3].st)}>
+              <button type="button" aria-label="الربحية والرواتب — المحاسبة" onClick={v.m[8][3].c} style={css(v.m[8][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — الاستقبال" onClick={v.m[8][4].c} style={css(v.m[8][4].st)}>
+              <button type="button" aria-label="الربحية والرواتب — الاستقبال" onClick={v.m[8][4].c} style={css(v.m[8][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الربحية والرواتب — مسؤولة المخزون" onClick={v.m[8][5].c} style={css(v.m[8][5].st)}>
+              <button type="button" aria-label="الربحية والرواتب — مسؤولة المخزون" onClick={v.m[8][5].c} style={css(v.m[8][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[8][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[8][5].p} />
                 </svg>
@@ -539,42 +539,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>المخزون والمشتريات والموردون</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — المديرة العامة" onClick={v.m[9][0].c} style={css(v.m[9][0].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — المديرة العامة" onClick={v.m[9][0].c} style={css(v.m[9][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — مديرة التشغيل" onClick={v.m[9][1].c} style={css(v.m[9][1].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — مديرة التشغيل" onClick={v.m[9][1].c} style={css(v.m[9][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — الأخصائية" onClick={v.m[9][2].c} style={css(v.m[9][2].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — الأخصائية" onClick={v.m[9][2].c} style={css(v.m[9][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — المحاسبة" onClick={v.m[9][3].c} style={css(v.m[9][3].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — المحاسبة" onClick={v.m[9][3].c} style={css(v.m[9][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — الاستقبال" onClick={v.m[9][4].c} style={css(v.m[9][4].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — الاستقبال" onClick={v.m[9][4].c} style={css(v.m[9][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="المخزون والمشتريات والموردون — مسؤولة المخزون" onClick={v.m[9][5].c} style={css(v.m[9][5].st)}>
+              <button type="button" aria-label="المخزون والمشتريات والموردون — مسؤولة المخزون" onClick={v.m[9][5].c} style={css(v.m[9][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[9][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[9][5].p} />
                 </svg>
@@ -584,42 +584,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>إعدادات الأجهزة</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — المديرة العامة" onClick={v.m[10][0].c} style={css(v.m[10][0].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — المديرة العامة" onClick={v.m[10][0].c} style={css(v.m[10][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — مديرة التشغيل" onClick={v.m[10][1].c} style={css(v.m[10][1].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — مديرة التشغيل" onClick={v.m[10][1].c} style={css(v.m[10][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — الأخصائية" onClick={v.m[10][2].c} style={css(v.m[10][2].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — الأخصائية" onClick={v.m[10][2].c} style={css(v.m[10][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — المحاسبة" onClick={v.m[10][3].c} style={css(v.m[10][3].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — المحاسبة" onClick={v.m[10][3].c} style={css(v.m[10][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — الاستقبال" onClick={v.m[10][4].c} style={css(v.m[10][4].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — الاستقبال" onClick={v.m[10][4].c} style={css(v.m[10][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="إعدادات الأجهزة — مسؤولة المخزون" onClick={v.m[10][5].c} style={css(v.m[10][5].st)}>
+              <button type="button" aria-label="إعدادات الأجهزة — مسؤولة المخزون" onClick={v.m[10][5].c} style={css(v.m[10][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[10][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[10][5].p} />
                 </svg>
@@ -629,42 +629,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>التقارير ولوحة القيادة</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — المديرة العامة" onClick={v.m[11][0].c} style={css(v.m[11][0].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — المديرة العامة" onClick={v.m[11][0].c} style={css(v.m[11][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — مديرة التشغيل" onClick={v.m[11][1].c} style={css(v.m[11][1].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — مديرة التشغيل" onClick={v.m[11][1].c} style={css(v.m[11][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — الأخصائية" onClick={v.m[11][2].c} style={css(v.m[11][2].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — الأخصائية" onClick={v.m[11][2].c} style={css(v.m[11][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — المحاسبة" onClick={v.m[11][3].c} style={css(v.m[11][3].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — المحاسبة" onClick={v.m[11][3].c} style={css(v.m[11][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — الاستقبال" onClick={v.m[11][4].c} style={css(v.m[11][4].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — الاستقبال" onClick={v.m[11][4].c} style={css(v.m[11][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="التقارير ولوحة القيادة — مسؤولة المخزون" onClick={v.m[11][5].c} style={css(v.m[11][5].st)}>
+              <button type="button" aria-label="التقارير ولوحة القيادة — مسؤولة المخزون" onClick={v.m[11][5].c} style={css(v.m[11][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[11][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[11][5].p} />
                 </svg>
@@ -678,42 +678,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>الخدمات والسياسات والإعدادات</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — المديرة العامة" onClick={v.m[12][0].c} style={css(v.m[12][0].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — المديرة العامة" onClick={v.m[12][0].c} style={css(v.m[12][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — مديرة التشغيل" onClick={v.m[12][1].c} style={css(v.m[12][1].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — مديرة التشغيل" onClick={v.m[12][1].c} style={css(v.m[12][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — الأخصائية" onClick={v.m[12][2].c} style={css(v.m[12][2].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — الأخصائية" onClick={v.m[12][2].c} style={css(v.m[12][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — المحاسبة" onClick={v.m[12][3].c} style={css(v.m[12][3].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — المحاسبة" onClick={v.m[12][3].c} style={css(v.m[12][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — الاستقبال" onClick={v.m[12][4].c} style={css(v.m[12][4].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — الاستقبال" onClick={v.m[12][4].c} style={css(v.m[12][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="الخدمات والسياسات والإعدادات — مسؤولة المخزون" onClick={v.m[12][5].c} style={css(v.m[12][5].st)}>
+              <button type="button" aria-label="الخدمات والسياسات والإعدادات — مسؤولة المخزون" onClick={v.m[12][5].c} style={css(v.m[12][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[12][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[12][5].p} />
                 </svg>
@@ -723,42 +723,42 @@ export default function Page() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 33 }}>
             <div style={{ flex: 2.4, fontSize: 13.5, fontWeight: 600 }}>سجل التدقيق</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — المديرة العامة" onClick={v.m[13][0].c} style={css(v.m[13][0].st)}>
+              <button type="button" aria-label="سجل التدقيق — المديرة العامة" onClick={v.m[13][0].c} style={css(v.m[13][0].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][0].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][0].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — مديرة التشغيل" onClick={v.m[13][1].c} style={css(v.m[13][1].st)}>
+              <button type="button" aria-label="سجل التدقيق — مديرة التشغيل" onClick={v.m[13][1].c} style={css(v.m[13][1].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][1].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][1].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — الأخصائية" onClick={v.m[13][2].c} style={css(v.m[13][2].st)}>
+              <button type="button" aria-label="سجل التدقيق — الأخصائية" onClick={v.m[13][2].c} style={css(v.m[13][2].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][2].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][2].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — المحاسبة" onClick={v.m[13][3].c} style={css(v.m[13][3].st)}>
+              <button type="button" aria-label="سجل التدقيق — المحاسبة" onClick={v.m[13][3].c} style={css(v.m[13][3].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][3].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][3].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — الاستقبال" onClick={v.m[13][4].c} style={css(v.m[13][4].st)}>
+              <button type="button" aria-label="سجل التدقيق — الاستقبال" onClick={v.m[13][4].c} style={css(v.m[13][4].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][4].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][4].p} />
                 </svg>
               </button>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <button type="button" aria-label="سجل التدقيق — مسؤولة المخزون" onClick={v.m[13][5].c} style={css(v.m[13][5].st)}>
+              <button type="button" aria-label="سجل التدقيق — مسؤولة المخزون" onClick={v.m[13][5].c} style={css(v.m[13][5].st, "button")}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={v.m[13][5].col} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d={v.m[13][5].p} />
                 </svg>

@@ -78,27 +78,27 @@ export default function Page() {
             <div style={{ fontSize: 12, color: C.sub }}>استشارة أونلاين · {SERVICE.consult.minutes} دقيقة</div>
           </div>
           <div style={{ position: "absolute", bottom: 22, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 40, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: "0 14px 30px rgba(123,70,135,0.20)" }}>
-            <button type="button" aria-label="الميكروفون" aria-pressed={!mic} onClick={v.tmic} style={css(v.micst)}>
+            <button type="button" aria-label="الميكروفون" aria-pressed={!mic} onClick={v.tmic} style={css(v.micst, "button")}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={v.micc} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d={v.micp} />
               </svg>
             </button>
-            <button type="button" aria-label="الكاميرا" aria-pressed={!cam} onClick={v.tcam} style={css(v.camst)}>
+            <button type="button" aria-label="الكاميرا" aria-pressed={!cam} onClick={v.tcam} style={css(v.camst, "button")}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={v.camc} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 10l4.6-2.3A1 1 0 0 1 21 8.6v6.8a1 1 0 0 1-1.4.9L15 14zM3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               </svg>
             </button>
-            <button type="button" aria-label="عرض صور البشرة" style={{ width: 52, height: 52, borderRadius: 26, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxSizing: "content-box" }}>
+            <button type="button" aria-label="عرض صور البشرة" style={{ width: 52, height: 52, borderRadius: 26, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM3 16l5-5c.9-.9 2.1-.9 3 0l5 5M14 14l1-1c.9-.9 2.1-.9 3 0l3 3" />
               </svg>
             </button>
-            <button type="button" aria-label="المحادثة" style={{ width: 52, height: 52, borderRadius: 26, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxSizing: "content-box" }}>
+            <button type="button" aria-label="المحادثة" style={{ width: 52, height: 52, borderRadius: 26, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z" />
               </svg>
             </button>
-            <button type="button" aria-label="إنهاء المكالمة" style={{ height: 52, padding: "0 22px", borderRadius: 26, border: "none", background: "linear-gradient(145deg,#B067C1,#884397)", boxShadow: "0 10px 22px rgba(145,77,160,0.40), inset 0 1px 0 rgba(255,255,255,0.3)", color: C.white, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, boxSizing: "content-box" }}>
+            <button type="button" aria-label="إنهاء المكالمة" style={{ height: 52, padding: "0 22px", borderRadius: 26, border: "none", background: "linear-gradient(145deg,#B067C1,#884397)", boxShadow: "0 10px 22px rgba(145,77,160,0.40), inset 0 1px 0 rgba(255,255,255,0.3)", color: C.white, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 21L21 3M5.7 18.3A16 16 0 0 1 3 6a2 2 0 0 1 2-2h4l2 5-2.5 1.5a11 11 0 0 0 1.8 2.4M15 13l5 2v4a2 2 0 0 1-2 2 16 16 0 0 1-7.3-2.3" />
               </svg>
@@ -192,7 +192,7 @@ export default function Page() {
               ))}
             </div>
           </div>
-          <button type="button" style={{ height: 54, borderRadius: 27, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", fontSize: 16, marginTop: "auto", boxSizing: "content-box" }}>
+          <button type="button" style={{ height: 54, borderRadius: 27, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", fontSize: 16, marginTop: "auto" }}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 14L21 3M21 3l-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1z" />
             </svg>

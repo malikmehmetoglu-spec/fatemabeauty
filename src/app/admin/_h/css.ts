@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
  * Turns a CSS declaration string (as computed by the design's interactive logic, e.g. a toggle or chip look)
  * into a React style object. Used only for state-dependent styles ported from the batch-h admin designs.
  */
-export function css(s: string | undefined | null): CSSProperties {
+export function css(s: string | undefined | null, tag?: "button"): CSSProperties {
   const out: Record<string, string> = {};
   if (!s) return out;
   let depth = 0;
@@ -26,7 +26,8 @@ export function css(s: string | undefined | null): CSSProperties {
     out[k] = d.slice(i + 1).trim();
   }
   // the designs have no global border-box rule: sized boxes with padding/border are content-box unless stated
-  if (!out.boxSizing && (out.height || out.width) && Object.keys(out).some((x) => x.startsWith("padding") || (x.startsWith("border") && x !== "borderRadius"))) {
+  // (buttons are border-box by default in the browser)
+  if (tag !== "button" && !out.boxSizing && (out.height || out.width) && Object.keys(out).some((x) => x.startsWith("padding") || (x.startsWith("border") && x !== "borderRadius"))) {
     out.boxSizing = "content-box";
   }
   return out as CSSProperties;

@@ -166,7 +166,7 @@ export default function Page() {
           <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
             <circle cx="26" cy="26" r="22" fill="none" stroke="#ECE2EF" strokeWidth="5" />
             <circle cx="26" cy="26" r="22" fill="none" stroke="#A877B6" strokeWidth="5" strokeLinecap="round" strokeDasharray="138.2" strokeDashoffset="55" transform="rotate(-90 26 26)" />
-            <text x="26" y="32" textAnchor="middle" fontFamily="var(--font-rubik), Rubik, sans-serif" fontSize="16" fontWeight="500" fill="#7B4687">6
+            <text x="26" y="32" textAnchor="middle" style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif" }} fontSize="16" fontWeight="500" fill="#7B4687">6
             </text>
           </svg>
           <div style={{ lineHeight: 1.35 }}>

@@ -144,19 +144,19 @@ export default function Page() {
                   </Link>
                 </div>
                 <div style={{ flex: 0.9 }}>
-                  <button type="button" aria-label="إظهار في المتجر" role="switch" aria-checked={r.on} onClick={r.tv} style={css(r.vst)}>
+                  <button type="button" aria-label="إظهار في المتجر" role="switch" aria-checked={r.on} onClick={r.tv} style={css(r.vst, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
                 <div style={{ flex: 0.7 }}>
-                  <button type="button" aria-label="موصى به" aria-pressed={r.rec} onClick={r.tr} style={css(r.rst)}>
+                  <button type="button" aria-label="موصى به" aria-pressed={r.rec} onClick={r.tr} style={css(r.rst, "button")}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill={r.rf} stroke={r.rs} strokeWidth="1.7" strokeLinejoin="round">
                       <path d="M12 17.75l-6.17 3.24 1.18-6.87-5-4.87 6.9-1 3.08-6.25 3.08 6.25 6.9 1-5 4.87 1.18 6.87z" />
                     </svg>
                   </button>
                 </div>
                 <div style={{ width: 34 }}>
-                  <button type="button" aria-label="تعديل المنتج" style={{ width: 34, height: 34, borderRadius: 17, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxSizing: "content-box" }}>
+                  <button type="button" aria-label="تعديل المنتج" style={{ width: 34, height: 34, borderRadius: 17, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4M13.5 6.5l4 4" />
                     </svg>

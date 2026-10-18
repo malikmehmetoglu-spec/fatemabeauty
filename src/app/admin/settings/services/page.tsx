@@ -73,14 +73,14 @@ export default function Page() {
                 </div>
                 <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 5 }}>
                   <label htmlFor="sname" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>اسم الخدمة</label>
-                  <input id="sname" key={"n" + sel} defaultValue={v.cur.name} style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", padding: "0 16px", fontSize: 14, fontWeight: 600, color: C.ink, outline: "none" }} />
+                  <input id="sname" key={"n" + sel} defaultValue={v.cur.name} style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", padding: "0 16px", fontSize: 14, fontWeight: 600, color: C.ink, outline: "none", boxSizing: "content-box" }} />
                 </div>
                 <div style={{ position: "relative" }}>
                   <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600, marginBottom: 6 }}>المدة</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {v.durs.map((d, dI) => (
                       <Fragment key={dI}>
-                        <button type="button" onClick={d.pick} style={css(d.style)}>{d.name}</button>
+                        <button type="button" onClick={d.pick} style={css(d.style, "button")}>{d.name}</button>
                       </Fragment>
                     ))}
                   </div>
@@ -88,14 +88,14 @@ export default function Page() {
                 <div style={{ position: "relative", display: "flex", gap: 10 }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
                     <label htmlFor="sprice" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>السعر</label>
-                    <div style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", padding: "0 16px" }}>
-                      <input id="sprice" key={"p" + sel} defaultValue={v.cur.pnum} style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 15, fontWeight: 700, color: C.accent }} />
+                    <div style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", padding: "0 16px", boxSizing: "content-box" }}>
+                      <input id="sprice" key={"p" + sel} defaultValue={v.cur.pnum} style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 15, fontWeight: 700, color: C.accent, boxSizing: "content-box" }} />
                       <span style={{ fontSize: 12, color: C.sub2 }}>ل.س</span>
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
                     <span style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>الجهاز</span>
-                    <div style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", padding: "0 14px", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden" }}>{v.cur.device}</div>
+                    <div style={{ height: 42, borderRadius: 21, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", padding: "0 14px", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", boxSizing: "content-box" }}>{v.cur.device}</div>
                   </div>
                 </div>
                 <div style={{ position: "relative" }}>
@@ -103,7 +103,7 @@ export default function Page() {
                   <div style={{ display: "flex", gap: 8 }}>
                     {v.rooms.map((d, dI) => (
                       <Fragment key={dI}>
-                        <button type="button" onClick={d.pick} style={css(d.style)}>{d.name}</button>
+                        <button type="button" onClick={d.pick} style={css(d.style, "button")}>{d.name}</button>
                       </Fragment>
                     ))}
                   </div>
@@ -139,7 +139,7 @@ export default function Page() {
                 </div>
                 <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 5 }}>
                   <label htmlFor="sprep" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>تعليمات قبل الجلسة (تُرسل مع التذكير)</label>
-                  <textarea id="sprep" style={{ height: 70, resize: "none", borderRadius: 18, background: "#F9F5FB", border: "1px solid #EADCF0", padding: "10px 14px", fontSize: 13, lineHeight: "1.6", color: C.ink, outline: "none" }} defaultValue={"احضري دون مكياج، وأخبرينا بأي أدوية أو مستحضرات تستخدمينها حالياً."} />
+                  <textarea id="sprep" style={{ height: 70, resize: "none", borderRadius: 18, background: "#F9F5FB", border: "1px solid #EADCF0", padding: "10px 14px", fontSize: 13, lineHeight: "1.6", color: C.ink, outline: "none", boxSizing: "content-box" }} defaultValue={"احضري دون مكياج، وأخبرينا بأي أدوية أو مستحضرات تستخدمينها حالياً."} />
                 </div>
                 <div style={{ position: "relative", display: "flex", gap: 10, marginTop: "auto" }}>
                   <button type="button" style={{ height: 52, borderRadius: 26, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", flex: 1, fontSize: 15 }}>
@@ -197,7 +197,7 @@ export default function Page() {
                   </button>
                 </div>
                 <div style={{ width: 36 }}>
-                  <button type="button" aria-label="تعديل الخدمة" onClick={r.edit} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "content-box" }}>
+                  <button type="button" aria-label="تعديل الخدمة" onClick={r.edit} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: C.white, boxShadow: "0 6px 18px rgba(123,70,135,0.12), inset 0 1px 0 rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4M13.5 6.5l4 4" />
                     </svg>
