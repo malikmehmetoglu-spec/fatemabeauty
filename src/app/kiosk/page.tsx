@@ -8,7 +8,7 @@ import { Stage } from "@/components/shell";
 import { ErrorNote, GhostButton, Modal, SubmitButton, TextInput } from "@/components/ui";
 import { checkIn, findToday, personName, serviceName, STATUS_AR, type QueueAppt } from "@/lib/db/queue";
 import { clock } from "@/lib/format";
-import { useKiosk } from "./kiosk";
+import { KC, kioskError, useKiosk } from "./kiosk";
 import { R } from "@/lib/routes";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
@@ -43,7 +43,7 @@ export default function Page() {
   const doCheckIn = async (id: string) => {
     setBusy(true); setErr(null);
     try { await checkIn(id); router.push(`/kiosk/checked-in/?id=${id}`); }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+    catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   const doCheckInRef = useRef(doCheckIn); doCheckInRef.current = doCheckIn;
 
@@ -73,7 +73,7 @@ export default function Page() {
 
   const search = async () => {
     setBusy(true); setErr(null);
-    try { setFound(await findToday(term)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    try { setFound(await findToday(term)); } catch (e) { setErr(kioskError(e)); }
     setBusy(false);
   };
 
@@ -82,7 +82,7 @@ export default function Page() {
   const setAr = () => setLang("ar"), setEn = () => setLang("en");
   const arStyle = seg(lang === "ar", T.ar.font), enStyle = seg(lang === "en", T.en.font);
   return (
-    <Stage width={1194} height={834} background={BG} padding="36px 40px 32px" direction="row" gap={36}>
+    <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="row" gap={36}>
 
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", position: "relative" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -99,11 +99,11 @@ export default function Page() {
           </div>
         </div>
         <div dir={t.dir} style={{ fontFamily: t.font, display: "flex", flexDirection: "column", flexGrow: 1 }}>
-          <div style={{ marginTop: 52, fontSize: 24, fontWeight: 600, color: C.accentMid }}>{t.hello}
+          <div style={{ marginTop: 40, fontSize: 24, fontWeight: 600, color: C.accentMid }}>{t.hello}
           </div>
-          <h1 style={{ margin: "4px 0 0", fontSize: 52, fontWeight: 700, lineHeight: 1.2, color: C.accent }}>{t.h1}
+          <h1 className={KC.h1} style={{ margin: "4px 0 0", fontSize: 52, fontWeight: 700, lineHeight: 1.2, color: C.accent }}>{t.h1}
           </h1>
-          <div style={{ fontSize: 19, color: C.sub, marginTop: 12, lineHeight: 1.6, maxWidth: 520 }}>{t.sub}
+          <div className={KC.lead} style={{ fontSize: 19, color: C.sub, marginTop: 12, lineHeight: 1.6, maxWidth: 520 }}>{t.sub}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 34 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -140,7 +140,7 @@ export default function Page() {
               </span>
             </div>
           </div>
-          <Link href={R.T_WalkIn} style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 18, padding: "18px 22px", borderRadius: 30, background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT }}>
+          <Link href={R.T_WalkIn} className={KC.walk} style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 18, padding: "18px 22px", borderRadius: 30, background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT }}>
             <span style={{ width: 58, height: 58, borderRadius: 29, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
@@ -160,9 +160,9 @@ export default function Page() {
           </Link>
         </div>
       </div>
-      <div style={{ width: 500, flexShrink: 0, borderRadius: 40, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: SH, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
+      <div className={KC.cam} style={{ width: 500, flexShrink: 0, borderRadius: 40, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: SH, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
         <div style={{ position: "absolute", top: -120, left: -80, width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle, rgba(190,150,215,0.45) 0%, rgba(190,150,215,0) 70%)" }} />
-        <div style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 16px", borderRadius: 20, background: "rgba(255,255,255,0.8)", boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent, whiteSpace: "nowrap" }}>
+        <div className={KC.camHint} style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 16px", borderRadius: 20, background: "rgba(255,255,255,0.8)", boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent, whiteSpace: "nowrap" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" />
           </svg>
@@ -172,7 +172,7 @@ export default function Page() {
             <path d="M6 15l6-6 6 6" />
           </svg>
         </div>
-        <div style={{ position: "relative", marginTop: 40 }}>
+        <div className={KC.camBox} style={{ position: "relative", marginTop: 40 }}>
           <video ref={videoRef} muted playsInline style={{ position: "absolute", left: 34, top: 34, width: 362, height: 362, objectFit: "cover", borderRadius: 24, transform: "scaleX(-1)", display: camOn ? "block" : "none" }} />
           <svg width="430" height="430" viewBox="0 0 430 430" aria-hidden="true">
             <defs>

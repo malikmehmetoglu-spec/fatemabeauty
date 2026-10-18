@@ -52,8 +52,8 @@ export function BoardView({ tv }: { tv: ReturnType<typeof useTv> }) {
           <div style={{ alignSelf: "center", marginTop: 34, height: 50, padding: "0 24px", borderRadius: 25, background: "#FBEAF1", color: C.danger, fontSize: 24, fontWeight: 700, display: "flex", alignItems: "center", gap: 12, whiteSpace: "nowrap", position: "relative" }}>
             <span style={{ width: 12, height: 12, borderRadius: 6, background: "#9B4FB0", boxShadow: "0 0 0 5px rgba(155,79,176,0.18)" }} />{b.cur === "—" ? "شاغرة" : "في الجلسة"}
           </div>
-          <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: tv.board.length > 3 ? 170 : 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>{b.cur}
-          </div>
+          {b.cur === "—" ? <div style={{ margin: "auto 0", textAlign: "center", fontSize: 36, fontWeight: 600, color: C.sub2, lineHeight: 1.5, position: "relative" }}>الغرفة جاهزة<br />للمراجِعة التالية</div> : <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: tv.board.length > 3 ? 170 : 240, fontWeight: 500, lineHeight: 1, color: C.accent, textAlign: "center", margin: "14px 0 0", letterSpacing: -6, position: "relative", textShadow: "0 14px 30px rgba(123,70,135,0.15)" }}>{b.cur}
+          </div>}
           <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 26px", borderRadius: 32, background: "linear-gradient(135deg,#F9F3FA,#F2E4F5)", border: "1px solid #FFFFFF", position: "relative" }}>
             <span style={{ fontSize: 30, fontWeight: 600, color: C.sub }}>التالي
             </span>

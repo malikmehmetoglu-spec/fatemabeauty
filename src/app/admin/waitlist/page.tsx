@@ -11,6 +11,9 @@ import { listServices, listSpecialists } from "@/lib/db/catalog";
 import { addToWaitlist, dateOfKey, listWaitlist, searchPatients, setWaitStatus, type PatientHit, type WaitEntry } from "@/lib/db/appointments";
 import { arDate, clock, dayKey } from "@/lib/format";
 import { C } from "@/lib/tokens";
+import css from "../calendar/appts.module.css";
+import w8 from "./waitlist.module.css";
+import { arErr } from "../patients/kit";
 
 const PART: Record<string, string> = { any: "أي وقت", morning: "صباحاً", evening: "مساءً" };
 type Filter = "all" | "waiting" | "offered" | "today";
@@ -26,19 +29,20 @@ export default function WaitlistAdminPage() {
 
   const set = async (w: WaitEntry, s: "offered" | "booked" | "closed" | "waiting") => {
     setErr("");
-    try { await setWaitStatus(w.id, s); } catch (e) { setErr("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); }
+    if (s === "closed" && !window.confirm("إزالتها من قائمة الانتظار؟")) return;
+    try { await setWaitStatus(w.id, s); } catch (e) { setErr(arErr(e)); }
   };
 
   return (
     <AdminShell active="المواعيد" title="قائمة الانتظار" subtitle="مراجِعات ينتظرن موعداً يفرغ — الأقدم أولاً"
       actions={<GhostButton icon="plus" onClick={() => setAdding(true)}>إضافة إلى القائمة</GhostButton>}>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div className="adm-row">
         <Kpi dark label="في الانتظار" value={list.filter((w) => w.status === "waiting").length} sub="لم يُعرض عليهن موعد بعد" icon="users" />
         <Kpi label="عُرض عليهن موعد" value={list.filter((w) => w.status === "offered").length} sub="بانتظار ردّهن" icon="bell" />
         <Kpi label="يفضّلن اليوم" value={list.filter((w) => w.preferred_day === today).length} sub={arDate(new Date())} icon="cal" />
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         {([["all", "الكل"], ["waiting", "في الانتظار"], ["offered", "عُرض موعد"], ["today", "اليوم"]] as [Filter, string][]).map(([k, t]) => (
           <Chip key={k} selected={filter === k} onClick={() => setFilter(k)}>{t}</Chip>
         ))}
@@ -46,11 +50,34 @@ export default function WaitlistAdminPage() {
       </div>
       {err && <ErrorNote>{err}</ErrorNote>}
 
-      {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل القائمة: {error}</ErrorNote> : list.length === 0 ? (
+      {loading ? <Loading /> : error ? <ErrorNote>{arErr(error, "تعذّر تحميل القائمة. أعيدي تحميل الصفحة.")}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="users" title="قائمة الانتظار فارغة"
           text="عندما يمتلئ يوم تنضم المراجِعات من التطبيق، أو تضيفينهن من هنا، ويظهرن بالترتيب مع اليوم والوقت المفضّل."
           action={<GhostButton icon="plus" onClick={() => setAdding(true)}>إضافة إلى القائمة</GhostButton>} />
-      ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أحد في هذا الاختيار" /> : (
+      ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أحد في هذا الاختيار" /> : (<>
+        <div className={w8.cards}>
+          {shown.map((w, i) => (
+            <div key={w.id} style={{ borderRadius: 22, padding: "12px 16px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 6px 18px rgba(123,70,135,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <b className="latin" style={{ color: C.accent, fontSize: 15 }}>{i + 1}</b>
+                <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700 }}>{w.patient?.name || w.name || "بدون اسم"}</div>
+                  <div style={{ fontSize: 12, color: C.sub2 }}>{w.patient ? `ملف ${w.patient.file_no}` : "بدون ملف"}{(w.patient?.phone || w.phone) ? <> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{w.patient?.phone || w.phone}</span></> : null}</div>
+                </div>
+                <Tag kind={w.status === "offered" ? "pink" : "lilac"}>{w.status === "offered" ? "عُرض موعد" : "ينتظر"}</Tag>
+              </div>
+              <div style={{ fontSize: 12.5, color: C.sub }}>
+                {w.service?.name ?? "أي جلسة"}{w.specialist ? ` · مع ${w.specialist.name}` : ""} · {w.preferred_day ? arDate(dateOfKey(w.preferred_day)) : "أي يوم"} · {PART[w.part]}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {w.status === "waiting" ? <RowBtn onClick={() => set(w, "offered")}>عرض موعد</RowBtn> : <RowBtn onClick={() => set(w, "waiting")}>إرجاع</RowBtn>}
+                <RowBtn onClick={() => set(w, "booked")}>تم الحجز</RowBtn>
+                <RowBtn danger onClick={() => set(w, "closed")}>إزالة</RowBtn>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className={w8.table}>
         <DataTable
           headers={["#", "المراجِعة", "الجلسة", "اليوم المفضّل", "منذ", "الحالة", ""]}
           widths={[0.4, 2, 1.4, 1.4, 0.9, 1, 2.2]}
@@ -72,7 +99,8 @@ export default function WaitlistAdminPage() {
             </span>,
           ])}
         />
-      )}
+        </div>
+      </>)}
       <AddDialog open={adding} onClose={() => setAdding(false)} />
     </AdminShell>
   );
@@ -103,7 +131,7 @@ function AddDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     try {
       await addToWaitlist({ patient_id: patient?.id ?? null, name: patient ? null : name.trim(), phone: patient ? null : phone.trim() || null, service_key: svc || null, specialist_id: sp || null, preferred_day: day || null, part });
       onClose();
-    } catch (e) { setError("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+    } catch (e) { setError(arErr(e)); } finally { setBusy(false); }
   }
   return (
     <Modal open={open} onClose={onClose} title="إضافة إلى قائمة الانتظار" width={600} footer={<SubmitButton onClick={save} busy={busy}>إضافة</SubmitButton>}>
@@ -120,13 +148,13 @@ function AddDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
               <b>{h.name || "بدون اسم"}</b><span style={{ color: C.sub2, fontSize: 12.5 }}>ملف {h.file_no}</span>
             </button>
           ))}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className={css.grid2}>
             <TextInput label="أو اسم بدون ملف" value={name} onChange={setName} />
             <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} dir="ltr" />
           </div>
         </>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className={css.grid2}>
         <Select label="الجلسة" value={svc} onChange={setSvc} options={[{ value: "", label: "أي جلسة" }, ...(services.data ?? []).map((s) => ({ value: s.key, label: s.name }))]} />
         <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "أي أخصائية" }, ...(team.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
         <TextInput label="اليوم المفضّل (اختياري)" type="date" dir="ltr" value={day} onChange={setDay} />

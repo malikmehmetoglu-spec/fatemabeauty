@@ -4,7 +4,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, DarkGlow, EmptyState, Icon, IconButton, Loading, PrimaryButton, SecondaryButton, Tag } from "@/components/ui";
+import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, IconButton, Loading, PrimaryButton, SecondaryButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { freeChangeHours, getAppointment, STATUS_KIND, STATUS_LABEL, timeOf, useSearch } from "@/lib/db/appointments";
@@ -40,6 +40,9 @@ export default function AppointmentDetailPage() {
   return (
     <PhoneScreen gap={12}>
       <TopBar title="تفاصيل الموعد" back={R.P_Appointments} />
+      {q.get("moved") && canCancel && (
+        <ErrorNote>حُجز موعدكِ الجديد، لكن تعذّر إلغاء هذا الموعد تلقائياً. ألغيه من الأسفل أو تواصلي مع المركز.</ErrorNote>
+      )}
 
       <div style={{ ...DARK, position: "relative", overflow: "hidden", borderRadius: 30, padding: "18px 20px 16px" }}>
         <DarkGlow />
@@ -48,10 +51,10 @@ export default function AppointmentDetailPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div style={{ lineHeight: 1.35 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 26, padding: "0 10px", borderRadius: 13, background: "rgba(255,255,255,0.16)", fontSize: 12, fontWeight: 600 }}>
-                <Icon name="check" color="#FFFFFF" size={13} stroke={2.4} />{STATUS_LABEL[a.status]}
+                <Icon name={a.status === "pending" ? "clock" : a.status === "cancelled" || a.status === "no_show" ? "x" : "check"} color="#FFFFFF" size={13} stroke={2.4} />{STATUS_LABEL[a.status]}
               </div>
               <div style={{ fontSize: 25, fontWeight: 700, marginTop: 8, whiteSpace: "nowrap" }}>{d.getDate()} {AR_MONTHS[d.getMonth()]}</div>
-              <div style={{ fontSize: 13.5, color: C.onDark }}>{AR_DAYS[d.getDay()]} {d.getFullYear()}{days > 0 ? ` · بعد ${days} ${days <= 10 ? "أيام" : "يوماً"}` : today ? " · اليوم" : ""}</div>
+              <div style={{ fontSize: 13.5, color: C.onDark }}>{AR_DAYS[d.getDay()]} {d.getFullYear()}{days === 1 ? " · غداً" : days === 2 ? " · بعد يومين" : days > 2 ? ` · بعد ${days} ${days <= 10 ? "أيام" : "يوماً"}` : today ? " · اليوم" : ""}</div>
             </div>
             <div style={{ textAlign: "left", lineHeight: 1.1 }}>
               <div style={{ fontSize: 12.5, color: C.onDark }}>الساعة</div>
@@ -106,20 +109,20 @@ export default function AppointmentDetailPage() {
       <div style={{ position: "relative", display: "flex", gap: 10 }}>
         <SecondaryButton icon="calcheck" height={48} style={{ flex: 1, fontSize: 14, padding: "0 12px" }}
           onClick={() => downloadIcs({ id: a.id, starts_at: a.starts_at, minutes: a.minutes, title: a.service?.name ?? "جلسة", location: a.room?.name })}>إضافة إلى التقويم</SecondaryButton>
-        <IconButton icon="msg" label="مراسلة المركز" size={48} href={R.Consult} />
+        <IconButton icon="msg" label="مراسلة المركز" size={48} href={R.P_Chat} />
       </div>
 
       {canCancel && (
         <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <Link href={`${R.Booking}?service=${a.service_key}`} style={{ height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, color: C.accent, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 20px", alignSelf: "stretch", border: `1.5px solid ${C.accent}`, fontSize: 16 }}>
-            <Icon name="edit" color={C.accent} size={18} stroke={1.9} />حجز وقت آخر
+          <Link href={`${R.Booking}?service=${a.service_key}&replace=${a.id}`} style={{ height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, color: C.accent, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 20px", alignSelf: "stretch", border: `1.5px solid ${C.accent}`, fontSize: 16 }}>
+            <Icon name="edit" color={C.accent} size={18} stroke={1.9} />تغيير الموعد
           </Link>
           <Link href={`${R.P_CancelConfirm}?id=${a.id}`} style={{ height: 40, display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, color: C.danger }}>
             <Icon name="calx" color={C.danger} size={17} />إلغاء الموعد
           </Link>
           <div style={{ fontSize: 12, color: C.sub2, textAlign: "center", lineHeight: 1.6 }}>
             عند الإلغاء يعود الموعد متاحاً لمراجعة أخرى
-            {policy.data != null && <><br />التعديل والإلغاء مجانيان حتى {policy.data} ساعات قبل الموعد</>}
+            {policy.data != null && <><br />التعديل والإلغاء مجانيان حتى {policy.data} {policy.data >= 3 && policy.data <= 10 ? "ساعات" : "ساعة"} قبل الموعد</>}
           </div>
         </div>
       )}

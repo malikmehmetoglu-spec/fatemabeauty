@@ -19,8 +19,9 @@ export default function OtpPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   useEffect(() => { const p = savedPhone(); if (!p) router.replace(R.Login); else setPhone(p); }, [router]);
-  async function confirm() {
-    const token = digits.join("");
+  async function confirm(code?: string) {
+    if (busy) return;
+    const token = code ?? digits.join("");
     if (token.length !== 6) { setError("أدخلي الأرقام الستة كاملة."); return; }
     setBusy(true); setError("");
     const r = await verifyCode(phone, token);
@@ -32,10 +33,12 @@ export default function OtpPage() {
     try { next = sessionStorage.getItem("fb.after_login"); if (done) sessionStorage.removeItem("fb.after_login"); } catch {}
     router.replace(done ? (next && next.startsWith("/") && !next.startsWith("//") ? next : R.Main) : R.P_Profile);
   }
-  async function resend() {
-    setError(""); setSec(59);
-    const e = await sendCode(phone);
-    if (e) setError(e);
+  const [info, setInfo] = useState("");
+  async function resend(channel: "whatsapp" | "sms" = "whatsapp") {
+    if (sec > 0 || !phone) return;
+    setError(""); setInfo(""); setSec(59);
+    const e = await sendCode(phone, channel);
+    if (e) setError(e); else setInfo(channel === "sms" ? "أرسلنا رمزاً جديداً برسالة SMS." : "أرسلنا رمزاً جديداً عبر واتساب.");
   }
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -45,9 +48,22 @@ export default function OtpPage() {
   }, []);
 
   const setDigit = (i: number, v: string) => {
-    const d = v.replace(/\D/g, "").slice(-1);
-    setDigits((p) => p.map((x, j) => (j === i ? d : x)));
+    const all = v.replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660)).replace(/\D/g, "");
+    // Pasted / auto-filled code: spread it over the boxes starting here.
+    if (all.length > 1 && !(all.length === 2 && digits[i])) {
+      const next = [...digits];
+      all.slice(0, 6 - i).split("").forEach((c, k) => { next[i + k] = c; });
+      setDigits(next);
+      const last = Math.min(i + all.length, 5);
+      refs.current[last]?.focus();
+      if (next.every(Boolean)) confirm(next.join(""));
+      return;
+    }
+    const d = all.slice(-1);
+    const next = digits.map((x, j) => (j === i ? d : x));
+    setDigits(next);
     if (d && i < 5) refs.current[i + 1]?.focus();
+    if (d && next.every(Boolean)) confirm(next.join(""));
   };
 
   const boxStyle = (i: number): CSSProperties => {
@@ -82,8 +98,8 @@ export default function OtpPage() {
 
       <div role="group" aria-label="رمز التحقق المكوّن من 6 أرقام" dir="ltr" style={{ position: "relative", display: "flex", justifyContent: "center", gap: 9, marginTop: 30 }}>
         {digits.map((d, i) => (
-          <input key={i} ref={(el) => { refs.current[i] = el; }} aria-label={`الرقم ${i + 1} من 6`} type="text" inputMode="numeric" maxLength={1}
-            autoComplete={i === 0 ? "one-time-code" : "off"} value={d} className="latin"
+          <input key={i} ref={(el) => { refs.current[i] = el; }} aria-label={`الرقم ${i + 1} من 6`} type="text" inputMode="numeric"
+            autoComplete={i === 0 ? "one-time-code" : "off"} value={d} className="latin" maxLength={6}
             onFocus={() => setFocus(i)} onChange={(e) => setDigit(i, e.target.value)}
             onKeyDown={(e) => { if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus(); }}
             style={boxStyle(i)} />
@@ -97,7 +113,7 @@ export default function OtpPage() {
             <b dir="ltr" className="latin" style={{ fontWeight: 500, color: C.accent }}>00:{String(sec).padStart(2, "0")}</b>
           </div>
         ) : (
-          <button type="button" onClick={resend} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent }}>
+          <button type="button" onClick={() => resend()} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, fontSize: 14, fontWeight: 600, color: C.accent }}>
             <Icon name="refresh" color={C.accent} size={17} />إعادة إرسال الرمز
           </button>
         )}
@@ -105,10 +121,11 @@ export default function OtpPage() {
 
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, color: C.sub2 }}>
-          لم يصلكِ الرمز؟<button type="button" onClick={resend} style={{ border: "none", background: "none", padding: 0, fontSize: 13, fontWeight: 700, color: C.accentMid }}>أرسليه برسالة SMS</button>
+          لم يصلكِ الرمز؟<button type="button" onClick={() => resend("sms")} disabled={sec > 0} style={{ border: "none", background: "none", padding: 0, fontSize: 13, fontWeight: 700, color: sec > 0 ? C.muted : C.accentMid }}>{sec > 0 ? "أرسليه برسالة SMS بعد انتهاء العدّاد" : "أرسليه برسالة SMS"}</button>
         </div>
+        {info && !error && <div role="status" style={{ fontSize: 13.5, fontWeight: 600, color: C.ok, textAlign: "center" }}>{info}</div>}
         {error && <div role="alert" style={{ fontSize: 13.5, fontWeight: 600, color: C.danger, background: "#FBEAF1", borderRadius: 14, padding: "10px 14px", textAlign: "center" }}>{error}</div>}
-        <PrimaryButton onClick={confirm} disabled={busy}>{busy ? "جارٍ التحقق…" : "تأكيد"}</PrimaryButton>
+        <PrimaryButton onClick={() => confirm()} disabled={busy}>{busy ? "جارٍ التحقق…" : "تأكيد"}</PrimaryButton>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, color: C.sub2 }}>
           <Icon name="lock" color={C.muted} size={14} />لا تشاركي هذا الرمز مع أي أحد
         </div>

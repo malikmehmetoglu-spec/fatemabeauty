@@ -166,7 +166,7 @@ export function SubmitButton({ children, onClick, busy, disabled, style }: { chi
 
 export function GhostButton({ children, onClick, icon, color = C.accent, style }: { children: ReactNode; onClick?: () => void; icon?: string; color?: string; style?: CSSProperties }) {
   return (
-    <button type="button" onClick={onClick} style={{ height: 46, padding: "0 18px", borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color, fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <button type="button" onClick={onClick} style={{ height: 46, padding: "0 18px", borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color, fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0, ...style }}>
       {icon && <Icon name={icon} color={color} size={17} stroke={1.9} />}{children}
     </button>
   );

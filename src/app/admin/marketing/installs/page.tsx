@@ -103,7 +103,7 @@ export default function InstallsPage() {
         </Card>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <Chip selected={filter === "all"} onClick={() => setFilter("all")}>الكل · {stats.total}</Chip>
         <Chip selected={filter === "linked"} onClick={() => setFilter("linked")}>مراجِعات معروفات · {stats.linked}</Chip>
         <Chip selected={filter === "inactive"} onClick={() => setFilter("inactive")}>لم يفتحن منذ 30 يوماً</Chip>
@@ -122,7 +122,7 @@ export default function InstallsPage() {
       ) : (
         <DataTable
           headers={["المراجِعة", "الجهاز", "المصدر", "تاريخ التثبيت", "آخر فتح", "مرات الفتح"]}
-          widths={[2.2, 1, 1.1, 1.2, 1, 0.8]}
+          widths={[2.2, 1, 1.1, 1.2, 1, 0.8]} minWidth={760}
           rows={shown.map((r) => [
             r.patients
               ? <><Avatar initials={initials(r.patients.name || "؟")} size={34} /><div style={{ lineHeight: 1.3 }}><div style={{ fontWeight: 700 }}>{r.patients.name || "دون اسم"}</div><div style={{ fontSize: 12, color: C.sub2 }}>ملف {r.patients.file_no}</div></div></>

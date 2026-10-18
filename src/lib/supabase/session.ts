@@ -31,6 +31,12 @@ function start() {
   supabase.auth.onAuthStateChange((_e, session) => { setTimeout(() => resolve(session), 0); });
 }
 
+/** Re-reads the signed-in staff/patient row (e.g. after the patient saved her profile). */
+export async function refreshSession() {
+  const { data } = await supabase.auth.getSession();
+  await resolve(data.session);
+}
+
 /** Signed-in user, and whether she is a staff member or a patient. */
 export function useSession() {
   const [state, setState] = useState<State>(cache);

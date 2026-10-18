@@ -29,7 +29,7 @@ export default function ScreensIndex() {
                 {list.map((k) => (
                   <Link key={k} href={R[k]} style={{ padding: "8px 12px", borderRadius: 14, background: C.tint2, fontSize: 13, display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <span className="latin" style={{ color: C.accent }}>{k}</span>
-                    <span className="latin" style={{ color: C.muted, fontSize: 11 }}>{R[k]}</span>
+                    <span className="latin" dir="ltr" style={{ color: C.muted, fontSize: 11, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{R[k]}</span>
                   </Link>
                 ))}
               </div>

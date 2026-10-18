@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { Fragment, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { ErrorNote, Loading } from "@/components/ui";
@@ -13,8 +12,8 @@ import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/
 import { useQuery } from "@/lib/db/query";
 import { clock, dayKey } from "@/lib/format";
 import { css } from "../css";
-import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
-import { NowText, useKiosk } from "../kiosk";
+import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
+import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
 
 /** T_QuickBook.dc.html */
 const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
@@ -25,7 +24,7 @@ const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid
 
 function slotsFor(b: [number, number][], dur: number, NOW: number) {
   const set = new Set<number>();
-  for (let t = Math.ceil((NOW + 15) / 15) * 15; t <= END - 15; t += 15) set.add(t);
+  for (let t = Math.max(D0, Math.ceil((NOW + 15) / 15) * 15); t <= END - 15; t += 15) set.add(t);
   b.forEach((x) => { if (x[1] > NOW && x[1] < END) set.add(x[1]); });
   return [...set].sort((x, y) => x - y).map((t) => {
     const taken = b.some((x) => t >= x[0] && t < x[1]);
@@ -77,7 +76,7 @@ export default function Page() {
       (i === st.svc ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
   const sps = SP.map((x, i) => { const on = i === st.sp;
     return { x, pick: () => setSt({ ...st, sp: on ? -1 : i, slot: null }),
-      style: css("flex:1;min-width:0;border-radius:24px;padding:16px 8px 14px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;" +
+      style: css("flex:1 1 120px;min-width:0;border-radius:24px;padding:16px 8px 14px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;" +
         (on ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#35213D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }; });
   const roomName = s?.room_id ? rooms.find((r) => r.id === s.room_id)?.name ?? "" : "";
   const free = cs.filter((c) => c.fits).length;
@@ -91,7 +90,7 @@ export default function Page() {
   const btn = busy ? "جارٍ الحجز…" : "تأكيد الحجز";
   const search = async () => {
     setErr(null); setPat(null);
-    try { setHits(await searchPatients(term)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    try { setHits(await searchPatients(term)); } catch (e) { setErr(kioskError(e)); }
   };
   const isPhone = term.replace(/\D/g, "").length >= 8;
   const canBook = !!s && slot !== null && (!!pat || (isPhone && !!newName.trim()));
@@ -101,68 +100,23 @@ export default function Page() {
     try {
       await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null });
       router.push(R.T_Desk);
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+    } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   return (
-    <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
+    <Stage fluid width={1194} height={834} background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
-      <nav aria-label="وضع الاستقبال" style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
-        <div style={{ display: "flex" }}>
-          <img src={LOGO} alt="Fatema Beauty — Skin Care Center" style={{ height: 44, width: "auto", display: "block" }} />
-        </div>
-        <div style={{ width: 44, height: 1, background: C.line }} />
-        <Link href={R.T_Desk} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" />
-            </svg>
-          </span>الاستقبال
-        </Link>
-        <Link href={R.T_QuickBook} aria-current="page" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.accent }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" />
-            </svg>
-          </span>حجز سريع
-        </Link>
-        <Link href={R.T_Cashier} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
-            </svg>
-          </span>الكاشير
-        </Link>
-        <Link href={R.T_Welcome} style={{ marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: C.sub2, textAlign: "center", lineHeight: 1.3 }}>
-          <span style={{ width: 56, height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zM11 17a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
-            </svg>
-          </span>وضع
-          <br />المراجعات
-        </Link>
-      </nav>
+      <KioskNav active={R.T_QuickBook} />
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
+        <div className={KC.hdr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
           <div style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>حجز سريع
+            <div className={KC.title} style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>حجز سريع
             </div>
             <div style={{ fontSize: 15, color: C.sub2 }}>موعد جديد لليوم — الأوقات محسوبة من جدول الغرف
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-              </svg>
-              <span><NowText part="date" />
-              </span>
-              <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-              </span>
-            </div>
-          </div>
+          <DatePill />
         </div>
-        <div style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: "0" }}>
+        <div className={KC.cols} style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: "0" }}>
           <div style={{ width: 470, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>المراجعة
@@ -186,9 +140,9 @@ export default function Page() {
                   <div style={{ fontSize: 13, color: C.sub }}>ملف {pat.file_no}{pat.phone ? ` · ${pat.phone}` : ""}
                   </div>
                 </div>
-                <button type="button" onClick={() => setPat(null)} aria-label="تغيير" style={{ width: 30, height: 30, borderRadius: 15, flexShrink: 0, border: "none", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12l5 5L20 7" />
+                <button type="button" onClick={() => setPat(null)} aria-label="إلغاء اختيار المراجعة" title="تغيير" style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, border: "none", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -221,7 +175,7 @@ export default function Page() {
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12, flexGrow: 1 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>الأخصائية
               </div>
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {sps.map(({ x, pick, style }, i) => (
                 <button key={x.id} type="button" aria-pressed={st.sp === i} onClick={pick} style={style}>
                   {x.photo_url
@@ -241,7 +195,7 @@ export default function Page() {
           </div>
           <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "20px 22px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 16, flexGrow: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
                 <div style={{ lineHeight: 1.35 }}>
                   <div style={{ fontSize: 18, fontWeight: 700 }}>الوقت · اليوم
                   </div>
@@ -260,7 +214,7 @@ export default function Page() {
                   </span>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+              <div className={`${KC.slots} ${KC.scroll}`} style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gridAutoRows: 54, gap: 10, flex: "1 1 0", minHeight: 0, overflowY: "auto", alignContent: "start", padding: 2 }}>
                 {cells.map((c, cI) => (
                   <Fragment key={cI}>
                     <button type="button" onClick={c.pick} aria-label={c.aria} style={c.style}>{c.label}
@@ -268,7 +222,7 @@ export default function Page() {
                   </Fragment>
                 ))}
               </div>
-              <div style={{ marginTop: "auto", borderRadius: 22, padding: "14px 16px 10px", background: "#F9F5FB", border: "1px solid #EDE2F1" }}>
+              <div style={{ flexShrink: 0, borderRadius: 22, padding: "14px 16px 10px", background: "#F9F5FB", border: "1px solid #EDE2F1" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.sub2, marginBottom: 14 }}>
                   <span>يوم {tlRoom}
                   </span>
@@ -299,22 +253,22 @@ export default function Page() {
                 </div>
               </div>
             </div>
-            <div style={{ borderRadius: 30, padding: "16px 16px 16px 20px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT, display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {err && <ErrorNote>{err}</ErrorNote>}
+            <div className={KC.stack} style={{ borderRadius: 30, padding: "16px 16px 16px 20px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT, display: "flex", alignItems: "center", gap: 14 }}>
+              <span className={KC.hideNarrow} style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" />
                 </svg>
               </span>
               <div style={{ flex: 1, minWidth: "0", lineHeight: 1.4 }}>
-                <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>{sum.svc} ·{" "}
+                <div style={{ fontSize: 17, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sum.svc} ·{" "}
                   <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{sum.time}
                   </span>
                 </div>
-                <div style={{ fontSize: 13.5, color: C.sub, whiteSpace: "nowrap" }}>{sum.sp} · {sum.room} · {sum.price}
+                <div style={{ fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sum.sp} · {sum.room} · {sum.price}
                 </div>
               </div>
-              {err && <ErrorNote>{err}</ErrorNote>}
-              <button type="button" onClick={book} disabled={!canBook || busy} style={{ opacity: canBook && !busy ? 1 : 0.55, fontFamily: "inherit", height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+              <button type="button" onClick={book} disabled={!canBook || busy} style={{ opacity: canBook && !busy ? 1 : 0.55, fontFamily: "inherit", height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12l5 5L20 7" />
                 </svg>{btn}

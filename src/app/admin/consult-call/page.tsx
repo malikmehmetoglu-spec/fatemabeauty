@@ -10,6 +10,7 @@ import { invalidate, useQuery } from "@/lib/db/query";
 import { getConsultService, listConsults, listInbox, markRead, staffReply, subscribeInbox } from "@/lib/db/consult";
 import { useSession } from "@/lib/supabase/session";
 import { C } from "@/lib/tokens";
+import { arErr } from "../patients/kit";
 
 const STATUS: Record<string, [string, "green" | "amber" | "gray" | "lilac" | "plum"]> = {
   pending: ["بانتظار التأكيد", "amber"], confirmed: ["مؤكدة", "green"], checked_in: ["حاضرة", "lilac"], in_session: ["جارية", "plum"], done: ["منتهية", "gray"], no_show: ["لم تحضر", "gray"],
@@ -40,7 +41,7 @@ export default function ConsultCallPage() {
       <div className={ac.stack} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>الاستشارات المحجوزة</div>
-          {l1 || (svc && l2) ? <Loading /> : e1 || e2 ? <ErrorNote>{e1 || e2}</ErrorNote> : !svc ? (
+          {l1 || (svc && l2) ? <Loading /> : e1 || e2 ? <ErrorNote>{arErr(e1 || e2, "تعذّر تحميل الاستشارات.")}</ErrorNote> : !svc ? (
             <EmptyState compact icon="cam" title="لا توجد خدمة استشارة أونلاين"
               text="أضيفي من «الخدمات والأسعار» خدمة باسم يتضمن «أونلاين» أو «عن بعد» (أو رمزاً يحتوي online) ليتمكّن المراجعات من حجزها من التطبيق." />
           ) : !consults?.length ? (
@@ -62,7 +63,7 @@ export default function ConsultCallPage() {
 
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>رسائل المراجعات</div>
-          {l3 ? <Loading /> : e3 ? <ErrorNote>{e3}</ErrorNote> : threads.length === 0 ? (
+          {l3 ? <Loading /> : e3 ? <ErrorNote>{arErr(e3, "تعذّر تحميل الرسائل.")}</ErrorNote> : threads.length === 0 ? (
             <EmptyState compact icon="msg" title="لا توجد رسائل" text="عندما تراسل مراجعة المركز من التطبيق تظهر محادثتها هنا." />
           ) : thread ? (
             <Thread key={thread.pid} t={thread} staffId={staff?.id ?? null} onBack={() => setOpen(null)} />
@@ -94,7 +95,7 @@ function Thread({ t, staffId, onBack }: { t: T; staffId: string | null; onBack: 
     if (!staffId || !draft.trim()) return;
     setBusy(true); setErr(null);
     try { await staffReply(t.pid, staffId, draft); setDraft(""); }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    catch (e) { setErr(arErr(e, "تعذّر إرسال الرد. حاولي مرة أخرى.")); }
     finally { setBusy(false); }
   };
   return (

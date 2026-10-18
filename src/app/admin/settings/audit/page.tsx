@@ -10,14 +10,24 @@ import { listAudit, staffByUser } from "@/lib/db/marketing";
 import { C } from "@/lib/tokens";
 
 const TABLE: Record<string, string> = { appointments: "موعد", invoices: "فاتورة", products: "صنف مخزون", staff: "موظفة", patients: "ملف مراجعة" };
-const ACTION: Record<string, [string, "green" | "lilac" | "pink"]> = { insert: ["إضافة", "green"], update: ["تعديل", "lilac"], delete: ["حذف", "pink"] };
+const ACTION: Record<string, [string, "green" | "lilac" | "pink"]> = {
+  insert: ["إضافة", "green"], update: ["تعديل", "lilac"], delete: ["حذف", "pink"],
+  "invoice.create": ["إصدار فاتورة", "green"], "invoice.pay": ["دفعة على فاتورة", "lilac"], "invoice.void": ["إلغاء فاتورة", "pink"],
+};
+/** Targets are "table:id" from triggers, or an invoice number ("INV-…") from the finance functions. */
+const parseTarget = (t: string | null): [string, string] => {
+  const v = t ?? "";
+  if (v.startsWith("INV-")) return ["invoices", v];
+  const i = v.indexOf(":");
+  return i < 0 ? [v, ""] : [v.slice(0, i), v.slice(i + 1)];
+};
 type F = "all" | keyof typeof TABLE;
 
 export default function AuditPage() {
   const { data, loading, error } = useQuery(["audit", "list"], () => listAudit(500));
   const { data: names } = useQuery(["audit", "names"], staffByUser);
   const [f, setF] = useState<F>("all");
-  const list = (data ?? []).filter((r) => f === "all" || (r.target ?? "").startsWith(`${f}:`));
+  const list = (data ?? []).filter((r) => f === "all" || parseTarget(r.target)[0] === f);
 
   return (
     <AdminShell active="الإعدادات" title="سجل التدقيق" subtitle="من فعل ماذا ومتى — للإدارة فقط">
@@ -30,14 +40,15 @@ export default function AuditPage() {
       ) : (
         <DataTable headers={["الوقت", "من", "العملية", "على", "الحقول المعدّلة"]} widths={[1.3, 1.3, 0.8, 1.6, 2.4]}
           rows={list.map((r) => {
-            const [tbl, id] = (r.target ?? ":").split(":");
-            const a = ACTION[r.action] ?? [r.action, "lilac"];
+            const [tbl, raw] = parseTarget(r.target);
+            const id = raw.startsWith("INV-") ? raw : raw.slice(0, 8);
+            const a = ACTION[r.action] ?? ["عملية أخرى", "lilac"];
             const changed = (r.details as { changed?: string[] } | null)?.changed;
             return [
               <span key="t" style={{ fontSize: 13 }}>{arDate(new Date(r.created_at), { day: false })} · <span className="latin">{clock(r.created_at)}</span></span>,
               <span key="w" style={{ fontWeight: 600 }}>{r.actor ? names?.get(r.actor) ?? "مراجعة / حساب آخر" : "النظام"}</span>,
               <Tag key="a" kind={a[1]}>{a[0]}</Tag>,
-              <span key="o" style={{ fontSize: 13 }}>{TABLE[tbl] ?? tbl} <span className="latin" style={{ color: C.muted, fontSize: 11.5 }}>{id.slice(0, 8)}</span></span>,
+              <span key="o" style={{ fontSize: 13 }}>{TABLE[tbl] ?? (tbl || "—")} <span className="latin" style={{ color: C.muted, fontSize: 11.5 }}>{id}</span></span>,
               <span key="c" className="latin" style={{ fontSize: 12, color: C.sub2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{changed?.join(", ") ?? "—"}</span>,
             ];
           })} />

@@ -1,0 +1,99 @@
+/*
+ * Reception tablet reflow. The pages keep the landscape design (1194×834 canvas) as inline styles; when `Stage fluid`
+ * switches to a natural-size page (portrait tablet or phone) it sets data-stage="fluid" (+ data-narrow under 600px)
+ * and these rules reflow the layout. !important is needed to win over the inline design styles.
+ */
+
+/* ---------- header row: title + date/time pill ---------- */
+:global([data-stage="fluid"]) .hdr { flex-wrap: wrap !important; row-gap: 12px !important; }
+:global([data-narrow]) .title { font-size: 24px !important; }
+:global([data-narrow]) .pill { height: 44px !important; padding: 0 14px !important; font-size: 14px !important; }
+
+/* ---------- side navigation → top bar ---------- */
+:global([data-stage="fluid"]) .nav {
+  width: auto !important; flex-direction: row !important; justify-content: space-between !important;
+  padding: 8px 14px !important; gap: 6px !important; border-radius: 28px !important;
+}
+:global([data-stage="fluid"]) .navSep { display: none !important; }
+:global([data-stage="fluid"]) .navItem { margin-top: 0 !important; }
+:global([data-stage="fluid"]) .navItem br { display: none; }
+:global([data-narrow]) .navLogo { display: none !important; }
+:global([data-narrow]) .nav { justify-content: space-around !important; padding: 6px 8px !important; }
+:global([data-narrow]) .navItem { font-size: 12px !important; }
+:global([data-narrow]) .navItem > span { width: 46px !important; height: 46px !important; }
+
+/* ---------- side-by-side columns → stacked ---------- */
+:global([data-stage="fluid"]) .cols { flex-direction: column !important; flex-grow: 0 !important; }
+:global([data-stage="fluid"]) .cols > * { width: auto !important; max-width: 100% !important; flex: none !important; min-height: auto !important; }
+:global([data-stage="fluid"]) .scroll { overflow: visible !important; max-height: none !important; flex: none !important; }
+:global([data-stage="fluid"]) .grow { flex-grow: 0 !important; }
+:global([data-stage="fluid"]) .wrap { flex-wrap: wrap !important; }
+:global([data-narrow]) .stack { flex-direction: column !important; align-items: stretch !important; }
+:global([data-narrow]) .stack > * { width: auto !important; }
+:global([data-narrow]) .hideNarrow { display: none !important; }
+
+/* ---------- KPI tiles ---------- */
+:global([data-stage="fluid"]) .kpis { flex-wrap: wrap !important; }
+:global([data-stage="fluid"]) .kpis > * { flex: 1 1 140px !important; }
+:global([data-narrow]) .kpis > * { flex: 1 1 40% !important; padding: 12px 14px !important; }
+
+/* ---------- welcome ---------- */
+:global([data-narrow]) .h1 { font-size: 34px !important; }
+:global([data-narrow]) .lead { font-size: 16px !important; }
+:global([data-stage="fluid"]) .cam { width: auto !important; min-height: 560px; padding: 70px 0 24px !important; }
+:global([data-narrow]) .cam { min-height: 0; padding: 64px 12px 20px !important; }
+:global([data-narrow]) .camBox { zoom: 0.68; margin-top: 0 !important; }
+:global([data-narrow]) .camHint { white-space: normal !important; text-align: center; max-width: 92%; height: auto !important; min-height: 40px; }
+
+/* ---------- walk-in services grid ---------- */
+:global([data-stage="fluid"]) .svcGrid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; grid-auto-rows: auto !important; }
+:global([data-narrow]) .svcGrid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+:global([data-narrow]) .svcGrid > * { padding: 16px 14px !important; border-radius: 24px !important; }
+:global([data-narrow]) .svcName { font-size: 17px !important; padding-left: 26px !important; }
+:global([data-narrow]) .svcMeta { white-space: normal !important; flex-wrap: wrap; font-size: 14px !important; row-gap: 2px; }
+
+/* ---------- quick-book ---------- */
+:global([data-narrow]) .slots { grid-template-columns: repeat(4, 1fr) !important; gap: 8px !important; }
+:global([data-narrow]) .slots > * { height: 48px !important; font-size: 15px !important; }
+
+/* ---------- yes/no segmented answers (eligibility, consent) ---------- */
+:global([data-narrow]) .seg { width: 58px !important; height: 48px !important; font-size: 15px !important; }
+:global([data-narrow]) .q { font-size: 16px !important; }
+
+/* ---------- cashier ---------- */
+:global([data-narrow]) .methods > * { height: 66px !important; flex-direction: column !important; gap: 4px !important; font-size: 15px !important; }
+:global([data-narrow]) .cashRow { flex-direction: column !important; }
+:global([data-narrow]) .cashRow > * { width: auto !important; flex: none !important; }
+:global([data-narrow]) .keypad { grid-auto-rows: 58px !important; }
+:global([data-narrow]) .dueNo { font-size: 38px !important; }
+
+/* ---------- checked-in ---------- */
+:global([data-narrow]) .bigNo { font-size: 120px !important; }
+:global([data-narrow]) .h1 + * { font-size: 16px !important; }
+
+/* ---------- desk queue rows ---------- */
+:global([data-narrow]) .drow { flex-wrap: wrap !important; height: auto !important; padding: 10px 6px !important; row-gap: 8px !important; gap: 10px !important; }
+:global([data-narrow]) .dname { flex-basis: calc(100% - 120px) !important; }
+:global([data-narrow]) .dtag { width: auto !important; margin-inline-start: 104px; }
+:global([data-narrow]) .dact { width: auto !important; margin-inline-start: auto; }
+:global([data-stage="fluid"]) .navItem > span { width: 52px !important; height: 52px !important; }
+:global([data-narrow]) .search { flex: 1 1 100% !important; width: auto !important; }
+:global([data-stage="fluid"]:not([data-narrow])) .side { flex-direction: row !important; align-items: stretch !important; }
+:global([data-stage="fluid"]:not([data-narrow])) .side > * { flex: 1 1 0 !important; min-width: 0; }
+
+/* ---------- cashier: phone order (summary → payment → options → issue) + printable receipt ---------- */
+:global([data-stage="fluid"]) .lcol { display: contents !important; }
+:global([data-stage="fluid"]) .rcol { order: 3; }
+:global([data-stage="fluid"]) .opts { order: 4; }
+:global([data-stage="fluid"]) .issue { order: 5; margin-top: 0 !important; }
+.receipt { display: none; }
+@media print {
+  :global(body) > :global(*):not(.receipt) { display: none !important; }
+  .receipt { display: block; position: absolute; top: 0; left: 0; width: 72mm; padding: 4mm; font-size: 13px; color: #000; background: #fff; font-family: var(--font-messiri), serif; }
+}
+
+/* ---------- photos ---------- */
+:global([data-stage="fluid"]) .camView { order: -1; min-height: 560px; }
+:global([data-narrow]) .camView { min-height: 440px; border-radius: 28px !important; }
+:global([data-narrow]) .camTop { left: 12px !important; right: 12px !important; }
+:global([data-stage="fluid"]) .walk { margin-top: 28px !important; }

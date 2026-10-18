@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,8 +11,8 @@ import { invalidate, useQuery } from "@/lib/db/query";
 import { ROLE_LABEL } from "@/lib/supabase/session";
 import { clock } from "@/lib/format";
 import { css } from "../css";
-import { BG, C, SH, SHB, ICON_FILL, LOGO } from "@/lib/tokens";
-import { NowText, useKiosk } from "../kiosk";
+import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
+import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
 
 /** T_Desk.dc.html */
 const FILTERS = ["الكل", "في الانتظار", "لم يؤكَّد"] as const;
@@ -49,7 +48,7 @@ export default function Page() {
     });
   const act = async (id: string, f: () => Promise<unknown>) => {
     setBusyId(id); setErr(null);
-    try { await f(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    try { await f(); } catch (e) { setErr(kioskError(e)); }
     setBusyId(null);
   };
   const rowState = (a: QueueAppt) => {
@@ -69,73 +68,29 @@ export default function Page() {
     return { r, cur, next, pct };
   });
   return (
-    <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
+    <Stage fluid width={1194} height={834} background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
-      <nav aria-label="وضع الاستقبال" style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
-        <div style={{ display: "flex" }}>
-          <img src={LOGO} alt="Fatema Beauty — Skin Care Center" style={{ height: 44, width: "auto", display: "block" }} />
-        </div>
-        <div style={{ width: 44, height: 1, background: C.line }} />
-        <Link href={R.T_Desk} aria-current="page" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.accent }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" />
-            </svg>
-          </span>الاستقبال
-        </Link>
-        <Link href={R.T_QuickBook} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" />
-            </svg>
-          </span>حجز سريع
-        </Link>
-        <Link href={R.T_Cashier} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
-            </svg>
-          </span>الكاشير
-        </Link>
-        <Link href={R.T_Welcome} style={{ marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: C.sub2, textAlign: "center", lineHeight: 1.3 }}>
-          <span style={{ width: 56, height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zM11 17a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
-            </svg>
-          </span>وضع
-          <br />المراجعات
-        </Link>
-      </nav>
+      <KioskNav active={R.T_Desk} />
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
+        <div className={KC.hdr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
           <div style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>استقبال اليوم
+            <div className={KC.title} style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>استقبال اليوم
             </div>
             <div style={{ fontSize: 15, color: C.sub2 }}>{k.staff!.name}{" "}· {ROLE_LABEL[k.staff!.role]}
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <label htmlFor="q" style={{ height: 56, width: 270, maxWidth: "100%", borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, padding: "0 18px", boxSizing: "border-box", position: "relative" }}>
+          <div className={KC.wrap} style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 auto", justifyContent: "flex-end", minWidth: 0 }}>
+            <label htmlFor="q" className={KC.search} style={{ height: 56, width: 270, flex: "0 1 270px", minWidth: 200, borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, padding: "0 18px", boxSizing: "border-box", position: "relative" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A595AC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10 10m-7 0a7 7 0 1 0 14 0 7 7 0 1 0-14 0M21 21l-6-6" />
               </svg>
-              <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>بحث
-              </span>
+              <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>بحث</span>
               <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحثي بالاسم أو الدور أو الملف" style={{ flexGrow: 1, minWidth: "0", border: "none", outline: "none", background: "transparent", fontSize: 15, color: C.ink }} />
             </label>
-            <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-              </svg>
-              <span><NowText part="date" />
-              </span>
-              <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-              </span>
-            </div>
+            <DatePill />
           </div>
         </div>
-        <div style={{ display: "flex", gap: 14 }}>
+        <div className={KC.kpis} style={{ display: "flex", gap: 14 }}>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "16px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
             <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -211,9 +166,9 @@ export default function Page() {
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: "0" }}>
+        <div className={KC.cols} style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: "0" }}>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 32, padding: "18px 16px 8px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px 10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, padding: "0 8px 10px" }}>
               <div style={{ fontSize: 20, fontWeight: 700 }}>الدور الآن والقادمات
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -233,26 +188,26 @@ export default function Page() {
                 </div>
               </div>
             )}
-            <div style={{ overflowY: "auto", minHeight: 0, flex: list.length ? 1 : undefined }}>
+            <div className={KC.scroll} style={{ overflowY: "auto", minHeight: 0, flex: list.length ? 1 : undefined }}>
             {list.map((a, i) => {
               const waiting = a.status === "checked_in", inSession = a.status === "in_session";
               const r = rowState(a);
               return (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, height: 62, padding: "0 12px", borderRadius: 20, borderTop: i === 0 ? "1px solid transparent" : "1px solid #EDE2F1", ...(waiting ? { background: "linear-gradient(270deg, rgba(243,234,246,0.95) 0%, rgba(243,234,246,0) 100%)" } : {}) }}>
+                <div key={a.id} className={KC.drow} style={{ display: "flex", alignItems: "center", gap: 14, height: 62, padding: "0 12px", borderRadius: 20, borderTop: i === 0 ? "1px solid transparent" : "1px solid #EDE2F1", ...(waiting ? { background: "linear-gradient(270deg, rgba(243,234,246,0.95) 0%, rgba(243,234,246,0) 100%)" } : {}) }}>
                   <span style={{ width: 50, fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 500, color: C.ink }}>{clock(inSession ? (a.started_at ?? a.starts_at) : a.starts_at)}</span>
                   <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 700, color: C.accent }}>{a.queue_no ?? "—"}</span>
-                  <div style={{ flex: 1, minWidth: "0", lineHeight: 1.3 }}>
+                  <div className={KC.dname} style={{ flex: 1, minWidth: "0", lineHeight: 1.3 }}>
                     <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</div>
                     <div style={{ fontSize: 13, color: C.sub2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{serviceName(a)}{a.rooms ? ` · ${a.rooms.name}` : ""}</div>
                   </div>
-                  <span style={{ width: 118 }}>
+                  <span className={KC.dtag} style={{ width: 118 }}>
                     <Tag kind={STATUS_KIND[a.status]} style={{ height: 30, padding: "0 14px", borderRadius: 15, fontSize: 13 }}>{STATUS_AR[a.status]}</Tag>
                   </span>
-                  <span style={{ width: 150, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                  <span className={KC.dact} style={{ width: 150, display: "flex", justifyContent: "flex-end", gap: 6 }}>
                     {inSession ? (
                       <button type="button" onClick={() => act(a.id, () => setStatus(a.id, "done"))} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, fontFamily: "inherit", whiteSpace: "nowrap" }}>إنهاء · {endTime(a)}</button>
                     ) : waiting ? (<>
-                      <button type="button" onClick={r.call} style={r.style}>
+                      <button type="button" onClick={r.call} aria-label={r.label} title={r.label} disabled={busyId === a.id} style={r.style}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z" />
                         </svg>{a.called_at ? "" : r.label}
@@ -273,7 +228,7 @@ export default function Page() {
             })}
             </div>
           </div>
-          <div style={{ width: 330, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={KC.side} style={{ width: 330, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "18px 22px 8px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>الغرف الآن
               </div>

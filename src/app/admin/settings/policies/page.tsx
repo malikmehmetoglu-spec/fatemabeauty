@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Policies.dc.html — booking & cancellation policies, stored in settings «policies». */
+import { arError } from "@/lib/arError";
 import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -27,7 +28,7 @@ export default function PoliciesPage() {
     if (!p) return;
     setBusy(true); setMsg(null);
     try { await saveSetting("policies", p); setMsg("تم الحفظ"); }
-    catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    catch (e) { setMsg(arError(e)); }
     finally { setBusy(false); }
   };
 

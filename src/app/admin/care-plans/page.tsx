@@ -11,7 +11,7 @@ import { useQuery } from "@/lib/db/query";
 import { listActivePackages, listLapsed } from "@/lib/db/clinical";
 import { maskPhone } from "@/lib/db/patients";
 import { C, ICON_FILL } from "@/lib/tokens";
-import { Bar, chip, displayName, fileHref, Initials, outlineBtn, Panel } from "../patients/kit";
+import { arErr, Bar, chip, displayName, fileHref, Initials, outlineBtn, Panel } from "../patients/kit";
 
 const GAPS = [30, 45, 60, 90];
 const CONTACTED_KEY = "fb.care.contacted";
@@ -63,7 +63,7 @@ export default function CarePlansPage() {
 
         <div className={t.split}>
           <Panel title="باقات قيد التنفيذ" className={t.grow}>
-            {error ? <ErrorNote>{error}</ErrorNote> : loading ? <Loading /> : !all.length ? (
+            {error ? <ErrorNote>{arErr(error, "تعذّر تحميل الخطط.")}</ErrorNote> : loading ? <Loading /> : !all.length ? (
               <EmptyState compact icon="layers" title="لا باقات نشطة" text="عندما تشتري مراجعة باقة جلسات تظهر هنا مع تقدّمها وموعدها القادم." />
             ) : (
               <div className={t.scroll}><div className={t.inner} style={{ minWidth: 620 }}>

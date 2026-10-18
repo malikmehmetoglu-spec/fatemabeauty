@@ -13,7 +13,7 @@ import { useSession } from "@/lib/supabase/session";
 import { getPatient, listConditions } from "@/lib/db/patients";
 import { listPrescriptions, rxItems, savePrescription, WHEN_LABEL, type RxItem } from "@/lib/db/clinical";
 import { C, SH_SOFT } from "@/lib/tokens";
-import { BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
+import { arErr, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
 const BLANK: RxItem = { name: "", how: "", when: "pm" };
 const norm = (s: string) => s.trim().replace(/^ال/, "").replace(/[ًٌٍَُِّْ]/g, "").replace(/ة$/, "ه");
@@ -56,7 +56,7 @@ function Prescription() {
   async function save() {
     setBusy(true); setErr("");
     try { await savePrescription(p!.id, staff?.id ?? null, filled.map((x) => ({ ...x, name: x.name.trim(), how: x.how.trim() }))); router.push(fileHref(R.W_Record, "id", p!.id)); }
-    catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الحفظ"); setBusy(false); }
+    catch (e) { setErr(arErr(e)); setBusy(false); }
   }
 
   return shell(

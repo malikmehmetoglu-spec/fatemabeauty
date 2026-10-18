@@ -11,7 +11,7 @@ import { useQuery } from "@/lib/db/query";
 import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
 import { C, SH } from "@/lib/tokens";
 import t from "../adminPages.module.css";
-import { Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
+import { arErr, Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
 
 const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً"];
 const PAGE = 20;
@@ -41,7 +41,7 @@ function Patients() {
 
   const rows = useMemo(() => {
     const s = q.trim().replace(/\s+/g, " ");
-    const digits = s.replace(/\D/g, "");
+    const digits = s.replace(/\D/g, "").replace(/^(00963|963|0)/, "");
     return (data ?? []).filter((p) => matches(p, f) && (!s || p.name.includes(s) || String(p.file_no) === s
       || (digits.length >= 3 && (p.phone ?? "").replace(/\D/g, "").includes(digits))));
   }, [data, f, q]);
@@ -75,7 +75,7 @@ function Patients() {
           </span>
         </div>
 
-        {error ? <ErrorNote>تعذّر تحميل المراجعات: {error}</ErrorNote> : loading ? <Loading /> : !data?.length ? (
+        {error ? <ErrorNote>{arErr(error, "تعذّر تحميل المراجعات. أعيدي تحميل الصفحة.")}</ErrorNote> : loading ? <Loading /> : !data?.length ? (
           <EmptyState icon="users" title="لا توجد ملفات مراجعات بعد" text="تظهر هنا كل مراجعة تسجّل في التطبيق أو يُفتح لها ملف في الاستقبال، مع آخر زيارة والباقة والرصيد."
             action={<SubmitButton onClick={() => setAdding(true)}>فتح ملف جديد</SubmitButton>} />
         ) : (
@@ -161,7 +161,7 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
       });
       onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");
       if (p) window.location.href = fileHref(R.W_Record, "id", p.id);
-    } catch (e) { setErr(e instanceof Error && e.message.includes("duplicate") ? "هذا الرقم مسجّل لمراجعة أخرى." : "تعذّر الحفظ."); }
+    } catch (e) { setErr(arErr(e)); }
     setBusy(false);
   }
   return (

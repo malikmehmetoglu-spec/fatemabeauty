@@ -6,11 +6,10 @@ import { normalizePhone, sendCode } from "@/lib/supabase/phoneAuth";
 import { PhoneScreen } from "@/components/shell";
 import { Icon, Logo, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { C, SELECTED, SH, SHB } from "@/lib/tokens";
+import { C, SH } from "@/lib/tokens";
 
 /** Login.dc.html — phone-number login. */
 export default function LoginPage() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -29,19 +28,8 @@ export default function LoginPage() {
     } catch {}
     router.push(R.P_OTP);
   }
-  const seg = (k: "ar" | "en", label: string) => (
-    <button type="button" aria-pressed={lang === k} onClick={() => setLang(k)} className={k === "en" ? "latin" : undefined} style={{
-      height: 30, padding: "0 14px", borderRadius: 15, fontSize: 13, display: "flex", alignItems: "center",
-      ...(lang === k ? { ...SELECTED, border: "none", boxShadow: "none", fontWeight: 700 } : { background: "transparent", border: "none", color: C.sub2, fontWeight: 600 }),
-    }}>{label}</button>
-  );
   return (
     <PhoneScreen padding="calc(env(safe-area-inset-top, 0px) + 70px) 24px calc(env(safe-area-inset-bottom, 0px) + 26px)">
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.7)", border: "1px solid #FFFFFF", borderRadius: 18, padding: 3, boxShadow: SHB }}>
-          {seg("ar", "عربي")}{seg("en", "English")}
-        </div>
-      </div>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: 18 }}>
         <Logo height={118} />
         <div style={{ fontSize: 15, color: C.sub, marginTop: 8, lineHeight: 1.6 }}>احجزي جلستكِ، وتابعي دوركِ ورحلة بشرتكِ<br />من مكان واحد</div>

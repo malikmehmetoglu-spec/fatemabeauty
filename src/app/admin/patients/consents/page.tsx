@@ -10,7 +10,7 @@ import { arDate, clock, dayKey } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { consentForms, listConsents, pendingConsentsToday, type ConsentAnswers } from "@/lib/db/clinical";
 import { C, ICON_FILL } from "@/lib/tokens";
-import { chip, displayName, fileHref, Initials, Panel } from "../kit";
+import { arErr, chip, displayName, fileHref, Initials, Panel } from "../kit";
 
 const FILTERS = ["الكل", "اليوم", "بانتظار التوقيع"];
 const METHOD: Record<string, string> = { app: "التطبيق", tablet: "التابلت", kiosk: "التابلت" };
@@ -49,7 +49,7 @@ export default function ConsentsPage() {
         <div className={t.split}>
           <Panel className={t.grow} title="سجلّ التواقيع" right={
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{FILTERS.map((t, i) => <button key={t} type="button" onClick={() => setF(i)} style={chip(f === i, 34)}>{t}</button>)}</div>}>
-            {error ? <ErrorNote>{error}</ErrorNote> : loading ? <Loading /> : f === 2 ? (
+            {error ? <ErrorNote>{arErr(error, "تعذّر تحميل الموافقات.")}</ErrorNote> : loading ? <Loading /> : f === 2 ? (
               !pending?.length ? <EmptyState compact icon="calcheck" title="لا موافقات معلّقة اليوم" text="تظهر هنا مواعيد اليوم التي لم توقّع صاحبتها موافقة الخدمة بعد." /> : pending.map((a) => (
                 <Row key={a.id} pid={a.patient_id} name={a.patients?.name} form={a.services?.name ?? a.service_key} date={`اليوم ${clock(a.starts_at)}`} method="—" tag={<Tag kind="amber">بانتظار التوقيع</Tag>} />
               ))

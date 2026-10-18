@@ -12,7 +12,7 @@ import { useQuery } from "@/lib/db/query";
 import { getPatient } from "@/lib/db/patients";
 import { ANGLES, angleLabel, listPhotos, STAGE_LABEL, uploadPhoto, type PhotoRow } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
-import { BackLink, chip, displayName, fileHref, outlineBtn, Panel, primaryBtn } from "../kit";
+import { arErr, BackLink, chip, displayName, fileHref, outlineBtn, Panel, primaryBtn } from "../kit";
 
 const FACE = "M50 14c-17 0-28 14-28 33 0 13 5 24 12 31 5 5 10 8 16 8s11-3 16-8c7-7 12-18 12-31 0-19-11-33-28-33zM38 44c2-2 6-2 8 0M54 44c2-2 6-2 8 0M50 50v10l-3 2M43 70c4 3 10 3 14 0";
 
@@ -60,8 +60,11 @@ function Photos() {
 
   async function onFile(file?: File) {
     if (!file) return;
-    setBusy(true); setErr("");
-    try { await uploadPhoto(p!.id, file, angle, stage, null); } catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الرفع"); }
+    setErr("");
+    if (!file.type.startsWith("image/")) { setErr("اختاري ملف صورة (JPG أو PNG)."); return; }
+    if (file.size > 15 * 1024 * 1024) { setErr("الصورة أكبر من 15 ميغابايت."); return; }
+    setBusy(true);
+    try { await uploadPhoto(p!.id, file, angle, stage, null); } catch (e) { setErr(arErr(e, "تعذّر رفع الصورة. حاولي مرة أخرى.")); }
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -72,7 +75,7 @@ function Photos() {
         <div role="tablist" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANGLES.map((a) => <button key={a.key} type="button" role="tab" aria-selected={angle === a.key} onClick={() => { setAngle(a.key); setPick({}); }} style={{ ...chip(angle === a.key, 34), fontSize: 12.5, padding: "0 12px" }}>{a.label}</button>)}
         </div>}>
-        {error && <ErrorNote>{error}</ErrorNote>}
+        {error && <ErrorNote>{arErr(error, "تعذّر تحميل الصور.")}</ErrorNote>}
         {!list.length ? (
           <EmptyState compact icon="camera" title={`لا صور بزاوية «${angleLabel(angle)}»`} text="ارفعي صورة من لوحة «إضافة صورة» أو التقطيها من جهاز الاستقبال قبل الجلسة." />
         ) : (

@@ -1,6 +1,7 @@
 "use client";
 
 /** W_CallSettings.dc.html — إعدادات النداء والشاشة. */
+import { arError } from "@/lib/arError";
 import ac from "../../adminPages.module.css";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
@@ -65,7 +66,7 @@ export default function Page() {
       await saveSetting("call", call);
       await saveSetting("tv_content", { tips, interval_s });
       setMsg("تم الحفظ — تتحدّث الشاشة خلال دقيقة");
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    } catch (e) { setErr(arError(e)); }
     setBusy(false);
   };
   const saveTip = () => {

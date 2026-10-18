@@ -2,7 +2,6 @@
  
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { EmptyState, ErrorNote, Loading } from "@/components/ui";
@@ -11,8 +10,8 @@ import { listServices, priceLabel, serviceIcon } from "@/lib/db/catalog";
 import { createWalkIn, listToday } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { css } from "../css";
-import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
-import { NowText, useKiosk } from "../kiosk";
+import { BG, C, SH, SH_SOFT, ICON_FILL } from "@/lib/tokens";
+import { KC, StepHeader, kioskError, useKiosk } from "../kiosk";
 
 /** T_WalkIn.dc.html */
 
@@ -52,40 +51,18 @@ export default function Page() {
     if (!name.trim() || phone.replace(/\D/g, "").length < 8) { setErr("اكتبي الاسم ورقم الهاتف كاملاً"); return; }
     setBusy(true); setErr(null);
     try { const id = await createWalkIn({ name, phone, service: svc }); router.push(`/kiosk/checked-in/?id=${id}`); }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+    catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   const cur = S[sel] ?? { name: "—", slot: "", ok: false };
   const btn = busy ? "جارٍ التسجيل…" : "احجزي وخذي رقماً";
   const note = S[sel] ? "الحالة الآن: " + cur.slot : "لا توجد خدمات مفعّلة بعد.";
   return (
-    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={24}>
+    <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={24}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-        <Link href={R.T_Welcome} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </Link>
-        <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
-          <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>حجز حضوري
-          </div>
-          <div style={{ fontSize: 16, color: C.sub2 }}>بدون موعد مسبق؟ اختاري جلستكِ وخذي رقماً
-          </div>
-        </div>
-        <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-          </svg>
-          <span><NowText part="date" />
-          </span>
-          <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-          </span>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 26, flexGrow: 1, minHeight: "0", position: "relative" }}>
+      <StepHeader back={R.T_Welcome} title="حجز حضوري" sub="بدون موعد مسبق؟ اختاري جلستكِ وخذي رقماً" />
+      <div className={KC.cols} style={{ display: "flex", gap: 26, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 16, position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
             <div style={{ fontSize: 22, fontWeight: 700 }}>اختاري الخدمة
             </div>
             <div style={{ fontSize: 15, color: C.sub2 }}>الأوقات حسب جدول اليوم الفعلي
@@ -94,7 +71,7 @@ export default function Page() {
           {q.loading && <Loading />}
           {q.error && <ErrorNote>{q.error}</ErrorNote>}
           {!q.loading && !q.error && !S.length && <EmptyState icon="box" title="لا توجد خدمات بعد" text="تظهر هنا الخدمات المفعّلة بعد إضافتها من لوحة الإدارة ← الخدمات." />}
-          {S.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "minmax(190px, 1fr)", gap: 16, flexGrow: 1, minHeight: "0", overflowY: "auto" }}>
+          {S.length > 0 && <div className={`${KC.svcGrid} ${KC.scroll}`} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "minmax(190px, 1fr)", gap: 16, flexGrow: 1, minHeight: "0", overflowY: "auto" }}>
             {svcs.map((s) => (
               <button key={s.key} type="button" onClick={s.pick} aria-label={s.name} aria-pressed={s.on} style={s.style}>
                 <span style={s.checkStyle}>
@@ -107,8 +84,8 @@ export default function Page() {
                     <path d={s.icon} />
                   </svg>
                 </span>
-                <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>{s.name}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
+                <span className={KC.svcName} style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3, paddingLeft: 36 }}>{s.name}</span>
+                <span className={KC.svcMeta} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, color: C.sub, whiteSpace: "nowrap" }}>
                   <b style={{ color: C.accent, fontSize: 18 }}>{s.price}</b>
                   <span style={{ width: 4, height: 4, borderRadius: 2, background: C.muted }} />{s.minutes}
                 </span>
@@ -119,7 +96,7 @@ export default function Page() {
                 </span>
               </button>
             ))}
-            <div style={{ borderRadius: 30, padding: 22, border: "1.5px dashed #DFCBE4", background: "rgba(255,255,255,0.45)", display: "flex", flexDirection: "column", gap: 10, justifyContent: "center" }}>
+            <div className={KC.hideNarrow} style={{ borderRadius: 30, padding: 22, border: "1.5px dashed #DFCBE4", background: "rgba(255,255,255,0.45)", display: "flex", flexDirection: "column", gap: 10, justifyContent: "center" }}>
               <span style={{ width: 50, height: 50, borderRadius: 25, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 5a2 2 0 1 1 4 0 7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6M9 17v1a3 3 0 0 0 6 0v-1" />

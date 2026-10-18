@@ -2,7 +2,6 @@
  
 
 import { Suspense, useRef, useState, type PointerEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { ErrorNote } from "@/components/ui";
@@ -10,8 +9,8 @@ import { R } from "@/lib/routes";
 import { initials } from "@/lib/data";
 import { personName, saveConsent } from "@/lib/db/queue";
 import { css } from "../css";
-import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
-import { ApptPicker, NowText, apptLine, useApptParam, useKiosk } from "../kiosk";
+import { BG, C, SH, ICON_FILL } from "@/lib/tokens";
+import { ApptPicker, KC, NowText, StepHeader, apptLine, kioskError, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Consent.dc.html */
 const QUESTIONS = ["هل أنتِ حامل أو مرضعة؟", "هل في وجهكِ جرح أو التهاب الآن؟", "هل استخدمتِ ريتينول أو مقشّراً هذا الأسبوع؟"];
@@ -80,39 +79,17 @@ function Inner() {
       const png = await signaturePng(strokes);
       await saveConsent(A, png, { agreed: true, questions: QUESTIONS.map((q, i) => ({ q, yes: ans[i] })) });
       router.push(`${R.T_Photos}?id=${A.id}`);
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+    } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   const boxStyle = css("width:32px;height:32px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" +
     (agree ? "background:linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 12px rgba(123,70,135,0.30)" : "background:#FFFFFF;border:1.5px solid #DAC7DE;box-sizing:border-box"));
   const btnStyle = css("height:66px;border-radius:33px;border:none;color:#FFFFFF;font-size:20px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;" +
     "background-color:#7B4687;background-image:linear-gradient(145deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0) 45%,rgba(0,0,0,0.20) 100%);box-shadow:0 16px 34px rgba(123,70,135,0.32),inset 0 1px 0 rgba(255,255,255,0.25);" + (ready ? "" : "opacity:0.45;pointer-events:none"));
   return (
-    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
+    <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-        <Link href={`${R.T_Eligibility}?id=${A.id}`} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </Link>
-        <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>توقيع الموافقة
-          </div>
-          <div style={{ fontSize: 15, color: C.sub2 }}>{apptLine(A)}
-          </div>
-        </div>
-        <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-          </svg>
-          <span><NowText part="date" />
-          </span>
-          <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-          </span>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
+      <StepHeader back={`${R.T_Eligibility}?id=${A.id}`} title="توقيع الموافقة" sub={apptLine(A)} />
+      <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderRadius: 32, padding: "22px 26px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -163,37 +140,37 @@ function Inner() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 66 }}>
               <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>هل أنتِ حامل أو مرضعة؟
+                <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>هل أنتِ حامل أو مرضعة؟
                 </div>
               </div>
               <div role="group" aria-label="هل أنتِ حامل أو مرضعة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-                <button type="button" aria-pressed={ans[0]} onClick={qs[0].yes} style={qs[0].yStyle}>نعم
+                <button type="button" aria-pressed={ans[0]} onClick={qs[0].yes} className={KC.seg} style={qs[0].yStyle}>نعم
                 </button>
-                <button type="button" aria-pressed={!ans[0]} onClick={qs[0].no} style={qs[0].nStyle}>لا
+                <button type="button" aria-pressed={!ans[0]} onClick={qs[0].no} className={KC.seg} style={qs[0].nStyle}>لا
                 </button>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 66, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>هل في وجهكِ جرح أو التهاب الآن؟
+                <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>هل في وجهكِ جرح أو التهاب الآن؟
                 </div>
               </div>
               <div role="group" aria-label="هل في وجهكِ جرح أو التهاب الآن؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-                <button type="button" aria-pressed={ans[1]} onClick={qs[1].yes} style={qs[1].yStyle}>نعم
+                <button type="button" aria-pressed={ans[1]} onClick={qs[1].yes} className={KC.seg} style={qs[1].yStyle}>نعم
                 </button>
-                <button type="button" aria-pressed={!ans[1]} onClick={qs[1].no} style={qs[1].nStyle}>لا
+                <button type="button" aria-pressed={!ans[1]} onClick={qs[1].no} className={KC.seg} style={qs[1].nStyle}>لا
                 </button>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 66, borderTop: "1px solid #EDE2F1" }}>
               <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>هل استخدمتِ ريتينول أو مقشّراً هذا الأسبوع؟
+                <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>هل استخدمتِ ريتينول أو مقشّراً هذا الأسبوع؟
                 </div>
               </div>
               <div role="group" aria-label="هل استخدمتِ ريتينول أو مقشّراً هذا الأسبوع؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-                <button type="button" aria-pressed={ans[2]} onClick={qs[2].yes} style={qs[2].yStyle}>نعم
+                <button type="button" aria-pressed={ans[2]} onClick={qs[2].yes} className={KC.seg} style={qs[2].yStyle}>نعم
                 </button>
-                <button type="button" aria-pressed={!ans[2]} onClick={qs[2].no} style={qs[2].nStyle}>لا
+                <button type="button" aria-pressed={!ans[2]} onClick={qs[2].no} className={KC.seg} style={qs[2].nStyle}>لا
                 </button>
               </div>
             </div>

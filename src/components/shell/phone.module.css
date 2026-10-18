@@ -1,6 +1,6 @@
 /* Patient app frame: full-bleed on phones; on tablets/desktop a soft framed column on the brand background. */
 .page { min-height: 100dvh; display: flex; justify-content: center; background: #E9DDEE; }
-.col { width: 100%; min-height: 100dvh; position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; }
+.col { width: 100%; min-height: 100dvh; position: relative; isolation: isolate; overflow: hidden; overflow: clip; display: flex; flex-direction: column; }
 .tab { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 
 @media (min-width: 620px) {

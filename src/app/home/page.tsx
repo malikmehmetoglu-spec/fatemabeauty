@@ -8,6 +8,9 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { useSession } from "@/lib/supabase/session";
+import { ACTIVE, listMine, STATUS_LABEL } from "@/lib/db/appointments";
+import { listMyNotifications } from "@/lib/db/patients";
+import { arDate, clock } from "@/lib/format";
 import { C, CARD, DARK, GLASS, SH, SHB } from "@/lib/tokens";
 
 /**
@@ -18,7 +21,14 @@ export default function HomePage() {
   const { data: services, loading, error } = useQuery(["catalog", "services"], listServices);
   const { data: team } = useQuery(["catalog", "specialists"], listSpecialists);
   const { patient } = useSession();
-  const first = patient?.name.trim().split(/\s+/)[0];
+  const first = (patient?.name ?? "").trim().split(/\s+/)[0];
+  const pid = patient?.id ?? "";
+  const { data: mine } = useQuery(["appointments", "mine", pid], () => listMine(pid), { enabled: !!pid });
+  const { data: notes } = useQuery(["notifications", pid], () => listMyNotifications(pid), { enabled: !!pid });
+  const unread = (notes ?? []).some((n) => !n.read_at);
+  const now = Date.now();
+  const next = (mine ?? []).filter((a) => ACTIVE.includes(a.status) && new Date(a.starts_at).getTime() + a.minutes * 60000 > now)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const spec = team?.[0];
   const cards = (services ?? []).filter((s) => s.price > 0 || !/استشارة/.test(s.name));
   return (
@@ -27,7 +37,7 @@ export default function HomePage() {
         <Logo height={54} />
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <IconButton icon="msg" label="الرسائل" size={48} href={R.P_Chat} />
-          <IconButton icon="bell" label="الإشعارات" size={48} href={R.Notifications} badge />
+          <IconButton icon="bell" label={unread ? "الإشعارات (جديدة)" : "الإشعارات"} size={48} href={R.Notifications} badge={unread} />
           <Link href={R.Account} aria-label="حسابي" style={{
             width: 48, height: 48, borderRadius: 24, border: "2px solid #FFFFFF", background: "linear-gradient(145deg, #EEDBF2, #DABBE1)",
             boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center",
@@ -38,6 +48,19 @@ export default function HomePage() {
       </header>
 
       <p style={{ margin: 0, padding: "0 22px 6px", fontSize: 15, color: C.sub, position: "relative" }}>{first ? `أهلاً ${first}، ` : "أهلاً بكِ، "}بشرتكِ تستحق يوماً جميلاً</p>
+      {next && (
+        <Link href={`${R.P_AppointmentDetail}?id=${next.id}`} style={{ ...DARK, margin: "10px 22px 0", borderRadius: 26, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: "0 14px 30px rgba(123,70,135,0.30)" }}>
+          <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="cal" color="#FFFFFF" size={21} />
+          </span>
+          <div style={{ flexGrow: 1, minWidth: 0, lineHeight: 1.45 }}>
+            <div style={{ fontSize: 12, color: C.onDark }}>موعدكِ القادم · {STATUS_LABEL[next.status]}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.white, overflowWrap: "anywhere" }}>{next.service?.short_name || next.service?.name || "جلسة"}</div>
+            <div style={{ fontSize: 12.5, color: C.onDark }}>{arDate(new Date(next.starts_at))} · <span className="latin">{clock(next.starts_at)}</span></div>
+          </div>
+          <Icon name="arrow" color="#FFFFFF" size={16} stroke={2} />
+        </Link>
+      )}
       <InstallPrompt style={{ margin: "10px 22px 0" }} />
 
       <div style={{ display: "flex", gap: 12, padding: "10px 22px 20px", overflowX: "auto", position: "relative" }}>

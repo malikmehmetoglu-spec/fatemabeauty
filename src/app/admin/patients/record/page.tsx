@@ -12,7 +12,7 @@ import { useQuery } from "@/lib/db/query";
 import { addCondition, getPatient, getTiers, listConditions, removeCondition, SKIN_TYPES, tierFor, updatePatient, type ConditionKind, type Patient } from "@/lib/db/patients";
 import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
-import { Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
+import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
 const TABS = ["الزيارات", "ملاحظات الجلسات", "الوصفات", "الموافقات", "الصور"];
 const KIND_LABEL: Record<ConditionKind, string> = { allergy: "حساسية", medication: "دواء", concern: "مشكلة بشرة" };
@@ -29,7 +29,7 @@ function Record() {
   const [editing, setEditing] = useState(false);
 
   if (!id) return <Shell><EmptyState icon="users" title="اختاري مراجعة من القائمة" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
-  if (error) return <Shell><ErrorNote>{error}</ErrorNote></Shell>;
+  if (error) return <Shell><ErrorNote>{arErr(error, "تعذّر تحميل الملف. أعيدي تحميل الصفحة.")}</ErrorNote></Shell>;
   if (loading) return <Shell><Loading /></Shell>;
   if (!p) return <Shell><EmptyState icon="users" title="لم يُعثر على هذا الملف" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
   const tier = tierFor(p.points, tiers ?? []);
@@ -59,7 +59,7 @@ function Record() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href={R.W_BookingModal} style={outlineBtn(42)}><Icon name={PLUS} size={16} color={C.accent} stroke={1.9} />موعد جديد</Link>
+              <Link href={fileHref(R.W_BookingModal, "patient", p.id)} style={outlineBtn(42)}><Icon name={PLUS} size={16} color={C.accent} stroke={1.9} />موعد جديد</Link>
               <Link href={fileHref(R.W_SessionNote, "patient", p.id)} style={outlineBtn(42)}><Icon name="edit" size={16} color={C.accent} />ملاحظة</Link>
               <Link href={fileHref(R.W_Prescription, "patient", p.id)} style={outlineBtn(42)}><Icon name="pill" size={16} color={C.accent} />وصفة</Link>
               <Link href={fileHref(R.W_Photos, "patient", p.id)} style={outlineBtn(42)}><Icon name="camera" size={16} color={C.accent} />الصور</Link>
@@ -94,7 +94,18 @@ function Conditions({ patientId }: { patientId: string }) {
   const { data, loading } = useQuery(["conditions", patientId], () => listConditions(patientId));
   const [kind, setKind] = useState<ConditionKind>("allergy");
   const [name, setName] = useState("");
-  async function add() { if (name.trim()) { await addCondition(patientId, kind, name); setName(""); } }
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function add() {
+    if (!name.trim() || busy) return;
+    setBusy(true); setErr("");
+    try { await addCondition(patientId, kind, name.trim()); setName(""); } catch (e) { setErr(arErr(e)); } finally { setBusy(false); }
+  }
+  async function remove(id: string, label: string) {
+    if (!window.confirm(`حذف «${label}» من الحالة الصحية؟`)) return;
+    setErr("");
+    try { await removeCondition(id); } catch (e) { setErr(arErr(e, "تعذّر الحذف. حاولي مرة أخرى.")); }
+  }
   return (
     <Panel title="الحالة الصحية" sub="تظهر للأخصائية قبل كل جلسة">
       {loading ? <Loading /> : !data?.length ? <div style={{ fontSize: 13, color: C.muted, marginBottom: 10 }}>لا حساسية أو أدوية مسجّلة.</div> : (
@@ -102,7 +113,7 @@ function Conditions({ patientId }: { patientId: string }) {
           {data.map((c) => (
             <Tag key={c.id} kind={c.kind === "allergy" ? "pink" : c.kind === "medication" ? "amber" : "lilac"}>
               {KIND_LABEL[c.kind as ConditionKind]}: {c.name}
-              <button type="button" aria-label="حذف" onClick={() => removeCondition(c.id)} style={{ border: "none", background: "transparent", padding: 0, marginInlineStart: 4, display: "inline-flex" }}><Icon name="x" size={12} color={C.sub2} /></button>
+              <button type="button" aria-label={`حذف ${c.name}`} onClick={() => remove(c.id, c.name)} style={{ border: "none", background: "transparent", padding: 0, marginInlineStart: 4, display: "inline-flex" }}><Icon name="x" size={12} color={C.sub2} /></button>
             </Tag>
           ))}
         </div>
@@ -110,8 +121,9 @@ function Conditions({ patientId }: { patientId: string }) {
       <div style={{ display: "flex", gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
         <Select label="النوع" value={kind} onChange={setKind} options={(Object.keys(KIND_LABEL) as ConditionKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))} style={{ width: 110 }} />
         <TextInput label="الاسم" value={name} onChange={setName} style={{ flex: "1 1 120px", minWidth: 0 }} />
-        <button type="button" onClick={add} aria-label="إضافة" style={{ ...outlineBtn(46), padding: "0 12px" }}><Icon name={PLUS} size={16} color={C.accent} /></button>
+        <button type="button" onClick={add} disabled={!name.trim() || busy} aria-label="إضافة" style={{ ...outlineBtn(46), padding: "0 12px", opacity: !name.trim() || busy ? 0.5 : 1 }}><Icon name={PLUS} size={16} color={C.accent} /></button>
       </div>
+      {err && <ErrorNote style={{ marginTop: 8 }}>{err}</ErrorNote>}
     </Panel>
   );
 }
@@ -246,11 +258,14 @@ function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   async function save() {
-    setBusy(true); setErr("");
+    setErr("");
+    if (!name.trim()) { setErr("اكتبي اسم المراجعة."); return; }
+    if (phone.trim() && phone.replace(/\D/g, "").length < 9) { setErr("رقم الهاتف غير مكتمل."); return; }
+    setBusy(true);
     try {
       await updatePatient(p.id, { name: name.trim(), phone: normPhone(phone), birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
       onClose();
-    } catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الحفظ"); }
+    } catch (e) { setErr(arErr(e)); }
     setBusy(false);
   }
   return (
@@ -261,7 +276,7 @@ function EditPatient({ p, onClose }: { p: Patient; onClose: () => void }) {
         <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
       </div>
       <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
-      <div style={{ display: "flex", gap: 24 }}>
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={preg} onChange={setPreg} label="حامل" />حامل</label>
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={bf} onChange={setBf} label="مرضع" />مرضع</label>
       </div>

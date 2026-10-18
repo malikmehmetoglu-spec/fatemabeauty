@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Offers.dc.html — offers and discount codes (live, Supabase). Packages are managed with services. */
+import { arError } from "@/lib/arError";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -98,7 +99,7 @@ function OfferDialog({ open, offer, onClose, services }: { open: boolean; offer:
       await saveOffer({ id: offer?.id, title: title.trim(), code: code.trim() || null, kind, value: v, service_key: svc || null,
         max_uses: Number(max) || null, starts_on: from || null, ends_on: to || null, active: offer?.active ?? true });
       onClose();
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    } catch (e) { setErr(arError(e)); }
     finally { setBusy(false); }
   };
 

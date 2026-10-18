@@ -58,15 +58,15 @@ export default function StorePage() {
         }}>
           <Icon name="box" color={C.accent} size={21} stroke={1.9} />
         </Link>
-        <Link href={R.P_Cart} aria-label={`السلة، ${count} منتجات`} style={{
+        <Link href={R.P_Cart} aria-label={count ? `السلة، فيها ${count}` : "السلة فارغة"} style={{
           width: 50, height: 50, borderRadius: 25, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
         }}>
           <Icon name="bag" color={C.accent} size={21} stroke={1.9} />
-          <span className="latin" style={{
+          {count > 0 && <span className="latin" style={{
             position: "absolute", top: -2, left: -2, minWidth: 20, height: 20, padding: "0 5px", borderRadius: 10,
             background: "linear-gradient(145deg,#C9A2D8,#7B4687)", color: C.white, fontSize: 11, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #FFFFFF", boxSizing: "border-box",
-          }}>{count}</span>
+          }}>{count}</span>}
         </Link>
         </div>
       </header>
@@ -139,7 +139,7 @@ export default function StorePage() {
                 {p.recommended && <span style={{ position: "absolute", top: 5, right: 5, height: 20, padding: "0 7px", borderRadius: 10, background: "rgba(255,255,255,0.92)", color: C.accent, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 3, boxShadow: "0 2px 6px rgba(123,70,135,0.15)" }}><Icon name="sparkle" color={C.accent} size={11} />توصية الأخصائية</span>}
               </div>
             );
-            const name = <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>;
+            const name = <div title={p.name} style={{ fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: "2.6em", overflowWrap: "anywhere" }}>{p.name}</div>;
             return (
               <div key={p.key} className={css.card} style={{ ...CARD, borderRadius: 24, padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
                 <Link href={href} aria-label={`تفاصيل ${p.name}`} style={{ display: "block" }}>{art}</Link>
@@ -163,7 +163,7 @@ export default function StorePage() {
                         <div className="latin" style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{money(p.price, false)}</div>
                         <div style={{ fontSize: 11, color: C.sub2 }}>ل.س</div>
                       </div>
-                      <button type="button" aria-pressed={on} aria-label={`أضيفي ${p.name} إلى السلة`} onClick={() => toggle(p)} style={{
+                      <button type="button" aria-pressed={on} aria-label={on ? `أزيلي ${p.name} من السلة` : `أضيفي ${p.name} إلى السلة`} onClick={() => toggle(p)} style={{
                         width: 36, height: 36, borderRadius: 18, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
                         ...(on
                           ? { border: "none", background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)" }

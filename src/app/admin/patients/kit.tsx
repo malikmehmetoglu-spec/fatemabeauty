@@ -69,5 +69,24 @@ export function Bar({ done, total }: { done: number; total: number }) {
   );
 }
 
+/** Arabic count of appointments: «موعد واحد / موعدان / 3 مواعيد / 11 موعداً». */
+export const apptCount = (n: number) => (n === 0 ? "لا مواعيد" : n === 1 ? "موعد واحد" : n === 2 ? "موعدان" : n <= 10 ? `${n} مواعيد` : `${n} موعداً`);
+
 export const displayName = (n?: string | null) => (n && n.trim()) || "بدون اسم";
 export const fileHref = (base: string, key: string, id: string) => `${base}?${key}=${encodeURIComponent(id)}`;
+
+/** Turns a Supabase/network error into a short Arabic message (raw English never reaches the screen). */
+export function arErr(e: unknown, fallback = "تعذّر الحفظ. حاولي مرة أخرى."): string {
+  const m = e instanceof Error ? e.message : typeof e === "string" ? e : (e as { message?: string } | null)?.message ?? "";
+  if (!m) return fallback;
+  if (/[؀-ۿ]/.test(m)) return m;
+  if (/failed to fetch|network|load failed|timeout/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
+  if (/row-level security|permission denied|not allowed|jwt|not authorized/i.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
+  if (/duplicate key.*phone|patients_phone_key/i.test(m)) return "هذا الرقم مسجّل لمراجعة أخرى.";
+  if (/duplicate key/i.test(m)) return "هذا السجل موجود مسبقاً.";
+  if (/violates foreign key/i.test(m)) return "السجل مرتبط بسجلات أخرى ولا يمكن تعديله هكذا.";
+  if (/violates check constraint|invalid input/i.test(m)) return "بعض القيم غير صحيحة. تحقّقي منها.";
+  if (/payload too large|exceeded the maximum allowed size|entity too large/i.test(m)) return "الملف كبير جداً.";
+  if (/mime type|invalid.*type/i.test(m)) return "نوع الملف غير مدعوم.";
+  return fallback;
+}

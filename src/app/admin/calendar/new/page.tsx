@@ -9,8 +9,9 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import {
-  book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, type PatientHit,
+  book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
+import { getPatient } from "@/lib/db/patients";
 import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
@@ -50,6 +51,16 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // opened from a patient file: «موعد جديد» passes ?patient=<id>
+  const search = useSearch();
+  const preId = search?.get("patient") ?? "";
+  useEffect(() => {
+    if (!preId) return;
+    let live = true;
+    getPatient(preId).then((p) => { if (live && p) { setMode("existing"); setPatient({ id: p.id, name: p.name, phone: p.phone, file_no: p.file_no }); } }).catch(() => {});
+    return () => { live = false; };
+  }, [preId]);
+
   useEffect(() => {
     if (mode !== "existing" || patient) return;
     let live = true;
@@ -76,7 +87,12 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     try {
       let pid = patient?.id ?? null;
-      if (mode === "new") pid = (await createPatient(name, phone))?.id ?? null;
+      if (mode === "new") {
+        const created = await createPatient(name, phone);
+        pid = created?.id ?? null;
+        // keep the new file selected so a retry after a booking error does not open a second file
+        if (created) { setPatient(created); setMode("existing"); }
+      }
       await book({
         service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
         walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,
@@ -107,7 +123,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
                 <div style={{ fontSize: 14.5, fontWeight: 700 }}>{patient.name || "بدون اسم"}</div>
                 <div style={{ fontSize: 12.5, color: C.sub2 }}>ملف {patient.file_no}{patient.phone ? <> · <span className="latin" dir="ltr">{patient.phone}</span></> : null}</div>
               </div>
-              <button type="button" onClick={() => setPatient(null)} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700, fontSize: 13 }}>تغيير</button>
+              <button type="button" onClick={() => setPatient(null)} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700, fontSize: 13, minHeight: 36, padding: "0 8px" }}>تغيير</button>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

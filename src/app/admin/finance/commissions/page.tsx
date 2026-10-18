@@ -41,7 +41,7 @@ export default function CommissionsPage() {
   const totalSales = rows.reduce((n, x) => n + x.sales, 0);
 
   return (
-    <AdminShell active="المالية" title="العمولات" subtitle={`عمولات الأخصائيات على الجلسات المدفوعة · ${monthLabel(period)}`}
+    <AdminShell active="فريق العمل" title="العمولات" subtitle={`عمولات الأخصائيات على الجلسات المدفوعة · ${monthLabel(period)}`}
       actions={<>
         <GhostButton icon="fwd" onClick={() => setPeriod(shiftMonth(period, -1))}>الشهر السابق</GhostButton>
         <GhostButton icon="back" onClick={() => setPeriod(shiftMonth(period, 1))}>التالي</GhostButton>

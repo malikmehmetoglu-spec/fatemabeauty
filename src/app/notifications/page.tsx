@@ -61,10 +61,11 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<Kind | null>(null);
   const { me, loading, error } = useMe();
   const id = me?.id ?? "";
-  const { data, loading: ln } = useQuery(["notifications", id], () => listMyNotifications(id), { enabled: !!id });
+  const { data, loading: ln, error: le } = useQuery(["notifications", id], () => listMyNotifications(id), { enabled: !!id });
   const unread = (data ?? []).some((n) => !n.read_at);
   useEffect(() => { if (id && unread) { const t = setTimeout(() => markNotificationsRead(id), 2500); return () => clearTimeout(t); } }, [id, unread]);
-  const notes = (data ?? []).filter((n) => !filter || n.kind === filter);
+  const GROUP: Record<Kind, string[]> = { appt: ["appt", "queue", "waitlist"], offer: ["offer"], care: ["care"] };
+  const notes = (data ?? []).filter((n) => !filter || GROUP[filter].includes(n.kind));
   const groups = new Map<string, Notification[]>();
   const today = dayKey(), yest = dayKey(new Date(Date.now() - 864e5));
   for (const n of notes) {
@@ -75,7 +76,7 @@ export default function NotificationsPage() {
   return (
     <PhoneScreen>
       <TopBar title="الإشعارات" />
-      {!me ? <Wait loading={loading} error={error} /> : ln ? <Wait loading /> : (<>
+      {!me ? <Wait loading={loading} error={error} /> : ln || le ? <Wait loading={ln} error={le ?? undefined} /> : (<>
       <div style={{ display: "flex", gap: 8, position: "relative" }}>
         {FILTERS.map(([t, k]) => (
           <Chip key={t} height={34} selected={filter === k} onClick={() => setFilter(k)} style={{ padding: "0 16px", fontWeight: filter === k ? 700 : 600, ...(filter === k ? { boxShadow: "0 6px 14px rgba(150,100,170,0.25)" } : { boxShadow: "none" }) }}>{t}</Chip>
@@ -84,7 +85,7 @@ export default function NotificationsPage() {
       {[...groups.entries()].map(([label, list]) => <Group key={label} label={label}>{list.map((n) => <NoteCard key={n.id} n={toNote(n)} />)}</Group>)}
       {notes.length === 0 && (
         <div style={{ background: C.white, borderRadius: 24, padding: "26px 20px", textAlign: "center", color: C.sub2, fontSize: 13, lineHeight: 1.8, boxShadow: SH, position: "relative" }}>
-          <Circ icon="bell" size={48} iconSize={22} />
+          <div style={{ display: "flex", justifyContent: "center" }}><Circ icon="bell" size={48} iconSize={22} /></div>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, marginTop: 8 }}>لا توجد إشعارات {filter ? "هنا" : "بعد"}</div>
           تصلكِ هنا تذكيرات مواعيدكِ ودوركِ في الانتظار وتعليمات ما بعد الجلسة والعروض.
         </div>

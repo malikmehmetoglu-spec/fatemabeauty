@@ -1,13 +1,14 @@
 "use client";
 
 /** Service and package dialogs (live, Supabase). */
+import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
 import { ErrorNote, Modal, NumberInput, Select, SubmitButton, TextArea, TextInput, Toggle } from "@/components/ui";
 import { saveService, savePackage, setPackageActive, type Device, type Package, type Room, type Service } from "@/lib/db/catalog";
 import { C } from "@/lib/tokens";
 import { Row } from "@/app/admin/settings/rooms/dialogs";
 
-const err = (e: unknown) => "تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e));
+const err = (e: unknown) => arError(e);
 const blank = () => ({ name: "", short: "", desc: "", price: "", from: false, minutes: "", room: "", device: "", online: true, active: true, sort: "" });
 
 export function ServiceDialog({ open, service, rooms, devices, onClose }: {

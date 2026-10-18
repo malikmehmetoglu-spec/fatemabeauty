@@ -52,7 +52,11 @@ export function bookingError(e: unknown) {
   if (/only waiting patients can be called/.test(m)) return "يمكن النداء فقط على من سجّلت وصولها.";
   if (/service not found/.test(m)) return "هذه الخدمة غير متاحة الآن.";
   if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
-  return "تعذّر الحفظ: " + m;
+  if (/failed to fetch|network|load failed/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
+  if (/row-level security|permission denied|not allowed/i.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
+  if (/duplicate key.*phone|patients_phone_key/i.test(m)) return "يوجد ملف بهذا الرقم — ابحثي عنه في «مراجِعة مسجّلة».";
+  console.error("booking error:", m);
+  return "تعذّر الحفظ. حاولي مرة أخرى.";
 }
 
 /** Same as must(), but throws the readable Arabic message for database rule errors. */
@@ -199,7 +203,10 @@ export type PatientHit = Pick<Tables<"patients">, "id" | "name" | "phone" | "fil
 export async function searchPatients(q: string): Promise<PatientHit[]> {
   const s = q.trim().replace(/[,()%]/g, "");
   if (s.length < 2) return [];
-  const ors = [`name.ilike.%${s}%`, `phone.ilike.%${s}%`];
+  // phones are stored as +963…; «0999…» / «963999…» typed at reception must still match
+  const digits = s.replace(/\D/g, "");
+  const phoneQ = /^[+\d\s-]+$/.test(s) && digits.length >= 3 ? digits.replace(/^(00963|963|0)/, "") : s;
+  const ors = [`name.ilike.%${s}%`, `phone.ilike.%${phoneQ}%`];
   if (/^\d+$/.test(s)) ors.push(`file_no.eq.${s}`);
   return must(await supabase.from("patients").select("id,name,phone,file_no").or(ors.join(",")).order("name").limit(8)) ?? [];
 }

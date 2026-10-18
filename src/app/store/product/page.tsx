@@ -113,12 +113,15 @@ function ProductView({ p }: { p: Product }) {
         {out || p.price == null ? (
           <SecondaryButton href={R.P_Chat} icon="msg" style={{ flex: 1 }}>{out ? "غير متوفر حالياً · اسألي المركز" : "اسألي عن السعر"}</SecondaryButton>
         ) : room <= 0 ? (
-          <SecondaryButton href={R.P_Cart} icon="bag" style={{ flex: 1 }}>كل الكمية المتوفرة في سلتكِ · افتحي السلة</SecondaryButton>
+          <SecondaryButton href={R.P_Cart} icon="bag" style={{ flex: 1, fontSize: 15 }}>الكمية المتوفرة كلها في سلتكِ</SecondaryButton>
         ) : <>
           <QtyStepper qty={Math.min(qty, room)} onChange={setQty} btn={34} radius={21} max={Math.max(1, room)} />
-          <PrimaryButton icon="bag" style={{ flex: 1, fontSize: "clamp(14px, 4.1vw, 16px)", gap: 6, padding: "0 10px", minWidth: 0, whiteSpace: "nowrap" }}
+          <PrimaryButton icon="bag" style={{ flex: 1, fontSize: "clamp(14px, 4.1vw, 16px)", gap: 6, padding: "0 14px", minWidth: 0, lineHeight: 1.2, textAlign: "center" }}
             onClick={() => { cartStore.add(p.key, Math.min(qty, room)); router.push(R.P_Cart); }}>
-            أضيفي إلى السلة · <span className="latin">{money(Math.min(qty, room) * price, false)}</span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
+              <span style={{ whiteSpace: "nowrap" }}>أضيفي إلى السلة</span>
+              <span className="latin" style={{ fontSize: 12.5, fontWeight: 500, opacity: 0.9, whiteSpace: "nowrap" }}>{money(Math.min(qty, room) * price, false)} ل.س</span>
+            </span>
           </PrimaryButton>
         </>}
       </div>

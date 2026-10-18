@@ -9,8 +9,9 @@ import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
   bookingError, dateOfKey, endsAt, getHours, listRange, personName, saveHours, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
-  type Appointment, type Hours, type Status,
+  type Appointment, type Hours, type Status, weekday,
 } from "@/lib/db/appointments";
+import { apptCount, arErr } from "../patients/kit";
 import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
@@ -45,7 +46,7 @@ export function CalendarBody() {
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
 
-  const weekStart = shiftKey(day, -new Date(dateOfKey(day)).getDay());
+  const weekStart = shiftKey(day, -weekday(day));
   const from = view === "day" ? day : weekStart, to = view === "day" ? day : shiftKey(weekStart, 6);
   const appts = useQuery(["appointments", "range", from, to], () => listRange(from, to));
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
@@ -76,7 +77,7 @@ export function CalendarBody() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <button type="button" aria-label="السابق" onClick={() => setDay(shiftKey(day, view === "day" ? -1 : -7))} style={navBtn}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
-          <div style={{ minWidth: 190, textAlign: "center", fontSize: 16, fontWeight: 700 }}>
+          <div style={{ minWidth: 0, flex: "1 1 auto", textAlign: "center", fontSize: 16, fontWeight: 700 }}>
             {view === "day" ? arDate(dateOfKey(day), { year: true }) : `${arDate(dateOfKey(from), { day: false })} – ${arDate(dateOfKey(to), { day: false })}`}
           </div>
           <button type="button" aria-label="التالي" onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))} style={navBtn}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
@@ -84,7 +85,7 @@ export function CalendarBody() {
         {!isToday && <Chip onClick={() => setDay(dayKey())}>اليوم</Chip>}
         <input type="date" aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr"
           style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13 }} />
-        <span style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
           {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "حسب الغرفة" }, { value: "specialist", label: "حسب الأخصائية" }]} />}
           <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
@@ -92,12 +93,12 @@ export function CalendarBody() {
         </span>
       </div>
 
-      {h && !h.days.includes(new Date(dateOfKey(day)).getDay()) && view === "day" && (
+      {h && !h.days.includes(weekday(day)) && view === "day" && (
         <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>هذا اليوم خارج أيام الدوام المحدّدة — الحجز من التطبيق مغلق فيه.</div>
       )}
 
-      {loading ? <Loading /> : err ? <ErrorNote>تعذّر تحميل المواعيد: {err}</ErrorNote> : view === "week" ? (
-        <WeekGrid from={from} list={list} onOpen={setOpen} />
+      {loading ? <Loading /> : err ? <ErrorNote>{arErr(err, "تعذّر تحميل المواعيد. أعيدي تحميل الصفحة.")}</ErrorNote> : view === "week" ? (
+        <WeekGrid from={from} list={list} onOpen={setOpen} onDay={(k) => { setDay(k); setView("day"); }} />
       ) : cols.length === 0 ? (
         <EmptyState icon="cal" title={by === "room" ? "لا غرف بعد" : "لا أخصائيات بعد"} text={by === "room" ? "أضيفي غرف المركز من الإعدادات لتظهر أعمدة التقويم." : "أضيفي فريق العمل لتظهر أعمدة الأخصائيات."}
           action={<Link href={by === "room" ? R.W_Rooms : R.W_Staff} style={{ color: C.accent, fontWeight: 700 }}>فتح الإعدادات</Link>} />
@@ -110,7 +111,7 @@ export function CalendarBody() {
               return (
                 <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, padding: "0 8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 14.5, fontWeight: 700 }}>{c.name}</span>
-                  <Tag kind="lilac">{n} مواعيد</Tag>
+                  <Tag kind="lilac">{apptCount(n)}</Tag>
                 </div>
               );
             })}
@@ -163,19 +164,21 @@ export const NEW_BTN = { height: 46, borderRadius: 23, border: "none", backgroun
 
 const navBtn: CSSProperties = { width: 38, height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" };
 
-function WeekGrid({ from, list, onOpen }: { from: string; list: Appointment[]; onOpen: (a: Appointment) => void }) {
+function WeekGrid({ from, list, onOpen, onDay }: { from: string; list: Appointment[]; onOpen: (a: Appointment) => void; onDay: (k: string) => void }) {
   const days = Array.from({ length: 7 }, (_, i) => shiftKey(from, i));
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0,1fr))", gap: 10 }}>
+    <div style={{ overflowX: "auto", margin: "0 -4px", padding: "0 4px 6px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0,1fr))", gap: 10, minWidth: 760 }}>
       {days.map((k) => {
         const items = list.filter((a) => dayKey(new Date(a.starts_at)) === k);
         const d = dateOfKey(k);
+        const wd = weekday(k);
         return (
           <div key={k} style={{ borderRadius: 22, background: C.white, border: k === dayKey() ? "1.5px solid #C9A2D8" : "1px solid #F0E6F3", boxShadow: SH, padding: "10px 8px", minHeight: 240, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ textAlign: "center", lineHeight: 1.3, marginBottom: 4 }}>
-              <div style={{ fontSize: 12, color: C.sub2 }}>{AR_DAYS[d.getDay()]}</div>
+            <button type="button" onClick={() => onDay(k)} title="عرض اليوم" style={{ textAlign: "center", lineHeight: 1.3, marginBottom: 4, border: "none", background: "none", padding: 0, color: C.ink }}>
+              <div style={{ fontSize: 12, color: C.sub2 }}>{AR_DAYS[wd]}</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{d.getDate()}</div>
-            </div>
+            </button>
             {items.length === 0 ? <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>—</div> : items.map((a) => (
               <button key={a.id} type="button" onClick={() => onOpen(a)} style={{ borderRadius: 12, padding: "5px 8px", textAlign: "right", ...LOOK[a.status] }}>
                 <div className="latin" style={{ fontSize: 11.5, fontWeight: 700 }}>{timeOf(a)}</div>
@@ -185,6 +188,7 @@ function WeekGrid({ from, list, onOpen }: { from: string; list: Appointment[]; o
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
@@ -234,6 +238,12 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         {row("المصدر", a.source === "app" ? "التطبيق" : a.source === "walk_in" ? "حضور مباشر" : "الاستقبال")}
         {a.cancel_reason && row("سبب الإلغاء", a.cancel_reason)}
       </div>
+      {a.patient_id && (
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13.5, fontWeight: 700 }}>
+          <Link href={`${R.W_Record}?id=${a.patient_id}`} style={{ color: C.accent }}>فتح ملفها</Link>
+          {(a.status === "in_session" || a.status === "done") && <Link href={`${R.W_SessionNote}?appointment=${a.id}&patient=${a.patient_id}`} style={{ color: C.accent }}>ملاحظة الجلسة</Link>}
+        </div>
+      )}
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
   );
@@ -247,7 +257,7 @@ function HoursDialog({ open, hours, onClose }: { open: boolean; hours: Hours; on
   async function save() {
     if (!/^\d{2}:\d{2}$/.test(h.from) || !/^\d{2}:\d{2}$/.test(h.to) || toMin(h.to) <= toMin(h.from)) { setError("تحقّقي من وقت البداية والنهاية."); return; }
     setBusy(true);
-    try { await saveHours(h); onClose(); } catch (e) { setError("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+    try { await saveHours(h); onClose(); } catch (e) { setError(arErr(e)); } finally { setBusy(false); }
   }
   return (
     <Modal open={open} onClose={onClose} title="ساعات الدوام" width={520} footer={<SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton>}>

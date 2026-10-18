@@ -8,7 +8,7 @@ import { Card, Circ, DarkGlow, EmptyState, ErrorNote, Icon, Loading, PrimaryButt
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { getService, listRooms, listSpecialists, priceLabel } from "@/lib/db/catalog";
-import { book, bookingError, dateOfKey, freeChangeHours, myPackagesFor, useSearch } from "@/lib/db/appointments";
+import { book, bookingError, cancelMine, dateOfKey, freeChangeHours, myPackagesFor, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate, dayName, money } from "@/lib/format";
 import { C, DARK } from "@/lib/tokens";
@@ -20,7 +20,7 @@ export default function ConfirmPage() {
   const s = useRequirePatient();
   const router = useRouter();
   const q = useSearch();
-  const key = q?.get("service") ?? "", day = q?.get("day") ?? "", time = q?.get("time") ?? "", spId = q?.get("sp") ?? null;
+  const key = q?.get("service") ?? "", day = q?.get("day") ?? "", time = q?.get("time") ?? "", spId = q?.get("sp") ?? null, replace = q?.get("replace") ?? "";
   const svc = useQuery(["catalog", "service", key], () => getService(key), { enabled: !!key });
   const team = useQuery(["catalog", "specialists"], listSpecialists);
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
@@ -40,13 +40,18 @@ export default function ConfirmPage() {
     setBusy(true); setError("");
     try {
       const row = await book({ service: key, day, time, specialist: spId });
+      // Changing an existing appointment: the old one is cancelled only after the new one is booked.
+      if (replace && row?.id) {
+        try { await cancelMine(replace, "غيّرت المراجِعة موعدها إلى وقت آخر"); }
+        catch { router.replace(`${R.P_AppointmentDetail}?id=${replace}&moved=${row.id}`); return; }
+      }
       router.replace(`${R.P_Booked}?id=${row?.id}`);
     } catch (e) { setError(bookingError(e)); setBusy(false); }
   }
 
   return (
     <PhoneScreen gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
-      <TopBar title="مراجعة الحجز" back={key ? `${R.Booking}?service=${key}` : R.Booking} />
+      <TopBar title={replace ? "تأكيد تغيير الموعد" : "مراجعة الحجز"} back={key ? `${R.Booking}?service=${key}${replace ? `&replace=${replace}` : ""}` : R.Booking} />
       {!valid ? (
         <EmptyState icon="cal" title="لم تختاري موعداً بعد" text="ارجعي إلى صفحة الحجز واختاري الخدمة واليوم والوقت." action={<PrimaryButton href={R.Booking}>اختيار موعد</PrimaryButton>} />
       ) : svc.loading ? <Loading /> : !service ? (
@@ -58,9 +63,9 @@ export default function ConfirmPage() {
             <div aria-hidden style={{ position: "absolute", top: -50, left: -40, width: 170, height: 170, borderRadius: 85, border: "1px solid rgba(255,255,255,0.10)" }} />
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ lineHeight: 1.35 }}>
+                <div style={{ lineHeight: 1.35, minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, color: C.onDark }}>موعدكِ</div>
-                  <div style={{ fontSize: "clamp(22px, 6.6vw, 26px)", fontWeight: 700, whiteSpace: "nowrap" }}>{arDate(dateOfKey(day), { day: false })}</div>
+                  <div style={{ fontSize: "clamp(22px, 6.6vw, 26px)", fontWeight: 700 }}>{arDate(dateOfKey(day), { day: false })}</div>
                   <div style={{ fontSize: 14, color: "#F2E6F4" }}>{dayName(dateOfKey(day))} · {dateOfKey(day).getFullYear()}</div>
                 </div>
                 <div style={{ textAlign: "left", lineHeight: 1.1 }}>
@@ -108,7 +113,7 @@ export default function ConfirmPage() {
           {policy.data != null && (
             <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 10, borderRadius: 20, padding: "11px 14px", background: "rgba(255,255,255,0.55)", border: "1px dashed #E1CDE6" }}>
               <Icon name="info" color={C.accentMid} size={18} style={{ flexShrink: 0 }} />
-              <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6 }}>التعديل أو الإلغاء مجاني حتى <b style={{ color: C.accent }}>{policy.data} ساعات</b> قبل الموعد.</div>
+              <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6 }}>التعديل أو الإلغاء مجاني حتى <b style={{ color: C.accent }}>{policy.data} {policy.data >= 3 && policy.data <= 10 ? "ساعات" : "ساعة"}</b> قبل الموعد.</div>
             </div>
           )}
 
@@ -116,10 +121,10 @@ export default function ConfirmPage() {
 
           <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "0 6px" }}>
-              <span style={{ fontSize: 13, color: C.sub2 }}>{pkg ? "المستحق الآن" : "تدفعينها في المركز"}</span>
-              <span style={{ fontSize: 20, fontWeight: 700, color: C.accent }}>{money(pkg ? 0 : service.price)}</span>
+              <span style={{ fontSize: 13, color: C.sub2 }}>{pkg ? "المستحق الآن" : service.price ? "تدفعينها في المركز" : "قيمة الجلسة"}</span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: C.accent }}>{pkg || !service.price ? "بدون مقابل" : money(service.price)}</span>
             </div>
-            <PrimaryButton onClick={confirm} disabled={busy}>{busy ? "جارٍ الحجز…" : "تأكيد الحجز"}</PrimaryButton>
+            <PrimaryButton onClick={confirm} disabled={busy} style={{ width: "100%" }}>{busy ? "جارٍ الحجز…" : replace ? "تأكيد الموعد الجديد" : "تأكيد الحجز"}</PrimaryButton>
           </div>
         </>
       )}

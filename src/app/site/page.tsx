@@ -91,7 +91,7 @@ export default function SitePage() {
           {spec ? (
           <div className={s.photoCard}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {spec.photo_url ? <img src={spec.photo_url} alt={spec.name} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={110} /></div>}
+            {spec.photo_url ? <img className={s.photo} src={spec.photo_url} alt={spec.name} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={110} /></div>}
             <span className={s.floatTag}><Icon name="sparkle" color={C.accent} size={17} />تنظيف وعناية فقط</span>
             <div className={s.glass}>
               <div>
@@ -119,7 +119,8 @@ export default function SitePage() {
           </div>
 
           <div className={s.services}>
-            {!svcLoading && services.length === 0 && <p className={s.sub}>تُنشر قائمة الخدمات وأسعارها قريباً.</p>}
+            {!svcLoading && services.length === 0 && <p className={`${s.sub} ${s.emptyRow}`}>تُنشر قائمة الخدمات وأسعارها قريباً.</p>}
+            {svcLoading && services.length === 0 && <p className={`${s.sub} ${s.emptyRow}`}>جارٍ تحميل الخدمات…</p>}
             {services.map((x, i) => {
               const dark = i === 3;
               return (

@@ -4,13 +4,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
+import { Circ, EmptyState, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { placeOrder } from "@/lib/db/products";
-import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, orderError, rememberReturn, setMode, useCart, useMode } from "@/lib/db/orders";
+import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, orderError, rememberReturn, setMode, useCart, useMode, itemsLabel } from "@/lib/db/orders";
 import { useSession } from "@/lib/supabase/session";
 import { ArtThumb, Field, Segmented } from "../store/c1ui";
 import css from "../store/store.module.css";
@@ -55,6 +55,14 @@ export default function CheckoutPage() {
       router.push(order ? `${R.P_OrderTrack}?id=${order.id}` : R.P_OrderTrack);
     } catch (e) { setError(orderError(e)); setBusy(false); }
   }
+
+  if (!busy && (keys.length === 0 || (data && lines.length === 0))) return (
+    <PhoneScreen>
+      <TopBar title="الدفع والتوصيل" back={R.P_Cart} />
+      <EmptyState icon="bag" title="لا شيء لإتمام الطلب" text="سلتكِ فارغة. أضيفي منتجات من المتجر ثم عودي لإتمام الطلب."
+        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</PrimaryButton>} />
+    </PhoneScreen>
+  );
 
   return (
     <PhoneScreen gap={12} wide>
@@ -130,7 +138,7 @@ export default function CheckoutPage() {
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: 13, color: C.sub }}>
-          <Row l={<span><span className="latin">{count}</span> منتجات</span>} r={<span style={{ color: C.ink, fontWeight: 600 }}><span className="latin">{money(sub, false)}</span> ل.س</span>} />
+          <Row l={<span>{itemsLabel(count)}</span>} r={<span style={{ color: C.ink, fontWeight: 600 }}><span className="latin">{money(sub, false)}</span> ل.س</span>} />
           <Row l={<span>{d ? "رسوم التوصيل" : "الاستلام من المركز"}</span>} r={<span style={{ color: C.ink, fontWeight: 600 }}>{d ? "تُحدَّد عند التأكيد" : "بدون رسوم"}</span>} />
           <div style={{ height: 1, background: C.line, margin: "3px 0" }} />
           <Row l={<span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>الإجمالي</span>}

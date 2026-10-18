@@ -4,6 +4,7 @@
  * W_Stocktake.dc.html — الجرد (live). Count every item, compare with the system quantity,
  * then apply: each difference is written through adjust_stock (logged as «تعديل جرد»).
  */
+import { arError } from "@/lib/arError";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -50,7 +51,7 @@ export default function Page() {
     try {
       const n = await applyStocktake(diffs.map((p) => ({ key: p.key, counted: parsed(p.key) as number, current: Number(p.stock) })), note.trim() || "جرد دوري");
       setCounts({}); setNote(""); setDone(`اعتُمد الجرد: عُدِّلت كميات ${n} صنف.`);
-    } catch (e) { setErr("تعذّر اعتماد الجرد: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+    } catch (e) { setErr(arError(e, "تعذّر اعتماد الجرد")); } finally { setBusy(false); }
   }
 
   const fillSystem = () => setCounts(Object.fromEntries(shown.map((p) => [p.key, counts[p.key] ?? String(Number(p.stock))])));

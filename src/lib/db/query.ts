@@ -5,6 +5,7 @@
  *   const { data, loading, error, reload } = useQuery(["products", "inventory"], () => listInventory());
  *   await mutate(...); invalidate("products");   // every query whose key starts with "products" reloads
  */
+import { arLoadError } from "@/lib/arError";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Entry = { data?: unknown; error?: string; at: number; promise?: Promise<void> };
@@ -32,7 +33,7 @@ export function useQuery<T>(key: unknown[], fetcher: () => Promise<T>, opts: { e
     if (entry.promise) return entry.promise;
     entry.promise = (async () => {
       try { entry.data = await fetcherRef.current(); entry.error = undefined; }
-      catch (e) { entry.error = e instanceof Error ? e.message : String(e); }
+      catch (e) { console.warn("[query]", key, e); entry.error = arLoadError(e); }
       entry.at = Date.now(); entry.promise = undefined; cache.set(id, entry);
       listeners.get(id)?.forEach((f) => f());
     })();

@@ -1,0 +1,6 @@
+/* Wide screens: table. Phones/tablets: one card per entry so the actions are never hidden in a sideways scroll. */
+.cards { display: none; }
+@media (max-width: 900px) {
+  .table { display: none; }
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+}

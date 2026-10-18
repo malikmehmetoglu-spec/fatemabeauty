@@ -13,7 +13,7 @@ import { R } from "@/lib/routes";
 import { arDate, clock, money } from "@/lib/format";
 import { C, CARD, SHB } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { cancelOrder, getOrder, listMyOrders, orderError, orderSteps, STATUS_LABEL, type OrderFull } from "@/lib/db/orders";
+import { cancelOrder, getOrder, listMyOrders, orderError, orderSteps, STATUS_LABEL, type OrderFull, itemsLabel } from "@/lib/db/orders";
 import { useRequirePatient } from "@/lib/supabase/session";
 import css from "../../store/store.module.css";
 
@@ -58,7 +58,7 @@ function MyOrders({ patientId }: { patientId: string }) {
               </span>
               <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700 }}>طلب <span className="latin">#{o.no}</span></div>
-                <div style={{ fontSize: 12, color: C.sub2 }}>{arDate(new Date(o.created_at))} · {o.order_items.length} منتجات · {o.delivery ? "توصيل" : "استلام"}</div>
+                <div style={{ fontSize: 12, color: C.sub2 }}>{arDate(new Date(o.created_at))} · {itemsLabel(o.order_items.reduce((s, i) => s + Number(i.qty), 0))} · {o.delivery ? "توصيل" : "استلام"}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                 <Tag kind={TAG[o.status]}>{STATUS_LABEL[o.status]}</Tag>

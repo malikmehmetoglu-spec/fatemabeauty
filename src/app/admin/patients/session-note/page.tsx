@@ -13,7 +13,7 @@ import { useSession } from "@/lib/supabase/session";
 import { getPatient, listConditions } from "@/lib/db/patients";
 import { getVisit, listNotes, saveNote, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
-import { BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_GRAY } from "../kit";
+import { arErr, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_GRAY } from "../kit";
 
 const FIELDS: [keyof NoteFields, string, string][] = [
   ["complaint", "الشكوى", "ما الذي تشكو منه المراجعة؟"], ["exam", "الفحص", "حالة البشرة عند الفحص"],
@@ -60,7 +60,7 @@ function SessionNote() {
   async function save() {
     setBusy(true); setErr("");
     try { await saveNote({ patientId: p!.id, appointmentId: apptId || null, authorId: staff?.id ?? null, fields: f }); router.push(fileHref(R.W_Record, "id", p!.id)); }
-    catch (e) { setErr(e instanceof Error ? e.message : "تعذّر الحفظ"); setBusy(false); }
+    catch (e) { setErr(arErr(e)); setBusy(false); }
   }
 
   return shell(

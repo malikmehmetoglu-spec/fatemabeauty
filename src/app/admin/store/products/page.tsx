@@ -4,6 +4,7 @@
  * W_Products.dc.html — المنتجات (live). The retail items of the same inventory:
  * show/hide in the store, specialist recommendation, price and stock. Editing reuses the inventory dialog.
  */
+import { arError } from "@/lib/arError";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -40,7 +41,7 @@ export default function Page() {
 
   async function run(key: string, f: () => Promise<void>) {
     setBusy(key); setErr("");
-    try { await f(); } catch (e) { setErr("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(null); }
+    try { await f(); } catch (e) { setErr(arError(e)); } finally { setBusy(null); }
   }
 
   return (

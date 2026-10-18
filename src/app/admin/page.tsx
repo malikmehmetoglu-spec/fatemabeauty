@@ -15,6 +15,7 @@ import { useSession } from "@/lib/supabase/session";
 import css from "./calendar/appts.module.css";
 import { C, SH, ICON_FILL } from "@/lib/tokens";
 import { NEW_BTN } from "./calendar/CalendarBoard";
+import { apptCount, arErr } from "./patients/kit";
 
 const CARD = { borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" } as const;
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
@@ -83,7 +84,7 @@ export default function DashboardPage() {
   return (
     <AdminShell active="لوحة القيادة" title="لوحة القيادة" subtitle={arDate(new Date(), { year: true })}
       actions={<Link href={R.W_BookingModal} style={NEW_BTN}><Icon name="M12 5v14M5 12h14" size={19} color={C.white} stroke={1.9} />موعد جديد</Link>}>
-      {appts.error && <ErrorNote>تعذّر تحميل مواعيد اليوم: {appts.error}</ErrorNote>}
+      {appts.error && <ErrorNote>{arErr(appts.error, "تعذّر تحميل مواعيد اليوم. أعيدي تحميل الصفحة.")}</ErrorNote>}
       {loading ? <Loading /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
           <div className="adm-row" style={{ gap: 16 }}>
@@ -113,7 +114,7 @@ export default function DashboardPage() {
             <div style={{ ...CARD }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>نسبة الغياب اليوم</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M10 14l4 4M14 14l-4 4" /></div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4 }}>{due.length ? Math.round((noShow.length / due.length) * 100) : 0}%</div>
-              <div style={{ fontSize: 12, color: C.sub2 }}>{noShow.length} من {due.length} مواعيد مستحقة حتى الآن</div>
+              <div style={{ fontSize: 12, color: C.sub2 }}>{due.length ? `${noShow.length} من ${apptCount(due.length)} مستحقة حتى الآن` : "لا مواعيد مستحقة بعد"}</div>
             </div>
           </div>
 
@@ -162,7 +163,7 @@ export default function DashboardPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
                 {svcRows.length === 0 ? <div style={{ fontSize: 13, color: C.sub2 }}>لم تنتهِ أي جلسة اليوم بعد.</div> : svcRows.map((r) => (
                   <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 120, lineHeight: 1.3 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{r.name}</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{r.count} جلسات منجزة</div></div>
+                    <div style={{ width: 120, lineHeight: 1.3 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{r.name}</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{r.count === 1 ? "جلسة منجزة واحدة" : r.count === 2 ? "جلستان منجزتان" : `${r.count} جلسات منجزة`}</div></div>
                     <div style={{ flex: 1, height: 12, borderRadius: 6, background: "#ECE2EF", overflow: "hidden" }}><div style={{ width: `${Math.floor((r.total / svcMax) * 100)}%`, height: 12, borderRadius: 6, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} /></div>
                     <div style={{ width: 110, textAlign: "left", fontSize: 14, fontWeight: 700 }}>{money(r.total)}</div>
                   </div>
@@ -174,7 +175,7 @@ export default function DashboardPage() {
               <div style={{ marginTop: 4 }}>
                 {low > 0 && <Alert href={R.W_Inventory} icon="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" title="مخزون منخفض" sub={`${low} أصناف بلغت حدّ إعادة الطلب`} tag="يحتاج طلب شراء" tone="amber" />}
                 {devDue.slice(0, 2).map((d) => <Alert key={d.id} href={R.W_Devices} icon="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z" title={d.in_maintenance ? "جهاز في الصيانة" : "صيانة جهاز مستحقة"} sub={d.name} tag={d.in_maintenance ? "متوقف" : "مستحقة"} tone="pink" />)}
-                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${pending.length} مواعيد اليوم لم تُؤكَّد بعد`} tag={String(pending.length)} tone="gray" />}
+                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${apptCount(pending.length)} اليوم لم ${pending.length > 1 ? "تُؤكَّد" : "يُؤكَّد"} بعد`} tag={String(pending.length)} tone="gray" />}
                 {low === 0 && devDue.length === 0 && pending.length === 0 && <div style={{ fontSize: 13, color: C.sub2, padding: "14px 0", borderTop: "1px solid #EDE2F1" }}>لا تنبيهات الآن.</div>}
               </div>
             </div>

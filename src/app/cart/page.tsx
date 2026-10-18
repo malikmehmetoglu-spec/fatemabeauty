@@ -4,12 +4,12 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, DarkCard, ErrorNote, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
+import { Circ, DarkCard, EmptyState, ErrorNote, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, setMode, useCart, useMode } from "@/lib/db/orders";
+import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, setMode, useCart, useMode, itemsLabel } from "@/lib/db/orders";
 import { ArtThumb, QtyStepper, Segmented } from "../store/c1ui";
 import css from "../store/store.module.css";
 
@@ -24,6 +24,14 @@ export default function CartPage() {
   const d = mode === "d";
   // Drop items that are no longer sold.
   useEffect(() => { if (data) missing.forEach((k) => cartStore.set(k, 0)); }, [data, missing]);
+
+  if (keys.length === 0 || (data && !error && lines.length === 0)) return (
+    <PhoneScreen>
+      <TopBar title="السلة" back={R.P_Store} />
+      <EmptyState icon="bag" title="سلتكِ فارغة" text="أضيفي منتجات العناية من المتجر، وستظهر هنا مع أسعارها المحدّثة."
+        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</PrimaryButton>} />
+    </PhoneScreen>
+  );
 
   return (
     <PhoneScreen wide>
@@ -65,7 +73,7 @@ export default function CartPage() {
 
       <DarkCard radius={28} padding="16px 20px">
         <div style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13.5 }}>
-          <Row l={<span style={{ color: C.onDark }}>المجموع الفرعي · <span className="latin">{count}</span> منتجات</span>}
+          <Row l={<span style={{ color: C.onDark }}>المجموع الفرعي · {itemsLabel(count)}</span>}
             r={<span style={{ fontWeight: 600 }}><span className="latin">{money(sub, false)}</span> ل.س</span>} />
           <Row l={<span style={{ color: C.onDark }}>{d ? "رسوم التوصيل" : "الاستلام من المركز"}</span>}
             r={<span style={{ fontWeight: 600 }}>{d ? "تُحدَّد عند التأكيد" : "بدون رسوم"}</span>} />

@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Loyalty.dc.html — loyalty rules (settings «loyalty») and members (patients.points). Live, Supabase. */
+import { arError } from "@/lib/arError";
 import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -69,7 +70,7 @@ function RulesCard({ rules }: { rules: Loyalty }) {
       const clean: Tier[] = tiers.filter((t) => t.name.trim()).map((t) => ({ name: t.name.trim(), min: Number(t.min) || 0 })).sort((a, b) => a.min - b.min);
       await saveSetting("loyalty", { points_per: Number(per) || 0, points_value: Number(val) || 0, tiers: clean });
       setMsg("تم الحفظ");
-    } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    } catch (e) { setMsg(arError(e)); }
     finally { setBusy(false); }
   };
 

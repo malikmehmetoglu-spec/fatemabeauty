@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { Fragment, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
@@ -9,16 +9,44 @@ import { ErrorNote, Loading, Toggle } from "@/components/ui";
 import { initials } from "@/lib/data";
 import { createInvoice, financeError, listCashierQueue, listPatientPackages, type CashierAppt } from "@/lib/db/finance";
 import { useQuery } from "@/lib/db/query";
-import { clock, money } from "@/lib/format";
+import { clock, dayKey, money } from "@/lib/format";
 import { css } from "../css";
-import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
-import { NowText, useKiosk } from "../kiosk";
+import { BG, C, SH, SH_SOFT, ICON_FILL } from "@/lib/tokens";
+import { DatePill, KC, KioskNav, useKiosk } from "../kiosk";
 
 /** T_Cashier.dc.html */
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 const n = (x: string | number) => Number(x || 0).toLocaleString("en-US");
 const STATUS: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "في الانتظار" };
 const nameOf = (a: CashierAppt) => a.patients?.name || a.walk_in_name || "مراجِعة";
+
+type Receipt = { no: string; name: string; service: string; total: number; method: string; received: number | null; change: number | null; at: string; phone: string | null; staff: string };
+const sendWa = (r: Receipt) => {
+  if (!r.phone) return;
+  window.open(`https://wa.me/${r.phone.replace(/\D/g, "").replace(/^0/, "963")}?text=${encodeURIComponent(`فاتورة ${r.no} — ${r.service} — المبلغ ${money(r.total)}. شكراً لزيارتكِ Fatema Beauty.`)}`, "_blank");
+};
+const doneBtn = { height: 40, padding: "0 16px", borderRadius: 20, border: "1px solid #CDE8D7", background: "#FFFFFF", color: "#2E7D50", fontSize: 14, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" } as const;
+
+/** Printable receipt of the last issued invoice (only visible when printing). */
+function PrintReceipt({ r }: { r: Receipt }) {
+  const row = (l: string, v: string) => <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "4px 0" }}><span>{l}</span><b>{v}</b></div>;
+  return createPortal(
+    <div className={KC.receipt} dir="rtl">
+      <div style={{ textAlign: "center", fontSize: 18, fontWeight: 700 }}>Fatema Beauty</div>
+      <div style={{ textAlign: "center", fontSize: 12, marginBottom: 10 }}>إيصال دفع</div>
+      {row("رقم الفاتورة", r.no || "—")}
+      {row("التاريخ", `${dayKey(new Date(r.at))} ${clock(r.at)}`)}
+      {row("المراجِعة", r.name)}
+      {row("الخدمة", r.service)}
+      {row("طريقة الدفع", r.method)}
+      <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }} />
+      {row("المجموع", money(r.total))}
+      {r.received != null && row("المستلم", money(r.received))}
+      {r.change != null && row("الباقي", money(r.change))}
+      {r.staff && row("الموظفة", r.staff)}
+      <div style={{ textAlign: "center", fontSize: 12, marginTop: 12 }}>شكراً لزيارتكِ</div>
+    </div>, document.body);
+}
 
 /** Reception tablet: cashier — issues the invoice for a finished session (real rows via finance.ts). */
 export default function Page() {
@@ -30,7 +58,7 @@ export default function Page() {
   const [print, setPrint] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [doneNo, setDoneNo] = useState<string | null>(null);
+  const [done, setDone] = useState<Receipt | null>(null);
   const due = (q.data ?? []).filter((a) => !a.invoiced);
   const A = due.find((a) => a.id === selId) ?? due.find((a) => a.status === "done") ?? due[0];
   const pk = useQuery(["queue", "cashier-pkg", A?.patient_id ?? ""], () => listPatientPackages(A!.patient_id!), { enabled: !k.gate && !!A?.patient_id });
@@ -69,83 +97,47 @@ export default function Page() {
         patientPackageId: pkg ? pkg0?.id : null,
       });
       const no = (inv as { no?: string } | null)?.no ?? "";
-      setDoneNo(no || "✓");
-      const phone = A.patients?.phone;
-      if (wa && phone) window.open(`https://wa.me/${phone.replace(/\D/g, "").replace(/^0/, "963")}?text=${encodeURIComponent(`فاتورة ${no} — المبلغ ${money(pkg ? 0 : TOTAL)}. شكراً لزيارتكِ Fatema Beauty.`)}`, "_blank");
+      const rec: Receipt = { no, name: nameOf(A), service: A.services?.name ?? A.service_key, total: pkg ? 0 : TOTAL,
+        method: pkg ? "من الباقة" : cash ? "نقداً" : "بطاقة", received: cash ? r : null, change: cash ? Math.max(0, diff) : null,
+        at: new Date().toISOString(), phone: A.patients?.phone ?? null, staff: k.staff?.name ?? "" };
+      setDone(rec);
+      if (wa && rec.phone) sendWa(rec);
       setSelId(null); setSt({ m: 0, recv: "" });
-      if (print) setTimeout(() => window.print(), 100);
+      if (print) setTimeout(() => window.print(), 150);
     } catch (e) { setErr(financeError(e)); }
     setBusy(false);
   };
   return (
-    <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
+    <Stage fluid width={1194} height={834} background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
-      <nav aria-label="وضع الاستقبال" style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
-        <div style={{ display: "flex" }}>
-          <img src={LOGO} alt="Fatema Beauty — Skin Care Center" style={{ height: 44, width: "auto", display: "block" }} />
-        </div>
-        <div style={{ width: 44, height: 1, background: C.line }} />
-        <Link href={R.T_Desk} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" />
-            </svg>
-          </span>الاستقبال
-        </Link>
-        <Link href={R.T_QuickBook} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.sub2 }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#957D9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" />
-            </svg>
-          </span>حجز سريع
-        </Link>
-        <Link href={R.T_Cashier} aria-current="page" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.accent }}>
-          <span style={{ width: 60, height: 60, borderRadius: 30, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
-            </svg>
-          </span>الكاشير
-        </Link>
-        <Link href={R.T_Welcome} style={{ marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: C.sub2, textAlign: "center", lineHeight: 1.3 }}>
-          <span style={{ width: 56, height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zM11 17a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
-            </svg>
-          </span>وضع
-          <br />المراجعات
-        </Link>
-      </nav>
+      <KioskNav active={R.T_Cashier} />
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
+        <div className={KC.hdr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
           <div style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>الكاشير
+            <div className={KC.title} style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>الكاشير
             </div>
             <div style={{ fontSize: 15, color: C.sub2 }}>{due.length ? `${due.length} بانتظار الدفع` : "لا جلسات بانتظار الدفع"} · {doneCount} جلسات انتهت اليوم
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-              </svg>
-              <span><NowText part="date" />
-              </span>
-              <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-              </span>
-            </div>
-          </div>
+          <DatePill />
         </div>
         {due.length > 1 && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", flexShrink: 0 }}>
+          <div className={KC.wrap} style={{ display: "flex", gap: 8, overflowX: "auto", flexShrink: 0 }}>
             {due.map((a) => (
-              <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDoneNo(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
+              <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDone(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
                 {nameOf(a)} · {clock(a.starts_at)}
               </button>
             ))}
           </div>
         )}
-        {doneNo && <div style={{ padding: "12px 18px", borderRadius: 20, background: "#E6F4EC", color: "#2E7D50", fontWeight: 700, fontSize: 16 }}>تم إصدار الفاتورة {doneNo}</div>}
+        {done && (
+          <div role="status" className={KC.wrap} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px 10px 18px", borderRadius: 22, background: "#E6F4EC", color: "#2E7D50", fontWeight: 700, fontSize: 16 }}>
+            <span style={{ flex: "1 1 180px" }}>تم إصدار الفاتورة {done.no} — {done.name} · {money(done.total)}</span>
+            <button type="button" onClick={() => window.print()} style={doneBtn}>طباعة الإيصال</button>
+            {done.phone && <button type="button" onClick={() => sendWa(done)} style={doneBtn}>إرسال واتساب</button>}
+            <button type="button" onClick={() => setDone(null)} aria-label="إغلاق" style={{ ...doneBtn, width: 40, padding: 0 }}>×</button>
+          </div>
+        )}
         {err && <ErrorNote>{err}</ErrorNote>}
         {q.error && <ErrorNote>{q.error}</ErrorNote>}
         {(q.loading || !A) ? (
@@ -157,8 +149,8 @@ export default function Page() {
             </>}
           </div>
         ) : (
-        <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0" }}>
-          <div style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0" }}>
+          <div className={KC.lcol} style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "20px 22px 6px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14 }}>
                 <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(nameOf(A))}
@@ -211,7 +203,7 @@ export default function Page() {
                   <div style={{ fontSize: 15, color: C.onDark }}>المطلوب دفعه
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 46, fontWeight: 700, lineHeight: 1.2, fontFamily: "var(--font-rubik), Rubik, sans-serif" }}>{dueTxt}
+                    <span className={KC.dueNo} style={{ fontSize: 46, fontWeight: 700, lineHeight: 1.2, fontFamily: "var(--font-rubik), Rubik, sans-serif" }}>{dueTxt}
                     </span>
                     <span style={{ fontSize: 18, color: C.onDark }}>ل.س
                     </span>
@@ -221,7 +213,7 @@ export default function Page() {
                 </div>
               </div>
             </div>
-            <div style={{ borderRadius: 26, padding: "6px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+            <div className={KC.opts} style={{ borderRadius: 26, padding: "6px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 58, fontSize: 16, fontWeight: 600 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -243,16 +235,16 @@ export default function Page() {
                 <Toggle on={print} onChange={setPrint} label="طباعة إيصال ورقي" />
               </div>
             </div>
-            <button type="button" onClick={issue} disabled={!canIssue} style={{ opacity: canIssue ? 1 : 0.55, fontFamily: "inherit", marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <button type="button" className={KC.issue} onClick={issue} disabled={!canIssue} style={{ opacity: canIssue ? 1 : 0.55, fontFamily: "inherit", marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2M9 7h6M9 11h6M13 15h2" />
               </svg>{busy ? "جارٍ الإصدار…" : "إصدار الفاتورة"}
             </button>
           </div>
-          <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className={KC.rcol} style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>طريقة الدفع
             </div>
-            <div style={{ display: "flex", gap: 12 }}>
+            <div className={KC.methods} style={{ display: "flex", gap: 12 }}>
               <button type="button" aria-pressed={st.m === 0} onClick={methods[0].pick} style={methods[0].style}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
@@ -270,7 +262,7 @@ export default function Page() {
               </button>
             </div>
             {cash && (<>
-              <div style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: "0" }}>
+              <div className={KC.cashRow} style={{ display: "flex", gap: 16, flexGrow: 1, minHeight: "0" }}>
                 <div style={{ width: 250, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ borderRadius: 26, padding: "14px 18px", background: C.white, border: "1.5px solid #E3CEE8", boxShadow: "0 0 0 5px rgba(222,190,229,0.22)" }}>
                     <div style={{ fontSize: 14, color: C.sub2 }}>المبلغ المستلم
@@ -297,7 +289,7 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
-                <div dir="ltr" style={{ flex: 1, minWidth: "0", borderRadius: 30, padding: 16, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "1fr", gap: 10 }}>
+                <div dir="ltr" className={KC.keypad} style={{ flex: 1, minWidth: "0", borderRadius: 30, padding: 16, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "1fr", gap: 10 }}>
                   {keys.map((k, kI) => (
                     <Fragment key={kI}>
                       <button type="button" onClick={k.press} aria-label={k.aria} style={{ borderRadius: 20, border: "1px solid #F0E6F3", background: "linear-gradient(180deg,#FFFFFF,#FAF4FB)", boxShadow: "0 4px 10px rgba(123,70,135,0.06), inset 0 1px 0 #FFFFFF", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 25, fontWeight: 500, color: C.ink, minHeight: 56 }}>{k.k}
@@ -339,6 +331,7 @@ export default function Page() {
         </div>
         )}
       </div>
+      {done && <PrintReceipt r={done} />}
 
     </Stage>
   );

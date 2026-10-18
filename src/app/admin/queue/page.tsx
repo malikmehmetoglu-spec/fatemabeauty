@@ -7,10 +7,11 @@ import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
-import { callNext, callPatient, listTodayQueue, personName, setStatus, STATUS_KIND, useLiveAppointments, STATUS_LABEL, timeOf, type Appointment, type Status } from "@/lib/db/appointments";
+import { bookingError, callNext, callPatient, listTodayQueue, personName, setStatus, STATUS_KIND, useLiveAppointments, STATUS_LABEL, timeOf, type Appointment, type Status } from "@/lib/db/appointments";
 import { arDate, clock } from "@/lib/format";
 import { C, DARK, ICON_FILL, SH } from "@/lib/tokens";
 import css from "../calendar/appts.module.css";
+import { arErr } from "../patients/kit";
 
 const mins = (iso: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
 
@@ -31,9 +32,13 @@ export default function QueuePage() {
 
   async function run(key: string, f: () => Promise<unknown>) {
     setBusy(key); setErr("");
-    try { await f(); } catch (e) { setErr("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(null); }
+    try { await f(); } catch (e) { setErr(bookingError(e)); } finally { setBusy(null); }
   }
-  const act = (a: Appointment, to: Status) => run(a.id + to, () => setStatus(a.id, to));
+  const act = (a: Appointment, to: Status) => {
+    if (to === "no_show" && !window.confirm(`تسجيل أن ${personName(a)} غادرت دون جلسة؟`)) return;
+    setCalled(undefined);
+    run(a.id + to, () => setStatus(a.id, to));
+  };
 
   return (
     <AdminShell active="الأدوار" title="إدارة الأدوار" subtitle={`مباشر · ${arDate(new Date())}`}
@@ -52,10 +57,10 @@ export default function QueuePage() {
         <Kpi label="آخر رقم نُودي" value={lastCalled?.queue_no ?? "—"} sub={lastCalled ? `${lastCalled.room?.name ?? ""} · ${clock(lastCalled.called_at!)}` : "لم يُنادَ أحد بعد"} icon="bell" />
       </div>
 
-      {called === null && <ErrorNote>لا أحد ينتظر النداء الآن.</ErrorNote>}
+      {called === null && <div style={{ borderRadius: 18, padding: "10px 14px", background: "#F0EDF0", color: "#695D6B", fontSize: 13.5, fontWeight: 600 }}>لا أحد ينتظر النداء الآن.</div>}
       {err && <ErrorNote>{err}</ErrorNote>}
 
-      {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الأدوار: {error}</ErrorNote> : list.length === 0 ? (
+      {loading ? <Loading /> : error ? <ErrorNote>{arErr(error, "تعذّر تحميل الأدوار. أعيدي تحميل الصفحة.")}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="users" title="لم تصل أي مراجِعة اليوم بعد"
           text="عند تسجيل الوصول (من تابلت الاستقبال أو من التقويم) تأخذ المراجِعة رقم دور وتظهر هنا، ويظهر رقمها على شاشة الانتظار." />
       ) : (

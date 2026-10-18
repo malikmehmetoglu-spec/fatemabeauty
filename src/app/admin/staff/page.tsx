@@ -4,6 +4,7 @@
  * W_Staff.dc.html — فريق العمل (live, Supabase `staff`).
  * Add / edit members, upload a photo, create the login (Edge Function «staff-admin»), reset password, deactivate.
  */
+import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag, TextInput } from "@/components/ui";
@@ -171,7 +172,7 @@ function LoginDialog({ member, onClose }: { member: Staff | null; onClose: () =>
         await staffAdmin({ action: "password", staff_id: member.id, password: pw });
         setDone("تم تغيير كلمة المرور.");
       }
-    } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
+    } catch (e) { setError(arError(e)); } finally { setBusy(false); }
   }
 
   return (

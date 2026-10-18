@@ -50,7 +50,8 @@ export default function BookingPage() {
   if (s.loading || !s.patient) return <PhoneScreen><Loading /></PhoneScreen>;
   const loading = services.loading || hours.loading || team.loading;
   const error = services.error || hours.error || team.error || busy.error;
-  const next = svc && curDay && time ? `${R.P_Confirm}?service=${svc.key}&day=${curDay}&time=${time}${sp ? `&sp=${sp}` : ""}` : undefined;
+  const replace = q?.get("replace") ?? "";
+  const next = svc && curDay && time ? `${R.P_Confirm}?service=${svc.key}&day=${curDay}&time=${time}${sp ? `&sp=${sp}` : ""}${replace ? `&replace=${replace}` : ""}` : undefined;
 
   return (
     <PhoneScreen padding="0" gap={0} background={C.white} blobs={false}>
@@ -64,11 +65,11 @@ export default function BookingPage() {
         <div aria-hidden style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 90, background: "linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%)" }} />
         <div aria-hidden style={{ position: "absolute", top: 0, right: 0, width: 260, maxWidth: "70%", height: 300, background: "linear-gradient(to left, rgba(242,229,245,0.95) 0%, rgba(242,229,245,0.85) 55%, rgba(242,229,245,0) 100%)" }} />
         <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 0px) + 54px)", left: 22, right: 22, display: "flex", justifyContent: "space-between" }}>
-          <Link href={R.Main} aria-label="رجوع" style={glassBtn}><Icon name="back" color={C.accent} size={18} stroke={2} /></Link>
+          <Link href={replace ? `${R.P_AppointmentDetail}?id=${replace}` : R.Main} aria-label="رجوع" style={glassBtn}><Icon name="back" color={C.accent} size={18} stroke={2} /></Link>
         </div>
-        <div style={{ position: "absolute", top: 126, right: 24, width: 200 }}>
-          <h1 style={{ margin: "10px 0 0", fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: C.ink }}>{specialist ? specialist.name : "احجزي جلستكِ"}</h1>
-          <div style={{ fontSize: 13, color: C.navText, marginTop: 4 }}>{specialist ? specialist.title : "اختاري الخدمة واليوم والوقت المناسب"}</div>
+        <div style={{ position: "absolute", top: 120, right: 24, width: "min(250px, 64%)" }}>
+          <h1 style={{ margin: "10px 0 0", fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: C.ink }}>{specialist ? specialist.name : replace ? "تغيير الموعد" : "احجزي جلستكِ"}</h1>
+          <div style={{ fontSize: 13, color: C.navText, marginTop: 4 }}>{specialist ? specialist.title : replace ? "يُلغى موعدكِ الحالي بعد تأكيد الجديد" : "اختاري الخدمة واليوم والوقت المناسب"}</div>
           {svc && (
             <div style={{ ...GLASS, display: "inline-block", marginTop: 12, boxShadow: "0 4px 12px rgba(123,70,135,0.10)", borderRadius: 14, padding: "4px 12px", fontSize: 13, fontWeight: 600, color: C.accent, whiteSpace: "nowrap" }}>
               {svc.short_name} · {priceLabel(svc)}
@@ -143,7 +144,7 @@ export default function BookingPage() {
                   ))}
                 </div>
               )}
-              <PrimaryButton href={next} disabled={!next} style={{ marginTop: 18, ...(next ? {} : { opacity: 0.55, pointerEvents: "none" }) }}>احجزي الجلسة</PrimaryButton>
+              <PrimaryButton href={next} disabled={!next} style={{ marginTop: 18, ...(next ? {} : { opacity: 0.55, pointerEvents: "none" }) }}>{replace ? "متابعة لتغيير الموعد" : "احجزي الجلسة"}</PrimaryButton>
             </div>
           </>
         )}

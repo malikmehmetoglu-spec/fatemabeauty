@@ -1,6 +1,7 @@
 "use client";
 
 /** W_Campaigns.dc.html — message campaigns. Saved as drafts; sending is not connected yet. Audience sizes are real. */
+import { arError } from "@/lib/arError";
 import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -73,7 +74,7 @@ function Editor({ campaign, counts, onSaved }: { campaign: Campaign | null; coun
     if (!title.trim()) return;
     setBusy(true); setErr(null);
     try { await saveCampaign({ id: campaign?.id, title: title.trim(), body, audience: aud, channel: ch }); onSaved(); }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    catch (e) { setErr(arError(e)); }
     finally { setBusy(false); }
   };
 

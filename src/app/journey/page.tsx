@@ -106,10 +106,10 @@ export default function JourneyPage() {
           <div style={{ fontSize: 15, fontWeight: 700 }}>{arDate(new Date(next.starts_at))}، {clock(next.starts_at)}</div>
           {next.staff && <div style={{ fontSize: 12, color: C.sub2 }}>مع {next.staff.name}</div>}
         </div>
-        <Link href={`${R.P_AppointmentDetail}?id=${next.id}`} style={{ ...DARK, height: 40, padding: "0 16px", borderRadius: 20, boxShadow: "0 8px 18px rgba(123,70,135,0.30)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center" }}>التفاصيل</Link>
+        <Link href={`${R.P_AppointmentDetail}?id=${next.id}`} style={{ ...DARK, height: 40, padding: "0 16px", borderRadius: 20, boxShadow: "0 8px 18px rgba(123,70,135,0.30)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", whiteSpace: "nowrap", flexShrink: 0 }}>التفاصيل</Link>
       </div>
       ) : (
-      <Link href={R.P_Services} style={{ background: C.white, borderRadius: 26, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: SH }}>
+      <Link href={R.Booking} style={{ background: C.white, borderRadius: 26, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: SH }}>
         <Circ icon="cal" size={50} iconSize={22} />
         <div style={{ flexGrow: 1, lineHeight: 1.35 }}>
           <div style={{ fontSize: 12, color: C.sub2 }}>الجلسة القادمة</div>
@@ -143,6 +143,14 @@ export default function JourneyPage() {
         <div style={{ display: "flex", gap: 8 }}>
           {MOODS.map((l, i) => <button key={l} type="button" aria-pressed={m === i} onClick={() => setM(i)} style={mood(m === i)}>{l}</button>)}
         </div>
+        {m >= 0 && (
+          <div role="status" style={{ marginTop: 10, fontSize: 13, color: C.sub, lineHeight: 1.7 }}>
+            {m === 0 ? "رائع! تابعي روتينكِ اليومي واستعملي واقي الشمس." : m === 1
+              ? "الاحمرار الخفيف طبيعي خلال يوم أو يومين بعد الجلسة. ضعي كمادات باردة وتجنّبي الشمس والمقشّرات، وإن استمر راسلينا."
+              : "نحن هنا لمساعدتكِ. أرسلي لنا ما تشعرين به وصورة إن أمكن، وسترد الأخصائية عليكِ."}
+            {m > 0 && <>{" "}<Link href={R.P_Chat} style={{ color: C.accent, fontWeight: 700 }}>راسلي المركز</Link></>}
+          </div>
+        )}
       </div>}
         </>
       )}

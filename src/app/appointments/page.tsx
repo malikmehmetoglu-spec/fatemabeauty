@@ -72,7 +72,7 @@ export default function AppointmentsPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                     <div style={{ lineHeight: 1.35, minWidth: 0 }}>
                       <div style={{ fontSize: 12.5, color: C.onDark }}>موعدكِ القادم</div>
-                      <div style={{ fontSize: 21, fontWeight: 700, marginTop: 2, whiteSpace: "nowrap" }}>{arDate(new Date(next.starts_at))}</div>
+                      <div style={{ fontSize: 21, fontWeight: 700, marginTop: 2 }}>{arDate(new Date(next.starts_at))}</div>
                       <div style={{ fontSize: 14, color: "#F2E6F4" }}>الساعة {timeOf(next)}{next.room ? ` · ${next.room.name}` : ""}</div>
                     </div>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{whenLabel(next.starts_at)}</span>
@@ -132,7 +132,7 @@ export default function AppointmentsPage() {
               </div>
               {a.status === "done" && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.line}` }}>
-                  <Link href={R.Review} style={i === 0 ? { ...PILL, ...SELECTED, fontWeight: 700 } : PILL_OFF}><Icon name="star" color={i === 0 ? C.accent : undefined} size={15} />قيّمي الجلسة</Link>
+                  <Link href={`${R.Review}?appointment=${a.id}`} style={i === 0 ? { ...PILL, ...SELECTED, fontWeight: 700 } : PILL_OFF}><Icon name="star" color={i === 0 ? C.accent : undefined} size={15} />قيّمي الجلسة</Link>
                   <Link href={R.Routine} style={PILL_OFF}><Icon name="clip" size={15} />الروتين</Link>
                 </div>
               )}

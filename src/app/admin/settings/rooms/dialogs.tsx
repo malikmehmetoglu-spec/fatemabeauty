@@ -1,6 +1,7 @@
 "use client";
 
 /** Room and device dialogs (live, Supabase) — shared by الغرف والأجهزة and الأجهزة pages. */
+import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
 import { ErrorNote, Modal, NumberInput, Select, SubmitButton, TextInput, Toggle } from "@/components/ui";
 import { removeDevice, saveDevice, saveRoom, type Device, type Room } from "@/lib/db/catalog";
@@ -10,7 +11,7 @@ const errText = (e: unknown) => {
   const m = e instanceof Error ? e.message : String(e);
   if (/duplicate key.*name/i.test(m)) return "يوجد اسم مطابق مسبقاً.";
   if (/foreign key/i.test(m)) return "لا يمكن الحذف: هناك خدمة مرتبطة بهذا الجهاز. غيّري جهاز الخدمة أولاً.";
-  return "تعذّر الحفظ: " + m;
+  return arError(e);
 };
 
 export function RoomDialog({ open, room, onClose }: { open: boolean; room: Room | null; onClose: () => void }) {

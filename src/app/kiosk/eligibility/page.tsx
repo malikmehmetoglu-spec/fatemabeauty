@@ -2,15 +2,14 @@
  
 
 import { Fragment, Suspense, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { saveEligibility } from "@/lib/db/queue";
 import { css } from "../css";
-import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
-import { ApptPicker, NowText, apptLine, useApptParam, useKiosk } from "../kiosk";
+import { BG, C, SH, SH_SOFT } from "@/lib/tokens";
+import { ApptPicker, KC, StepHeader, apptLine, kioskError, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Eligibility.dc.html */
 const Q: [string, "block" | "warn", string][] = [["هل أنتِ حامل أو مرضعة؟", "block", "حمل أو رضاعة: تُؤجَّل جلسة الليزر."], ["تعرّض للشمس أو تسمير خلال آخر أسبوعين؟", "warn", "بشرة متعرّضة للشمس: خطر أعلى للحروق والتصبّغ — طاقة أخف أو تأجيل حسب تقدير الأخصائية."], ["أدوية تزيد التحسّس للضوء؟", "warn", "دواء يزيد التحسّس للضوء: راجعي نوع الدواء قبل البدء."], ["علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟", "block", "إيزوتريتينوين حديث: يُؤجَّل الإجراء."], ["التهاب أو هربس نشط في منطقة الجلسة؟", "block", "التهاب نشط: لا تُعالج المنطقة حتى الشفاء."], ["ميل لظهور ندبات بارزة بعد الجروح؟", "warn", "ميل للندبات البارزة: اختبار بقعة صغيرة أولاً."], ["وشم أو مكياج دائم في المنطقة؟", "warn", "وشم في المنطقة: تجنّبي المرور فوقه."]];
@@ -59,35 +58,13 @@ function Inner() {
         by: k.staff?.name ?? null,
       });
       router.push(block ? R.T_Desk : `${R.T_Consent}?id=${A.id}`);
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+    } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   return (
-    <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
+    <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-        <Link href={R.T_Desk} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </Link>
-        <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>قبل الإجراء
-          </div>
-          <div style={{ fontSize: 15, color: C.sub2 }}>{apptLine(A)}{A.eligibility_at ? " · تم الفحص مسبقاً" : ""}
-          </div>
-        </div>
-        <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-          </svg>
-          <span><NowText part="date" />
-          </span>
-          <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
-          </span>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
+      <StepHeader back={R.T_Desk} title="قبل الإجراء" sub={`${apptLine(A)}${A.eligibility_at ? " · تم الفحص مسبقاً" : ""}`} />
+      <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", borderRadius: 32, padding: "14px 24px 8px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0 4px" }}>
             <div style={{ fontSize: 20, fontWeight: 700 }}>أسئلة الأمان
@@ -97,85 +74,85 @@ function Inner() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82 }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>هل أنتِ حامل أو مرضعة؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>هل أنتِ حامل أو مرضعة؟
               </div>
             </div>
             <div role="group" aria-label="هل أنتِ حامل أو مرضعة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[0]} onClick={qs[0].yes} style={qs[0].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[0]} onClick={qs[0].yes} className={KC.seg} style={qs[0].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[0]} onClick={qs[0].no} style={qs[0].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[0]} onClick={qs[0].no} className={KC.seg} style={qs[0].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>تعرّض للشمس أو تسمير خلال آخر أسبوعين؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>تعرّض للشمس أو تسمير خلال آخر أسبوعين؟
               </div>
             </div>
             <div role="group" aria-label="تعرّض للشمس أو تسمير خلال آخر أسبوعين؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[1]} onClick={qs[1].yes} style={qs[1].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[1]} onClick={qs[1].yes} className={KC.seg} style={qs[1].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[1]} onClick={qs[1].no} style={qs[1].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[1]} onClick={qs[1].no} className={KC.seg} style={qs[1].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>أدوية تزيد التحسّس للضوء؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>أدوية تزيد التحسّس للضوء؟
               </div>
             </div>
             <div role="group" aria-label="أدوية تزيد التحسّس للضوء؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[2]} onClick={qs[2].yes} style={qs[2].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[2]} onClick={qs[2].yes} className={KC.seg} style={qs[2].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[2]} onClick={qs[2].no} style={qs[2].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[2]} onClick={qs[2].no} className={KC.seg} style={qs[2].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟
               </div>
             </div>
             <div role="group" aria-label="علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[3]} onClick={qs[3].yes} style={qs[3].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[3]} onClick={qs[3].yes} className={KC.seg} style={qs[3].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[3]} onClick={qs[3].no} style={qs[3].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[3]} onClick={qs[3].no} className={KC.seg} style={qs[3].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>التهاب أو هربس نشط في منطقة الجلسة؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>التهاب أو هربس نشط في منطقة الجلسة؟
               </div>
             </div>
             <div role="group" aria-label="التهاب أو هربس نشط في منطقة الجلسة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[4]} onClick={qs[4].yes} style={qs[4].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[4]} onClick={qs[4].yes} className={KC.seg} style={qs[4].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[4]} onClick={qs[4].no} style={qs[4].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[4]} onClick={qs[4].no} className={KC.seg} style={qs[4].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>ميل لظهور ندبات بارزة بعد الجروح؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>ميل لظهور ندبات بارزة بعد الجروح؟
               </div>
             </div>
             <div role="group" aria-label="ميل لظهور ندبات بارزة بعد الجروح؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[5]} onClick={qs[5].yes} style={qs[5].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[5]} onClick={qs[5].yes} className={KC.seg} style={qs[5].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[5]} onClick={qs[5].no} style={qs[5].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[5]} onClick={qs[5].no} className={KC.seg} style={qs[5].nStyle}>لا
               </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 82, borderTop: "1px solid #EDE2F1" }}>
             <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>وشم أو مكياج دائم في المنطقة؟
+              <div className={KC.q} style={{ fontSize: 18, fontWeight: 600 }}>وشم أو مكياج دائم في المنطقة؟
               </div>
             </div>
             <div role="group" aria-label="وشم أو مكياج دائم في المنطقة؟" style={{ display: "flex", padding: 4, borderRadius: 32, background: "#F5EFF7", border: "1px solid #E9DCEE", flexShrink: 0 }}>
-              <button type="button" aria-pressed={st.ans[6]} onClick={qs[6].yes} style={qs[6].yStyle}>نعم
+              <button type="button" aria-pressed={st.ans[6]} onClick={qs[6].yes} className={KC.seg} style={qs[6].yStyle}>نعم
               </button>
-              <button type="button" aria-pressed={!st.ans[6]} onClick={qs[6].no} style={qs[6].nStyle}>لا
+              <button type="button" aria-pressed={!st.ans[6]} onClick={qs[6].no} className={KC.seg} style={qs[6].nStyle}>لا
               </button>
             </div>
           </div>

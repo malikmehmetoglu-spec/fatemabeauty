@@ -1,6 +1,7 @@
 "use client";
 
 /** Shared bits for the team screens (team, shifts, attendance, payroll, commissions, roles). */
+import { arError } from "@/lib/arError";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui";
@@ -76,5 +77,5 @@ export const errText = (e: unknown) => {
   if (/only the owner/i.test(m)) return "هذه العملية للمدير العام فقط.";
   if (/row-level security|permission/i.test(m)) return "ليست لديكِ صلاحية لهذه العملية.";
   if (/duplicate key/i.test(m)) return "يوجد سجل مطابق بالفعل.";
-  return "تعذّر الحفظ: " + m;
+  return arError(e);
 };

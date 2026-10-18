@@ -7,12 +7,13 @@ import { AdminShell } from "@/components/shell";
 import { Avatar, DoneDot, EmptyState, ErrorNote, GhostButton, Icon, Loading, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
-import { callPatient, endsAt, listMyDay, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments, type Appointment, type Status } from "@/lib/db/appointments";
+import { bookingError, callPatient, endsAt, listMyDay, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments, type Appointment, type Status } from "@/lib/db/appointments";
 import { initials } from "@/lib/data";
 import { arDate, clock } from "@/lib/format";
 import { ROLE_LABEL, useSession } from "@/lib/supabase/session";
 import { C, DARK, ICON_FILL, SELECTED, SH } from "@/lib/tokens";
 import css from "../calendar/appts.module.css";
+import { arErr } from "../patients/kit";
 
 export default function MyDayPage() {
   useLiveAppointments("my-day");
@@ -29,7 +30,7 @@ export default function MyDayPage() {
 
   async function run(key: string, f: () => Promise<unknown>) {
     setBusy(key); setErr("");
-    try { await f(); } catch (e) { setErr("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(""); }
+    try { await f(); } catch (e) { setErr(bookingError(e)); } finally { setBusy(""); }
   }
   const go = (a: Appointment, s: Status) => run(a.id + s, () => setStatus(a.id, s));
 
@@ -39,7 +40,7 @@ export default function MyDayPage() {
         <Icon name="clip" color={C.accent} size={16} stroke={1.9} />خطط العناية
       </Link>}>
       {err && <ErrorNote>{err}</ErrorNote>}
-      {!staff || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل جدولكِ: {error}</ErrorNote> : mine.length === 0 ? (
+      {!staff || loading ? <Loading /> : error ? <ErrorNote>{arErr(error, "تعذّر تحميل جدولكِ. أعيدي تحميل الصفحة.")}</ErrorNote> : mine.length === 0 ? (
         <EmptyState icon="cal" title="لا مواعيد لكِ اليوم" text="تظهر هنا المواعيد المسندة إليكِ اليوم بالترتيب، مع الجلسة الحالية والمراجِعة التالية."
           action={<Link href={R.W_Calendar} style={{ color: C.accent, fontWeight: 700 }}>فتح التقويم</Link>} />
       ) : (

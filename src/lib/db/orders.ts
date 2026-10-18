@@ -86,7 +86,8 @@ export function orderError(e: unknown) {
   if (/order is closed|bad status|use cancel_order/.test(m)) return "لا يمكن نقل الطلب إلى هذه الحالة.";
   if (/not allowed|row-level security|permission denied/.test(m)) return "لا تملكين صلاحية هذا الإجراء.";
   if (/Failed to fetch|NetworkError/.test(m)) return "تعذّر الاتصال. تحققي من الإنترنت وحاولي مجدداً.";
-  return "تعذّر إرسال الطلب: " + m;
+  console.error("order error:", m);
+  return "تعذّر تنفيذ العملية. حاولي مرة أخرى، وإن تكرّر ذلك تواصلي مع المركز.";
 }
 
 /* ---------- cart (localStorage, keys + qty only) ---------- */
@@ -141,6 +142,9 @@ export function useCart(): Cart {
     () => EMPTY,
   );
 }
+
+/** Arabic count of items: «منتج واحد», «منتجان», «3 منتجات», «12 منتجاً». */
+export const itemsLabel = (n: number) => n === 1 ? "منتج واحد" : n === 2 ? "منتجان" : n >= 3 && n <= 10 ? `${n} منتجات` : `${n} منتجاً`;
 
 export const cartCount = (c: Cart) => Object.values(c).reduce((s, q) => s + q, 0);
 

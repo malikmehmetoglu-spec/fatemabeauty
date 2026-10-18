@@ -36,7 +36,7 @@ export function InstallPrompt({ style }: { style?: CSSProperties }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/icon-192.png" alt="" width={44} height={44} style={{ borderRadius: 12, flexShrink: 0, boxShadow: "0 4px 10px rgba(123,70,135,0.25)" }} />
         <div style={{ flexGrow: 1, lineHeight: 1.35, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700 }}>ثبّتي التطبيق على هاتفكِ</div>
+          <div style={{ fontSize: 14.5, fontWeight: 700 }}>ثبّتي التطبيق</div>
           <div style={{ fontSize: 12, color: C.sub2 }}>يفتح أسرع، ويعمل حتى مع ضعف الإنترنت</div>
         </div>
         <button type="button" onClick={onClick} style={{ ...DARK, border: "none", height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13.5, fontWeight: 600, flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
