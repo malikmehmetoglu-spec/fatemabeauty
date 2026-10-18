@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
 import { BG_WIDE, C, SELECTED, SHB } from "@/lib/tokens";
@@ -112,10 +112,35 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             </form>
           </div>
         </header>
+        <SubNav section={active} />
         {children}
       </main>
       {overlay}
       <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
     </div>
+  );
+}
+
+const SUB: Partial<Record<AdminSection, [string, string][]>> = {
+  "المخزون والأجهزة": [["المخزون", R.W_Inventory], ["المشتريات", R.W_Purchases], ["الجرد", R.W_Stocktake], ["الأجهزة", R.W_Devices]],
+  "الإعدادات": [["الخدمات", R.W_Services], ["الغرف والأجهزة", R.W_Rooms], ["الأدوار والصلاحيات", R.W_Roles], ["السياسات", R.W_Policies], ["النداء", R.W_CallSettings], ["سجل العمليات", R.W_Audit]],
+};
+
+/** Sub-section tabs for sections that have several pages. */
+function SubNav({ section }: { section?: AdminSection }) {
+  const path = usePathname() || "";
+  const items = section ? SUB[section] : undefined;
+  if (!items) return null;
+  const norm = (h: string) => h.replace(/\/$/, "");
+  return (
+    <nav aria-label="أقسام فرعية" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {items.map(([label, href]) => {
+        const on = norm(path) === norm(href);
+        return (
+          <Link key={href} href={href} aria-current={on ? "page" : undefined} style={{ height: 38, padding: "0 16px", borderRadius: 19, display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 700,
+            ...(on ? SELECTED : { background: "rgba(255,255,255,0.7)", color: C.sub, border: "1px solid #EADDEF" }) }}>{label}</Link>
+        );
+      })}
+    </nav>
   );
 }
