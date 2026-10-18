@@ -3,11 +3,36 @@
 /** Screen-only building blocks shared by the c1 store screens (store, product, cart, checkout, order, gift). */
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@/components/ui";
-import type { Product } from "@/lib/mock/c1";
+import { productImage, type Product as DbProduct } from "@/lib/db/products";
 import { C, SHB } from "@/lib/tokens";
 
+export type ArtKind = "pump" | "dropper" | "tube" | "jar";
+export type ArtSpec = { kind: ArtKind; body: [string, string]; cap: string };
+type Artful = { art: ArtSpec };
+
+const BODIES: [string, string][] = [["#FCF5FD", "#E4C8EA"], ["#F6E9F9", "#D3ACDC"], ["#FFFAF3", "#F0DCC8"], ["#FFF6E6", "#F1CF9C"]];
+const KINDS: ArtKind[] = ["pump", "dropper", "tube", "jar"];
+
+/** Fallback illustration for a product without a photo: shape guessed from its name/category, colours from its key. */
+export function artFor(p: Pick<DbProduct, "key" | "name" | "category">): ArtSpec {
+  const t = `${p.name} ${p.category}`;
+  let h = 0;
+  for (const ch of p.key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const kind: ArtKind = /سيروم|قطرة|زيت/.test(t) ? "dropper" : /واقي|كريم أساس|أنبوب|جل/.test(t) ? "tube" : /ماسك|قناع|مرطب|كريم|زبدة/.test(t) ? "jar" : /غسول|منظف|تونر|شامبو|رغوة/.test(t) ? "pump" : KINDS[h % 4];
+  const body = BODIES[(h >> 3) % BODIES.length];
+  return { kind, body, cap: body[1] === "#F0DCC8" || body[1] === "#F1CF9C" ? "#C9A24B" : "#7B4687" };
+}
+
+/** A DB product's picture: its uploaded photo, or the illustration. */
+export function ProductPic({ p, width, height, radius = 0 }: { p: DbProduct; width: number; height?: number; radius?: number }) {
+  const img = productImage(p);
+  // eslint-disable-next-line @next/next/no-img-element
+  if (img) return <img src={img} alt="" style={{ width, height: height ?? Math.round(width * 1.16), objectFit: "cover", borderRadius: radius, display: "block" }} />;
+  return <ProductArt p={{ art: artFor(p) }} width={width} />;
+}
+
 /** Product illustration (bottle / dropper / tube / jar), viewBox 100×116 like the designs. */
-export function ProductArt({ p, width }: { p: Product; width: number }) {
+export function ProductArt({ p, width }: { p: Artful; width: number }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const b = `${uid}b`, c = `${uid}c`, s = `${uid}s`;
   const { kind, body, cap } = p.art;
@@ -91,14 +116,16 @@ export function ProductArt({ p, width }: { p: Product; width: number }) {
 }
 
 /** Round soft tile holding a product illustration. */
-export function ArtThumb({ p, box, art, radius, style }: { p: Product; box: number; art: number; radius: number; style?: CSSProperties }) {
+export function ArtThumb({ p, box, art, radius, style }: { p: DbProduct; box: number; art: number; radius: number; style?: CSSProperties }) {
+  const img = productImage(p);
   return (
     <span style={{
       width: box, height: box, borderRadius: radius, flexShrink: 0, background: "radial-gradient(circle at 50% 40%, #FFFFFF 0%, #F3EAF6 75%)",
       border: "1px solid #FFFFFF", boxShadow: "inset 0 -6px 14px rgba(150,100,170,0.10), 0 4px 10px rgba(123,70,135,0.06)",
       display: "flex", alignItems: "center", justifyContent: "center", ...style,
     }}>
-      <ProductArt p={p} width={art} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {img ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: radius }} /> : <ProductArt p={{ art: artFor(p) }} width={art} />}
     </span>
   );
 }
@@ -127,7 +154,7 @@ export function Segmented<T extends string>({ value, onChange, options }: {
 }
 
 /** Lilac capsule quantity stepper (+ on the right in RTL). */
-export function QtyStepper({ qty, onChange, btn = 28, radius = 18, min = 1, max = 9 }: {
+export function QtyStepper({ qty, onChange, btn = 28, radius = 18, min = 1, max = 99 }: {
   qty: number; onChange: (q: number) => void; btn?: number; radius?: number; min?: number; max?: number;
 }) {
   const b: CSSProperties = {
