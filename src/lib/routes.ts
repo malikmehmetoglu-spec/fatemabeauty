@@ -4,6 +4,9 @@
  * Keys are the design file names (e.g. "P_Store" ← P_Store.dc.html).
  */
 export const R = {
+  // ---------- public site (fatema.beauty) ----------
+  Site: "/site/",
+
   // ---------- patient app (phone) ----------
   P_Splash: "/",
   Login: "/login/",

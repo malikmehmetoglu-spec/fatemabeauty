@@ -5,7 +5,7 @@ import { Logo } from "@/components/ui";
 
 /** Index of every screen — for reviewing the app on the web (not linked from the patient app). */
 const GROUPS: [string, (k: ScreenKey) => boolean][] = [
-  ["تطبيق المراجِعة (الهاتف)", (k) => !k.startsWith("T_") && !k.startsWith("TV_") && !k.startsWith("W_")],
+  ["الموقع والتطبيق (الهاتف)", (k) => !k.startsWith("T_") && !k.startsWith("TV_") && !k.startsWith("W_")],
   ["تابلت الاستقبال", (k) => k.startsWith("T_")],
   ["شاشة الانتظار", (k) => k.startsWith("TV_")],
   ["لوحة الإدارة", (k) => k.startsWith("W_")],
