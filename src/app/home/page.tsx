@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PhoneScreen } from "@/components/shell";
 import { Circ, Icon, IconButton, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -28,6 +29,7 @@ export default function HomePage() {
       </header>
 
       <p style={{ margin: 0, padding: "0 22px 6px", fontSize: 15, color: C.sub, position: "relative" }}>أهلاً بكِ، بشرتكِ تستحق يوماً جميلاً</p>
+      <InstallPrompt style={{ margin: "10px 22px 0" }} />
 
       <div style={{ display: "flex", gap: 12, padding: "10px 22px 20px", overflowX: "auto", position: "relative" }}>
         <div style={{ width: 214, height: 214, flexShrink: 0, borderRadius: 30, background: "#EAD7EE", position: "relative", overflow: "hidden", boxShadow: SH }}>

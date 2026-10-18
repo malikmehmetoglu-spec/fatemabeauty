@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ServiceWorker } from "@/components/pwa/ServiceWorker";
 
 const messiri = localFont({
   src: [
@@ -27,7 +28,8 @@ export const metadata: Metadata = {
   title: "Fatema Beauty — Skin Care Center",
   description: "فاطمة بيوتي — مركز العناية بالبشرة",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
+  icons: { apple: "/icons/icon-192.png" },
+  appleWebApp: { capable: true, title: "Fatema Beauty", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -40,7 +42,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={`${messiri.variable} ${rubik.variable}`}>
-      <body>{children}</body>
+      <body>{children}<ServiceWorker /></body>
     </html>
   );
 }

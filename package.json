@@ -9,7 +9,8 @@
     "lint": "eslint",
     "cap:sync": "next build && cap sync",
     "android": "cap open android",
-    "ios": "cap open ios"
+    "ios": "cap open ios",
+    "prebuild": "node scripts/gen-sw.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3",
