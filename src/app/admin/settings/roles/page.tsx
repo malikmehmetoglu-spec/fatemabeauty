@@ -72,7 +72,7 @@ export default function RolesPage() {
 
       <SectionTitle>أعضاء كل دور</SectionTitle>
       {team.loading ? <Loading /> : team.error ? <ErrorNote>{team.error}</ErrorNote> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 14 }}>
           {ROLES.map((r) => {
             const members = team.active.filter((s) => s.role === r);
             return (

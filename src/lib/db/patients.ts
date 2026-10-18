@@ -3,7 +3,8 @@
 /** Patients — the list, one record, her own profile/conditions/settings, loyalty tier, notifications. */
 import { supabase, type Tables } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/database.types";
-import { invalidate, must } from "./query";
+import { invalidate, must, useQuery } from "./query";
+import { useRequirePatient } from "@/lib/supabase/session";
 
 export type Patient = Tables<"patients">;
 export type Condition = Tables<"patient_conditions">;
@@ -35,12 +36,12 @@ export async function listPatients(): Promise<PatientRow[]> {
     supabase.from("appointments").select("patient_id, starts_at").eq("status", "done").not("patient_id", "is", null),
     supabase.from("invoices").select("patient_id, total").eq("paid", false).not("patient_id", "is", null),
   ]);
-  const rows = must(pats);
+  const rows = must(pats) ?? [];
   const last = new Map<string, string>();
-  for (const a of must(appts)) if (a.patient_id && (!last.has(a.patient_id) || a.starts_at > last.get(a.patient_id)!)) last.set(a.patient_id, a.starts_at);
+  for (const a of must(appts) ?? []) if (a.patient_id && (!last.has(a.patient_id) || a.starts_at > last.get(a.patient_id)!)) last.set(a.patient_id, a.starts_at);
   const due = new Map<string, number>();
-  for (const i of must(inv)) if (i.patient_id) due.set(i.patient_id, (due.get(i.patient_id) ?? 0) + i.total);
-  const cs = must(conds), ps = must(pkgs);
+  for (const i of must(inv) ?? []) if (i.patient_id) due.set(i.patient_id, (due.get(i.patient_id) ?? 0) + i.total);
+  const cs = must(conds) ?? [], ps = must(pkgs) ?? [];
   return rows.map((p) => ({
     ...p,
     conditions: cs.filter((c) => c.patient_id === p.id),
@@ -114,4 +115,14 @@ export async function markNotificationsRead(patientId: string) {
 
 export async function signOut() {
   await supabase.auth.signOut();
+}
+
+/* ---------- the signed-in patient ---------- */
+
+/** Patient pages: redirects to login when signed out; `me` is her fresh row (reloads after updatePatient). */
+export function useMe() {
+  const s = useRequirePatient();
+  const id = s.patient?.id ?? "";
+  const q = useQuery(["me", id], () => getPatient(id), { enabled: !!id });
+  return { me: q.data ?? null, loading: s.loading || (!!id && q.loading), error: q.error, signedOut: !s.loading && !s.patient };
 }

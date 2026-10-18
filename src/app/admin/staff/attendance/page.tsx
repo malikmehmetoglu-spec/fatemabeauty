@@ -49,7 +49,7 @@ export default function AttendancePage() {
       actions={<GhostButton icon="cal" onClick={() => setAsking(true)}>طلب إجازة</GhostButton>}>
       <TeamTabs />
       <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-        <Card style={{ flex: 1.4, display: "flex", alignItems: "center", gap: 14 }} padding="18px 20px">
+        <Card style={{ flex: 1.9, display: "flex", alignItems: "center", gap: 14 }} padding="18px 20px">
           <div style={{ flex: 1, lineHeight: 1.5 }}>
             <div style={{ fontSize: 13, color: C.sub2 }}>حضوري اليوم</div>
             <div style={{ fontSize: 17, fontWeight: 700 }}>

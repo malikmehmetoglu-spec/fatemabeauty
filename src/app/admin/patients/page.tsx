@@ -149,7 +149,7 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
         birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null,
       });
       onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");
-      window.location.href = fileHref(R.W_Record, "id", p.id);
+      if (p) window.location.href = fileHref(R.W_Record, "id", p.id);
     } catch (e) { setErr(e instanceof Error && e.message.includes("duplicate") ? "هذا الرقم مسجّل لمراجعة أخرى." : "تعذّر الحفظ."); }
     setBusy(false);
   }

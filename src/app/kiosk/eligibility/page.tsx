@@ -1,18 +1,18 @@
 "use client";
  
 
-import { Fragment, useState } from "react";
+import { Fragment, Suspense, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
+import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { APPOINTMENTS_TODAY, NOW, TODAY } from "@/lib/data";
-import { arDate } from "@/lib/format";
+import { saveEligibility } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
+import { ApptPicker, NowText, apptLine, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Eligibility.dc.html */
-/** The patient being checked: today's 13:00 laser in room 3. */
-const A = APPOINTMENTS_TODAY.find((a) => a.time === "13:00" && a.room === "غرفة 3")!;
 const Q: [string, "block" | "warn", string][] = [["هل أنتِ حامل أو مرضعة؟", "block", "حمل أو رضاعة: تُؤجَّل جلسة الليزر."], ["تعرّض للشمس أو تسمير خلال آخر أسبوعين؟", "warn", "بشرة متعرّضة للشمس: خطر أعلى للحروق والتصبّغ — طاقة أخف أو تأجيل حسب تقدير الأخصائية."], ["أدوية تزيد التحسّس للضوء؟", "warn", "دواء يزيد التحسّس للضوء: راجعي نوع الدواء قبل البدء."], ["علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟", "block", "إيزوتريتينوين حديث: يُؤجَّل الإجراء."], ["التهاب أو هربس نشط في منطقة الجلسة؟", "block", "التهاب نشط: لا تُعالج المنطقة حتى الشفاء."], ["ميل لظهور ندبات بارزة بعد الجروح؟", "warn", "ميل للندبات البارزة: اختبار بقعة صغيرة أولاً."], ["وشم أو مكياج دائم في المنطقة؟", "warn", "وشم في المنطقة: تجنّبي المرور فوقه."]];
 const SK = ["I", "II", "III", "IV", "V", "VI"], COL = ["#F8E3D6", "#F0D2BC", "#DDB394", "#BE8B66", "#8E5E3F", "#5A3A28"];
 const seg = (on: boolean, yes: boolean) => css("width:84px;height:56px;border-radius:28px;border:none;font-family:inherit;font-size:17px;font-weight:700;" +
@@ -22,7 +22,16 @@ const seg = (on: boolean, yes: boolean) => css("width:84px;height:56px;border-ra
 
 /** Reception tablet: laser eligibility checklist before the procedure. */
 export default function Page() {
-  const [st, setSt] = useState({ ans: [false, true, false, false, false, false, false], skin: 2 });
+  return <Suspense><Inner /></Suspense>;
+}
+
+function Inner() {
+  const k = useKiosk();
+  const router = useRouter();
+  const f = useApptParam(!k.gate);
+  const [st, setSt] = useState({ ans: [false, false, false, false, false, false, false], skin: -1 });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const setAns = (i: number, v: boolean) => setSt({ ...st, ans: st.ans.map((x, j) => (j === i ? v : x)) });
   const qs = st.ans.map((v, i) => ({ yes: () => setAns(i, true), no: () => setAns(i, false), yStyle: seg(v, true), nStyle: seg(!v, false) }));
   const alerts = Q.map((q, i) => ({ t: q[2], kind: q[1], on: st.ans[i] })).filter((x) => x.on).map((x) => ({ t: x.t,
@@ -34,9 +43,24 @@ export default function Page() {
     style: css("flex:1;height:72px;border-radius:20px;font-family:var(--font-rubik),sans-serif;font-size:15px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;" +
       (st.skin === i ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687;font-weight:700" : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D")),
     sw: css("width:22px;height:22px;border-radius:11px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,0.15);background:" + COL[i]) }));
-  const skinNote = st.skin >= 3 ? "بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى." : "تأكدي من النوع قبل ضبط إعدادات الجهاز.";
+  const skinNote = st.skin < 0 ? "اختاري نوع البشرة قبل ضبط إعدادات الجهاز." : st.skin >= 3 ? "بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى." : "تأكدي من النوع قبل ضبط إعدادات الجهاز.";
   const noAlerts = alerts.length === 0, nAlerts = alerts.length;
-  const btn = block ? "تأجيل الجلسة" : alerts.length ? "متابعة الجلسة بحذر" : "متابعة الجلسة";
+  const btn = busy ? "جارٍ الحفظ…" : block ? "تأجيل الجلسة" : alerts.length ? "متابعة الجلسة بحذر" : "متابعة الجلسة";
+  if (k.gate) return k.gate;
+  const A = f.appt;
+  if (!A) return <ApptPicker title="قبل الإجراء" today={f.today} loading={f.loading} error={f.error} path={R.T_Eligibility} />;
+  const submit = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await saveEligibility(A.id, {
+        answers: Q.map((q, i) => ({ q: q[0], yes: st.ans[i], level: q[1] })),
+        skin_type: st.skin >= 0 ? SK[st.skin] : null,
+        decision: block ? "postpone" : alerts.length ? "caution" : "ok",
+        by: k.staff?.name ?? null,
+      });
+      router.push(block ? R.T_Desk : `${R.T_Consent}?id=${A.id}`);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+  };
   return (
     <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
@@ -49,21 +73,17 @@ export default function Page() {
         <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>قبل الإجراء
           </div>
-          <div style={{ fontSize: 15, color: C.sub2 }}>{A.serviceName} · {A.name}
-            <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-            </span>{" "}· {A.room} · {A.time} · مع {A.specialist}
-            <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-            </span>
+          <div style={{ fontSize: 15, color: C.sub2 }}>{apptLine(A)}{A.eligibility_at ? " · تم الفحص مسبقاً" : ""}
           </div>
         </div>
         <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
           </svg>
-          <span>{arDate(TODAY)}
+          <span><NowText part="date" />
           </span>
           <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
           </span>
         </div>
       </div>
@@ -237,11 +257,12 @@ export default function Page() {
               </svg>صور «قبل» للمنطقة بنفس الزوايا
             </div>
           </div>
-          <Link href={block ? R.T_Desk : R.T_Photos} style={{ height: 64, borderRadius: 32, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          {err && <ErrorNote>{err}</ErrorNote>}
+          <button type="button" onClick={submit} disabled={busy} style={{ border: "none", fontFamily: "inherit", opacity: busy ? 0.6 : 1, height: 64, borderRadius: 32, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3M9 12l2 2 4-4" />
             </svg>{btn}
-          </Link>
+          </button>
         </div>
       </div>
 

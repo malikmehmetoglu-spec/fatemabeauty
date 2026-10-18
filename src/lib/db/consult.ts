@@ -78,3 +78,30 @@ export async function myPrescriptionsBetween(from: string, to: string) {
   const res = await supabase.from("prescriptions").select("id, items, created_at").gte("created_at", from).lt("created_at", to).order("created_at");
   return must(res);
 }
+
+/* ---------- staff side of the chat ---------- */
+
+export type InboxMsg = Message & { patients: { name: string; file_no: number } | null };
+
+/** Latest messages across all patients (staff only via RLS). */
+export async function listInbox() {
+  const res = await supabase.from("messages").select("*, patients(name, file_no)").order("created_at", { ascending: false }).limit(500);
+  return (must(res) ?? []) as unknown as InboxMsg[];
+}
+
+export async function staffReply(patientId: string, staffId: string, body: string) {
+  must(await supabase.from("messages").insert({ patient_id: patientId, from_patient: false, staff_id: staffId, body: body.trim() }));
+  invalidate("inbox");
+}
+
+export async function markRead(patientId: string) {
+  must(await supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("patient_id", patientId).eq("from_patient", true).is("read_at", null));
+}
+
+/** Live updates for every conversation (staff). */
+export function subscribeInbox(onChange: () => void) {
+  const ch = supabase.channel("messages:inbox")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => onChange())
+    .subscribe();
+  return () => { supabase.removeChannel(ch); };
+}

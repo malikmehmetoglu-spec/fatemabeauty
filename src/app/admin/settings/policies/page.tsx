@@ -1,294 +1,109 @@
 "use client";
 
-/** W_Policies.dc.html — سياسات الحجز والإلغاء. */
-import { Fragment, useState } from "react";
+/** W_Policies.dc.html — booking & cancellation policies, stored in settings «policies». */
+import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { ExampleTag } from "@/components/ui";
+import { Card, Chip, ErrorNote, Loading, NumberInput, SubmitButton, Toggle } from "@/components/ui";
+import { useQuery } from "@/lib/db/query";
+import { getPolicies, saveSetting, type Policies } from "@/lib/db/marketing";
 import { C } from "@/lib/tokens";
-import { ch, css, tg } from "@/app/admin/_h/css";
 
-export default function Page() {
-  const [s, setS0] = useState({ win: 1, rel: true, ns: 2, dep: false, depon: 0, wait: true, resp: 1, r1: true, r2: true, ch: [true, true, true] });
-  const set = (p: Partial<typeof s>) => setS0({ ...s, ...p });
-  const W = ["ساعتين", "6 ساعات", "12 ساعة", "24 ساعة"];
-  const NS = ["تسجيل الغياب فقط", "تنبيه لطيف بعد الغياب الأول", "طلب عربون بعد غيابين", "إيقاف الحجز من التطبيق بعد 3 غيابات"];
-  const RS = [15, 30, 60];
-  const CH = ["واتساب", "SMS", "إشعار التطبيق"];
-  const pv = ["يمكنكِ تعديل موعدكِ أو إلغاؤه من التطبيق حتى " + W[s.win] + " قبل الموعد، وبعدها عبر الاستقبال."];
-  const rem = [s.r1 ? "قبل الموعد بيوم" : "", s.r2 ? "قبله بساعتين" : ""].filter((x) => x);
-  if (rem.length) pv.push("نذكّركِ " + rem.join(" و") + " عبر " + CH.filter((c, i) => s.ch[i]).join(" و") + ".");
-  if (s.wait) pv.push("عند شغور موعد نرسله لقائمة الانتظار، والرد خلال " + RS[s.resp] + " دقيقة.");
-  pv.push(s.dep ? "يُطلب عربون عند الحجز ويُخصم من فاتورتكِ." : "لا يُطلب عربون عادةً لحجز الموعد.");
-  if (s.ns > 0) pv.push(["", "نرسل تنبيهاً لطيفاً عند الغياب عن الموعد.", "بعد غيابين يُطلب عربون للحجز التالي.", "بعد 3 غيابات يكون الحجز عبر الاستقبال فقط."][s.ns]);
-  const v = {
-    wins: W.map((name, i) => ({ name, style: ch(s.win === i, 34), pick: () => set({ win: i }) })),
-    tgr: tg(s.rel), trel: () => set({ rel: !s.rel }),
-    ns: NS.map((name, i) => {
-      const on = s.ns === i;
-      return {
-        name, pick: () => set({ ns: i }),
-        style: "display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right;" +
-          (on ? "background:linear-gradient(160deg,#F7EDF9,#E8D0ED);border:1px solid #FFFFFF;color:#7B4687;box-shadow:0 6px 14px rgba(150,100,170,0.20)" : "background:#FFFFFF;border:1px solid #EDE2F1;color:#76607E"),
-        dot: "width:16px;height:16px;border-radius:8px;flex-shrink:0;box-sizing:border-box;" + (on ? "border:5px solid #7B4687;background:#FFFFFF" : "border:1.5px solid #D2C3D5;background:#FFFFFF"),
-      };
-    }),
-    tgd: tg(s.dep), tdep: () => set({ dep: !s.dep }),
-    depst: s.dep ? "" : "opacity:0.45;pointer-events:none",
-    depon: ["جلسات الليزر", "كل الخدمات"].map((name, i) => ({ name, style: ch(s.depon === i, 32), pick: () => set({ depon: i }) })),
-    tgw: tg(s.wait), twait: () => set({ wait: !s.wait }),
-    resp: RS.map((m, i) => ({ name: m + " دقيقة", style: ch(s.resp === i, 34), pick: () => set({ resp: i }) })),
-    tg1: tg(s.r1), tr1: () => set({ r1: !s.r1 }),
-    tg2: tg(s.r2), tr2: () => set({ r2: !s.r2 }),
-    chans: CH.map((name, i) => ({ name, style: ch(s.ch[i], 32), pick: () => { const a = s.ch.slice(); a[i] = !a[i]; set({ ch: a }); } })),
-    pv,
+const WINDOWS = [2, 6, 12, 24];
+const NS = ["تسجيل الغياب فقط", "تنبيه لطيف بعد الغياب الأول", "طلب عربون بعد غيابين", "إيقاف الحجز من التطبيق بعد 3 غيابات"];
+const RS = [15, 30, 60];
+const CH: [string, string][] = [["whatsapp", "واتساب"], ["sms", "SMS"], ["app", "إشعار التطبيق"]];
+const hrs = (h: number) => (h === 2 ? "ساعتين" : h === 1 ? "ساعة" : `${h} ساعة`);
+
+export default function PoliciesPage() {
+  const { data, loading, error } = useQuery(["settings", "policies"], getPolicies);
+  const [p, setP] = useState<Policies | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => { if (data) setP(data); }, [data]);
+  const set = (x: Partial<Policies>) => { setP((cur) => (cur ? { ...cur, ...x } : cur)); setMsg(null); };
+
+  const save = async () => {
+    if (!p) return;
+    setBusy(true); setMsg(null);
+    try { await saveSetting("policies", p); setMsg("تم الحفظ"); }
+    catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
   };
+
+  const preview: string[] = [];
+  if (p) {
+    preview.push(`يمكنكِ تعديل موعدكِ أو إلغاؤه من التطبيق حتى ${hrs(p.free_change_hours)} قبل الموعد، وبعدها عبر الاستقبال.`);
+    const rem = [p.reminders_hours.includes(24) ? "قبل الموعد بيوم" : "", p.reminders_hours.includes(2) ? "قبله بساعتين" : ""].filter(Boolean);
+    const chans = CH.filter(([k]) => p.channels.includes(k)).map(([, t]) => t);
+    if (rem.length && chans.length) preview.push(`نذكّركِ ${rem.join(" و")} عبر ${chans.join(" و")}.`);
+    if (p.waitlist) preview.push(`عند شغور موعد نرسله لقائمة الانتظار، والرد خلال ${p.waitlist_reply_min} دقيقة.`);
+    preview.push(p.deposit_required ? "يُطلب عربون عند الحجز ويُخصم من فاتورتكِ." : "لا يُطلب عربون عادةً لحجز الموعد.");
+    if (p.no_show_rule > 0) preview.push(["", "نرسل تنبيهاً لطيفاً عند الغياب عن الموعد.", "بعد غيابين يُطلب عربون للحجز التالي.", "بعد 3 غيابات يتوقف الحجز من التطبيق ويتم عبر الاستقبال."][p.no_show_rule]);
+  }
+
   return (
-    <AdminShell
-      active="الإعدادات"
-      title="سياسات الحجز والإلغاء"
-      subtitle="المهل والتذكيرات وقائمة الانتظار — تُطبّق على كل القنوات"
-      actions={
-        <>
-        </>
-      }
-    >
-      <div style={{ display: "flex", gap: 16, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-        <div style={{ display: "flex", gap: 14, alignItems: "stretch", minHeight: "0", flex: 1 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1 }}>
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M10 14l4 4M14 14l-4 4" />
-                    </svg>
-                  </span>
-                  <div style={{ lineHeight: "1.3", minWidth: "0" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>تعديل الموعد وإلغاؤه</div>
-                    <div style={{ fontSize: 12, color: C.sub2 }}>من تطبيق المراجعة</div>
-                  </div>
-                </div>
+    <AdminShell active="الإعدادات" title="سياسات الحجز والإلغاء" subtitle="المهل والتذكيرات وقائمة الانتظار — تُطبّق على كل القنوات"
+      actions={p && <SubmitButton onClick={save} busy={busy}>حفظ السياسات</SubmitButton>}>
+      {loading || (!p && !error) ? <Loading /> : error ? <ErrorNote>تعذّر تحميل السياسات: {error}</ErrorNote> : p && (
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <div style={{ flex: 1.4, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+            <Section title="مهلة التعديل والإلغاء المجاني">
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {WINDOWS.map((w) => <Chip key={w} selected={p.free_change_hours === w} onClick={() => set({ free_change_hours: w })}>{hrs(w)}</Chip>)}
               </div>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>مسموح حتى قبل الموعد بـ</div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                  {v.wins.map((c, cI) => (
-                    <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
-                    </Fragment>
-                  ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: C.sub, borderRadius: 16, padding: "8px 12px", background: "#F9F5FB" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 11v5M12 8v.01" />
-                  </svg>
-                  بعد انتهاء المهلة: التعديل والإلغاء عبر الاستقبال فقط
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ lineHeight: "1.35" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>إعادة الموعد الملغى للحجز فوراً</div>
-                    <div style={{ fontSize: 11.5, color: C.sub2 }}>يصبح الوقت متاحاً في نفس اللحظة</div>
-                  </div>
-                  <button type="button" aria-label="إعادة الموعد الملغى" role="switch" aria-checked={s.rel} onClick={v.trel} style={css(v.tgr, "button")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
-                  </button>
-                </div>
+            </Section>
+            <Section title="عند الغياب عن الموعد">
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {NS.map((t, i) => <Chip key={t} selected={p.no_show_rule === i} onClick={() => set({ no_show_rule: i })} style={{ justifyContent: "flex-start" }}>{t}</Chip>)}
               </div>
-            </div>
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-                    </svg>
-                  </span>
-                  <div style={{ lineHeight: "1.3", minWidth: "0" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>عدم الحضور</div>
-                    <div style={{ fontSize: 12, color: C.sub2 }}>تسجيل تلقائي للغياب + قاعدة اختيارية</div>
-                  </div>
-                </div>
+            </Section>
+            <Section title="العربون" right={<Toggle on={p.deposit_required} onChange={(v) => set({ deposit_required: v })} label="طلب عربون عند الحجز" />}>
+              <div style={{ fontSize: 13, color: C.sub2 }}>عند التفعيل يُطلب عربون عند الحجز ويُخصم من الفاتورة.</div>
+            </Section>
+            <Section title="قائمة الانتظار" right={<Toggle on={p.waitlist} onChange={(v) => set({ waitlist: v })} label="تفعيل قائمة الانتظار" />}>
+              <div style={{ display: "flex", gap: 8, opacity: p.waitlist ? 1 : 0.45 }}>
+                {RS.map((m) => <Chip key={m} selected={p.waitlist_reply_min === m} onClick={() => p.waitlist && set({ waitlist_reply_min: m })}>{m} دقيقة للرد</Chip>)}
               </div>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {v.ns.map((o, oI) => (
-                    <Fragment key={oI}>
-                      <button type="button" onClick={o.pick} style={css(o.style, "button")}>
-                        <span style={css(o.dot)} />
-                        <span>{o.name}</span>
-                      </button>
-                    </Fragment>
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "stretch", minHeight: "0" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
-                    <label htmlFor="late" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
-                      يُعدّ غياباً بعد تأخير
-                      <ExampleTag />
-                    </label>
-                    <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
-                      <input id="late" defaultValue="15" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />
-                      <span style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>دقيقة</span>
-                    </div>
-                  </div>
-                </div>
+            </Section>
+            <Section title="التذكيرات">
+              <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
+                {[24, 2].map((h) => (
+                  <label key={h} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 600 }}>
+                    <Toggle on={p.reminders_hours.includes(h)} label={`تذكير قبل ${hrs(h)}`}
+                      onChange={(v) => set({ reminders_hours: v ? [...new Set([...p.reminders_hours, h])].sort((a, b) => b - a) : p.reminders_hours.filter((x) => x !== h) })} />
+                    {h === 24 ? "قبل الموعد بيوم" : "قبله بساعتين"}
+                  </label>
+                ))}
               </div>
-            </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                {CH.map(([k, t]) => <Chip key={k} selected={p.channels.includes(k)} onClick={() => set({ channels: p.channels.includes(k) ? p.channels.filter((x) => x !== k) : [...p.channels, k] })}>{t}</Chip>)}
+              </div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>إرسال التذكيرات عبر واتساب و SMS غير مربوط بعد؛ تُحفظ القناة المختارة للتفعيل لاحقاً.</div>
+            </Section>
+            <Section title="الخصم دون موافقة الإدارة">
+              <NumberInput label="أقصى نسبة خصم يمنحها الاستقبال" value={String(p.max_discount_without_approval)} onChange={(v) => set({ max_discount_without_approval: Number(v) || 0 })} suffix="%" style={{ maxWidth: 260 }} />
+            </Section>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", minHeight: "0", flex: 1 }}>
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 8V5a1 1 0 0 0-1-1H6a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6M20 12v4h-4a2 2 0 0 1 0-4z" />
-                    </svg>
-                  </span>
-                  <div style={{ lineHeight: "1.3", minWidth: "0" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>العربون</div>
-                    <div style={{ fontSize: 12, color: C.sub2 }}>اختياري لحجز الموعد</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ lineHeight: "1.35" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>طلب عربون عند الحجز</div>
-                    <div style={{ fontSize: 11.5, color: C.sub2 }}>يُدفع من التطبيق ويُخصم من الفاتورة</div>
-                  </div>
-                  <button type="button" aria-label="طلب عربون" role="switch" aria-checked={s.dep} onClick={v.tdep} style={css(v.tgd, "button")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
-                  </button>
-                </div>
-                <div style={css(v.depst)}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "stretch", minHeight: "0" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", minWidth: "0" }}>
-                      <label htmlFor="dep" style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>
-                        قيمة العربون
-                        <ExampleTag />
-                      </label>
-                      <div style={{ height: 38, borderRadius: 19, background: "#F9F5FB", border: "1px solid #EADCF0", display: "flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
-                        <input id="dep" defaultValue="20" style={{ flex: 1, minWidth: "0", border: "none", background: "transparent", outline: "none", fontSize: 14, fontWeight: 600, color: C.ink, textAlign: "right", boxSizing: "content-box" }} />
-                        <span style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>% من السعر</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600, margin: "8px 0 6px" }}>يُطبّق على</div>
-                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                    {v.depon.map((c, cI) => (
-                      <Fragment key={cI}>
-                        <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
-                      </Fragment>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
-                    </svg>
-                  </span>
-                  <div style={{ lineHeight: "1.3", minWidth: "0" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>قائمة الانتظار</div>
-                    <div style={{ fontSize: 12, color: C.sub2 }}>عند شغور موعد</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ lineHeight: "1.35" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>عرض الموعد الشاغر تلقائياً</div>
-                    <div style={{ fontSize: 11.5, color: C.sub2 }}>يُرسل لأول مراجعة في القائمة، وأول من تقبل تأخذه</div>
-                  </div>
-                  <button type="button" aria-label="العرض التلقائي" role="switch" aria-checked={s.wait} onClick={v.twait} style={css(v.tgw, "button")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
-                  </button>
-                </div>
-                <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>مهلة الرد قبل الانتقال للتالية</div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                  {v.resp.map((c, cI) => (
-                    <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10 5a2 2 0 1 1 4 0 7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6M9 17v1a3 3 0 0 0 6 0v-1" />
-                    </svg>
-                  </span>
-                  <div style={{ lineHeight: "1.3", minWidth: "0" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>التذكيرات</div>
-                    <div style={{ fontSize: 12, color: C.sub2 }}>تلقائية مع أزرار تأكيد وإلغاء</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ lineHeight: "1.35" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>قبل الموعد بيوم</div>
-                  </div>
-                  <button type="button" aria-label="تذكير قبل يوم" role="switch" aria-checked={s.r1} onClick={v.tr1} style={css(v.tg1, "button")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ lineHeight: "1.35" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>قبل الموعد بساعتين</div>
-                  </div>
-                  <button type="button" aria-label="تذكير قبل ساعتين" role="switch" aria-checked={s.r2} onClick={v.tr2} style={css(v.tg2, "button")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
-                  </button>
-                </div>
-                <div style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>القنوات</div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                  {v.chans.map((c, cI) => (
-                    <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <Card radius={26} padding={20} style={{ flex: 1, minWidth: 0, position: "sticky", top: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>كما تراها المراجعة</div>
+            <ul style={{ margin: 0, paddingInlineStart: 18, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, lineHeight: 1.7, color: C.sub }}>
+              {preview.map((t) => <li key={t}>{t}</li>)}
+            </ul>
+            {msg && <div style={{ marginTop: 12, fontSize: 13, color: msg === "تم الحفظ" ? C.ok : C.danger }}>{msg}</div>}
+          </Card>
         </div>
-        <div style={{ width: 320, flexShrink: 0, borderRadius: 30, padding: "22px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", gap: 14, boxSizing: "content-box" }}>
-          <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
-          <div style={{ position: "absolute", top: -60, left: -60, width: 200, height: 200, borderRadius: 100, background: "radial-gradient(circle, rgba(200,160,220,0.28) 0%, rgba(200,160,220,0) 70%)" }} />
-          <div style={{ position: "relative", lineHeight: "1.3" }}>
-            <div style={{ fontSize: 12.5, color: C.onDark }}>كما تظهر في تطبيق المراجعة</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>سياسة الحجز</div>
-          </div>
-          {v.pv.map((p, pI) => (
-            <Fragment key={pI}>
-              <div style={{ position: "relative", display: "flex", gap: 10, alignItems: "flex-start", borderRadius: 18, padding: "11px 13px", background: "rgba(255,255,255,0.11)", border: "1px solid rgba(255,255,255,0.2)" }}>
-                <span style={{ width: 26, height: 26, borderRadius: 13, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8D6F0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12l5 5L20 7" />
-                  </svg>
-                </span>
-                <span style={{ fontSize: 13, lineHeight: "1.6" }}>{p}</span>
-              </div>
-            </Fragment>
-          ))}
-          <button type="button" style={{ position: "relative", marginTop: "auto", height: 50, borderRadius: 25, border: "none", background: C.white, color: C.accent, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.18)" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12l5 5L20 7" />
-            </svg>
-            حفظ السياسات
-          </button>
-        </div>
-      </div>
+      )}
     </AdminShell>
   );
 }
 
+function Section({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Card radius={26} padding={18} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>{title}</div>{right}
+      </div>
+      {children}
+    </Card>
+  );
+}

@@ -26,9 +26,9 @@ export const STATUS_LABEL: Record<string, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكد", checked_in: "حضرت", in_session: "في الجلسة", done: "تمت", no_show: "لم تحضر", cancelled: "ملغى",
 };
 
-const APPT = "id, starts_at, minutes, status, price, service_key, patient_id, patient_package_id, services(name, short_name), staff(name), rooms(name)";
+const APPT = "id, starts_at, minutes, status, price, service_key, patient_id, patient_package_id, services(name, short_name), staff(name, photo_url), rooms(name)";
 export type Visit = { id: string; starts_at: string; minutes: number; status: string; price: number; service_key: string; patient_id: string | null; patient_package_id: string | null;
-  services: { name: string; short_name: string } | null; staff: { name: string } | null; rooms: { name: string } | null };
+  services: { name: string; short_name: string } | null; staff: { name: string; photo_url: string | null } | null; rooms: { name: string } | null };
 
 export async function listVisits(patientId: string): Promise<Visit[]> {
   return must(await supabase.from("appointments").select(APPT).eq("patient_id", patientId).order("starts_at", { ascending: false })) as unknown as Visit[];
@@ -99,7 +99,7 @@ export async function pendingConsentsToday() {
   const appts = must(await supabase.from("appointments").select("id, starts_at, patient_id, service_key, services(name), patients(name, file_no)")
     .gte("starts_at", from).lt("starts_at", to).in("status", ["pending", "confirmed", "checked_in"]).not("patient_id", "is", null).order("starts_at")) as unknown as PendingConsent[];
   if (!appts.length) return [];
-  const signed = must(await supabase.from("consents").select("patient_id, service_key, appointment_id").in("patient_id", appts.map((a) => a.patient_id)));
+  const signed = must(await supabase.from("consents").select("patient_id, service_key, appointment_id").in("patient_id", appts.map((a) => a.patient_id))) ?? [];
   return appts.filter((a) => !signed.some((s) => s.appointment_id === a.id || (s.patient_id === a.patient_id && s.service_key === a.service_key)));
 }
 
@@ -118,7 +118,7 @@ export const STAGE_LABEL: Record<string, string> = { before: "قبل", after: "�
 export type PhotoRow = Photo & { url: string | null };
 
 export async function listPhotos(patientId: string): Promise<PhotoRow[]> {
-  const rows = must(await supabase.from("patient_photos").select("*").eq("patient_id", patientId).order("created_at"));
+  const rows = must(await supabase.from("patient_photos").select("*").eq("patient_id", patientId).order("created_at")) ?? [];
   if (!rows.length) return [];
   const { data } = await supabase.storage.from("photos").createSignedUrls(rows.map((r) => r.path), 3600);
   return rows.map((r) => ({ ...r, url: data?.find((d) => d.path === r.path)?.signedUrl ?? null }));
@@ -141,7 +141,7 @@ export async function listActivePackages(): Promise<CarePlanPackage[]> {
   const rows = (must(await supabase.from("patient_packages").select("*, packages(name, service_key), patients(id, name, file_no, phone)").order("purchased_at", { ascending: false })) as PatientPackage[])
     .filter((r) => r.sessions_used < r.sessions_total) as CarePlanPackage[];
   if (!rows.length) return [];
-  const appts = must(await supabase.from("appointments").select("patient_id, starts_at, status").in("patient_id", [...new Set(rows.map((r) => r.patient_id))]).in("status", ["pending", "confirmed", "checked_in", "in_session", "done"]).order("starts_at"));
+  const appts = must(await supabase.from("appointments").select("patient_id, starts_at, status").in("patient_id", [...new Set(rows.map((r) => r.patient_id))]).in("status", ["pending", "confirmed", "checked_in", "in_session", "done"]).order("starts_at")) ?? [];
   const now = new Date().toISOString();
   return rows.map((r) => {
     const mine = appts.filter((a) => a.patient_id === r.patient_id);

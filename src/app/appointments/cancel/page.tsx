@@ -1,15 +1,18 @@
 "use client";
 
-/** P_CancelConfirm.dc.html — cancel-appointment bottom sheet over the appointment details. */
+/** P_CancelConfirm.dc.html — cancel-appointment bottom sheet (?id=) → rpc cancel_my_appointment. */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
-import { Circ, DarkGlow, FatemaAvatar, Icon, SecondaryButton } from "@/components/ui";
+import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { PERSONA } from "@/lib/data";
+import { useQuery } from "@/lib/db/query";
+import { bookingError, cancelMine, getAppointment, timeOf, useSearch } from "@/lib/db/appointments";
+import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK, SH_SOFT, SHEEN } from "@/lib/tokens";
 import { arDate } from "@/lib/format";
-import { NEXT_LABEL, NEXT_SESSION_NO, PKG_SERVICE, PKG_TOTAL } from "@/lib/mock/b";
+import { SpecialistAvatar } from "../../booking/SpecialistAvatar";
 
 const REASONS = ["تغيّر جدولي", "ظرف صحي", "سفر", "سأحجز وقتاً آخر", "سبب آخر"];
 const TILE: CSSProperties = { borderRadius: 18, padding: "10px 12px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" };
@@ -35,11 +38,35 @@ function InfoRow({ icon, title, sub, first, size = 40 }: { icon: string; title: 
 }
 
 export default function CancelConfirmPage() {
-  const [reason, setReason] = useState(0);
-  const d = PERSONA.nextSession;
+  const s = useRequirePatient();
+  const router = useRouter();
+  const q = useSearch();
+  const id = q?.get("id") ?? "";
+  const { data: a, loading } = useQuery(["appointments", "one", id], () => getAppointment(id), { enabled: !!id && !!s.patient });
+  const [reason, setReason] = useState(-1);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  if (s.loading || !s.patient || !q || (id && loading)) return <PhoneScreen><Loading /></PhoneScreen>;
+  const can = a && (a.status === "pending" || a.status === "confirmed") && new Date(a.starts_at).getTime() > Date.now();
+  if (!a || !can) return (
+    <PhoneScreen>
+      <TopBar title="إلغاء الموعد" back={R.P_Appointments} />
+      <EmptyState icon="calx" title={a ? "لا يمكن إلغاء هذا الموعد" : "لم نجد هذا الموعد"} text="يمكن إلغاء المواعيد القادمة فقط. للمساعدة تواصلي مع المركز."
+        action={<PrimaryButton href={R.P_Appointments} height={50}>مواعيدي</PrimaryButton>} />
+    </PhoneScreen>
+  );
+
+  const back = `${R.P_AppointmentDetail}?id=${a.id}`;
+  async function cancel() {
+    setBusy(true); setError("");
+    try { await cancelMine(a!.id, reason >= 0 ? REASONS[reason] : ""); router.replace(R.P_Appointments); }
+    catch (e) { setError(bookingError(e)); setBusy(false); }
+  }
+
   const sheet = (
     <>
-      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(53,33,61,0.35)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }} />
+      <Link href={back} aria-label="تراجع" style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(53,33,61,0.35)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }} />
       <div role="dialog" aria-modal="true" aria-labelledby="cx-title" style={{
         position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 11, borderRadius: "38px 38px 0 0", background: "linear-gradient(180deg, #FFFFFF 0%, #FBF6FC 100%)",
         boxShadow: "0 -18px 40px rgba(53,33,61,0.22)", padding: "12px 20px calc(env(safe-area-inset-bottom, 0px) + 26px)", display: "flex", flexDirection: "column", gap: 14,
@@ -51,7 +78,7 @@ export default function CancelConfirmPage() {
           </span>
           <div style={{ lineHeight: 1.35 }}>
             <div id="cx-title" style={{ fontSize: 21, fontWeight: 700, color: C.ink }}>إلغاء الموعد؟</div>
-            <div style={{ fontSize: 13, color: C.sub }}>{arDate(d, { year: true })} · {PERSONA.nextTime}</div>
+            <div style={{ fontSize: 13, color: C.sub }}>{arDate(new Date(a.starts_at), { year: true })} · {timeOf(a)}</div>
           </div>
         </div>
         <div style={{ fontSize: 13, color: C.sub2, marginBottom: -4 }}>ما سبب الإلغاء؟ (اختياري)</div>
@@ -61,17 +88,17 @@ export default function CancelConfirmPage() {
           ))}
         </div>
         <div style={{ borderRadius: 22, padding: "4px 14px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT }}>
-          <InfoRow first size={36} icon="refresh" title="لا تقلقي على موعدكِ" sub="سيعود موعدكِ متاحاً فوراً لمراجعة أخرى في قائمة الانتظار" />
-          <InfoRow size={36} icon="layers" title="تعود الجلسة إلى رصيد باقتكِ" sub={`يبقى لكِ ${PERSONA.sessionsLeft} جلسات من ${PKG_TOTAL} في باقة التنظيف العميق`} />
+          <InfoRow first size={36} icon="refresh" title="يعود الوقت متاحاً" sub="يُعرض موعدكِ فوراً على مراجعات أخريات في قائمة الانتظار" />
         </div>
+        {error && <ErrorNote>{error}</ErrorNote>}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 2 }}>
-          <Link href={R.P_Appointments} style={{
-            height: 56, borderRadius: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.white, fontSize: 16, fontWeight: 600,
-            backgroundColor: C.danger, backgroundImage: SHEEN, boxShadow: "0 14px 28px rgba(145,77,160,0.32), inset 0 1px 0 rgba(255,255,255,0.25)",
+          <button type="button" onClick={cancel} disabled={busy} style={{
+            height: 56, borderRadius: 28, border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.white, fontSize: 16, fontWeight: 600,
+            backgroundColor: C.danger, backgroundImage: SHEEN, boxShadow: "0 14px 28px rgba(145,77,160,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", opacity: busy ? 0.6 : 1,
           }}>
-            <Icon name="calx" color="#FFFFFF" size={19} />نعم، ألغي الموعد
-          </Link>
-          <SecondaryButton href={R.P_AppointmentDetail} height={52}>تراجعت</SecondaryButton>
+            <Icon name="calx" color="#FFFFFF" size={19} />{busy ? "جارٍ الإلغاء…" : "نعم، ألغي الموعد"}
+          </button>
+          <SecondaryButton href={back} height={52}>تراجعت</SecondaryButton>
         </div>
       </div>
     </>
@@ -83,27 +110,25 @@ export default function CancelConfirmPage() {
       <div style={{ ...DARK, borderRadius: 32, padding: 22, position: "relative", overflow: "hidden" }}>
         <DarkGlow />
         <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
-          <FatemaAvatar size={52} />
+          <SpecialistAvatar sp={a.specialist} size={52} />
           <div style={{ lineHeight: 1.35 }}>
-            <div style={{ fontSize: 13, color: C.onDark }}>مع {PERSONA.specialist}</div>
-            <div style={{ fontSize: 21, fontWeight: 700 }}>{PKG_SERVICE.name}</div>
+            {a.specialist && <div style={{ fontSize: 13, color: C.onDark }}>مع {a.specialist.name}</div>}
+            <div style={{ fontSize: 21, fontWeight: 700 }}>{a.service?.name}</div>
           </div>
         </div>
         <div style={{ position: "relative", display: "flex", gap: 10, marginTop: 18 }}>
           <div style={{ ...TILE, flex: 1 }}>
             <div style={{ fontSize: 11, color: C.onDark }}>اليوم</div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{NEXT_LABEL}</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{arDate(new Date(a.starts_at))}</div>
           </div>
           <div style={{ ...TILE, width: 92 }}>
             <div style={{ fontSize: 11, color: C.onDark }}>الساعة</div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{PERSONA.nextTime}</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{timeOf(a)}</div>
           </div>
         </div>
       </div>
       <div style={{ ...CARD, borderRadius: 26, padding: "4px 18px" }}>
-        <InfoRow first icon="door" title={PKG_SERVICE.room} sub="يصلكِ رقم دوركِ عند تسجيل الوصول" />
-        <InfoRow icon="layers" title="من باقتكِ" sub={`الجلسة ${NEXT_SESSION_NO} من ${PKG_TOTAL} · تنظيف عميق`} />
-        <InfoRow icon="bell" title="التذكير" sub="واتساب قبل الموعد بيوم وبساعتين" />
+        <InfoRow first icon="door" title={a.room?.name ?? "الغرفة تُحدَّد في المركز"} sub="يصلكِ رقم دوركِ عند تسجيل الوصول" />
       </div>
     </PhoneScreen>
   );

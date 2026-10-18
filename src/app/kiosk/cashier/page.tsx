@@ -5,39 +5,74 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
-import { Toggle } from "@/components/ui";
-import { APPOINTMENTS_TODAY, DONE_TODAY, NOW, TODAY, initials } from "@/lib/data";
-import { arDate, money } from "@/lib/format";
+import { ErrorNote, Loading, Toggle } from "@/components/ui";
+import { initials } from "@/lib/data";
+import { createInvoice, financeError, listCashierQueue, listPatientPackages, type CashierAppt } from "@/lib/db/finance";
+import { useQuery } from "@/lib/db/query";
+import { clock, money } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
+import { NowText, useKiosk } from "../kiosk";
 
 /** T_Cashier.dc.html */
-/** The session waiting for payment: today's first visit (10:00, room 1), finished. */
-const A = APPOINTMENTS_TODAY[0];
-const TOTAL = A.price;
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 const n = (x: string | number) => Number(x || 0).toLocaleString("en-US");
+const STATUS: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "في الانتظار" };
+const nameOf = (a: CashierAppt) => a.patients?.name || a.walk_in_name || "مراجِعة";
 
-/** Reception tablet: cashier for a finished session. */
+/** Reception tablet: cashier — issues the invoice for a finished session (real rows via finance.ts). */
 export default function Page() {
-  const [st, setSt] = useState({ m: 0, recv: "2000" });
-  const [wa, setWa] = useState(true);
+  const k = useKiosk();
+  const q = useQuery(["queue", "cashier"], () => listCashierQueue(), { enabled: !k.gate });
+  const [selId, setSelId] = useState<string | null>(null);
+  const [st, setSt] = useState({ m: 0, recv: "" });
+  const [wa, setWa] = useState(false);
   const [print, setPrint] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [doneNo, setDoneNo] = useState<string | null>(null);
+  const due = (q.data ?? []).filter((a) => !a.invoiced);
+  const A = due.find((a) => a.id === selId) ?? due.find((a) => a.status === "done") ?? due[0];
+  const pk = useQuery(["queue", "cashier-pkg", A?.patient_id ?? ""], () => listPatientPackages(A!.patient_id!), { enabled: !k.gate && !!A?.patient_id });
+  if (k.gate) return k.gate;
+  const doneCount = (q.data ?? []).filter((a) => a.status === "done").length;
+  const pkg0 = (pk.data ?? []).find((p) => p.sessions_used < p.sessions_total && p.packages?.service_key === A?.service_key);
+  const TOTAL = A?.price ?? 0;
   const methods = [0, 1, 2].map((i) => ({ pick: () => setSt({ ...st, m: i }),
-    style: css("flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" +
+    style: css("flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" + (i === 2 && !pkg0 ? "opacity:0.45;" : "") +
       (st.m === i ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 4px 12px rgba(123,70,135,0.06)")) }));
   const press = (k: string) => { let r = st.recv;
-    if (k === "del") r = r.slice(0, -1); else if (r.length < 7) r = (r === "0" ? "" : r) + k;
+    if (k === "del") r = r.slice(0, -1); else if (r.length < 9) r = (r === "0" ? "" : r) + k;
     setSt({ ...st, recv: r }); };
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"].map((k) => ({ k: k === "del" ? "⌫" : k, aria: k === "del" ? "حذف" : k, press: () => press(k) }));
-  const quick = [TOTAL, 2000, 5000].map((v) => ({ label: n(v), set: () => setSt({ ...st, recv: String(v) }),
+  const round = (v: number, step: number) => Math.ceil(v / step) * step;
+  const quickVals = [...new Set([TOTAL, round(TOTAL, 5000), round(TOTAL, 10000)])].filter((v) => v > 0);
+  const quick = quickVals.map((v) => ({ label: n(v), set: () => setSt({ ...st, recv: String(v) }),
     style: css("height:56px;border-radius:28px;font-family:var(--font-rubik),sans-serif;font-size:17px;font-weight:500;" +
       (Number(st.recv) === v ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#7B4687;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
   const r = Number(st.recv || 0), diff = r - TOTAL;
   const cash = st.m === 0, card = st.m === 1, pkg = st.m === 2;
   const recv = n(r), changeLabel = diff >= 0 ? "الباقي للمراجعة" : "المبلغ ناقص", change = n(Math.abs(diff)) + " ل.س";
   const changeStyle = css("font-size:30px;font-weight:700;font-family:var(--font-rubik),sans-serif;line-height:1.3;color:" + (diff >= 0 ? "#2E7D50" : "#B03D6A"));
-  const due = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : "بدون خصم";
+  const dueTxt = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : "بدون خصم";
+  const canIssue = !!A && !busy && (cash ? r >= TOTAL : card ? true : !!pkg0);
+  const issue = async () => {
+    if (!A) return;
+    setBusy(true); setErr(null);
+    try {
+      const inv = await createInvoice({
+        patientId: A.patient_id, appointmentId: A.id, walkInName: A.patient_id ? null : A.walk_in_name,
+        lines: [{ kind: "service", ref: A.service_key, qty: 1, label: A.services?.name ?? A.service_key, unit_price: TOTAL }],
+        discount: pkg ? TOTAL : 0,
+        payments: pkg ? [{ method: "package", amount: 0 }] : [{ method: cash ? "cash" : "card", amount: TOTAL }],
+        patientPackageId: pkg ? pkg0?.id : null,
+      });
+      setDoneNo((inv as { no?: string } | null)?.no ?? "✓");
+      setSelId(null); setSt({ m: 0, recv: "" });
+      if (print) setTimeout(() => window.print(), 100);
+    } catch (e) { setErr(financeError(e)); }
+    setBusy(false);
+  };
   return (
     <Stage width={1194} height={834}  background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
@@ -81,7 +116,7 @@ export default function Page() {
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>الكاشير
             </div>
-            <div style={{ fontSize: 15, color: C.sub2 }}>جلسة منتهية بانتظار الدفع · {DONE_TODAY.length} جلسات انتهت اليوم
+            <div style={{ fontSize: 15, color: C.sub2 }}>{due.length ? `${due.length} بانتظار الدفع` : "لا جلسات بانتظار الدفع"} · {doneCount} جلسات انتهت اليوم
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -89,29 +124,48 @@ export default function Page() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
               </svg>
-              <span>{arDate(TODAY)}
+              <span><NowText part="date" />
               </span>
               <span style={{ width: 1, height: 20, background: C.border }} />
-              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
+              <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
               </span>
             </div>
           </div>
         </div>
+        {due.length > 1 && (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", flexShrink: 0 }}>
+            {due.map((a) => (
+              <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDoneNo(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
+                {nameOf(a)} · {clock(a.starts_at)}
+              </button>
+            ))}
+          </div>
+        )}
+        {doneNo && <div style={{ padding: "12px 18px", borderRadius: 20, background: "#E6F4EC", color: "#2E7D50", fontWeight: 700, fontSize: 16 }}>تم إصدار الفاتورة {doneNo}</div>}
+        {err && <ErrorNote>{err}</ErrorNote>}
+        {q.error && <ErrorNote>{q.error}</ErrorNote>}
+        {(q.loading || !A) ? (
+          <div style={{ flexGrow: 1, borderRadius: 30, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center", padding: 40 }}>
+            {q.loading ? <Loading /> : <>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>لا جلسات بانتظار الدفع</div>
+              <div style={{ fontSize: 16, color: C.sub, lineHeight: 1.7, maxWidth: 520 }}>تظهر هنا جلسات اليوم بعد انتهائها (أو أثناءها) لإصدار فاتورتها. أنهي الجلسة من شاشة الاستقبال أولاً.</div>
+              <Link href={R.T_Desk} style={{ color: C.accent, fontWeight: 700, fontSize: 17 }}>شاشة الاستقبال</Link>
+            </>}
+          </div>
+        ) : (
         <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0" }}>
           <div style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "20px 22px 6px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14 }}>
-                <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(A.name)}
+                <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(nameOf(A))}
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 19, fontWeight: 700 }}>{A.name}
-                    <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-                    </span>
+                  <div style={{ fontSize: 19, fontWeight: 700 }}>{nameOf(A)}
                   </div>
-                  <div style={{ fontSize: 14, color: C.sub2 }}>ملف {A.fileNo} · دور {A.queueNo} · {A.time}
+                  <div style={{ fontSize: 14, color: C.sub2 }}>{A.patients ? `ملف ${A.patients.file_no} · ` : ""}{clock(A.starts_at)}
                   </div>
                 </div>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 30, padding: "0 14px", borderRadius: 15, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>انتهت
+                <span style={{ display: "inline-flex", alignItems: "center", height: 30, padding: "0 14px", borderRadius: 15, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", background: "#F0EDF0", color: "#695D6B" }}>{STATUS[A.status] ?? A.status}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderTop: "1px solid #EDE2F1" }}>
@@ -121,9 +175,9 @@ export default function Page() {
                   </svg>
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>{A.serviceName}
+                  <div style={{ fontSize: 17, fontWeight: 700 }}>{A.services?.name ?? A.service_key}
                   </div>
-                  <div style={{ fontSize: 13, color: C.sub2 }}>{A.specialist} · {A.room} · {A.minutes} دقيقة
+                  <div style={{ fontSize: 13, color: C.sub2 }}>{[A.staff?.name, A.rooms?.name, `${A.minutes} دقيقة`].filter(Boolean).join(" · ")}
                   </div>
                 </div>
                 <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>{money(TOTAL)}
@@ -138,7 +192,7 @@ export default function Page() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderTop: "1px solid #EDE2F1", fontSize: 16 }}>
                 <span style={{ color: C.sub }}>الخصم
                 </span>
-                <span style={{ fontWeight: 700 }}>لا يوجد
+                <span style={{ fontWeight: 700 }}>{pkg ? "رصيد باقة" : "لا يوجد"}
                 </span>
               </div>
             </div>
@@ -153,7 +207,7 @@ export default function Page() {
                   <div style={{ fontSize: 15, color: C.onDark }}>المطلوب دفعه
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 46, fontWeight: 700, lineHeight: 1.2, fontFamily: "var(--font-rubik), Rubik, sans-serif" }}>{due}
+                    <span style={{ fontSize: 46, fontWeight: 700, lineHeight: 1.2, fontFamily: "var(--font-rubik), Rubik, sans-serif" }}>{dueTxt}
                     </span>
                     <span style={{ fontSize: 18, color: C.onDark }}>ل.س
                     </span>
@@ -185,10 +239,10 @@ export default function Page() {
                 <Toggle on={print} onChange={setPrint} label="طباعة إيصال ورقي" />
               </div>
             </div>
-            <button type="button" style={{ marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <button type="button" onClick={issue} disabled={!canIssue} style={{ opacity: canIssue ? 1 : 0.55, fontFamily: "inherit", marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2M9 7h6M9 11h6M13 15h2" />
-              </svg>إصدار الفاتورة
+              </svg>{busy ? "جارٍ الإصدار…" : "إصدار الفاتورة"}
             </button>
           </div>
           <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -271,14 +325,15 @@ export default function Page() {
                     <path d="M3 9a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 11 5 12 8c1-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5" />
                   </svg>
                 </span>
-                <div style={{ fontSize: 24, fontWeight: 700 }}>تُخصم جلسة واحدة من باقتها
+                <div style={{ fontSize: 24, fontWeight: 700 }}>{pkg0 ? "تُخصم جلسة واحدة من باقتها" : "لا توجد باقة فعّالة لهذه الخدمة"}
                 </div>
-                <div style={{ fontSize: 16, color: C.sub, lineHeight: 1.6 }}>لا يُطلب أي مبلغ اليوم، وتظهر الجلسة في رحلتها على التطبيق.
+                <div style={{ fontSize: 16, color: C.sub, lineHeight: 1.6 }}>{pkg0 ? `${pkg0.packages?.name ?? "الباقة"} — متبقٍ ${pkg0.sessions_total - pkg0.sessions_used} من ${pkg0.sessions_total} جلسات. لا يُطلب أي مبلغ اليوم.` : "اختاري الدفع نقداً أو بالبطاقة."}
                 </div>
               </div>
             </>)}
           </div>
         </div>
+        )}
       </div>
 
     </Stage>

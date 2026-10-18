@@ -69,7 +69,7 @@ export default function ConsultSummaryPage() {
 
       <div style={{ marginTop: "auto", display: "flex", gap: 10 }}>
         <IconButton icon="msg" label="مراسلة المركز" size={58} href={R.P_Chat} />
-        <PrimaryButton icon="calendar" href={R.Booking} style={{ flexGrow: 1 }}>حجز جلسة في المركز</PrimaryButton>
+        <PrimaryButton icon="cal" href={R.Booking} style={{ flexGrow: 1 }}>حجز جلسة في المركز</PrimaryButton>
       </div>
     </PhoneScreen>
   );

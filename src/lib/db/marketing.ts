@@ -150,9 +150,12 @@ export async function submitGift(g: { patient_id: string; recipient_name: string
 
 export type Policies = {
   free_change_hours: number; reminders_hours: number[]; max_discount_without_approval: number;
-  cancel_fee_percent?: number; no_show_limit?: number; deposit_required?: boolean; text?: string;
+  no_show_rule: number; deposit_required: boolean; waitlist: boolean; waitlist_reply_min: number; channels: string[];
 };
-export const POLICIES_DEFAULT: Policies = { free_change_hours: 6, reminders_hours: [24, 2], max_discount_without_approval: 10, cancel_fee_percent: 0, no_show_limit: 0, deposit_required: false, text: "" };
+export const POLICIES_DEFAULT: Policies = {
+  free_change_hours: 6, reminders_hours: [24, 2], max_discount_without_approval: 10,
+  no_show_rule: 0, deposit_required: false, waitlist: true, waitlist_reply_min: 30, channels: ["app"],
+};
 export const getPolicies = () => getSetting<Policies>("policies", POLICIES_DEFAULT);
 
 /* ---------- audit ---------- */

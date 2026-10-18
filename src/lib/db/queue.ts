@@ -185,39 +185,7 @@ export async function takenSlots(day: string, roomId: string | null) {
   return need(await q).map((r) => ({ start: clock(r.starts_at), minutes: r.minutes }));
 }
 
-/* ---------- cashier ---------- */
-
-export type InvoiceLine = { label: string; qty: number; unit_price: number };
-
-/** Finished (or in-session) appointments today that have no invoice yet. */
-export async function listUnbilled() {
-  const today = await listToday();
-  const ids = today.map((a) => a.id);
-  if (!ids.length) return { due: [] as QueueAppt[], today };
-  const billed = need(await supabase.from("invoices").select("appointment_id").in("appointment_id", ids));
-  const set = new Set(billed.map((b) => b.appointment_id));
-  return { due: today.filter((a) => (a.status === "done" || a.status === "in_session") && !set.has(a.id)), today };
-}
-
-export async function createInvoice(a: QueueAppt, lines: InvoiceLine[], discount: number, method: Tables<"invoices">["method"]) {
-  const { data: u } = await supabase.auth.getUser();
-  const subtotal = lines.reduce((s, l) => s + l.qty * l.unit_price, 0);
-  const total = Math.max(0, subtotal - discount);
-  const inv = need(await supabase.from("invoices").insert({
-    patient_id: a.patient_id, appointment_id: a.id, subtotal, discount, total, method, paid: true, created_by: u.user?.id ?? null,
-  }).select().single());
-  if (lines.length) need(await supabase.from("invoice_items").insert(lines.map((l) => ({ ...l, invoice_id: inv.id }))));
-  await supabase.from("appointments").update({ pay_method: method }).eq("id", a.id);
-  invalidate("queue"); invalidate("invoices"); invalidate("finance");
-  return inv;
-}
-
-/** Today's paid total (for the cashier summary). */
-export async function todayTakings() {
-  const { from, to } = dayRange();
-  const rows = need(await supabase.from("invoices").select("total, method").gte("created_at", from).lt("created_at", to));
-  return { total: rows.reduce((s, r) => s + r.total, 0), count: rows.length };
-}
+/* cashier: invoices are created through @/lib/db/finance (createInvoice / listCashierQueue). */
 
 /* ---------- consent, photos, eligibility ---------- */
 
