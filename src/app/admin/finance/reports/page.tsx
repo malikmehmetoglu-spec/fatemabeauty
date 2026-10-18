@@ -170,10 +170,10 @@ export default function Page() {
                   <text x="11.7" y="268" textAnchor="middle" fontSize="11" fill="#A595AC" fontFamily="Rubik">30</text>
                   <line x1="0" x2="700" y1="64.6" y2="64.6" stroke="#7B4687" strokeWidth="1.2" strokeDasharray="4 4" />
                   <defs>
-                    <lineargradient id="gb" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stopColor="#A877B6" />
                       <stop offset="1" stopColor="#D9BCE5" />
-                    </lineargradient>
+                    </linearGradient>
                   </defs>
                 </svg>
               </div>

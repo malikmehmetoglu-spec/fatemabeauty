@@ -1,15 +1,27 @@
 "use client";
 
 /** W_Reports.dc.html — التقارير. */
-import Link from "next/link";
 import { Fragment, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { R } from "@/lib/routes";
-import { C, FATEMA_PHOTO, LOGO } from "@/lib/tokens";
-import { css, fmt } from "@/app/admin/_h/css";
+import { APPOINTMENTS_TODAY, COUNT_TODAY, NOW, REVENUE_EXPECTED, REVENUE_SO_FAR, SERVICES } from "@/lib/data";
+import { money } from "@/lib/format";
+import { C } from "@/lib/tokens";
+import { ch, css } from "@/app/admin/_h/css";
 
 export default function Page() {
-  // LOGIC
+  const [p, setP] = useState(1);
+  const v = { per: ["اليوم", "آخر 8 أسابيع", "هذا الشهر", "فترة مخصصة"].map((name, i) => ({ name, on: p === i, style: ch(p === i, 34), pick: () => setP(i) })) };
+  // today's service mix (donut), from the real schedule
+  const COLORS = [C.accent, C.accent, "#C997D4", "#E3C4EA", "#E3D5E6"];
+  const CIRC = 339.3;
+  let acc = 0;
+  const dist = SERVICES.map((x) => ({ key: x.key, name: x.name, n: APPOINTMENTS_TODAY.filter((a) => a.service === x.key).length }))
+    .sort((a, b) => b.n - a.n)
+    .map((d, i) => { const len = (d.n / COUNT_TODAY) * CIRC; const r = { ...d, color: COLORS[i], dash: len - 2, offset: acc }; acc += len; return r; });
+  const done = APPOINTMENTS_TODAY.filter((a) => a.status === "انتهت").length;
+  const inSession = APPOINTMENTS_TODAY.filter((a) => a.status === "في الجلسة").length;
+  const due = APPOINTMENTS_TODAY.filter((a) => a.status === "انتهت" || a.status === "لم تحضر");
+  const noShow = due.filter((a) => a.status === "لم تحضر").length;
   return (
     <AdminShell
       active="التقارير"
@@ -42,8 +54,8 @@ export default function Page() {
                 <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" />
               </svg>
             </div>
-            <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: "1.25", marginTop: 6 }}>17,500 ل.س</div>
-            <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>من 58,000 ل.س متوقعة</div>
+            <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: "1.25", marginTop: 6 }}>{money(REVENUE_SO_FAR)}</div>
+            <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>من {money(REVENUE_EXPECTED)} متوقعة</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -54,8 +66,8 @@ export default function Page() {
                 </svg>
               </span>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25", marginTop: 4, color: C.ink }}>26</div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>7 انتهت · 3 في الجلسة</div>
+            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25", marginTop: 4, color: C.ink }}>{COUNT_TODAY}</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{done} انتهت · {inSession} في الجلسة</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -66,8 +78,8 @@ export default function Page() {
                 </svg>
               </span>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25", marginTop: 4, color: C.ink }}>12%</div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>1 من 8 مواعيد حتى 12:30</div>
+            <div style={{ fontSize: 28, fontWeight: 700, lineHeight: "1.25", marginTop: 4, color: C.ink }}>{Math.floor((noShow / due.length) * 100)}%</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{noShow} من {due.length} مواعيد حتى {NOW}</div>
           </div>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 12px 30px rgba(123,70,135,0.10), 0 2px 6px rgba(123,70,135,0.05)", boxSizing: "content-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -85,7 +97,8 @@ export default function Page() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {v.per.map((p, pI) => (
             <Fragment key={pI}>
-              <button type="button" onClick={p.pick} style={css(p.style, "button")}>{p.name}</button>
+              <button type="button" aria-pressed={p.on} onClick={p.pick}
+ style={css(p.style, "button")}>{p.name}</button>
             </Fragment>
           ))}
           <span style={{ marginInlineStart: "auto", fontSize: 12, color: C.sub2, display: "flex", alignItems: "center", gap: 6 }}>
@@ -116,21 +129,21 @@ export default function Page() {
               </span>
             </div>
             <div style={{ marginTop: 14 }}>
-              <svg width="100%" height="182" viewBox="0 0 560 182" preserveaspectratio="none" style={{ overflow: "visible" }}>
+              <svg width="100%" height="182" viewBox="0 0 560 182" preserveAspectRatio="none" style={{ overflow: "visible" }}>
                 <defs>
-                  <lineargradient id="ag" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stopColor="#C9A2D8" stopOpacity="0.55" />
                     <stop offset="1" stopColor="#C9A2D8" stopOpacity="0" />
-                  </lineargradient>
+                  </linearGradient>
                 </defs>
                 <line x1="0" x2="560" y1="117.5" y2="117.5" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="113.5" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">110</text>
+                <text x="558" y="113.5" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">110</text>
                 <line x1="0" x2="560" y1="85.0" y2="85.0" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="81.0" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">120</text>
+                <text x="558" y="81.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">120</text>
                 <line x1="0" x2="560" y1="52.5" y2="52.5" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="48.5" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">130</text>
+                <text x="558" y="48.5" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">130</text>
                 <line x1="0" x2="560" y1="20.0" y2="20.0" stroke="#EDE2F1" strokeWidth="1" />
-                <text x="558" y="16.0" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">140</text>
+                <text x="558" y="16.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">140</text>
                 <path d="M540.0,160 L540.0,111.0 L465.7,91.5 L391.4,81.8 L317.1,94.8 L242.9,65.5 L168.6,49.2 L94.3,59.0 L20.0,33.0 L20.0,160 Z" fill="url(#ag)" />
                 <polyline points="540.0,111.0 465.7,91.5 391.4,81.8 317.1,94.8 242.9,65.5 168.6,49.2 94.3,59.0 20.0,33.0" fill="none" stroke="#7B4687" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                 <circle cx="540.0" cy="111.0" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
@@ -141,17 +154,17 @@ export default function Page() {
                 <circle cx="168.6" cy="49.2" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
                 <circle cx="94.3" cy="59.0" r="3.5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2" />
                 <circle cx="20.0" cy="33.0" r="5" fill="#FFFFFF" stroke="#7B4687" strokeWidth="2.5" />
-                <text x="540.0" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">17/8</text>
-                <text x="465.7" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">24/8</text>
-                <text x="391.4" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">31/8</text>
-                <text x="317.1" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">7/9</text>
-                <text x="242.9" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">14/9</text>
-                <text x="168.6" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">21/9</text>
-                <text x="94.3" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">28/9</text>
-                <text x="20.0" y="176" font-size="10.5" fill="#866F8D" text-anchor="middle" font-family="El Messiri">5/10</text>
+                <text x="540.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">17/8</text>
+                <text x="465.7" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">24/8</text>
+                <text x="391.4" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">31/8</text>
+                <text x="317.1" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">7/9</text>
+                <text x="242.9" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">14/9</text>
+                <text x="168.6" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">21/9</text>
+                <text x="94.3" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">28/9</text>
+                <text x="20.0" y="176" fontSize="10.5" fill="#866F8D" textAnchor="middle" fontFamily="El Messiri">5/10</text>
                 <g transform="translate(20.0,17.0)">
                   <rect x="-22" y="-20" width="44" height="22" rx="11" fill="#7B4687" />
-                  <text x="0" y="-5" font-size="12" fill="#FFFFFF" text-anchor="middle" font-family="Rubik" font-weight="700">136</text>
+                  <text x="0" y="-5" fontSize="12" fill="#FFFFFF" textAnchor="middle" fontFamily="Rubik" fontWeight="700">136</text>
                 </g>
               </svg>
             </div>
@@ -166,50 +179,30 @@ export default function Page() {
                 </span>
                 <div style={{ lineHeight: "1.3", minWidth: "0" }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>توزيع الخدمات</div>
-                  <div style={{ fontSize: 12, color: C.sub2 }}>مواعيد اليوم 26</div>
+                  <div style={{ fontSize: 12, color: C.sub2 }}>مواعيد اليوم {COUNT_TODAY}</div>
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
               <div style={{ position: "relative", width: 140, height: 140, flexShrink: 0 }}>
                 <svg width="140" height="140" viewBox="0 0 140 140">
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="#7B4687" strokeWidth="22" strokeDasharray="115.4 339.3" strokeDashoffset="0.0" transform="rotate(-90 70 70)" />
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="#7B4687" strokeWidth="22" strokeDasharray="89.3 339.3" strokeDashoffset="-117.4" transform="rotate(-90 70 70)" />
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="#C997D4" strokeWidth="22" strokeDasharray="50.2 339.3" strokeDashoffset="-208.8" transform="rotate(-90 70 70)" />
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="#E3C4EA" strokeWidth="22" strokeDasharray="50.2 339.3" strokeDashoffset="-261.0" transform="rotate(-90 70 70)" />
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="#E3D5E6" strokeWidth="22" strokeDasharray="24.1 339.3" strokeDashoffset="-313.2" transform="rotate(-90 70 70)" />
+                  {dist.map((d) => (
+                    <circle key={d.key} cx="70" cy="70" r="54" fill="none" stroke={d.color} strokeWidth="22" strokeDasharray={`${d.dash.toFixed(1)} 339.3`} strokeDashoffset={(-d.offset).toFixed(1)} transform="rotate(-90 70 70)" />
+                  ))}
                 </svg>
                 <div style={{ position: "absolute", inset: "0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: "1.1" }}>
-                  <span style={{ fontSize: 26, fontWeight: 700 }}>26</span>
+                  <span style={{ fontSize: 26, fontWeight: 700 }}>{COUNT_TODAY}</span>
                   <span style={{ fontSize: 11, color: C.sub2 }}>موعداً</span>
                 </div>
               </div>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 5, background: C.accent }} />
-                  <span style={{ flex: 1, whiteSpace: "nowrap" }}>جلسة ليزر</span>
-                  <span style={{ fontWeight: 700 }}>9</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 5, background: C.accent }} />
-                  <span style={{ flex: 1, whiteSpace: "nowrap" }}>تنظيف عميق للبشرة</span>
-                  <span style={{ fontWeight: 700 }}>7</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 5, background: "#C997D4" }} />
-                  <span style={{ flex: 1, whiteSpace: "nowrap" }}>هيدرافيشل</span>
-                  <span style={{ fontWeight: 700 }}>4</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 5, background: "#E3C4EA" }} />
-                  <span style={{ flex: 1, whiteSpace: "nowrap" }}>تقشير البشرة</span>
-                  <span style={{ fontWeight: 700 }}>4</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 5, background: "#E3D5E6" }} />
-                  <span style={{ flex: 1, whiteSpace: "nowrap" }}>استشارة في المركز</span>
-                  <span style={{ fontWeight: 700 }}>2</span>
-                </div>
+                {dist.map((d) => (
+                  <div key={d.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 5, background: d.color }} />
+                    <span style={{ flex: 1, whiteSpace: "nowrap" }}>{d.name}</span>
+                    <span style={{ fontWeight: 700 }}>{d.n}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -339,13 +332,13 @@ export default function Page() {
               </span>
               <span style={{ fontSize: 11.5, color: C.sub2, marginInlineStart: "auto" }}>هذا الأسبوع حتى الآن</span>
             </div>
-            <svg width="100%" height="150" viewBox="0 0 300 150" preserveaspectratio="none" style={{ marginTop: 6 }}>
+            <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none" style={{ marginTop: 6 }}>
               <line x1="0" x2="274" y1="136.0" y2="136.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="140.0" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">4.0</text>
+              <text direction="ltr" x="300" y="140.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">4.0</text>
               <line x1="0" x2="274" y1="75.0" y2="75.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="79.0" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">4.5</text>
+              <text direction="ltr" x="300" y="79.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">4.5</text>
               <line x1="0" x2="274" y1="14.0" y2="14.0" stroke="#EDE2F1" />
-              <text direction="ltr" x="300" y="18.0" font-size="10" fill="#A595AC" text-anchor="end" font-family="Rubik">5.0</text>
+              <text direction="ltr" x="300" y="18.0" fontSize="10" fill="#A595AC" textAnchor="end" fontFamily="Rubik">5.0</text>
               <polyline points="262.0,75.0 225.7,62.8 189.4,87.2 153.1,62.8 116.9,75.0 80.6,50.6 44.3,62.8 8.0,87.2" fill="none" stroke="#A877B6" strokeWidth="2.4" strokeLinejoin="round" />
               <circle cx="262.0" cy="75.0" r="3.5" fill="#FFFFFF" stroke="#A877B6" strokeWidth="2" />
               <circle cx="225.7" cy="62.8" r="3.5" fill="#FFFFFF" stroke="#A877B6" strokeWidth="2" />
@@ -362,32 +355,4 @@ export default function Page() {
     </AdminShell>
   );
 }
-
-/* SCRIPT
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"p": 1}; }
-
-  tg(on) {
-    return 'width:52px;height:30px;border-radius:15px;padding:3px;box-sizing:border-box;border:none;flex-shrink:0;display:flex;justify-content:' + (on ? 'flex-end' : 'flex-start') +
-      ';background:' + (on ? 'linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 14px rgba(123,70,135,0.30)' : '#E6DDE8');
-  }
-  ch(on, h) {
-    h = h || 36;
-    return 'height:' + h + 'px;padding:0 14px;border-radius:' + (h / 2) + 'px;font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid ' + (on ? '#FFFFFF' : '#EADCF0') +
-      ';background:' + (on ? 'linear-gradient(160deg,#F1E3F6,#D9BCE5)' : '#FFFFFF') + ';color:' + (on ? '#7B4687' : '#866F8D') +
-      ';box-shadow:' + (on ? '0 6px 14px rgba(150,100,170,0.25)' : '0 3px 10px rgba(123,70,135,0.05)');
-  }
-  fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-
-
-  renderVals() {
-    const s = this.state; const v = { accent: this.props.accent ?? '#7B4687' };
-
-    v.per = ['اليوم', 'آخر 8 أسابيع', 'هذا الشهر', 'فترة مخصصة'].map((name, i) => ({ name, style: this.ch(s.p === i, 34), pick: () => this.setState({ p: i }) }));
-
-    return v;
-  }
-}
-
-*/
 
