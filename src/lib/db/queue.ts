@@ -325,9 +325,10 @@ export function useOnNewCall(rows: TvRow[] | null, onCall: (r: TvRow) => void) {
   const cb = useRef(onCall); cb.current = onCall;
   useEffect(() => {
     if (!rows) return;
-    const top = lastCalled(rows);
+    // newest call of all rows (also finished ones), so a visit finishing never looks like a "new" call
+    const top = rows.filter((r) => r.called_at).sort((a, b) => b.called_at!.localeCompare(a.called_at!))[0] ?? null;
     const at = top?.called_at ?? null;
     if (last.current === undefined) { last.current = at; return; }
-    if (at && at !== last.current) { last.current = at; cb.current(top!); }
+    if (at && at > (last.current ?? "")) { last.current = at; if (top!.status !== "done") cb.current(top!); }
   }, [rows]);
 }
