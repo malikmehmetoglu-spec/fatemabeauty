@@ -5,11 +5,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
-import { BG_WIDE, C, SELECTED, SH, SHB } from "@/lib/tokens";
+import { BG_WIDE, C, SELECTED, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
-import { Icon, IconButton, Logo } from "@/components/ui";
+import { Icon, Logo } from "@/components/ui";
 import { staffPhoto } from "@/lib/db/staff";
 import { Blobs } from "./PhoneScreen";
+import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
 
 export type AdminSection =
@@ -42,24 +43,30 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const router = useRouter();
   const { loading, staff } = useSession();
   const [pwOpen, setPwOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [q, setQ] = useState("");
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   if (loading || !staff) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
   }
   const signOut = async () => { await supabase.auth.signOut(); router.replace(R.W_Login); };
+  const search = () => { const t = q.trim(); if (t) router.push(`${R.W_Patients}?q=${encodeURIComponent(t)}`); };
   return (
-    <div dir="rtl" style={{ minHeight: "100dvh", minWidth: 1280, background: BG_WIDE, color: C.ink, display: "flex", position: "relative", isolation: "isolate", overflowX: "clip" }}>
+    <div dir="rtl" className={s.root} style={{ background: BG_WIDE }}>
       <Blobs width={900} />
-      <aside style={{
-        width: 248, flexShrink: 0, margin: "16px 16px 16px 0", borderRadius: 30, background: "rgba(255,255,255,0.72)",
-        backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH,
-        padding: "22px 14px", display: "flex", flexDirection: "column", gap: 4, position: "sticky", top: 16,
-        height: "calc(100dvh - 32px)", minHeight: 820,
-      }}>
+      <div className={s.topbar}>
+        <button type="button" className={s.menuBtn} onClick={() => setMenu(true)} aria-label="القائمة" style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: C.white, boxShadow: SHB, alignItems: "center", justifyContent: "center" }}>
+          <Icon name="list" color={C.accent} size={20} />
+        </button>
+        <Link href={R.W_Dashboard}><Logo height={40} /></Link>
+        <span style={{ width: 44 }} />
+      </div>
+      {menu && <div className={s.scrim} onClick={() => setMenu(false)} aria-hidden />}
+      <aside className={`${s.aside} ${menu ? s.asideOpen : ""}`} onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenu(false); }}>
         <Link href={R.W_Dashboard} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
           <Logo height={78} />
         </Link>
-        <nav aria-label="أقسام لوحة الإدارة" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <nav aria-label="أقسام لوحة الإدارة" className={s.nav}>
           {NAV.map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
@@ -89,19 +96,18 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           </button>
         </div>
       </aside>
-      <main style={{ flexGrow: 1, minWidth: 0, padding: "26px 28px 24px 16px", display: "flex", flexDirection: "column", gap: 18, position: "relative" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <div style={{ lineHeight: 1.3 }}>
-            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.ink }}>{title}</h1>
+      <main className={s.main}>
+        <header className={s.header}>
+          <div style={{ lineHeight: 1.3, minWidth: 0 }}>
+            <h1 className={s.title}>{title}</h1>
             {subtitle && <div style={{ fontSize: 13, color: C.sub2 }}>{subtitle}</div>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className={s.tools}>
             {actions}
-            <label style={{ height: 46, width: 260, borderRadius: 23, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 8, padding: "0 16px", color: C.muted, fontSize: 13 }}>
+            <form className={s.search} role="search" onSubmit={(e) => { e.preventDefault(); search(); }}>
               <Icon name="search" color={C.muted} size={18} />
-              <input aria-label="بحث" placeholder="ابحثي عن مراجعة أو رقم ملف" style={{ border: "none", background: "transparent", fontSize: 13, flex: 1, minWidth: 0 }} />
-            </label>
-            <IconButton icon="bell" label="الإشعارات" badge />
+              <input aria-label="بحث عن مراجعة" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحثي عن مراجعة أو رقم ملف" />
+            </form>
           </div>
         </header>
         {children}

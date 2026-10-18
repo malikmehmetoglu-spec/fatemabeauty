@@ -65,17 +65,19 @@ export function TopBar({ title, back = R.Main, right }: { title: ReactNode; back
  * Long content scrolls (scrollbars are hidden globally).
  */
 export function PhoneScreen({
-  children, tab, padding, gap = 14, background = BG, blobs = true, overlay, style,
+  children, tab, padding, gap = 14, background = BG, blobs = true, overlay, style, wide = false,
 }: {
   children: ReactNode; tab?: TabLabel; padding?: string; gap?: number; background?: string;
   blobs?: boolean; overlay?: ReactNode; style?: CSSProperties;
+  /** Store-style pages: grow up to 1180px on desktop instead of the 480px phone column. */
+  wide?: boolean;
 }) {
   const top = "calc(env(safe-area-inset-top, 0px) + 22px)";
   const bottom = tab ? "calc(env(safe-area-inset-bottom, 0px) + 104px)" : "calc(env(safe-area-inset-bottom, 0px) + 22px)";
   return (
     <div style={{ minHeight: "100dvh", background: "#E9DDEE", display: "flex", justifyContent: "center" }}>
       <main dir="rtl" style={{
-        width: "100%", maxWidth: 480, minHeight: "100dvh", background, color: C.ink, position: "relative",
+        width: "100%", maxWidth: wide ? 1180 : 480, minHeight: "100dvh", background, color: C.ink, position: "relative",
         isolation: "isolate", overflow: "hidden", display: "flex", flexDirection: "column", gap,
         padding: padding ?? `${top} 20px ${bottom}`, ...style,
       }}>
