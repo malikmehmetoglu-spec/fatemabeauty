@@ -1,0 +1,268 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
+
+import { Fragment, useState } from "react";
+import Link from "next/link";
+import { Stage } from "@/components/shell";
+import { R } from "@/lib/routes";
+import { C, SH, SHB, SH_SOFT } from "@/lib/tokens";
+
+/** T_Photos.dc.html */
+export default function Page() {
+  // ROOT: width: 1194px; height: 834px; box-sizing: border-box; background: linear-gradient(170deg, #ECDDF2 0%, #F2E8F5 40%, #F9F5FB 100%); font-family: 'El Messiri', serif; color: #35213D; overflow: hidden; display: flex; flex-direction: column; padding: 36px 40px 32px; gap: 20px; position: relative; isolation: isolate
+  return (
+    <Stage width={1194} height={834} padding="" direction="row" gap={0}>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
+        <Link href={R.T_Consent} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </Link>
+        <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>تصوير قبل الجلسة
+          </div>
+          <div style={{ fontSize: 15, color: C.sub2 }}>الصور محفوظة في ملف المراجعة فقط · مع هبة العلي
+            <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
+            </span>
+          </div>
+        </div>
+        <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
+          </svg>
+          <span>الثلاثاء 13 تشرين الأول
+          </span>
+          <span style={{ width: 1, height: 20, background: C.border }} />
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>12:30
+          </span>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
+        <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>ل ع
+            </span>
+            <div style={{ lineHeight: 1.35 }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>لين عبود
+                <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: C.sub2 }}>ملف 1070 · تقشير البشرة · غرفة 2
+              </div>
+            </div>
+          </div>
+          <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>الزاوية
+              </div>
+              <div style={{ fontSize: 13, color: C.sub2 }}>نفس الزوايا في كل جلسة للمقارنة
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={angs[0].pick} style={angs[0].style}>أمامي
+              </button>
+              <button onClick={angs[1].pick} style={angs[1].style}>جانبي 45°
+              </button>
+              <button onClick={angs[2].pick} style={angs[2].style}>جانبي 90°
+              </button>
+            </div>
+          </div>
+          <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>صور قبل الجلسة
+              </div>
+              <div style={{ fontSize: 14, color: C.sub2 }}>{count}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={thumbs[0].pick} aria-label="أمامي" style={thumbs[0].style}>
+                {thumbs[0].done && (<>
+                  <span style={{ position: "absolute", top: 8, left: 8 }}>
+                    <span style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    </span>
+                  </span>
+                </>)}
+                {thumbs[0].todo && (<>
+                  <span style={{ position: "absolute", top: 46 }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BEA6C3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" />
+                    </svg>
+                  </span>
+                </>)}
+                <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 700, color: C.accent, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>أمامي
+                </span>
+              </button>
+              <button onClick={thumbs[1].pick} aria-label="جانبي 45°" style={thumbs[1].style}>
+                {thumbs[1].done && (<>
+                  <span style={{ position: "absolute", top: 8, left: 8 }}>
+                    <span style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    </span>
+                  </span>
+                </>)}
+                {thumbs[1].todo && (<>
+                  <span style={{ position: "absolute", top: 46 }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BEA6C3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" />
+                    </svg>
+                  </span>
+                </>)}
+                <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 700, color: C.accent, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>جانبي 45°
+                </span>
+              </button>
+              <button onClick={thumbs[2].pick} aria-label="جانبي 90°" style={thumbs[2].style}>
+                {thumbs[2].done && (<>
+                  <span style={{ position: "absolute", top: 8, left: 8 }}>
+                    <span style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg,#C9A2D8,#7B4687)", boxShadow: "0 6px 12px rgba(123,70,135,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    </span>
+                  </span>
+                </>)}
+                {thumbs[2].todo && (<>
+                  <span style={{ position: "absolute", top: 46 }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BEA6C3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" />
+                    </svg>
+                  </span>
+                </>)}
+                <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 700, color: C.accent, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>جانبي 90°
+                </span>
+              </button>
+            </div>
+          </div>
+          <div style={{ borderRadius: 24, padding: "14px 16px", background: "linear-gradient(145deg, rgba(255,255,255,0.8), rgba(243,234,246,0.8))", border: "1px solid #FFFFFF", boxShadow: SH_SOFT, display: "flex", flexDirection: "column", gap: 8, fontSize: 14, color: C.sub }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0" />
+              </svg>إضاءة الغرفة نفسها، بدون فلاش
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4l16 16M9 5h6l1 4H8zM8 9v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V9" />
+              </svg>بشرة نظيفة بلا مكياج، والشعر مرفوع
+            </div>
+          </div>
+          <button style={{ marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5 5-5M12 4v12" />
+            </svg>{saveLbl}
+          </button>
+        </div>
+        <div style={{ flex: 1, minWidth: "0", borderRadius: 38, position: "relative", overflow: "hidden", boxShadow: SH, border: "3px solid #FFFFFF", background: "radial-gradient(ellipse 45% 55% at 52% 42%, #F3D3C6 0%, #E7B9AC 35%, rgba(199,168,206,0.9) 60%, rgba(146,117,153,0.95) 100%), linear-gradient(160deg,#AC91B2,#715678)" }}>
+          <div style={{ position: "absolute", inset: "0", background: "radial-gradient(circle at 80% 10%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 40%)" }} />
+          <svg width="100%" height="100%" viewBox="0 -24 640 700" preserveAspectRatio="xMidYMid meet" style={{ position: "absolute", inset: "0" }} aria-hidden="true">
+            {a0 && (<>
+              <g fill="none" stroke="#FFFFFF" strokeWidth="3" strokeDasharray="10 9" opacity="0.95">
+                <ellipse cx="320" cy="250" rx="130" ry="170" />
+                <path d="M150 560c10-80 70-118 170-118s160 38 170 118" />
+              </g>
+              <g stroke="#FFFFFF" strokeWidth="1.5" opacity="0.6">
+                <line x1="320" y1="60" x2="320" y2="440" />
+                <line x1="170" y1="230" x2="470" y2="230" />
+              </g>
+              <g fill="#FFFFFF" opacity="0.85">
+                <circle cx="268" cy="230" r="4" />
+                <circle cx="372" cy="230" r="4" />
+              </g>
+            </>)}
+            {a1 && (<>
+              <g fill="none" stroke="#FFFFFF" strokeWidth="3" strokeDasharray="10 9" opacity="0.95">
+                <ellipse cx="305" cy="250" rx="122" ry="170" />
+                <path d="M420 214c10 18 22 36 24 48 1 7-6 10-16 12" />
+                <path d="M160 560c14-78 72-116 160-116s150 36 166 116" />
+              </g>
+              <g stroke="#FFFFFF" strokeWidth="1.5" opacity="0.6">
+                <line x1="345" y1="60" x2="345" y2="440" />
+                <line x1="170" y1="230" x2="470" y2="230" />
+              </g>
+              <g fill="#FFFFFF" opacity="0.85">
+                <circle cx="300" cy="228" r="4" />
+                <circle cx="388" cy="228" r="3.5" />
+              </g>
+            </>)}
+            {a2 && (<>
+              <g fill="none" stroke="#FFFFFF" strokeWidth="3" strokeDasharray="10 9" opacity="0.95">
+                <path d="M300 80c-70 0-110 60-110 150 0 60 18 110 50 140v60h110v-40c30 0 54-10 58-36l4-30 22-8-4-18 6-14-28-50c-4-100-42-154-108-154z" />
+                <path d="M170 560c10-60 50-96 90-100M350 460c60 6 110 40 124 100" />
+              </g>
+              <g stroke="#FFFFFF" strokeWidth="1.5" opacity="0.6">
+                <line x1="170" y1="230" x2="470" y2="230" />
+              </g>
+              <g fill="#FFFFFF" opacity="0.85">
+                <circle cx="368" cy="228" r="4" />
+              </g>
+            </>)}
+          </svg>
+          <span style={{ position: "absolute", top: 22, left: 22, width: 46, height: 46, borderTop: "4px solid rgba(255,255,255,0.9)", borderLeft: "4px solid rgba(255,255,255,0.9)", borderTopLeftRadius: 18 }} />
+          <span style={{ position: "absolute", top: 22, right: 22, width: 46, height: 46, borderTop: "4px solid rgba(255,255,255,0.9)", borderRight: "4px solid rgba(255,255,255,0.9)", borderTopRightRadius: 18 }} />
+          <span style={{ position: "absolute", bottom: 22, left: 22, width: 46, height: 46, borderBottom: "4px solid rgba(255,255,255,0.9)", borderLeft: "4px solid rgba(255,255,255,0.9)", borderBottomLeftRadius: 18 }} />
+          <span style={{ position: "absolute", bottom: 22, right: 22, width: 46, height: 46, borderBottom: "4px solid rgba(255,255,255,0.9)", borderRight: "4px solid rgba(255,255,255,0.9)", borderBottomRightRadius: 18 }} />
+          <div style={{ position: "absolute", top: 18, right: 84, left: 84, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ height: 44, padding: "0 16px", borderRadius: 22, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: C.accent }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" />
+              </svg>الزاوية: {angName}
+            </div>
+            <div style={{ height: 44, padding: "0 16px", borderRadius: 22, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: C.ink }}>
+              <span style={{ width: 9, height: 9, borderRadius: 5, background: C.ok }} />{shotState}
+            </div>
+          </div>
+          <div style={{ position: "absolute", bottom: 20, left: "0", right: "0", display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
+            <button aria-label="شبكة المحاذاة" style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 4L4 8l8 4 8-4-8-4M4 12l8 4 8-4M4 16l8 4 8-4" />
+              </svg>
+            </button>
+            <button onClick={shoot} aria-label="التقاط الصورة" style={{ width: 88, height: 88, borderRadius: 44, border: "5px solid rgba(255,255,255,0.95)", background: "transparent", padding: 5, boxShadow: "0 10px 30px rgba(53,33,61,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0 3 3 0 1 0-6 0" />
+                </svg>
+              </span>
+            </button>
+            <button aria-label="إعادة التصوير" style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </Stage>
+  );
+}
+
+/* SCRIPT
+ data-props='{"accent":{"editor":"color","default":"#7B4687","options":["#7B4687","#5E3369","#8A5A99","#A0569E"]},"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { ang: 1, shots: [true, false, false] }; }
+  renderVals() {
+    const st = this.state;
+    const names = ["أمامي", "جانبي 45°", "جانبي 90°"];
+    const sel = 'background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687';
+    const angs = names.map((n, i) => ({ pick: () => this.setState({ ang: i }),
+      style: 'flex:1;height:58px;border-radius:29px;font-family:inherit;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;' +
+        (st.ang === i ? sel : 'background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)') }));
+    const thumbs = names.map((n, i) => ({ label: n, done: st.shots[i], todo: !st.shots[i], pick: () => this.setState({ ang: i }),
+      style: 'flex:1;height:156px;border-radius:22px;font-family:inherit;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;' +
+        (st.shots[i] ? 'border:2px solid #FFFFFF;background:radial-gradient(circle at 50% 38%,#F6D9C8 0,#E9BFAE 30%,#C9A8D1 55%,#AA8DB1 100%);box-shadow:0 8px 18px rgba(123,70,135,0.18)'
+                     : 'border:1.5px dashed ' + (st.ang === i ? '#A877B6' : '#DAC7DE') + ';background:' + (st.ang === i ? 'rgba(243,234,246,0.9)' : 'rgba(255,255,255,0.6)')) }));
+    const shoot = () => { const s = st.shots.slice(); s[st.ang] = true; let nx = s.findIndex(x => !x); this.setState({ shots: s, ang: nx < 0 ? st.ang : nx }); };
+    const n = st.shots.filter(Boolean).length;
+    return { accent: this.props.accent ?? '#7B4687', angs: angs, thumbs: thumbs, shoot: shoot,
+      a0: st.ang === 0, a1: st.ang === 1, a2: st.ang === 2, angName: names[st.ang],
+      count: n + ' من 3', saveLbl: n === 3 ? 'حفظ في الملف' : 'حفظ في الملف (' + n + '/3)',
+      shotState: st.shots[st.ang] ? 'تم التقاطها — يمكنكِ الإعادة' : 'جاهزة للالتقاط' };
+  }
+}
+
+*/
