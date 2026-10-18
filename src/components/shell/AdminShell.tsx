@@ -12,6 +12,7 @@ import { staffPhoto } from "@/lib/db/staff";
 import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
+import { AdminInstall } from "@/components/pwa/AdminInstall";
 
 export type AdminSection =
   | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "جدولي" | "المالية" | "المخزون والأجهزة"
@@ -79,7 +80,8 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             ),
           )}
         </nav>
-        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: 20, background: "#F8F2FA" }}>
+        <AdminInstall />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 10, borderRadius: 20, background: "#F8F2FA" }}>
           {staffPhoto(staff) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={staffPhoto(staff) as string} alt="" width={38} height={38} style={{ width: 38, height: 38, borderRadius: 19, objectFit: "cover", border: "2px solid #FFFFFF", flexShrink: 0 }} />

@@ -25,7 +25,8 @@ export function isInstalled() {
 export function mustGoToApp() {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
-  return h.endsWith(DOMAIN) && h !== `app.${DOMAIN}` && h !== `store.${DOMAIN}`;
+  if (window.location.pathname.startsWith("/admin")) return false;
+  return h.endsWith(DOMAIN) && h !== `app.${DOMAIN}` && h !== `store.${DOMAIN}` && h !== `admin.${DOMAIN}`;
 }
 export const APP_INSTALL_URL = `${APP_ORIGIN}/home/?install=1`;
 
