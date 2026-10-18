@@ -1,42 +1,97 @@
 "use client";
  
 
-import { useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
+import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { APPOINTMENTS_TODAY, NOW, TODAY, initials } from "@/lib/data";
-import { arDate } from "@/lib/format";
+import { initials } from "@/lib/data";
+import { personName, savePhoto, serviceName } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT } from "@/lib/tokens";
+import { ApptPicker, NowText, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Photos.dc.html */
-/** The patient being photographed: today's 12:30 peel in room 2. */
-const A = APPOINTMENTS_TODAY.find((a) => a.time === "12:30" && a.room === "غرفة 2")!;
 const NAMES = ["أمامي", "جانبي 45°", "جانبي 90°"];
+const KEYS = ["front", "side45", "side90"];
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
+type Shot = { blob: Blob; url: string } | null;
 
-/** Reception tablet: standardised before-session photos (three angles). */
+/** Reception tablet: standardised before-session photos (three angles) → private "photos" bucket. */
 export default function Page() {
-  const [st, setSt] = useState({ ang: 1, shots: [true, false, false] });
+  return <Suspense><Inner /></Suspense>;
+}
+
+function Inner() {
+  const k = useKiosk();
+  const router = useRouter();
+  const f = useApptParam(!k.gate);
+  const [st, setSt] = useState<{ ang: number; shots: Shot[] }>({ ang: 0, shots: [null, null, null] });
+  const [grid, setGrid] = useState(true);
+  const [cam, setCam] = useState<"off" | "on" | "denied">("off");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hasAppt = !!f.appt;
+  useEffect(() => {
+    if (!hasAppt || !navigator.mediaDevices?.getUserMedia) { if (hasAppt) setCam("denied"); return; }
+    let stream: MediaStream | null = null, stop = false;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1440 } } }).then((sm) => {
+      if (stop) { sm.getTracks().forEach((t) => t.stop()); return; }
+      stream = sm;
+      if (videoRef.current) { videoRef.current.srcObject = sm; videoRef.current.play().catch(() => {}); }
+      setCam("on");
+    }).catch(() => setCam("denied"));
+    return () => { stop = true; stream?.getTracks().forEach((t) => t.stop()); };
+  }, [hasAppt]);
+  useEffect(() => () => { st.shots.forEach((x) => x && URL.revokeObjectURL(x.url)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (k.gate) return k.gate;
+  const A = f.appt;
+  if (!A) return <ApptPicker title="تصوير قبل الجلسة" today={f.today} loading={f.loading} error={f.error} path={R.T_Photos} />;
+
   const angs = NAMES.map((_, i) => ({ pick: () => setSt({ ...st, ang: i }),
     style: css("flex:1;height:58px;border-radius:29px;font-family:inherit;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" +
       (st.ang === i ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
-  const thumbs = NAMES.map((n, i) => ({ label: n, done: st.shots[i], todo: !st.shots[i], pick: () => setSt({ ...st, ang: i }),
-    style: css("flex:1;height:156px;border-radius:22px;font-family:inherit;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;" +
-      (st.shots[i] ? "border:2px solid #FFFFFF;background:radial-gradient(circle at 50% 38%,#F6D9C8 0,#E9BFAE 30%,#C9A8D1 55%,#AA8DB1 100%);box-shadow:0 8px 18px rgba(123,70,135,0.18)"
-        : "border:1.5px dashed " + (st.ang === i ? "#A877B6" : "#DAC7DE") + ";background:" + (st.ang === i ? "rgba(243,234,246,0.9)" : "rgba(255,255,255,0.6)"))) }));
-  const shoot = () => { const s = st.shots.slice(); s[st.ang] = true; const nx = s.findIndex((x) => !x); setSt({ shots: s, ang: nx < 0 ? st.ang : nx }); };
-  const retake = () => setSt({ ...st, shots: st.shots.map((x, i) => (i === st.ang ? false : x)) });
+  const thumbs = NAMES.map((n, i) => ({ label: n, done: !!st.shots[i], todo: !st.shots[i], pick: () => setSt({ ...st, ang: i }),
+    style: { ...css("flex:1;height:156px;border-radius:22px;font-family:inherit;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;" +
+      (st.shots[i] ? "border:2px solid #FFFFFF;background-size:cover;background-position:center;box-shadow:0 8px 18px rgba(123,70,135,0.18)"
+        : "border:1.5px dashed " + (st.ang === i ? "#A877B6" : "#DAC7DE") + ";background:" + (st.ang === i ? "rgba(243,234,246,0.9)" : "rgba(255,255,255,0.6)"))),
+      ...(st.shots[i] ? { backgroundImage: `url(${st.shots[i]!.url})` } : {}) } }));
+  const shoot = () => {
+    const v = videoRef.current;
+    if (!v || cam !== "on" || !v.videoWidth) { setErr("الكاميرا غير متاحة على هذا الجهاز"); return; }
+    const c = document.createElement("canvas");
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext("2d")!.drawImage(v, 0, 0);
+    c.toBlob((blob) => {
+      if (!blob) return;
+      const sh = st.shots.slice();
+      if (sh[st.ang]) URL.revokeObjectURL(sh[st.ang]!.url);
+      sh[st.ang] = { blob, url: URL.createObjectURL(blob) };
+      const nx = sh.findIndex((x) => !x);
+      setSt({ shots: sh, ang: nx < 0 ? st.ang : nx });
+    }, "image/jpeg", 0.9);
+  };
+  const retake = () => setSt({ ...st, shots: st.shots.map((x, i) => (i === st.ang ? null : x)) });
   const n = st.shots.filter(Boolean).length;
   const a0 = st.ang === 0, a1 = st.ang === 1, a2 = st.ang === 2, angName = NAMES[st.ang];
-  const count = n + " من 3", saveLbl = n === 3 ? "حفظ في الملف" : "حفظ في الملف (" + n + "/3)";
-  const shotState = st.shots[st.ang] ? "تم التقاطها — يمكنكِ الإعادة" : "جاهزة للالتقاط";
+  const count = n + " من 3", saveLbl = busy ? "جارٍ الحفظ…" : n === 3 ? "حفظ في الملف" : "حفظ في الملف (" + n + "/3)";
+  const shotState = cam === "denied" ? "الكاميرا غير متاحة" : st.shots[st.ang] ? "تم التقاطها — يمكنكِ الإعادة" : "جاهزة للالتقاط";
+  const save = async () => {
+    setBusy(true); setErr(null);
+    try {
+      for (let i = 0; i < 3; i++) { const sh = st.shots[i]; if (sh) await savePhoto(A, sh.blob, KEYS[i], "before"); }
+      router.push(R.T_Desk);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setBusy(false); }
+  };
   return (
     <Stage width={1194} height={834}  background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-        <Link href={R.T_Consent} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Link href={`${R.T_Consent}?id=${A.id}`} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 6l6 6-6 6" />
           </svg>
@@ -44,33 +99,29 @@ export default function Page() {
         <div style={{ lineHeight: 1.3, flexGrow: 1 }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: C.ink }}>تصوير قبل الجلسة
           </div>
-          <div style={{ fontSize: 15, color: C.sub2 }}>الصور محفوظة في ملف المراجعة فقط · مع {A.specialist}
-            <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-            </span>
+          <div style={{ fontSize: 15, color: C.sub2 }}>الصور محفوظة في ملف المراجعة فقط{A.staff ? ` · مع ${A.staff.name}` : ""}
           </div>
         </div>
         <div style={{ height: 52, padding: "0 20px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600, color: C.ink }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" />
           </svg>
-          <span>{arDate(TODAY)}
+          <span><NowText part="date" />
           </span>
           <span style={{ width: 1, height: 20, background: C.border }} />
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}>{NOW}
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontWeight: 500 }}><NowText part="time" />
           </span>
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(A.name)}
+            <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(personName(A))}
             </span>
             <div style={{ lineHeight: 1.35 }}>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{A.name}
-                <span style={{ display: "inline-flex", alignItems: "center", height: 16, padding: "0 6px", borderRadius: 8, fontSize: 10, fontWeight: 600, background: "#F0E9F1", color: C.sub2, marginInlineStart: 4, verticalAlign: "middle" }}>مثال
-                </span>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{personName(A)}
               </div>
-              <div style={{ fontSize: 13, color: C.sub2 }}>ملف {A.fileNo} · {A.serviceName} · {A.room}
+              <div style={{ fontSize: 13, color: C.sub2 }}>{[A.patients ? `ملف ${A.patients.file_no}` : null, serviceName(A), A.rooms?.name].filter(Boolean).join(" · ")}
               </div>
             </div>
           </div>
@@ -172,7 +223,8 @@ export default function Page() {
               </svg>بشرة نظيفة بلا مكياج، والشعر مرفوع
             </div>
           </div>
-          <button type="button" style={{ marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          {err && <ErrorNote>{err}</ErrorNote>}
+          <button type="button" onClick={save} disabled={busy || n === 0} style={{ opacity: busy || n === 0 ? 0.55 : 1, marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5 5-5M12 4v12" />
             </svg>{saveLbl}
@@ -180,7 +232,8 @@ export default function Page() {
         </div>
         <div style={{ flex: 1, minWidth: "0", borderRadius: 38, position: "relative", overflow: "hidden", boxShadow: SH, border: "3px solid #FFFFFF", background: "radial-gradient(ellipse 45% 55% at 52% 42%, #F3D3C6 0%, #E7B9AC 35%, rgba(199,168,206,0.9) 60%, rgba(146,117,153,0.95) 100%), linear-gradient(160deg,#AC91B2,#715678)" }}>
           <div style={{ position: "absolute", inset: "0", background: "radial-gradient(circle at 80% 10%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 40%)" }} />
-          <svg width="100%" height="100%" viewBox="0 -24 640 700" preserveAspectRatio="xMidYMid meet" style={{ position: "absolute", inset: "0" }} aria-hidden="true">
+          <video ref={videoRef} muted playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: cam === "on" ? "block" : "none" }} />
+          <svg width="100%" height="100%" viewBox="0 -24 640 700" preserveAspectRatio="xMidYMid meet" style={{ position: "absolute", inset: "0", display: grid ? "block" : "none" }} aria-hidden="true">
             {a0 && (<>
               <g fill="none" stroke="#FFFFFF" strokeWidth="3" strokeDasharray="10 9" opacity="0.95">
                 <ellipse cx="320" cy="250" rx="130" ry="170" />
@@ -238,7 +291,7 @@ export default function Page() {
             </div>
           </div>
           <div style={{ position: "absolute", bottom: 20, left: "0", right: "0", display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
-            <button type="button" aria-label="شبكة المحاذاة" style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button type="button" aria-label="شبكة المحاذاة" aria-pressed={grid} onClick={() => setGrid(!grid)} style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 4L4 8l8 4 8-4-8-4M4 12l8 4 8-4M4 16l8 4 8-4" />
               </svg>

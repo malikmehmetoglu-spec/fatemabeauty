@@ -1,44 +1,162 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+/** W_BookingModal.dc.html — new appointment over the calendar: existing patient, new patient record, or walk-in (live). */
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Icon, ExampleTag } from "@/components/ui";
+import { Chip, ErrorNote, Icon, Loading, Modal, Segment, Select, SubmitButton, TextInput, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { SERVICE, TODAY, type ServiceKey } from "@/lib/data";
-import { addDays, arDate } from "@/lib/format";
-import { CAL_SUBTITLE, CalendarBody, cs } from "../CalendarBoard";
-import { css } from "@/lib/mock/e";
-import { C, SHB, ICON_FILL, FATEMA_PHOTO } from "@/lib/tokens";
+import { useQuery } from "@/lib/db/query";
+import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
+import {
+  book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, type PatientHit,
+} from "@/lib/db/appointments";
+import { clock, dayKey } from "@/lib/format";
+import { C, ICON_FILL } from "@/lib/tokens";
+import { CalendarBody } from "../CalendarBoard";
 
-const SVC: [ServiceKey, string][] = [["clean", "غرفة 1"], ["hydra", "غرفة 1"], ["peel", "غرفة 2"], ["laser", "غرفة 3"], ["consult", "غرفة 2"]];
-const tg = (on: boolean) => "width:52px;height:30px;border-radius:15px;padding:3px;flex-shrink:0;border:none;cursor:pointer;display:flex;justify-content:" + (on ? "flex-end" : "flex-start") + ";background:" +
-  (on ? "linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 14px rgba(123,70,135,0.30)" : "#E6DDE8");
-const tomorrow = arDate(addDays(TODAY, 1));
+type Mode = "existing" | "new" | "walkin";
 
-/** W_BookingModal.dc.html — the calendar with the new-booking dialog on top. */
 export default function BookingModalPage() {
-  const [svc, setSvc] = useState(0);
-  const [sp, setSp] = useState(0);
-  const [pay, setPay] = useState(0);
-  const [wa, setWa] = useState(true);
-  const [key, room] = SVC[svc];
-  const dur = SERVICE[key].minutes;
-  const end = 11 * 60 + dur;
-  const s = (i: number) => ({ style: cs(svc === i, 40), pick: () => setSvc(i) });
-  const p = (i: number) => ({ style: cs(sp === i, 40) + ";padding:0 12px 0 6px", pick: () => setSp(i) });
-  const v = {
-    dur, room, endTime: String(Math.floor(end / 60)).padStart(2, "0") + ":" + String(end % 60).padStart(2, "0"),
-    sPkg: cs(pay === 0, 42), sAtt: cs(pay === 1, 42), payPkg: () => setPay(0), payAtt: () => setPay(1), waStyle: tg(wa), toggleWa: () => setWa(!wa),
-    s0: s(0), s1: s(1), s2: s(2), s3: s(3), s4: s(4), p0: p(0), p1: p(1), p2: p(2),
-  };
+  const router = useRouter();
+  const close = () => router.push(R.W_Calendar);
   return (
-    <AdminShell active="المواعيد" title="المواعيد" subtitle={CAL_SUBTITLE} actions={<Link href={R.W_BookingModal} style={{ height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 18px", whiteSpace: "nowrap" }}><Icon name="M12 5v14M5 12h14" size={19} color={C.white} stroke={1.9} />موعد جديد</Link>} overlay={<>
-<div style={{ position: "absolute", inset: "0", background: "rgba(53,33,61,0.32)", backdropFilter: "blur(3px)", zIndex: 20 }} />
-<div role="dialog" aria-modal="true" aria-labelledby="mt" style={{ position: "absolute", zIndex: 21, top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, borderRadius: 34, background: C.white, boxShadow: "0 40px 80px rgba(53,33,61,0.30)", padding: "26px 30px 24px", display: "flex", flexDirection: "column", gap: 15 }}> <div style={{ position: "absolute", top: -60, left: -40, width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(190,150,215,0.35) 0%, rgba(190,150,215,0) 70%)", pointerEvents: "none" }} /> <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}> <div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 46, height: 46, borderRadius: 23, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" size={21} color={C.accentMid} /></span><div style={{ lineHeight: 1.3 }}><h2 id="mt" style={{ margin: "0", fontSize: 22, fontWeight: 700 }}>موعد جديد</h2><div style={{ fontSize: 12.5, color: C.sub2 }}>يُتحقّق من التعارض تلقائياً قبل الحفظ</div></div></div> <Link href={R.W_Calendar} aria-label="إغلاق" style={{ width: 42, height: 42, borderRadius: 21, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M18 6L6 18M6 6l12 12" size={16} color={C.accent} stroke={1.9} /></Link> </div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>المراجعة</div><div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px 8px 14px", borderRadius: 20, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: C.accent }}><span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>س ي</span><div style={{ flex: 1, lineHeight: 1.35 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>سارة يوسف<ExampleTag /></div><div style={{ fontSize: 12, color: C.sub }}>ملف 1021 · تنظيف عميق · باقة نشطة</div></div><button style={{ height: 34, padding: "0 12px", borderRadius: 17, border: "none", background: "rgba(255,255,255,0.8)", color: C.accent, fontSize: 12.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><Icon name="M10 10m-7 0a7 7 0 1 0 14 0 7 7 0 1 0-14 0M21 21l-6-6" size={15} color={C.accent} />تغيير</button></div></div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>الخدمة</div><div style={{ display: "flex", gap: 8 }}><button onClick={v.s0.pick} style={css(v.s0.style)}>تنظيف عميق</button><button onClick={v.s1.pick} style={css(v.s1.style)}>هيدرافيشل</button><button onClick={v.s2.pick} style={css(v.s2.style)}>تقشير</button><button onClick={v.s3.pick} style={css(v.s3.style)}>ليزر</button><button onClick={v.s4.pick} style={css(v.s4.style)}>استشارة</button></div></div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>الأخصائية</div><div style={{ display: "flex", gap: 8 }}><button onClick={v.p0.pick} style={css(v.p0.style)}>{/* eslint-disable-next-line @next/next/no-img-element */}
-<img src={FATEMA_PHOTO} alt="فاطمة طيبة" style={{ width: 26, height: 26, borderRadius: 13, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", flexShrink: 0 }} />فاطمة طيبة</button><button onClick={v.p1.pick} style={css(v.p1.style)}><span style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>ه ا</span>هبة العلي<ExampleTag /></button><button onClick={v.p2.pick} style={css(v.p2.style)}><span style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>ر ا</span>ريم الحسن<ExampleTag /></button></div></div> <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 0.8fr 1fr", gap: 12 }}> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}><label htmlFor="bd">التاريخ</label></div><div style={{ position: "relative" }}><input id="bd" defaultValue={tomorrow} style={{ height: 44, borderRadius: 16, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", paddingInlineStart: 38 }} /><span style={{ position: "absolute", top: 12, right: 12 }}><Icon name="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16" size={18} color={C.accentMid} /></span></div></div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}><label htmlFor="bt">الوقت</label></div><div style={{ position: "relative" }}><input id="bt" defaultValue="11:00" style={{ height: 44, borderRadius: 16, border: "1px solid #EADCF0", background: C.white, padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", paddingInlineStart: 38, fontFamily: "var(--font-rubik), sans-serif" }} /><span style={{ position: "absolute", top: 12, right: 12 }}><Icon name="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 2" size={18} color={C.accentMid} /></span></div></div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>المدة</div><div style={{ height: 44, borderRadius: 16, border: "1px solid #EADCF0", background: "#F9F5FB", padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontWeight: 700 }}>{v.dur}</span> دقيقة</div></div> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0" }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>الغرفة</div><div style={{ height: 44, borderRadius: 16, border: "1px solid #EADCF0", background: "#F9F5FB", padding: "0 14px", fontSize: 14, color: C.ink, boxShadow: "inset 0 1px 3px rgba(123,70,135,0.05)", width: "100%", outline: "none", display: "flex", alignItems: "center", gap: 8 }}><Icon name="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" size={17} color={C.accentMid} /><span style={{ fontWeight: 700 }}>{v.room}</span><span style={{ fontSize: 11, color: C.muted }}>تلقائياً</span></div></div> </div> <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 16, background: "#EEF8F1", border: "1px solid #D4ECDD" }}> <span style={{ width: 26, height: 26, borderRadius: 13, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M5 12l5 5L20 7" size={15} color={C.white} stroke={2.4} /></span> <div style={{ fontSize: 13.5, fontWeight: 700, color: C.okDeep }}>لا يوجد تعارض</div> <div style={{ fontSize: 12.5, color: "#4C7A5E" }}>الأخصائية والغرفة متاحتان {tomorrow} من 11:00 حتى {v.endTime}</div> </div> <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}> <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: "0", flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: C.sub2 }}>طريقة الدفع</div><div style={{ display: "flex", gap: 8 }}><button onClick={v.payPkg} style={css(v.sPkg)}><Icon name="M3 9a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 11 5 12 8c1-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5" size={16} color={C.accent} />من الباقة</button><button onClick={v.payAtt} style={css(v.sAtt)}><Icon name="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0 2.5 2.5 0 1 0-5 0M6 9v.01M18 15v.01" size={16} color={C.accent} />عند الحضور</button></div></div> <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 14px", borderRadius: 18, background: "#F9F5FB" }}> <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ width: 36, height: 36, borderRadius: 18, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="M3 20l1.3-3.9C1.7 11.9 3.9 6.5 9 4.4s11 .2 12 5.1c1 4.9-3.6 9.3-9 9.3-1.7 0-3.3-.4-4.7-1.1z" size={16} color={C.ok} /></span><div style={{ lineHeight: 1.3 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>إرسال تأكيد عبر واتساب</div><div style={{ fontSize: 11.5, color: C.sub2 }}>مع تذكير قبل الموعد بيوم</div></div></div> <button onClick={v.toggleWa} role="switch" aria-checked={wa} aria-label="إرسال تأكيد عبر واتساب" style={css(v.waStyle)}><span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)" }} /></button> </div> </div> <div style={{ display: "flex", gap: 10, justifyContent: "flex-start", marginTop: 2 }}> <Link href={R.W_Calendar} style={{ height: 50, borderRadius: 25, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 22px", flex: 1 }}><Icon name="M5 12l5 5L20 7" size={19} color={C.white} stroke={1.9} />حفظ الموعد</Link> <Link href={R.W_Calendar} style={{ height: 50, borderRadius: 25, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 20px", width: 140 }}>إلغاء</Link> </div> </div>
-    </>}>
+    <AdminShell active="المواعيد" title="المواعيد" subtitle="موعد جديد">
       <CalendarBody />
+      <BookingDialog onClose={close} />
     </AdminShell>
+  );
+}
+
+function BookingDialog({ onClose }: { onClose: () => void }) {
+  const services = useQuery(["catalog", "services"], listServices);
+  const rooms = useQuery(["catalog", "rooms"], () => listRooms());
+  const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
+  const hours = useQuery(["appointments", "hours"], getHours);
+
+  const [mode, setMode] = useState<Mode>("existing");
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<PatientHit[]>([]);
+  const [patient, setPatient] = useState<PatientHit | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [checkIn, setCheckIn] = useState(true);
+  const [svcKey, setSvcKey] = useState("");
+  const [sp, setSp] = useState("");
+  const [room, setRoom] = useState("");
+  const [day, setDay] = useState(dayKey());
+  const [time, setTime] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (mode !== "existing" || patient) return;
+    let live = true;
+    const t = setTimeout(() => { searchPatients(q).then((r) => live && setHits(r)).catch(() => live && setHits([])); }, 250);
+    return () => { live = false; clearTimeout(t); };
+  }, [q, mode, patient]);
+
+  const svc = (services.data ?? []).find((s) => s.key === svcKey) ?? services.data?.[0] ?? null;
+  useEffect(() => { if (svc && !svcKey) setSvcKey(svc.key); }, [svc, svcKey]);
+  useEffect(() => { setRoom(svc?.room_id ?? ""); setTime(""); }, [svc?.key, svc?.room_id]);
+
+  const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
+  const slots = useMemo(() => (svc && hours.data && busyQ.data ? freeSlots({ ...hours.data, days: [0, 1, 2, 3, 4, 5, 6] }, day, svc.minutes, busyQ.data, room || null, sp || null) : []),
+    [svc, hours.data, busyQ.data, day, room, sp]);
+
+  async function submit() {
+    setError("");
+    if (!svc) { setError("اختاري الخدمة."); return; }
+    const walk = mode === "walkin";
+    const t = walk ? clock() : time;
+    if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
+    if (mode === "existing" && !patient) { setError("ابحثي عن المراجِعة واختاريها."); return; }
+    if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
+    setBusy(true);
+    try {
+      let pid = patient?.id ?? null;
+      if (mode === "new") pid = (await createPatient(name, phone)).id;
+      await book({
+        service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
+        walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,
+        source: walk ? "walk_in" : "reception", checkIn: walk && checkIn,
+      });
+      onClose();
+    } catch (e) {
+      const m = e instanceof Error ? e.message : String(e);
+      setError(/patients_phone_key|duplicate key.*phone/.test(m) ? "يوجد ملف بهذا الرقم — ابحثي عنه في «مراجِعة مسجّلة»." : bookingError(e));
+    } finally { setBusy(false); }
+  }
+
+  const loading = services.loading || rooms.loading || hours.loading;
+  return (
+    <Modal open onClose={onClose} title="موعد جديد" width={640}
+      footer={<SubmitButton onClick={submit} busy={busy}>{mode === "walkin" ? (checkIn ? "تسجيل الحضور وإعطاء رقم دور" : "حفظ الحضور") : "حجز الموعد"}</SubmitButton>}>
+      {loading ? <Loading /> : !services.data?.length ? (
+        <ErrorNote>لا توجد خدمات بعد. أضيفي الخدمات من الإعدادات أولاً.</ErrorNote>
+      ) : (
+        <>
+          <Segment label="نوع الحجز" value={mode} onChange={(v) => { setMode(v); setError(""); }}
+            options={[{ value: "existing", label: "مراجِعة مسجّلة" }, { value: "new", label: "مراجِعة جديدة" }, { value: "walkin", label: "حضور مباشر" }]} />
+
+          {mode === "existing" && (patient ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 18, padding: "10px 14px", background: C.tint2 }}>
+              <span style={{ width: 40, height: 40, borderRadius: 20, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="users" size={18} /></span>
+              <div style={{ flex: 1, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 14.5, fontWeight: 700 }}>{patient.name || "بدون اسم"}</div>
+                <div style={{ fontSize: 12.5, color: C.sub2 }}>ملف {patient.file_no}{patient.phone ? <> · <span className="latin" dir="ltr">{patient.phone}</span></> : null}</div>
+              </div>
+              <button type="button" onClick={() => setPatient(null)} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700, fontSize: 13 }}>تغيير</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <TextInput label="ابحثي بالاسم أو رقم الهاتف أو رقم الملف" value={q} onChange={setQ} placeholder="حرفان على الأقل" />
+              {hits.map((h) => (
+                <button key={h.id} type="button" onClick={() => setPatient(h)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderRadius: 14, padding: "9px 14px", border: "1px solid #EADCF0", background: C.white, fontSize: 14, textAlign: "right" }}>
+                  <b>{h.name || "بدون اسم"}</b><span style={{ fontSize: 12.5, color: C.sub2 }}>ملف {h.file_no}{h.phone ? ` · ${h.phone}` : ""}</span>
+                </button>
+              ))}
+              {q.trim().length >= 2 && hits.length === 0 && (
+                <div style={{ fontSize: 13, color: C.sub2 }}>لا نتائج. <button type="button" onClick={() => { setMode("new"); setName(/\d/.test(q) ? "" : q); setPhone(/\d/.test(q) ? q : ""); }} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700 }}>فتح ملف جديد</button></div>
+              )}
+            </div>
+          ))}
+
+          {mode !== "existing" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
+              <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <Select label="الخدمة" value={svc?.key ?? ""} onChange={(v) => setSvcKey(v)} options={(services.data ?? []).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
+            <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...(team.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
+            <Select label="الغرفة" value={room} onChange={setRoom} options={[{ value: "", label: "بدون غرفة" }, ...(rooms.data ?? []).map((r) => ({ value: r.id, label: r.name }))]} />
+          </div>
+
+          {mode === "walkin" ? (
+            <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderRadius: 18, padding: "12px 14px", background: C.tint2, fontSize: 14, fontWeight: 600 }}>
+              تسجيل وصولها الآن وإعطاؤها رقم دور (الساعة <span className="latin">{clock()}</span>)
+              <Toggle on={checkIn} onChange={setCheckIn} label="تسجيل الوصول الآن" />
+            </label>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <TextInput label="اليوم" type="date" dir="ltr" value={day} onChange={(v) => { setDay(v); setTime(""); }} />
+                <TextInput label="الوقت" type="time" dir="ltr" value={time} onChange={setTime} hint="أو اختاري من الأوقات المتاحة" />
+              </div>
+              {busyQ.loading ? <Loading label="نحسب الأوقات المتاحة…" style={{ padding: 8 }} /> : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 132, overflowY: "auto" }}>
+                  {slots.length === 0 ? <span style={{ fontSize: 13, color: C.sub2 }}>لا أوقات فارغة ضمن ساعات الدوام لهذا اليوم.</span>
+                    : slots.map((t) => <Chip key={t} height={34} selected={time === t} onClick={() => setTime(t)}><span className="latin">{t}</span></Chip>)}
+                </div>
+              )}
+            </div>
+          )}
+          {error && <ErrorNote>{error}</ErrorNote>}
+        </>
+      )}
+    </Modal>
   );
 }

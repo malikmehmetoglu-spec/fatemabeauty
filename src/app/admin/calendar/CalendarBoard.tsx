@@ -1,71 +1,265 @@
 "use client";
 
-import { useState } from "react";
-import { Icon, ExampleTag, PersonName } from "@/components/ui";
-import { APPOINTMENTS_TODAY, NOW, ROOMS, TODAY, toMinutes, type Appointment, type AppointmentStatus } from "@/lib/data";
-import { arDate } from "@/lib/format";
-import { css } from "@/lib/mock/e";
-import { C, SH, SHB, FATEMA_PHOTO } from "@/lib/tokens";
+/** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new. */
+import Link from "next/link";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Chip, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Segment, SubmitButton, Tag, TextInput } from "@/components/ui";
+import { R } from "@/lib/routes";
+import { useQuery } from "@/lib/db/query";
+import { listRooms, listSpecialists } from "@/lib/db/catalog";
+import {
+  dateOfKey, endsAt, getHours, listRange, personName, saveHours, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
+  type Appointment, type Hours, type Status,
+} from "@/lib/db/appointments";
+import { AR_DAYS } from "@/lib/data";
+import { arDate, clock, dayKey } from "@/lib/format";
+import { useSession } from "@/lib/supabase/session";
+import { C, SH, SHB } from "@/lib/tokens";
 
-/** Day board of W_Calendar.dc.html — shared by /admin/calendar and /admin/calendar/new (booking modal on top). */
-
-export const cs = (on: boolean, h = 38) =>
-  "height:" + h + "px;padding:0 14px;border-radius:" + h / 2 + "px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;font-family:inherit;cursor:pointer;" +
-  (on ? "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687"
-    : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)");
-
-const HOUR = 75; // px per hour, board starts at 10:00
-const yOf = (t: string) => ((toMinutes(t) - 600) * HOUR) / 60;
-const nowTop = Math.round(yOf(NOW));
-const roomCount = (i: number) => APPOINTMENTS_TODAY.filter((a) => a.room === ROOMS[i]).length;
+const HOUR = 75; // px per hour
+const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
 const hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-const SHORT_NAME: Record<string, string> = { clean: "تنظيف عميق", hydra: "هيدرافيشل", peel: "تقشير", laser: "ليزر", consult: "استشارة" };
+const shiftKey = (k: string, n: number) => dayKey(new Date(dateOfKey(k).getTime() + n * 864e5));
 
-const LOOK: Record<AppointmentStatus, string> = {
-  "انتهت": "background: #F4F0F5; border: 1px solid #EAE1EC; color: #866F8D;",
-  "في الانتظار": "background: #FFF5E6; border: 1px solid #F2D8AA; color: #7A4F12;",
-  "بانتظار التأكيد": "background: #FFFFFF; border: 1.5px dashed #E2B868; color: #35213D;",
-  "مؤكد": "background: #FFFFFF; border: 1px solid #E9DCEE; border-right: 4px solid #3FA46A; box-shadow: 0 6px 14px rgba(123,70,135,0.07); color: #35213D;",
-  "في الجلسة": "background: linear-gradient(160deg,#F1E3F6,#D9BCE5); border: 1px solid #FFFFFF; box-shadow: 0 10px 22px rgba(150,100,170,0.30); color: #7B4687;",
-  "لم تحضر": "background: repeating-linear-gradient(135deg, #FAF4FB 0 8px, #F3E6F6 8px 16px); border: 1px dashed #D2ACDA; color: #B03D6A;",
+const LOOK: Record<Status, CSSProperties> = {
+  done: { background: "#F4F0F5", border: "1px solid #EAE1EC", color: "#866F8D" },
+  checked_in: { background: "#FFF5E6", border: "1px solid #F2D8AA", color: "#7A4F12" },
+  pending: { background: "#FFFFFF", border: "1.5px dashed #E2B868", color: "#35213D" },
+  confirmed: { background: "#FFFFFF", border: "1px solid #E9DCEE", borderRight: "4px solid #3FA46A", boxShadow: "0 6px 14px rgba(123,70,135,0.07)", color: "#35213D" },
+  in_session: { background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: "#7B4687" },
+  no_show: { background: "repeating-linear-gradient(135deg, #FAF4FB 0 8px, #F3E6F6 8px 16px)", border: "1px dashed #D2ACDA", color: "#B03D6A" },
+  cancelled: { background: "#FAFAFA", border: "1px dashed #E0D8E2", color: "#A99AAE", textDecoration: "line-through" },
 };
 
-function Block({ a, op }: { a: Appointment; op: number }) {
-  const noShow = a.status === "لم تحضر" || a.minutes < 30; // compact one-line block
-  const top = Math.round(yOf(a.time)) + 2;
-  const height = a.status === "لم تحضر" ? 21 : Math.round((a.minutes * HOUR) / 60) - 4;
-  const start = toMinutes(a.time);
+type Col = { id: string | null; name: string };
+
+export function CalendarBody() {
+  const { staff } = useSession();
+  const [day, setDay] = useState(dayKey());
+  const [view, setView] = useState<"day" | "week">("day");
+  const [by, setBy] = useState<"room" | "specialist">("room");
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [open, setOpen] = useState<Appointment | null>(null);
+  const [editHours, setEditHours] = useState(false);
+  const [, tick] = useState(0);
+  useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
+
+  const weekStart = shiftKey(day, -new Date(dateOfKey(day)).getDay());
+  const from = view === "day" ? day : weekStart, to = view === "day" ? day : shiftKey(weekStart, 6);
+  const appts = useQuery(["appointments", "range", from, to], () => listRange(from, to));
+  const rooms = useQuery(["catalog", "rooms"], () => listRooms());
+  const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
+  const hours = useQuery(["appointments", "hours"], getHours);
+
+  const list = (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled");
+  const cols: Col[] = useMemo(() => {
+    const base: Col[] = by === "room" ? (rooms.data ?? []).map((r) => ({ id: r.id, name: r.name })) : (team.data ?? []).map((s) => ({ id: s.id, name: s.name }));
+    const key = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
+    const extra = list.some((a) => !base.some((c) => c.id === key(a)));
+    return extra ? [...base, { id: null, name: by === "room" ? "بدون غرفة" : "غير محدّدة" }] : base;
+  }, [by, rooms.data, team.data, list]);
+
+  const h = hours.data;
+  const startMin = Math.min(h ? toMin(h.from) : 600, ...list.map((a) => toMin(clock(a.starts_at))));
+  const endMin = Math.max(h ? toMin(h.to) : 1080, ...list.map((a) => toMin(clock(endsAt(a)))));
+  const first = Math.floor(startMin / 60) * 60, last = Math.ceil(endMin / 60) * 60;
+  const yOf = (m: number) => ((m - first) * HOUR) / 60;
+  const isToday = day === dayKey();
+  const nowM = toMin(clock());
+  const loading = appts.loading || rooms.loading || hours.loading;
+  const err = appts.error || rooms.error || hours.error;
+  const isAdmin = staff?.role === "admin" || staff?.role === "owner";
+
   return (
-    <div style={css(`position: absolute; left: 8px; right: 8px; border-radius: 16px; padding: 7px 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 1px; ${LOOK[a.status]} top: ${top}px; height: ${height}px; opacity: ${op}`)}>
-      {noShow ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{a.time} · <PersonName name={a.name} sample={a.sample} /></div>
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}><PersonName name={a.name} sample={a.sample} /></div>
-            <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" }}>{a.status}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button type="button" aria-label="السابق" onClick={() => setDay(shiftKey(day, view === "day" ? -1 : -7))} style={navBtn}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
+          <div style={{ minWidth: 190, textAlign: "center", fontSize: 16, fontWeight: 700 }}>
+            {view === "day" ? arDate(dateOfKey(day), { year: true }) : `${arDate(dateOfKey(from), { day: false })} – ${arDate(dateOfKey(to), { day: false })}`}
           </div>
-          <div style={{ fontSize: 11.5, opacity: 0.85, whiteSpace: "nowrap" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{a.time}–{hm(start + a.minutes)}</span> · {SHORT_NAME[a.service]}</div>
-        </>
+          <button type="button" aria-label="التالي" onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))} style={navBtn}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
+        </div>
+        {!isToday && <Chip onClick={() => setDay(dayKey())}>اليوم</Chip>}
+        <input type="date" aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr"
+          style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13 }} />
+        <span style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
+          {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "حسب الغرفة" }, { value: "specialist", label: "حسب الأخصائية" }]} />}
+          <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
+          {isAdmin && <GhostButton icon="clock" onClick={() => setEditHours(true)}>ساعات الدوام</GhostButton>}
+        </span>
+      </div>
+
+      {h && !h.days.includes(new Date(dateOfKey(day)).getDay()) && view === "day" && (
+        <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>هذا اليوم خارج أيام الدوام المحدّدة — الحجز من التطبيق مغلق فيه.</div>
       )}
+
+      {loading ? <Loading /> : err ? <ErrorNote>تعذّر تحميل المواعيد: {err}</ErrorNote> : view === "week" ? (
+        <WeekGrid from={from} list={list} onOpen={setOpen} />
+      ) : cols.length === 0 ? (
+        <EmptyState icon="cal" title={by === "room" ? "لا غرف بعد" : "لا أخصائيات بعد"} text={by === "room" ? "أضيفي غرف المركز من الإعدادات لتظهر أعمدة التقويم." : "أضيفي فريق العمل لتظهر أعمدة الأخصائيات."}
+          action={<Link href={by === "room" ? R.W_Rooms : R.W_Staff} style={{ color: C.accent, fontWeight: 700 }}>فتح الإعدادات</Link>} />
+      ) : (
+        <div style={{ borderRadius: 26, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, padding: "12px 14px 16px", overflowX: "auto" }}>
+          <div style={{ display: "flex", minWidth: 120 + cols.length * 200 }}>
+            <div style={{ width: 56, flexShrink: 0 }} />
+            {cols.map((c) => {
+              const n = list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id && a.status !== "cancelled").length;
+              return (
+                <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, padding: "0 8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 14.5, fontWeight: 700 }}>{c.name}</span>
+                  <Tag kind="lilac">{n} مواعيد</Tag>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", position: "relative", minWidth: 120 + cols.length * 200, height: yOf(last) + 4 }}>
+            <div style={{ width: 56, flexShrink: 0, position: "relative" }}>
+              {Array.from({ length: (last - first) / 60 + 1 }, (_, i) => (
+                <span key={i} className="latin" style={{ position: "absolute", top: i * HOUR - 8, right: 6, fontSize: 11.5, color: C.muted }}>{hm(first + i * 60)}</span>
+              ))}
+            </div>
+            {cols.map((c) => (
+              <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, position: "relative", borderRight: "1px solid #F1E8F3" }}>
+                {Array.from({ length: (last - first) / 60 }, (_, i) => (
+                  <div key={i} style={{ position: "absolute", top: i * HOUR, left: 0, right: 0, height: HOUR, borderTop: "1px dashed #EFE5F2" }} />
+                ))}
+                {list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id).map((a) => {
+                  const s = toMin(timeOf(a));
+                  const short = a.minutes < 30;
+                  return (
+                    <button key={a.id} type="button" onClick={() => setOpen(a)} style={{
+                      position: "absolute", left: 6, right: 6, top: yOf(s) + 2, height: Math.max(22, (a.minutes * HOUR) / 60 - 4), borderRadius: 14, padding: "5px 10px",
+                      overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 1, textAlign: "right", ...LOOK[a.status],
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, width: "100%" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{short ? `${timeOf(a)} · ` : ""}{personName(a)}</span>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" }}>{STATUS_LABEL[a.status]}</span>
+                      </div>
+                      {!short && <div style={{ fontSize: 11.5, opacity: 0.85, whiteSpace: "nowrap" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{timeOf(a)}–{clock(endsAt(a))}</span> · {a.service?.short_name}{by === "room" && a.specialist ? ` · ${a.specialist.name}` : by === "specialist" && a.room ? ` · ${a.room.name}` : ""}</div>}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+            {isToday && nowM >= first && nowM <= last && (
+              <div aria-hidden style={{ position: "absolute", top: yOf(nowM), left: 0, right: 56, height: 2, background: "#D0679A", boxShadow: "0 0 0 3px rgba(208,103,154,0.15)" }} />
+            )}
+          </div>
+          {list.length === 0 && <div style={{ textAlign: "center", fontSize: 13.5, color: C.sub2, paddingTop: 10 }}>لا مواعيد في هذا اليوم بعد — أضيفي موعداً من «موعد جديد».</div>}
+        </div>
+      )}
+
+      <AppointmentDialog appt={open} onClose={() => setOpen(null)} />
+      {h && <HoursDialog open={editHours} hours={h} onClose={() => setEditHours(false)} />}
     </div>
   );
 }
 
-export const CAL_SUBTITLE = `${APPOINTMENTS_TODAY.length} موعداً اليوم في ${ROOMS.length} غرف · الخط الوردي = الآن`;
+/** Accent "new appointment" button used in page headers. */
+export const NEW_BTN = { height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 18px", whiteSpace: "nowrap" } as CSSProperties;
 
-export function CalendarBody() {
-  const [f, setF] = useState(0);
-  const [view, setView] = useState<"day" | "week">("day");
-  const op = [1, 2, 3].map((k) => (f === 0 || f === k ? 1 : 0.22));
+const navBtn: CSSProperties = { width: 38, height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" };
+
+function WeekGrid({ from, list, onOpen }: { from: string; list: Appointment[]; onOpen: (a: Appointment) => void }) {
+  const days = Array.from({ length: 7 }, (_, i) => shiftKey(from, i));
   return (
-<div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: "0", flexGrow: 1 }}><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><button aria-label="اليوم السابق" style={{ width: 40, height: 40, borderRadius: 20, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} stroke={1.9} /></button><div style={{ height: 44, padding: "0 16px", borderRadius: 22, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}><Icon name="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16" size={18} color={C.accentMid} />{arDate(TODAY, { year: true })}</div><button aria-label="اليوم التالي" style={{ width: 40, height: 40, borderRadius: 20, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} stroke={1.9} /></button><span style={{ height: 40, padding: "0 14px", borderRadius: 20, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", background: C.white, border: "1px solid #EADCF0", color: C.sub2, boxShadow: "0 3px 10px rgba(123,70,135,0.05)" }}>اليوم</span></div><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="M4 5h16l-6 8v5l-4 2v-7z" size={17} color={C.sub2} /><button onClick={() => setF(0)} style={css(cs(f === 0))}>الكل</button><button onClick={() => setF(1)} style={css(cs(f === 1))}>فاطمة طيبة</button><button onClick={() => setF(2)} style={css(cs(f === 2))}>هبة العلي<ExampleTag /></button><button onClick={() => setF(3)} style={css(cs(f === 3))}>ريم الحسن<ExampleTag /></button></div><div role="group" aria-label="العرض" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 22, background: C.white, boxShadow: SHB }}><button onClick={() => setView("day")} style={css(cs(view === "day", 36))}>يوم</button><button onClick={() => setView("week")} style={css(cs(view === "week", 36))}>أسبوع</button></div></div><div style={{ borderRadius: 28, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, padding: "0 0 14px", display: "flex", flexDirection: "column", flexGrow: 1, overflow: "hidden" }}><div style={{ display: "flex", height: 60, paddingRight: 64, borderBottom: "1px solid #EDE2F1", background: "linear-gradient(180deg,#FFFFFF,#FBF7FC)" }}><div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 12px", borderInlineStart: "1px solid #EDE2F1" }}><div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}>{/* eslint-disable-next-line @next/next/no-img-element */}
-<img src={FATEMA_PHOTO} alt="فاطمة طيبة" style={{ width: 34, height: 34, borderRadius: 17, objectFit: "cover", objectPosition: "50% 10%", border: "2px solid #FFFFFF", boxShadow: "0 4px 12px rgba(123,70,135,0.18)", flexShrink: 0 }} /><div style={{ lineHeight: 1.35, minWidth: "0" }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>فاطمة طيبة</div><div style={{ fontSize: 12, color: C.sub2 }}>غرفة 1</div></div></div><span style={{ fontSize: 12, color: C.sub2 }}>{roomCount(0)} مواعيد</span></div><div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 12px", borderInlineStart: "1px solid #EDE2F1" }}><div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}><span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>ه ا</span><div style={{ lineHeight: 1.35, minWidth: "0" }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>هبة العلي<ExampleTag /></div><div style={{ fontSize: 12, color: C.sub2 }}>غرفة 2</div></div></div><span style={{ fontSize: 12, color: C.sub2 }}>{roomCount(1)} مواعيد</span></div><div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 12px", borderInlineStart: "1px solid #EDE2F1" }}><div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: "0" }}><span style={{ width: 34, height: 34, borderRadius: 17, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>ر ا</span><div style={{ lineHeight: 1.35, minWidth: "0" }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>ريم الحسن<ExampleTag /></div><div style={{ fontSize: 12, color: C.sub2 }}>غرفة 3</div></div></div><span style={{ fontSize: 12, color: C.sub2 }}>{roomCount(2)} مواعيد</span></div></div><div style={{ position: "relative", height: 600, margin: "14px 0 0 0" }}><div style={{ position: "absolute", top: "0", bottom: "0", right: "0", left: "0" }}><div style={{ position: "absolute", left: "0", right: "0", top: 0, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 38, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 75, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 112, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 150, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 188, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 225, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 262, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 300, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 338, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 375, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 412, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 450, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 488, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 525, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 562, borderTop: "1px dashed #F4EEF6" }} /><div style={{ position: "absolute", left: "0", right: "0", top: 600, borderTop: "1px solid #EDE2F1" }} /><div style={{ position: "absolute", right: "0", top: -8, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>10:00</div><div style={{ position: "absolute", right: "0", top: 67, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>11:00</div><div style={{ position: "absolute", right: "0", top: 142, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>12:00</div><div style={{ position: "absolute", right: "0", top: 217, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>13:00</div><div style={{ position: "absolute", right: "0", top: 292, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>14:00</div><div style={{ position: "absolute", right: "0", top: 367, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>15:00</div><div style={{ position: "absolute", right: "0", top: 442, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>16:00</div><div style={{ position: "absolute", right: "0", top: 517, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>17:00</div><div style={{ position: "absolute", right: "0", top: 592, width: 52, fontSize: 12, color: C.muted, fontFamily: "var(--font-rubik), sans-serif" }}>18:00</div></div><div style={{ position: "absolute", left: "0", right: "0", top: nowTop, height: "0", borderTop: "2px solid #7B4687", zIndex: 0 }} /><div style={{ position: "absolute", right: 52, top: nowTop - 6, width: 12, height: 12, borderRadius: 6, background: C.accent, boxShadow: "0 0 0 4px rgba(123,70,135,0.2)", zIndex: 4 }} /><div style={{ position: "absolute", right: "0", top: nowTop - 12, height: 22, padding: "0 7px", borderRadius: 11, background: C.accent, color: C.white, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", zIndex: 5, fontFamily: "var(--font-rubik), sans-serif" }}>{NOW}</div><div style={{ position: "absolute", top: "0", bottom: "0", right: 64, left: "0", display: "flex", zIndex: 1 }}>{ROOMS.map((room, ri) => (
-  <div key={room} style={{ flex: 1, position: "relative", borderInlineStart: "1px solid #EDE2F1" }}>
-    {APPOINTMENTS_TODAY.filter((a) => a.room === room).map((a) => <Block key={a.id} a={a} op={op[ri]} />)}
-  </div>
-))}</div></div></div><div style={{ display: "flex", gap: 18, justifyContent: "center", marginTop: -4 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, background: C.white, border: "1px solid #E9DCEE", borderRight: "4px solid #3FA46A" }} />مؤكد</span><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, border: "1.5px dashed #E2B868", background: C.white }} />بانتظار التأكيد</span><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, background: "#FFF5E6", border: "1px solid #F2D8AA" }} />في الانتظار</span><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)" }} />في الجلسة</span><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, background: "#F4F0F5", border: "1px solid #EAE1EC" }} />انتهت</span><span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}><span style={{ width: 14, height: 14, borderRadius: 5, background: "repeating-linear-gradient(135deg, #FAF4FB 0 3px, #E7CFEC 3px 6px)" }} />لم تحضر</span></div></div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0,1fr))", gap: 10 }}>
+      {days.map((k) => {
+        const items = list.filter((a) => dayKey(new Date(a.starts_at)) === k);
+        const d = dateOfKey(k);
+        return (
+          <div key={k} style={{ borderRadius: 22, background: C.white, border: k === dayKey() ? "1.5px solid #C9A2D8" : "1px solid #F0E6F3", boxShadow: SH, padding: "10px 8px", minHeight: 240, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ textAlign: "center", lineHeight: 1.3, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, color: C.sub2 }}>{AR_DAYS[d.getDay()]}</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{d.getDate()}</div>
+            </div>
+            {items.length === 0 ? <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>—</div> : items.map((a) => (
+              <button key={a.id} type="button" onClick={() => onOpen(a)} style={{ borderRadius: 12, padding: "5px 8px", textAlign: "right", ...LOOK[a.status] }}>
+                <div className="latin" style={{ fontSize: 11.5, fontWeight: 700 }}>{timeOf(a)}</div>
+                <div style={{ fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</div>
+              </button>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const NEXT: Partial<Record<Status, { to: Status; label: string }[]>> = {
+  pending: [{ to: "confirmed", label: "تأكيد الموعد" }, { to: "cancelled", label: "إلغاء" }],
+  confirmed: [{ to: "checked_in", label: "تسجيل الوصول" }, { to: "no_show", label: "لم تحضر" }, { to: "cancelled", label: "إلغاء" }],
+  checked_in: [{ to: "in_session", label: "بدء الجلسة" }, { to: "no_show", label: "لم تحضر" }],
+  in_session: [{ to: "done", label: "إنهاء الجلسة" }],
+  no_show: [{ to: "confirmed", label: "إرجاع إلى مؤكد" }],
+};
+
+/** Appointment card: details + status actions. */
+export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { setError(""); }, [appt]);
+  if (!appt) return null;
+  const a = appt;
+  async function go(to: Status) {
+    setBusy(true); setError("");
+    try { await setStatus(a.id, to); onClose(); } catch (e) { setError("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+  }
+  const row = (label: string, value: string) => (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.line}`, fontSize: 14 }}>
+      <span style={{ color: C.sub2 }}>{label}</span><b>{value}</b>
+    </div>
+  );
+  return (
+    <Modal open onClose={onClose} title={personName(a)} width={520}
+      footer={<>{(NEXT[a.status] ?? []).map((n, i) => i === 0
+        ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
+        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}</>}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+        {a.queue_no != null && <Tag kind="plum">الدور {a.queue_no}</Tag>}
+        {a.patient && <span style={{ fontSize: 12.5, color: C.sub2 }}>ملف {a.patient.file_no}{a.patient.phone ? ` · ${a.patient.phone}` : ""}</span>}
+        {!a.patient && a.walk_in_phone && <span className="latin" style={{ fontSize: 12.5, color: C.sub2 }}>{a.walk_in_phone}</span>}
+      </div>
+      <div>
+        {row("الجلسة", `${a.service?.name ?? ""} · ${a.minutes} د`)}
+        {row("الموعد", `${arDate(new Date(a.starts_at))} · ${timeOf(a)}`)}
+        {row("الغرفة", a.room?.name ?? "—")}
+        {row("الأخصائية", a.specialist?.name ?? "—")}
+        {row("المصدر", a.source === "app" ? "التطبيق" : a.source === "walk_in" ? "حضور مباشر" : "الاستقبال")}
+        {a.cancel_reason && row("سبب الإلغاء", a.cancel_reason)}
+      </div>
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
+  );
+}
+
+function HoursDialog({ open, hours, onClose }: { open: boolean; hours: Hours; onClose: () => void }) {
+  const [h, setH] = useState(hours);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { if (open) { setH(hours); setError(""); } }, [open, hours]);
+  async function save() {
+    if (!/^\d{2}:\d{2}$/.test(h.from) || !/^\d{2}:\d{2}$/.test(h.to) || toMin(h.to) <= toMin(h.from)) { setError("تحقّقي من وقت البداية والنهاية."); return; }
+    setBusy(true);
+    try { await saveHours(h); onClose(); } catch (e) { setError("تعذّر الحفظ: " + (e instanceof Error ? e.message : String(e))); } finally { setBusy(false); }
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="ساعات الدوام" width={520} footer={<SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton>}>
+      <div style={{ fontSize: 13.5, color: C.sub }}>تُستخدم لحساب الأوقات المتاحة للحجز من التطبيق.</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {AR_DAYS.map((n, i) => (
+          <Chip key={i} selected={h.days.includes(i)} onClick={() => setH({ ...h, days: h.days.includes(i) ? h.days.filter((x) => x !== i) : [...h.days, i].sort() })}>{n}</Chip>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <TextInput label="من" type="time" dir="ltr" value={h.from} onChange={(v) => setH({ ...h, from: v })} />
+        <TextInput label="إلى" type="time" dir="ltr" value={h.to} onChange={(v) => setH({ ...h, to: v })} />
+        <TextInput label="الفاصل (دقيقة)" dir="ltr" value={String(h.slot)} onChange={(v) => setH({ ...h, slot: Math.max(5, Number(v.replace(/\D/g, "")) || 15) })} />
+      </div>
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
   );
 }
