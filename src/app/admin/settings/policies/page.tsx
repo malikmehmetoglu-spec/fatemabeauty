@@ -1,15 +1,46 @@
 "use client";
 
 /** W_Policies.dc.html — سياسات الحجز والإلغاء. */
-import Link from "next/link";
 import { Fragment, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { R } from "@/lib/routes";
-import { C, FATEMA_PHOTO, LOGO } from "@/lib/tokens";
-import { css, fmt } from "@/app/admin/_h/css";
+import { C } from "@/lib/tokens";
+import { ch, css, tg } from "@/app/admin/_h/css";
 
 export default function Page() {
-  // LOGIC
+  const [s, setS0] = useState({ win: 1, rel: true, ns: 2, dep: false, depon: 0, wait: true, resp: 1, r1: true, r2: true, ch: [true, true, true] });
+  const set = (p: Partial<typeof s>) => setS0({ ...s, ...p });
+  const W = ["ساعتين", "6 ساعات", "12 ساعة", "24 ساعة"];
+  const NS = ["تسجيل الغياب فقط", "تنبيه لطيف بعد الغياب الأول", "طلب عربون بعد غيابين", "إيقاف الحجز من التطبيق بعد 3 غيابات"];
+  const RS = [15, 30, 60];
+  const CH = ["واتساب", "SMS", "إشعار التطبيق"];
+  const pv = ["يمكنكِ تعديل موعدكِ أو إلغاؤه من التطبيق حتى " + W[s.win] + " قبل الموعد، وبعدها عبر الاستقبال."];
+  const rem = [s.r1 ? "قبل الموعد بيوم" : "", s.r2 ? "قبله بساعتين" : ""].filter((x) => x);
+  if (rem.length) pv.push("نذكّركِ " + rem.join(" و") + " عبر " + CH.filter((c, i) => s.ch[i]).join(" و") + ".");
+  if (s.wait) pv.push("عند شغور موعد نرسله لقائمة الانتظار، والرد خلال " + RS[s.resp] + " دقيقة.");
+  pv.push(s.dep ? "يُطلب عربون عند الحجز ويُخصم من فاتورتكِ." : "لا يُطلب عربون عادةً لحجز الموعد.");
+  if (s.ns > 0) pv.push(["", "نرسل تنبيهاً لطيفاً عند الغياب عن الموعد.", "بعد غيابين يُطلب عربون للحجز التالي.", "بعد 3 غيابات يكون الحجز عبر الاستقبال فقط."][s.ns]);
+  const v = {
+    wins: W.map((name, i) => ({ name, style: ch(s.win === i, 34), pick: () => set({ win: i }) })),
+    tgr: tg(s.rel), trel: () => set({ rel: !s.rel }),
+    ns: NS.map((name, i) => {
+      const on = s.ns === i;
+      return {
+        name, pick: () => set({ ns: i }),
+        style: "display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right;" +
+          (on ? "background:linear-gradient(160deg,#F7EDF9,#E8D0ED);border:1px solid #FFFFFF;color:#7B4687;box-shadow:0 6px 14px rgba(150,100,170,0.20)" : "background:#FFFFFF;border:1px solid #EDE2F1;color:#76607E"),
+        dot: "width:16px;height:16px;border-radius:8px;flex-shrink:0;box-sizing:border-box;" + (on ? "border:5px solid #7B4687;background:#FFFFFF" : "border:1.5px solid #D2C3D5;background:#FFFFFF"),
+      };
+    }),
+    tgd: tg(s.dep), tdep: () => set({ dep: !s.dep }),
+    depst: s.dep ? "" : "opacity:0.45;pointer-events:none",
+    depon: ["جلسات الليزر", "كل الخدمات"].map((name, i) => ({ name, style: ch(s.depon === i, 32), pick: () => set({ depon: i }) })),
+    tgw: tg(s.wait), twait: () => set({ wait: !s.wait }),
+    resp: RS.map((m, i) => ({ name: m + " دقيقة", style: ch(s.resp === i, 34), pick: () => set({ resp: i }) })),
+    tg1: tg(s.r1), tr1: () => set({ r1: !s.r1 }),
+    tg2: tg(s.r2), tr2: () => set({ r2: !s.r2 }),
+    chans: CH.map((name, i) => ({ name, style: ch(s.ch[i], 32), pick: () => { const a = s.ch.slice(); a[i] = !a[i]; set({ ch: a }); } })),
+    pv,
+  };
   return (
     <AdminShell
       active="الإعدادات"
@@ -42,7 +73,7 @@ export default function Page() {
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                   {v.wins.map((c, cI) => (
                     <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style)}>{c.name}</button>
+                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
                     </Fragment>
                   ))}
                 </div>
@@ -57,7 +88,7 @@ export default function Page() {
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>إعادة الموعد الملغى للحجز فوراً</div>
                     <div style={{ fontSize: 11.5, color: C.sub2 }}>يصبح الوقت متاحاً في نفس اللحظة</div>
                   </div>
-                  <button type="button" aria-label="إعادة الموعد الملغى" role="switch" onClick={v.trel} style={css(v.tgr)}>
+                  <button type="button" aria-label="إعادة الموعد الملغى" role="switch" aria-checked={s.rel} onClick={v.trel} style={css(v.tgr, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
@@ -81,7 +112,7 @@ export default function Page() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {v.ns.map((o, oI) => (
                     <Fragment key={oI}>
-                      <button type="button" onClick={o.pick} style={css(o.style)}>
+                      <button type="button" onClick={o.pick} style={css(o.style, "button")}>
                         <span style={css(o.dot)} />
                         <span>{o.name}</span>
                       </button>
@@ -124,7 +155,7 @@ export default function Page() {
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>طلب عربون عند الحجز</div>
                     <div style={{ fontSize: 11.5, color: C.sub2 }}>يُدفع من التطبيق ويُخصم من الفاتورة</div>
                   </div>
-                  <button type="button" aria-label="طلب عربون" role="switch" onClick={v.tdep} style={css(v.tgd)}>
+                  <button type="button" aria-label="طلب عربون" role="switch" aria-checked={s.dep} onClick={v.tdep} style={css(v.tgd, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
@@ -145,7 +176,7 @@ export default function Page() {
                   <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                     {v.depon.map((c, cI) => (
                       <Fragment key={cI}>
-                        <button type="button" onClick={c.pick} style={css(c.style)}>{c.name}</button>
+                        <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
                       </Fragment>
                     ))}
                   </div>
@@ -172,7 +203,7 @@ export default function Page() {
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>عرض الموعد الشاغر تلقائياً</div>
                     <div style={{ fontSize: 11.5, color: C.sub2 }}>يُرسل لأول مراجعة في القائمة، وأول من تقبل تأخذه</div>
                   </div>
-                  <button type="button" aria-label="العرض التلقائي" role="switch" onClick={v.twait} style={css(v.tgw)}>
+                  <button type="button" aria-label="العرض التلقائي" role="switch" aria-checked={s.wait} onClick={v.twait} style={css(v.tgw, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
@@ -180,7 +211,7 @@ export default function Page() {
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                   {v.resp.map((c, cI) => (
                     <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style)}>{c.name}</button>
+                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
                     </Fragment>
                   ))}
                 </div>
@@ -205,7 +236,7 @@ export default function Page() {
                   <div style={{ lineHeight: "1.35" }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>قبل الموعد بيوم</div>
                   </div>
-                  <button type="button" aria-label="تذكير قبل يوم" role="switch" onClick={v.tr1} style={css(v.tg1)}>
+                  <button type="button" aria-label="تذكير قبل يوم" role="switch" aria-checked={s.r1} onClick={v.tr1} style={css(v.tg1, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
@@ -213,7 +244,7 @@ export default function Page() {
                   <div style={{ lineHeight: "1.35" }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>قبل الموعد بساعتين</div>
                   </div>
-                  <button type="button" aria-label="تذكير قبل ساعتين" role="switch" onClick={v.tr2} style={css(v.tg2)}>
+                  <button type="button" aria-label="تذكير قبل ساعتين" role="switch" aria-checked={s.r2} onClick={v.tr2} style={css(v.tg2, "button")}>
                     <span style={{ width: 24, height: 24, borderRadius: 12, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,0.18)", display: "block" }} />
                   </button>
                 </div>
@@ -221,7 +252,7 @@ export default function Page() {
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                   {v.chans.map((c, cI) => (
                     <Fragment key={cI}>
-                      <button type="button" onClick={c.pick} style={css(c.style)}>{c.name}</button>
+                      <button type="button" onClick={c.pick} style={css(c.style, "button")}>{c.name}</button>
                     </Fragment>
                   ))}
                 </div>
@@ -248,7 +279,7 @@ export default function Page() {
               </div>
             </Fragment>
           ))}
-          <button type="button" style={{ position: "relative", marginTop: "auto", height: 50, borderRadius: 25, border: "none", background: C.white, color: C.accent, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.18)", boxSizing: "content-box" }}>
+          <button type="button" style={{ position: "relative", marginTop: "auto", height: 50, borderRadius: 25, border: "none", background: C.white, color: C.accent, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 8px 20px rgba(0,0,0,0.18)" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12l5 5L20 7" />
             </svg>
@@ -259,58 +290,4 @@ export default function Page() {
     </AdminShell>
   );
 }
-
-/* SCRIPT
-class Component extends DCLogic {
-  constructor(props) { super(props); this.state = {"win": 1, "rel": true, "ns": 2, "dep": false, "depon": 0, "wait": true, "resp": 1, "r1": true, "r2": true, "ch": [true, true, true]}; }
-
-  tg(on) {
-    return 'width:52px;height:30px;border-radius:15px;padding:3px;box-sizing:border-box;border:none;flex-shrink:0;display:flex;justify-content:' + (on ? 'flex-end' : 'flex-start') +
-      ';background:' + (on ? 'linear-gradient(145deg,#C9A2D8,#7B4687);box-shadow:0 6px 14px rgba(123,70,135,0.30)' : '#E6DDE8');
-  }
-  ch(on, h) {
-    h = h || 36;
-    return 'height:' + h + 'px;padding:0 14px;border-radius:' + (h / 2) + 'px;font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid ' + (on ? '#FFFFFF' : '#EADCF0') +
-      ';background:' + (on ? 'linear-gradient(160deg,#F1E3F6,#D9BCE5)' : '#FFFFFF') + ';color:' + (on ? '#7B4687' : '#866F8D') +
-      ';box-shadow:' + (on ? '0 6px 14px rgba(150,100,170,0.25)' : '0 3px 10px rgba(123,70,135,0.05)');
-  }
-  fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-
-
-  renderVals() {
-    const s = this.state; const v = { accent: this.props.accent ?? '#7B4687' };
-
-    const W = [2, 6, 12, 24];
-    v.wins = W.map((h, i) => ({ name: h + ' ساعات', style: this.ch(s.win === i, 34), pick: () => this.setState({ win: i }) }));
-    v.wins[0].name = 'ساعتين'; v.wins[2].name = '12 ساعة'; v.wins[3].name = '24 ساعة';
-    v.tgr = this.tg(s.rel); v.trel = () => this.setState({ rel: !s.rel });
-    const NS = ['تسجيل الغياب فقط', 'تنبيه لطيف بعد الغياب الأول', 'طلب عربون بعد غيابين', 'إيقاف الحجز من التطبيق بعد 3 غيابات'];
-    v.ns = NS.map((name, i) => { const on = s.ns === i; return { name, pick: () => this.setState({ ns: i }),
-      style: 'display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right;' +
-        (on ? 'background:linear-gradient(160deg,#F7EDF9,#E8D0ED);border:1px solid #FFFFFF;color:#7B4687;box-shadow:0 6px 14px rgba(150,100,170,0.20)' : 'background:#FFFFFF;border:1px solid #EDE2F1;color:#76607E'),
-      dot: 'width:16px;height:16px;border-radius:8px;flex-shrink:0;box-sizing:border-box;' + (on ? 'border:5px solid #7B4687;background:#FFFFFF' : 'border:1.5px solid #D2C3D5;background:#FFFFFF') }; });
-    v.tgd = this.tg(s.dep); v.tdep = () => this.setState({ dep: !s.dep });
-    v.depst = s.dep ? '' : 'opacity:0.45;pointer-events:none';
-    v.depon = ['جلسات الليزر', 'كل الخدمات'].map((name, i) => ({ name, style: this.ch(s.depon === i, 32), pick: () => this.setState({ depon: i }) }));
-    v.tgw = this.tg(s.wait); v.twait = () => this.setState({ wait: !s.wait });
-    const R = [15, 30, 60];
-    v.resp = R.map((m, i) => ({ name: m + ' دقيقة', style: this.ch(s.resp === i, 34), pick: () => this.setState({ resp: i }) }));
-    v.tg1 = this.tg(s.r1); v.tr1 = () => this.setState({ r1: !s.r1 });
-    v.tg2 = this.tg(s.r2); v.tr2 = () => this.setState({ r2: !s.r2 });
-    const CH = ['واتساب', 'SMS', 'إشعار التطبيق'];
-    v.chans = CH.map((name, i) => ({ name, style: this.ch(s.ch[i], 32), pick: () => { const a = s.ch.slice(); a[i] = !a[i]; this.setState({ ch: a }); } }));
-    const wl = ['ساعتين', '6 ساعات', '12 ساعة', '24 ساعة'][s.win];
-    const pv = ['يمكنكِ تعديل موعدكِ أو إلغاؤه من التطبيق حتى ' + wl + ' قبل الموعد، وبعدها عبر الاستقبال.'];
-    const rem = [s.r1 ? 'قبل الموعد بيوم' : '', s.r2 ? 'قبله بساعتين' : ''].filter((x) => x);
-    if (rem.length) pv.push('نذكّركِ ' + rem.join(' و') + ' عبر ' + CH.filter((c, i) => s.ch[i]).join(' و') + '.');
-    if (s.wait) pv.push('عند شغور موعد نرسله لقائمة الانتظار، والرد خلال ' + R[s.resp] + ' دقيقة.');
-    pv.push(s.dep ? 'يُطلب عربون عند الحجز ويُخصم من فاتورتكِ.' : 'لا يُطلب عربون عادةً لحجز الموعد.');
-    if (s.ns > 0) pv.push(['', 'نرسل تنبيهاً لطيفاً عند الغياب عن الموعد.', 'بعد غيابين يُطلب عربون للحجز التالي.', 'بعد 3 غيابات يكون الحجز عبر الاستقبال فقط.'][s.ns]);
-    v.pv = pv;
-
-    return v;
-  }
-}
-
-*/
 

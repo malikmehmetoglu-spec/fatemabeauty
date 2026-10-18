@@ -23,7 +23,7 @@ export default function Page() {
             </svg>
             تصدير PDF
           </button>
-          <button type="button" style={{ height: 46, borderRadius: 23, padding: "0 16px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, border: "none", padding: "0 20px", fontSize: 14 }}>
+          <button type="button" style={{ height: 46, borderRadius: 23, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600, whiteSpace: "nowrap", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, border: "none", padding: "0 20px", fontSize: 14 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5 5-5M12 4v12" />
             </svg>
@@ -85,7 +85,7 @@ export default function Page() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {v.per.map((p, pI) => (
             <Fragment key={pI}>
-              <button type="button" onClick={p.pick} style={css(p.style)}>{p.name}</button>
+              <button type="button" onClick={p.pick} style={css(p.style, "button")}>{p.name}</button>
             </Fragment>
           ))}
           <span style={{ marginInlineStart: "auto", fontSize: 12, color: C.sub2, display: "flex", alignItems: "center", gap: 6 }}>

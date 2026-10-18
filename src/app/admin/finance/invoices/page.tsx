@@ -127,7 +127,7 @@ export default function Page() {
                 <span style={{ fontFamily: "Rubik, sans-serif", fontSize: 13, color: C.sub }}>{r.time}</span>
               </div>
               <div style={{ flex: 1.7, minWidth: "0", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent }}>{r.ini}</span>
+                <span style={{ width: 32, height: 32, borderRadius: 16, flexShrink: 0, background: "linear-gradient(145deg,#EEDBF2,#DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>{r.ini}</span>
                 <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{r.name}</span>
                 <ExampleTag />
               </div>
