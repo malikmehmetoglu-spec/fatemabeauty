@@ -210,7 +210,7 @@ export default function InventoryPage() {
               p.kind === "retail"
                 ? <Toggle key="t" on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busyKey !== p.key && toggleStore(p)} />
                 : <span style={{ fontSize: 12, color: C.muted }}>لا يظهر</span>,
-              <span key="a" style={{ display: "flex", gap: 6, flexWrap: "nowrap", marginInlineStart: "auto" }}>
+              <span key="a" style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginInlineStart: "auto" }}>
                 <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
                 {L.multi && <RowBtn icon="refresh" label="نقل" onClick={() => setMoving(p)} />}
                 <RowBtn icon="clip" label="جرد" onClick={() => setAdjusting(p)} />
