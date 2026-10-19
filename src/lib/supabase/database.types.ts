@@ -1789,6 +1789,54 @@ export type Database = {
           },
         ]
       }
+      store_slides: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          cta_href: string
+          cta_label: string
+          cta2_href: string
+          cta2_label: string
+          eyebrow: string
+          id: string
+          image_path: string | null
+          sort: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          cta_href?: string
+          cta_label?: string
+          cta2_href?: string
+          cta2_label?: string
+          eyebrow?: string
+          id?: string
+          image_path?: string | null
+          sort?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          cta_href?: string
+          cta_label?: string
+          cta2_href?: string
+          cta2_label?: string
+          eyebrow?: string
+          id?: string
+          image_path?: string | null
+          sort?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       surveys: {
         Row: {
           answers: Json
@@ -2229,6 +2277,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      store_bestsellers: { Args: { p_limit?: number }; Returns: string[] }
       store_products: {
         Args: { p_keys?: string[] }
         Returns: {
