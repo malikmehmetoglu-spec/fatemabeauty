@@ -29,7 +29,7 @@ export async function listStaff() {
   return must(await supabase.from("staff").select("*").order("active", { ascending: false }).order("created_at"));
 }
 
-export type StaffInput = { id?: string; name: string; title: string; role: Role; phone: string | null; photo_url?: string | null };
+export type StaffInput = { id?: string; name: string; title: string; role: Role; phone: string | null; photo_url?: string | null; is_consultant?: boolean };
 
 export async function saveStaff(input: StaffInput) {
   const { id, ...rest } = input;

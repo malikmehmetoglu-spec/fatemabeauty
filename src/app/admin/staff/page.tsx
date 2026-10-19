@@ -7,7 +7,8 @@
 import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag, TextInput } from "@/components/ui";
+import { DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag, TextInput, Toggle } from "@/components/ui";
+import { Row } from "@/app/admin/settings/rooms/dialogs";
 import { saveStaff, setStaffActive, staffAdmin, staffPhoto, uploadStaffPhoto, type Role, type Staff } from "@/lib/db/staff";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
 import { arDate } from "@/lib/format";
@@ -103,12 +104,12 @@ function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle }: {
 }
 
 function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member: Staff | null; isOwner: boolean; onClose: () => void }) {
-  const [name, setName] = useState(""); const [title, setTitle] = useState(""); const [role, setRole] = useState<Role>("specialist"); const [phone, setPhone] = useState("");
+  const [name, setName] = useState(""); const [title, setTitle] = useState(""); const [role, setRole] = useState<Role>("specialist"); const [phone, setPhone] = useState(""); const [consultant, setConsultant] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   useEffect(() => {
     if (!open) return;
-    setName(member?.name ?? ""); setTitle(member?.title ?? ""); setRole(member?.role ?? "specialist"); setPhone(member?.phone ?? ""); setFile(null); setError("");
+    setName(member?.name ?? ""); setTitle(member?.title ?? ""); setRole(member?.role ?? "specialist"); setPhone(member?.phone ?? ""); setConsultant(member?.is_consultant ?? false); setFile(null); setError("");
   }, [open, member]);
 
   const roleOpts: { value: Role; label: string }[] = (member?.role === "owner" ? ["owner"] as Role[] : (isOwner ? ["admin", "specialist", "reception", "accountant"] : ["specialist", "reception", "accountant", ...(member?.role === "admin" ? ["admin"] : [])]) as Role[])
@@ -121,7 +122,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     setBusy(true);
     try {
       const photo_url = file ? await uploadStaffPhoto(file) : member?.photo_url ?? null;
-      await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url });
+      await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, is_consultant: consultant });
       onClose();
     } catch (e) { setError(errText(e)); } finally { setBusy(false); }
   }
@@ -144,6 +145,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
         <Select label="الدور (يحدد الصلاحيات)" value={role} onChange={setRole} options={roleOpts} />
         <TextInput label="رقم الهاتف" dir="ltr" value={phone} onChange={setPhone} placeholder="09xx xxx xxx" />
       </div>
+      <Row title="استشارية" sub="تظهر في «استشارة» برابط الحجز العام بدل جلسات العناية"><Toggle on={consultant} onChange={setConsultant} label="استشارية" /></Row>
       {!isOwner && <div style={{ fontSize: 12.5, color: C.sub2 }}>دور «الإدارة» يمنحه المدير العام فقط.</div>}
       {!member && <div style={{ fontSize: 12.5, color: C.sub2 }}>بعد الإضافة أنشئي حساب الدخول من زر «إنشاء حساب».</div>}
       {error && <ErrorNote>{error}</ErrorNote>}

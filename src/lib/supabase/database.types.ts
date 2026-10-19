@@ -65,6 +65,7 @@ export type Database = {
           finished_at: string | null
           id: string
           minutes: number
+          note: string | null
           patient_id: string | null
           patient_package_id: string | null
           pay_method: Database["public"]["Enums"]["pay_method"] | null
@@ -92,6 +93,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           minutes: number
+          note?: string | null
           patient_id?: string | null
           patient_package_id?: string | null
           pay_method?: Database["public"]["Enums"]["pay_method"] | null
@@ -119,6 +121,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           minutes?: number
+          note?: string | null
           patient_id?: string | null
           patient_package_id?: string | null
           pay_method?: Database["public"]["Enums"]["pay_method"] | null
@@ -1407,6 +1410,7 @@ export type Database = {
           bookable_online: boolean
           description: string
           device_id: string | null
+          is_consultation: boolean
           key: string
           minutes: number
           name: string
@@ -1421,6 +1425,7 @@ export type Database = {
           bookable_online?: boolean
           description?: string
           device_id?: string | null
+          is_consultation?: boolean
           key: string
           minutes: number
           name: string
@@ -1435,6 +1440,7 @@ export type Database = {
           bookable_online?: boolean
           description?: string
           device_id?: string | null
+          is_consultation?: boolean
           key?: string
           minutes?: number
           name?: string
@@ -1537,6 +1543,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_consultant: boolean
           name: string
           phone: string | null
           photo_url: string | null
@@ -1550,6 +1557,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_consultant?: boolean
           name: string
           phone?: string | null
           photo_url?: string | null
@@ -1563,6 +1571,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_consultant?: boolean
           name?: string
           phone?: string | null
           photo_url?: string | null
@@ -1949,6 +1958,7 @@ export type Database = {
           finished_at: string | null
           id: string
           minutes: number
+          note: string | null
           patient_id: string | null
           patient_package_id: string | null
           pay_method: Database["public"]["Enums"]["pay_method"] | null
@@ -2083,6 +2093,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_consultant: boolean
           name: string
           phone: string | null
           photo_url: string | null
@@ -2188,6 +2199,25 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      public_book: {
+        Args: {
+          p_name: string
+          p_note?: string
+          p_phone: string
+          p_service: string
+          p_specialist: string
+          p_starts: string
+        }
+        Returns: Json
+      }
+      public_booking_info: { Args: never; Returns: Json }
+      public_slots: {
+        Args: { p_day: string; p_service: string; p_specialist?: string }
+        Returns: {
+          available: boolean
+          starts_at: string
+        }[]
       }
       receive_stock: {
         Args: {

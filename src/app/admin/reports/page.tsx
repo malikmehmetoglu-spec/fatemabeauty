@@ -65,7 +65,7 @@ export default function Page() {
     return { label: label(k), value: rs.length ? Math.round((rs.reduce((s, x) => s + x.stars, 0) / rs.length) * 10) / 10 : 0, title: `${rs.length} تقييم` };
   });
   const services = sumBy(attended, (a) => a.services?.name ?? a.service_key, () => 1);
-  const sources = sumBy(appts, (a) => ({ app: "التطبيق", reception: "الاستقبال", walk_in: "بدون موعد", admin: "الإدارة" }[a.source] ?? a.source), () => 1);
+  const sources = sumBy(appts, (a) => ({ app: "التطبيق", reception: "الاستقبال", walk_in: "بدون موعد", admin: "الإدارة", public: "حجز من الرابط" }[a.source] ?? a.source), () => 1);
   const loading = ops.loading || fin.loading;
   const error = ops.error || fin.error;
 

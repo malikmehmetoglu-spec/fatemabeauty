@@ -9,7 +9,7 @@ import { C } from "@/lib/tokens";
 import { Row } from "@/app/admin/settings/rooms/dialogs";
 
 const err = (e: unknown) => arError(e);
-const blank = () => ({ name: "", short: "", desc: "", price: "", from: false, minutes: "", room: "", device: "", online: true, active: true, sort: "" });
+const blank = () => ({ name: "", short: "", desc: "", price: "", from: false, minutes: "", room: "", device: "", online: true, consult: false, active: true, sort: "" });
 
 export function ServiceDialog({ open, service, rooms, devices, onClose }: {
   open: boolean; service: Service | null; rooms: Room[]; devices: Device[]; onClose: () => void;
@@ -22,7 +22,7 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
     setError("");
     setF(service ? {
       name: service.name, short: service.short_name, desc: service.description, price: String(service.price), from: service.price_from,
-      minutes: String(service.minutes), room: service.room_id ?? "", device: service.device_id ?? "", online: service.bookable_online,
+      minutes: String(service.minutes), room: service.room_id ?? "", device: service.device_id ?? "", online: service.bookable_online, consult: service.is_consultation,
       active: service.active, sort: String(service.sort),
     } : blank());
   }, [open, service]);
@@ -39,7 +39,7 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
       await saveService({
         key: service?.key, name: f.name.trim(), short_name: f.short.trim() || f.name.trim(), description: f.desc.trim(),
         price: Math.round(price), price_from: f.from, minutes: Math.round(minutes), room_id: f.room || null, device_id: f.device || null,
-        bookable_online: f.online, active: f.active, sort: Number(f.sort) || 0,
+        bookable_online: f.online, is_consultation: f.consult, active: f.active, sort: Number(f.sort) || 0,
       });
       onClose();
     } catch (e) { setError(err(e)); } finally { setBusy(false); }
@@ -66,6 +66,7 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
       <div>
         <Row title="السعر «يبدأ من»" sub="يظهر السعر مسبوقاً بكلمة «من»"><Toggle on={f.from} onChange={(v) => set("from", v)} label="السعر يبدأ من" /></Row>
         <Row title="قابلة للحجز من التطبيق" sub="تظهر للمراجعات مع الأوقات المتاحة"><Toggle on={f.online} onChange={(v) => set("online", v)} label="قابلة للحجز من التطبيق" /></Row>
+        <Row title="خدمة استشارة" sub="تُحجز مع الاستشارية في رابط الحجز العام"><Toggle on={f.consult} onChange={(v) => set("consult", v)} label="خدمة استشارة" /></Row>
         <Row title="مفعّلة" sub="الخدمة الموقوفة لا تظهر للمراجعات"><Toggle on={f.active} onChange={(v) => set("active", v)} label="مفعّلة" /></Row>
       </div>
       {error && <ErrorNote>{error}</ErrorNote>}

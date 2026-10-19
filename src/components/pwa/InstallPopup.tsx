@@ -10,15 +10,15 @@ import { useInstall } from "./useInstall";
 
 const KEY = "fb-install-popup-at";
 const EVERY_MS = 60 * 60 * 1000; // once an hour
-const STAFF_PATHS = ["/admin", "/kiosk", "/tv", "/screens"];
-const STAFF_HOSTS = ["admin", "kiosk", "tv"].map((s) => `${s}.${DOMAIN}`);
+const STAFF_PATHS = ["/admin", "/kiosk", "/tv", "/screens", "/book"];
+const STAFF_HOSTS = ["admin", "kiosk", "tv", "book"].map((s) => `${s}.${DOMAIN}`);
 
 function lastShown() { try { return Number(localStorage.getItem(KEY) || 0); } catch { return 0; } }
 function markShown() { try { localStorage.setItem(KEY, String(Date.now())); } catch {} }
 
 /**
  * Hourly «ثبّتي التطبيق» popup on every public / patient page, for anyone who has not installed the app.
- * Never on staff screens (admin, reception tablet, waiting-room TV). `?install=1` opens it right away.
+ * Never on staff screens (admin, reception tablet, waiting-room TV) nor on the public booking link (/book, book.fatema.beauty). `?install=1` opens it right away.
  */
 export function InstallPopup() {
   const pathname = usePathname() || "/";

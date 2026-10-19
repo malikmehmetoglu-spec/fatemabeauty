@@ -235,7 +235,8 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         {row("الموعد", `${arDate(new Date(a.starts_at))} · ${timeOf(a)}`)}
         {row("الغرفة", a.room?.name ?? "—")}
         {row("الأخصائية", a.specialist?.name ?? "—")}
-        {row("المصدر", a.source === "app" ? "التطبيق" : a.source === "walk_in" ? "حضور مباشر" : "الاستقبال")}
+        {row("المصدر", a.source === "app" ? "التطبيق" : a.source === "walk_in" ? "حضور مباشر" : a.source === "public" ? "حجز من الرابط" : a.source === "admin" ? "الإدارة" : "الاستقبال")}
+        {a.note && row("ملاحظة المراجِعة", a.note)}
         {a.cancel_reason && row("سبب الإلغاء", a.cancel_reason)}
       </div>
       {a.patient_id && (

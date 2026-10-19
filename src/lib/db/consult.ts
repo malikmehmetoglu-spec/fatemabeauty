@@ -10,7 +10,8 @@ export type Service = Tables<"services">;
 /** The online-consultation service, if the centre has defined one (key or name mentions online). */
 export async function getConsultService(): Promise<Service | null> {
   const rows = must(await supabase.from("services").select("*").eq("active", true).order("sort")) ?? [];
-  return rows.find((s) => /online|remote|video/i.test(s.key))
+  return rows.find((s) => s.is_consultation && /online|remote|video|أونلاين|عن بعد|عن بُعد|فيديو/i.test(s.key + s.name))
+    ?? rows.find((s) => /online|remote|video/i.test(s.key))
     ?? rows.find((s) => /أونلاين|اون لاين|أون لاين|عن بعد|عن بُعد|مرئي|فيديو/.test(s.name))
     ?? null;
 }
