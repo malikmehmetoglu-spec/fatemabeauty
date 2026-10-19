@@ -204,7 +204,6 @@ export default function PublicBookingPage() {
         ) : (
           <>
             <section className={s.hero}>
-              <span className={s.eyebrow}>حجز موعد</span>
               <h1 className={s.h1}>احجزي <em>موعدكِ</em> في دقيقة</h1>
               <p className={s.lead}>اختاري الجلسة واليوم والساعة التي تناسبكِ — الأوقات المعروضة حقيقية ومحدّثة لحظة بلحظة بتوقيت دمشق.</p>
             </section>
