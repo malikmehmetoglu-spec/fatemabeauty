@@ -1706,6 +1706,7 @@ export type Database = {
           created_by: string | null
           expires_on: string | null
           id: string
+          location_id: string
           product_key: string
           qty_left: number
           qty_received: number
@@ -1718,6 +1719,7 @@ export type Database = {
           created_by?: string | null
           expires_on?: string | null
           id?: string
+          location_id: string
           product_key: string
           qty_left: number
           qty_received: number
@@ -1730,6 +1732,7 @@ export type Database = {
           created_by?: string | null
           expires_on?: string | null
           id?: string
+          location_id?: string
           product_key?: string
           qty_left?: number
           qty_received?: number
@@ -1740,6 +1743,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stock_batches_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_batches_product_key_fkey"
             columns: ["product_key"]
             isOneToOne: false
@@ -1748,12 +1758,49 @@ export type Database = {
           },
         ]
       }
+      stock_locations: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          is_default_center: boolean
+          kind: string
+          name: string
+          note: string
+          sells_online: boolean
+          sort: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_default_center?: boolean
+          kind?: string
+          name: string
+          note?: string
+          sells_online?: boolean
+          sort?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_default_center?: boolean
+          kind?: string
+          name?: string
+          note?: string
+          sells_online?: boolean
+          sort?: number
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           created_at: string
           created_by: string | null
           delta: number
           id: number
+          location_id: string | null
           note: string | null
           product_key: string
           reason: string
@@ -1764,6 +1811,7 @@ export type Database = {
           created_by?: string | null
           delta: number
           id?: never
+          location_id?: string | null
           note?: string | null
           product_key: string
           reason: string
@@ -1774,12 +1822,20 @@ export type Database = {
           created_by?: string | null
           delta?: number
           id?: never
+          location_id?: string | null
           note?: string | null
           product_key?: string
           reason?: string
           ref_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_movements_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_movements_product_key_fkey"
             columns: ["product_key"]
@@ -1963,6 +2019,15 @@ export type Database = {
     Functions: {
       adjust_stock: {
         Args: { p_counted: number; p_note?: string; p_product: string }
+        Returns: undefined
+      }
+      adjust_stock_at: {
+        Args: {
+          p_counted: number
+          p_location: string
+          p_note?: string
+          p_product: string
+        }
         Returns: undefined
       }
       attendance_punch: {
@@ -2277,6 +2342,46 @@ export type Database = {
         }
         Returns: undefined
       }
+      receive_stock_at: {
+        Args: {
+          p_expires?: string
+          p_location?: string
+          p_product: string
+          p_qty: number
+          p_supplier?: string
+          p_unit_cost?: number
+        }
+        Returns: undefined
+      }
+      save_stock_location: {
+        Args: {
+          p_active?: boolean
+          p_id: string
+          p_is_default?: boolean
+          p_kind: string
+          p_name: string
+          p_note?: string
+          p_sells_online?: boolean
+          p_sort?: number
+        }
+        Returns: {
+          active: boolean
+          created_at: string
+          id: string
+          is_default_center: boolean
+          kind: string
+          name: string
+          note: string
+          sells_online: boolean
+          sort: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stock_locations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       store_bestsellers: { Args: { p_limit?: number }; Returns: string[] }
       store_products: {
         Args: { p_keys?: string[] }
@@ -2323,6 +2428,16 @@ export type Database = {
         Args: { p_channel: string; p_device_id: string; p_platform: string }
         Returns: undefined
       }
+      transfer_stock: {
+        Args: {
+          p_from: string
+          p_note?: string
+          p_product: string
+          p_qty: number
+          p_to: string
+        }
+        Returns: undefined
+      }
       void_invoice: {
         Args: { p_invoice: string; p_reason?: string }
         Returns: undefined
@@ -2330,6 +2445,16 @@ export type Database = {
       waste_stock: {
         Args: {
           p_batch?: string
+          p_note?: string
+          p_product: string
+          p_qty: number
+        }
+        Returns: undefined
+      }
+      waste_stock_at: {
+        Args: {
+          p_batch?: string
+          p_location?: string
           p_note?: string
           p_product: string
           p_qty: number

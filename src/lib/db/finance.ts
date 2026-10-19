@@ -30,6 +30,8 @@ export function financeError(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);
   const map: [string, string][] = [
     ["discount needs approval", "الخصم أعلى من الحد المسموح ويحتاج موافقة الإدارة (حساب إدارة)."],
+    ["unknown location", "موقع المخزون غير موجود."],
+    ["location inactive", "موقع المخزون موقوف."],
     ["out of stock", "الكمية غير متوفرة في المخزون: "],
     ["unavailable", "المنتج غير متاح للبيع: "],
     ["package has no sessions left", "لا جلسات متبقية في هذه الباقة."],
@@ -151,6 +153,8 @@ export type InvoiceArgs = {
   patientId?: string | null; appointmentId?: string | null; walkInName?: string | null;
   lines: CartLine[]; discount: number; payments: { method: PayMethod; amount: number }[];
   patientPackageId?: string | null; note?: string; dueOn?: string | null;
+  /** stock location the products are taken from (default: the centre's default location) */
+  location?: string | null;
 };
 
 /** One atomic call: invoice + items + stock 'sale' movements + package session + payments. */
@@ -159,7 +163,7 @@ export async function createInvoice(a: InvoiceArgs) {
     p_patient: (a.patientId ?? null) as string,
     p_appointment: (a.appointmentId ?? null) as string,
     // prices come from the DB; only a custom line (admin) carries its own price
-    p_items: a.lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, label: l.label, ...(l.kind === "custom" ? { unit_price: l.unit_price } : {}) })),
+    p_items: a.lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, label: l.label, ...(l.kind === "custom" ? { unit_price: l.unit_price } : {}), ...(l.kind === "product" && a.location ? { location: a.location } : {}) })),
     p_discount: Math.max(0, Math.round(a.discount)),
     p_payments: a.payments.filter((p) => p.amount > 0 || p.method === "package"),
     p_patient_package: a.patientPackageId ?? undefined,

@@ -7,13 +7,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Card, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag } from "@/components/ui";
+import { Card, Chip, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { listAllBatches, listInventory, type Product } from "@/lib/db/products";
-import { ReceiveDialog } from "../dialogs";
+import { KIND_ICON, listAllBatches, listInventory, type LocationKind, type Product } from "@/lib/db/products";
+import { ReceiveDialog, useLocations } from "../dialogs";
 
 const value = (b: { qty_received: number; unit_cost: number | null }) => Number(b.qty_received) * (b.unit_cost ?? 0);
 
@@ -23,6 +23,8 @@ export default function Page() {
   const [picking, setPicking] = useState(false);
   const [receiving, setReceiving] = useState<Product | null>(null);
   const [supplier, setSupplier] = useState<string | null>(null);
+  const [loc, setLoc] = useState<string | null>(null);
+  const L = useLocations();
 
   const list = useMemo(() => batches ?? [], [batches]);
   const month = dayKey().slice(0, 7);
@@ -42,7 +44,7 @@ export default function Page() {
     return [...m.entries()].sort((a, b) => b[1].last.localeCompare(a[1].last));
   }, [list]);
 
-  const shown = supplier ? list.filter((b) => b.supplier?.trim() === supplier) : list;
+  const shown = list.filter((b) => (!supplier || b.supplier?.trim() === supplier) && (!loc || b.location_id === loc));
 
   return (
     <AdminShell active="المخزون والأجهزة" title="المشتريات والموردون" subtitle="كل استلام بضاعة يُسجَّل دفعةً بتاريخ انتهائها وكلفتها ومورّدها"
@@ -65,20 +67,31 @@ export default function Page() {
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>سجلّ الاستلام</h2>
             {supplier && <Tag kind="lilac">{supplier} <button type="button" aria-label="إزالة التصفية" onClick={() => setSupplier(null)} style={{ border: "none", background: "none", padding: 0, marginInlineStart: 4, color: C.accent }}>×</button></Tag>}
           </div>
+          {L.all.length > 1 && (
+            <div role="group" aria-label="الموقع" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+              <Chip selected={!loc} onClick={() => setLoc(null)}>كل المواقع</Chip>
+              {L.all.map((l) => (
+                <Chip key={l.id} selected={loc === l.id} onClick={() => setLoc(l.id)}>
+                  <Icon name={KIND_ICON[l.kind as LocationKind] ?? "box"} size={15} color={loc === l.id ? C.white : C.accent} />{l.name}
+                </Chip>
+              ))}
+            </div>
+          )}
           {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل السجل: {error}</ErrorNote> : list.length === 0 ? (
             <EmptyState icon="download" title="لم تُستلم بضاعة بعد"
               text="عند وصول بضاعة اضغطي «استلام بضاعة»، اختاري الصنف واكتبي الكمية وتاريخ الانتهاء والمورّد. تُضاف الكمية إلى المخزون ويُصرف الأقرب انتهاءً أولاً."
               action={<GhostButton icon="plus" onClick={() => setPicking(true)}>استلام بضاعة</GhostButton>} />
           ) : (
-            <DataTable minWidth={760}
-              headers={["التاريخ", "الصنف", "الكمية", "المتبقي", "الانتهاء", "كلفة الوحدة", "المورّد"]}
-              widths={[1.1, 2, 0.8, 0.8, 1.1, 1, 1.2]}
+            <DataTable minWidth={L.all.length > 1 ? 880 : 760}
+              headers={["التاريخ", "الصنف", ...(L.all.length > 1 ? ["الموقع"] : []), "الكمية", "المتبقي", "الانتهاء", "كلفة الوحدة", "المورّد"]}
+              widths={[1.1, 2, ...(L.all.length > 1 ? [1.1] : []), 0.8, 0.8, 1.1, 1, 1.2]}
               rows={shown.map((b) => {
                 const exp = b.expires_on;
                 const expSoon = exp && exp <= soon && Number(b.qty_left) > 0;
                 return [
                   <span key="d" style={{ fontSize: 12.5 }}>{arDate(new Date(b.received_at), { day: false })}</span>,
                   <b key="n" style={{ fontSize: 13.5 }}>{b.products?.name ?? "—"}</b>,
+                  ...(L.all.length > 1 ? [<span key="w" style={{ fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name={KIND_ICON[(b.stock_locations?.kind ?? "center") as LocationKind]} size={14} color={C.accentMid} />{b.stock_locations?.name ?? "—"}</span>] : []),
                   <span key="q" className="latin">{Number(b.qty_received)} <span style={{ fontSize: 11.5, color: C.sub2 }}>{b.products?.unit}</span></span>,
                   <span key="l" className="latin" style={{ color: Number(b.qty_left) <= 0 ? C.muted : C.ink }}>{Number(b.qty_left)}</span>,
                   exp ? <span key="e" style={{ fontSize: 12.5, color: expSoon ? C.danger : C.ink, fontWeight: expSoon ? 700 : 400 }}>{arDate(new Date(exp), { day: false, year: true })}</span> : <span key="e" style={{ color: C.muted }}>—</span>,
@@ -111,7 +124,7 @@ export default function Page() {
       </div>
 
       <PickProduct open={picking} items={items ?? []} onClose={() => setPicking(false)} onPick={(p) => { setPicking(false); setReceiving(p); }} />
-      <ReceiveDialog product={receiving} onClose={() => setReceiving(null)} />
+      <ReceiveDialog product={receiving} location={loc} onClose={() => setReceiving(null)} />
     </AdminShell>
   );
 }

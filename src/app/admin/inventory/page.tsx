@@ -9,15 +9,16 @@ import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Chip, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Toggle, Tag } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { isLow, listExpiring, listInventory, productImage, setShowInStore, stockError, type Product } from "@/lib/db/products";
+import { isLow, KIND_ICON, listExpiring, listInventory, productImage, qtyAt, setShowInStore, stockError, type LocationKind, type Product } from "@/lib/db/products";
 import { money, arDate, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
-import { ProductDialog, ReceiveDialog, AdjustDialog, WasteDialog } from "./dialogs";
+import { ProductDialog, ReceiveDialog, AdjustDialog, WasteDialog, WasteItemDialog, TransferDialog, useLocations } from "./dialogs";
 import css from "./inventory.module.css";
 
 type Filter = "all" | "retail" | "consumable" | "low" | "hidden";
-type WasteBatch = { id: string; product_key: string; qty_left: number; expires_on: string | null; name: string; unit: string };
-type ExpRow = { products?: { name: string; unit: string } | null };
+type WasteBatch = { id: string; product_key: string; qty_left: number; expires_on: string | null; name: string; unit: string; location?: string | null };
+type ExpRow = { products?: { name: string; unit: string } | null; stock_locations?: { name: string } | null };
+const expLoc = (b: unknown) => (b as ExpRow).stock_locations?.name ?? null;
 const expName = (b: unknown) => (b as ExpRow).products?.name ?? "—";
 const expUnit = (b: unknown) => (b as ExpRow).products?.unit ?? "";
 
@@ -31,6 +32,14 @@ export default function InventoryPage() {
   const [adjusting, setAdjusting] = useState<Product | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [wasting, setWasting] = useState<WasteBatch | null>(null);
+  const [wastingItem, setWastingItem] = useState<Product | null>(null);
+  const [moving, setMoving] = useState<Product | null>(null);
+  const [locSel, setLocSel] = useState<string | null>(null);
+  const L = useLocations();
+  const loc = locSel && L.all.some((l) => l.id === locSel) ? locSel : null;
+  const qty = (p: Product) => qtyAt(L.map, p, loc);
+  /** "المستودع 12 · المركز 3" — only the locations that hold the item. */
+  const breakdown = (p: Product) => L.all.map((l) => ({ l, n: Number(L.map?.[p.key]?.[l.id] ?? 0) })).filter((x) => x.n > 0);
   const [showExp, setShowExp] = useState(false);
   const [err, setErr] = useState("");
 
@@ -40,8 +49,9 @@ export default function InventoryPage() {
     retail: list.filter((p) => p.kind === "retail").length,
     inStore: list.filter((p) => p.kind === "retail" && p.show_in_store).length,
     low: list.filter(isLow).length,
-    value: list.reduce((s, p) => s + Number(p.stock) * (p.cost ?? 0), 0),
-  }), [list]);
+    value: list.reduce((s, p) => s + qtyAt(L.map, p, loc) * (p.cost ?? 0), 0),
+  }), [list, L.map, loc]);
+  const locName = loc ? L.all.find((l) => l.id === loc)?.name : null;
 
   const expiredCount = (expiring ?? []).filter((b) => (b.expires_on as string) < dayKey()).length;
   const needle = q.trim().toLowerCase();
@@ -63,13 +73,13 @@ export default function InventoryPage() {
   };
 
   return (
-    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle="كل ما في المركز: منتجات البيع تظهر في المتجر تلقائياً، ومواد الجلسات لا تظهر"
+    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={L.multi ? "الكميات في كل المواقع: المستودع والمحل والمركز — منتجات البيع تظهر في المتجر من المواقع التي تغذّيه" : "كل ما في المركز: منتجات البيع تظهر في المتجر تلقائياً، ومواد الجلسات لا تظهر"}
       actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>}>
       <div className="adm-row">
         <Kpi dark label="الأصناف" value={stats.total} sub={`${stats.retail} للبيع · ${stats.total - stats.retail} للجلسات`} icon="box" />
         <Kpi label="ظاهرة في المتجر" value={stats.inStore} sub={`من ${stats.retail} منتج بيع`} icon="bag" />
         <Kpi label="تحتاج إعادة طلب" value={stats.low} sub="وصلت إلى الحد الأدنى أو أقل" icon="alert" />
-        <Kpi label="قيمة المخزون" value={money(stats.value)} sub="بسعر الكلفة المسجّل" icon="wallet" />
+        <Kpi label="قيمة المخزون" value={money(stats.value)} sub={locName ? `في «${locName}» بسعر الكلفة` : "بسعر الكلفة المسجّل"} icon="wallet" />
       </div>
 
       {!!expiring?.length && (
@@ -87,10 +97,10 @@ export default function InventoryPage() {
             const past = (b.expires_on as string) < dayKey();
             return (
               <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "rgba(255,255,255,0.65)", borderRadius: 14, padding: "8px 12px", fontSize: 13 }}>
-                <b style={{ flex: "1 1 160px", minWidth: 0 }}>{expName(b)}</b>
+                <b style={{ flex: "1 1 160px", minWidth: 0 }}>{expName(b)}{L.multi && expLoc(b) ? <span style={{ fontWeight: 500, fontSize: 12, color: "#8A5A12" }}> · {expLoc(b)}</span> : null}</b>
                 <span className="latin">{Number(b.qty_left)} {expUnit(b)}</span>
                 <span style={{ color: past ? C.danger : "#8A5A12", fontWeight: 600 }}>{past ? "انتهت " : "تنتهي "}{arDate(new Date(b.expires_on as string), { day: false, year: true })}</span>
-                <button type="button" onClick={() => setWasting({ id: b.id, product_key: b.product_key, qty_left: Number(b.qty_left), expires_on: b.expires_on, name: expName(b), unit: expUnit(b) })}
+                <button type="button" onClick={() => setWasting({ id: b.id, product_key: b.product_key, qty_left: Number(b.qty_left), expires_on: b.expires_on, name: expName(b), unit: expUnit(b), location: expLoc(b) })}
                   style={{ border: "1px solid #EADCF0", background: C.white, color: C.danger, borderRadius: 15, height: 30, padding: "0 12px", fontSize: 12.5, fontWeight: 600 }}>إتلاف</button>
               </div>
             );
@@ -98,6 +108,17 @@ export default function InventoryPage() {
         </div>
       )}
       {err && <ErrorNote>{err}</ErrorNote>}
+
+      {L.all.length > 1 && (
+        <div role="group" aria-label="الموقع" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+          <Chip selected={!loc} onClick={() => setLocSel(null)}><Icon name="map" size={15} color={!loc ? C.white : C.accent} />كل المواقع</Chip>
+          {L.all.filter((l) => l.active || Object.values(L.map ?? {}).some((m) => (m[l.id] ?? 0) > 0)).map((l) => (
+            <Chip key={l.id} selected={loc === l.id} onClick={() => setLocSel(l.id)}>
+              <Icon name={KIND_ICON[l.kind as LocationKind] ?? "box"} size={15} color={loc === l.id ? C.white : C.accent} />{l.name}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         {([["all", "الكل"], ["retail", "منتجات البيع"], ["consumable", "مواد الجلسات"], ["low", "تحتاج إعادة طلب"], ["hidden", "مخفية من المتجر"]] as [Filter, string][]).map(([k, t]) => (
@@ -134,8 +155,8 @@ export default function InventoryPage() {
                 </div>
                 <div className={css.meta}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <b className="latin" style={{ fontSize: 16, color: low ? C.danger : C.ink }}>{Number(p.stock).toLocaleString("en-US")}</b>
-                    <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span>
+                    <b className="latin" style={{ fontSize: 16, color: low ? C.danger : C.ink }}>{qty(p).toLocaleString("en-US")}</b>
+                    <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}{loc && <> · من {Number(p.stock).toLocaleString("en-US")}</>}</span>
                     {Number(p.stock) <= 0 ? <Tag kind="pink">نفد</Tag> : low && <Tag kind="amber">منخفض</Tag>}
                   </span>
                   {p.kind === "retail" && <span>{p.price != null ? money(p.price) : <span style={{ color: C.muted }}>بلا سعر</span>}</span>}
@@ -145,9 +166,12 @@ export default function InventoryPage() {
                     </span>
                   )}
                 </div>
+                {L.multi && !loc && <Breakdown items={breakdown(p)} />}
                 <div className={css.actions}>
                   <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
+                  {L.multi && <RowBtn icon="refresh" label="نقل" onClick={() => setMoving(p)} />}
                   <RowBtn icon="clip" label="جرد" onClick={() => setAdjusting(p)} />
+                  <RowBtn icon="trash" label="إتلاف" onClick={() => setWastingItem(p)} />
                   <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
                 </div>
               </article>
@@ -155,10 +179,10 @@ export default function InventoryPage() {
           })}
         </div>
         <div className={css.table}>
-        <DataTable minWidth={960}
+        <DataTable minWidth={1040}
           headers={["الصنف", "النوع", "الكمية", "سعر البيع", "في المتجر", ""]}
-          widths={[2.4, 0.8, 1.3, 1, 0.8, 2.4]}
-          rowHeight={64}
+          widths={[2.1, 0.7, 2, 0.9, 0.7, 3.1]}
+          rowHeight={L.multi && !loc ? 76 : 64}
           rows={shown.map((p) => {
             const img = productImage(p);
             const low = isLow(p);
@@ -174,10 +198,13 @@ export default function InventoryPage() {
                 </div>
               </>,
               <Tag key="k" kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>,
-              <span key="s" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <b className="latin" style={{ fontSize: 15, color: low ? C.danger : C.ink }}>{Number(p.stock).toLocaleString("en-US")}</b>
-                <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span>
-                {Number(p.stock) <= 0 ? <Tag kind="pink">نفد</Tag> : low && <Tag kind="amber">منخفض</Tag>}
+              <span key="s" style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <b className="latin" style={{ fontSize: 15, color: low ? C.danger : C.ink }}>{qty(p).toLocaleString("en-US")}</b>
+                  <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}{loc && <> · من {Number(p.stock).toLocaleString("en-US")}</>}</span>
+                  {Number(p.stock) <= 0 ? <Tag kind="pink">نفد</Tag> : low && <Tag kind="amber">منخفض</Tag>}
+                </span>
+                {L.multi && !loc && <Breakdown items={breakdown(p)} />}
               </span>,
               p.kind === "retail" ? (p.price != null ? money(p.price) : <span style={{ color: C.muted }}>بلا سعر</span>) : <span style={{ color: C.muted }}>—</span>,
               p.kind === "retail"
@@ -185,7 +212,9 @@ export default function InventoryPage() {
                 : <span style={{ fontSize: 12, color: C.muted }}>لا يظهر</span>,
               <span key="a" style={{ display: "flex", gap: 6, flexWrap: "nowrap", marginInlineStart: "auto" }}>
                 <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />
+                {L.multi && <RowBtn icon="refresh" label="نقل" onClick={() => setMoving(p)} />}
                 <RowBtn icon="clip" label="جرد" onClick={() => setAdjusting(p)} />
+                <RowBtn icon="trash" label="إتلاف" onClick={() => setWastingItem(p)} />
                 <RowBtn icon="edit" label="تعديل" onClick={() => setEditing(p)} />
               </span>,
             ];
@@ -196,9 +225,11 @@ export default function InventoryPage() {
       )}
 
       <ProductDialog open={!!editing} product={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
-      <ReceiveDialog product={receiving} onClose={() => setReceiving(null)} />
-      <AdjustDialog product={adjusting} onClose={() => setAdjusting(null)} />
+      <ReceiveDialog product={receiving} location={loc} onClose={() => setReceiving(null)} />
+      <AdjustDialog product={adjusting} location={loc} onClose={() => setAdjusting(null)} />
       <WasteDialog batch={wasting} onClose={() => setWasting(null)} />
+      <WasteItemDialog product={wastingItem} location={loc} onClose={() => setWastingItem(null)} />
+      <TransferDialog product={moving} from={loc} onClose={() => setMoving(null)} />
     </AdminShell>
   );
 }
@@ -208,5 +239,18 @@ function RowBtn({ icon, label, onClick }: { icon: string; label: string; onClick
     <button type="button" onClick={onClick} title={label} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: `1px solid #EADCF0`, background: C.white, fontSize: 12.5, fontWeight: 600, color: C.accent, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", flexShrink: 0 }}>
       <Icon name={icon} color={C.accent} size={14} stroke={2} />{label}
     </button>
+  );
+}
+
+function Breakdown({ items }: { items: { l: { id: string; name: string; kind: string }; n: number }[] }) {
+  if (!items.length) return <span style={{ fontSize: 11.5, color: C.muted }}>لا كمية في أي موقع</span>;
+  return (
+    <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+      {items.map(({ l, n }) => (
+        <span key={l.id} title={l.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 22, padding: "0 8px", borderRadius: 11, background: C.tint2, color: C.sub, fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <Icon name={KIND_ICON[l.kind as LocationKind] ?? "box"} size={12} color={C.accentMid} />{l.name} <b className="latin" style={{ color: C.ink }}>{n.toLocaleString("en-US")}</b>
+        </span>
+      ))}
+    </span>
   );
 }

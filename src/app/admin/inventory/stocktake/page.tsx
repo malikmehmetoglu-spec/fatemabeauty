@@ -13,7 +13,8 @@ import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { applyStocktake, listInventory } from "@/lib/db/products";
+import { applyStocktake, KIND_ICON, listInventory, qtyAt, type LocationKind, type Product } from "@/lib/db/products";
+import { useLocations } from "../dialogs";
 import css from "../inventory.module.css";
 
 type Filter = "all" | "retail" | "consumable" | "diff" | "uncounted";
@@ -27,12 +28,21 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState("");
+  const L = useLocations();
+  const [locSel, setLocSel] = useState("");
+  const loc = (locSel && L.all.some((l) => l.id === locSel) ? locSel : L.def?.id) ?? "";
+  const sys = (p: Product) => (loc ? qtyAt(L.map, p, loc) : Number(p.stock));
+  const switchLoc = (id: string) => {
+    if (id === loc) return;
+    if (Object.values(counts).some((v) => v.trim() !== "") && !confirm("تغيير الموقع يمسح الأعداد المكتوبة لهذا الجرد. متابعة؟")) return;
+    setCounts({}); setDone(""); setLocSel(id);
+  };
 
   const list = useMemo(() => data ?? [], [data]);
   const parsed = (k: string) => { const s = counts[k]; if (s == null || s.trim() === "") return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? n : null; };
   const counted = list.filter((p) => parsed(p.key) != null);
-  const diffs = counted.filter((p) => parsed(p.key) !== Number(p.stock));
-  const diffValue = diffs.reduce((s, p) => s + ((parsed(p.key) as number) - Number(p.stock)) * (p.cost ?? 0), 0);
+  const diffs = counted.filter((p) => parsed(p.key) !== sys(p));
+  const diffValue = diffs.reduce((s, p) => s + ((parsed(p.key) as number) - sys(p)) * (p.cost ?? 0), 0);
 
   const shown = list.filter((p) => {
     const needle = q.trim().toLowerCase();
@@ -46,23 +56,35 @@ export default function Page() {
 
   async function apply() {
     if (!diffs.length) return;
-    if (!confirm(`اعتماد الجرد لـ ${diffs.length} صنف؟ ستُعدَّل كميات النظام لتطابق العدّ.`)) return;
+    if (!loc) { setErr("لا يوجد موقع للجرد."); return; }
+    if (!confirm(`اعتماد الجرد لـ ${diffs.length} صنف${locName && L.multi ? ` في «${locName}»` : ""}؟ ستُعدَّل كميات النظام لتطابق العدّ.`)) return;
     setBusy(true); setErr(""); setDone("");
     try {
-      const n = await applyStocktake(diffs.map((p) => ({ key: p.key, counted: parsed(p.key) as number, current: Number(p.stock) })), note.trim() || "جرد دوري");
+      const n = await applyStocktake(diffs.map((p) => ({ key: p.key, counted: parsed(p.key) as number, current: sys(p) })), note.trim() || "جرد دوري", loc);
       setCounts({}); setNote(""); setDone(`اعتُمد الجرد: عُدِّلت كميات ${n} صنف.`);
     } catch (e) { setErr(arError(e, "تعذّر اعتماد الجرد")); } finally { setBusy(false); }
   }
 
-  const fillSystem = () => setCounts(Object.fromEntries(shown.map((p) => [p.key, counts[p.key] ?? String(Number(p.stock))])));
+  const locName = L.all.find((l) => l.id === loc)?.name ?? "";
+  const fillSystem = () => setCounts(Object.fromEntries(shown.map((p) => [p.key, counts[p.key] ?? String(sys(p))])));
 
   return (
-    <AdminShell active="المخزون والأجهزة" title="الجرد" subtitle="اكتبي الكمية المعدودة لكل صنف، ثم اعتمدي الفروقات"
+    <AdminShell active="المخزون والأجهزة" title="الجرد" subtitle={L.multi ? "الجرد لكل موقع على حدة: اختاري الموقع، اكتبي الكمية المعدودة لكل صنف، ثم اعتمدي الفروقات" : "اكتبي الكمية المعدودة لكل صنف، ثم اعتمدي الفروقات"}
       actions={<Link href={R.W_Inventory} style={{ height: 40, borderRadius: 20, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
         <Icon name="box" color={C.accent} size={16} />المخزون
       </Link>}>
+      {L.multi && (
+        <div role="group" aria-label="موقع الجرد" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.sub, flexShrink: 0 }}>موقع الجرد:</span>
+          {L.all.filter((l) => l.active || Object.values(L.map ?? {}).some((m) => (m[l.id] ?? 0) > 0)).map((l) => (
+            <Chip key={l.id} selected={loc === l.id} onClick={() => switchLoc(l.id)}>
+              <Icon name={KIND_ICON[l.kind as LocationKind] ?? "box"} size={15} color={loc === l.id ? C.white : C.accent} />{l.name}
+            </Chip>
+          ))}
+        </div>
+      )}
       <div className="adm-row">
-        <Kpi dark label="تم عدّها" value={`${counted.length} / ${list.length}`} sub="صنف في هذا الجرد" icon="clip" />
+        <Kpi dark label="تم عدّها" value={`${counted.length} / ${list.length}`} sub={L.multi && locName ? `صنف في جرد «${locName}»` : "صنف في هذا الجرد"} icon="clip" />
         <Kpi label="أصناف بفرق" value={diffs.length} sub="بين العدّ والنظام" icon="alert" />
         <Kpi label="قيمة الفرق" value={money(diffValue)} sub="بسعر الكلفة المسجّل" icon="wallet" />
       </div>
@@ -79,7 +101,7 @@ export default function Page() {
       {done && <div role="status" style={{ fontSize: 13.5, fontWeight: 600, color: C.okDeep, background: "#E6F4EC", borderRadius: 14, padding: "10px 14px" }}>{done}</div>}
       {err && <ErrorNote>{err}</ErrorNote>}
 
-      {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المخزون: {error}</ErrorNote> : list.length === 0 ? (
+      {loading || (!L.map && list.length > 0) ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المخزون: {error}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="clip" title="لا أصناف للجرد" text="أضيفي أصناف المخزون أولاً، ثم عودي لعدّها هنا."
           action={<Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" /> : (
@@ -87,7 +109,7 @@ export default function Page() {
         <div className={css.cards}>
           {shown.map((p) => {
             const c = parsed(p.key);
-            const d = c == null ? null : c - Number(p.stock);
+            const d = c == null ? null : c - sys(p);
             return (
               <article key={p.key} className={css.card}>
                 <div className={css.head}>
@@ -98,7 +120,7 @@ export default function Page() {
                   <Tag kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>
                 </div>
                 <div className={css.meta}>
-                  <span>النظام: <b className="latin">{Number(p.stock).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>
+                  <span>النظام: <b className="latin">{sys(p).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>
                   <input type="number" inputMode="decimal" min={0} aria-label={`الكمية المعدودة من ${p.name} (جوال)`} value={counts[p.key] ?? ""} placeholder="العدّ"
                     onChange={(e) => setCounts((x) => ({ ...x, [p.key]: e.target.value }))} className="latin"
                     style={{ width: 110, height: 38, borderRadius: 14, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 14, textAlign: "center" }} />
@@ -115,14 +137,14 @@ export default function Page() {
           rowHeight={60}
           rows={shown.map((p) => {
             const c = parsed(p.key);
-            const d = c == null ? null : c - Number(p.stock);
+            const d = c == null ? null : c - sys(p);
             return [
               <div key="n" style={{ lineHeight: 1.35 }}>
                 <b style={{ fontSize: 14 }}>{p.name}</b>
                 <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size, p.sku].filter(Boolean).join(" · ") || "—"}</div>
               </div>,
               <Tag key="k" kind={p.kind === "retail" ? "lilac" : "gray"}>{p.kind === "retail" ? "للبيع" : "للجلسات"}</Tag>,
-              <span key="s"><b className="latin">{Number(p.stock).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>,
+              <span key="s"><b className="latin">{sys(p).toLocaleString("en-US")}</b> <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span></span>,
               <input key="i" type="number" inputMode="decimal" min={0} aria-label={`الكمية المعدودة من ${p.name}`} value={counts[p.key] ?? ""} placeholder="—"
                 onChange={(e) => setCounts((x) => ({ ...x, [p.key]: e.target.value }))} className="latin"
                 style={{ width: 110, height: 38, borderRadius: 14, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 14, textAlign: "center" }} />,

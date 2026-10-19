@@ -21,6 +21,8 @@ import { arDate, clock, dayRange, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
 import { Amount, LATIN, OFF, PANEL, Receipt } from "../parts";
+import { locLabel, useLocations } from "../../inventory/dialogs";
+import { qtyAt } from "@/lib/db/products";
 import css from "../finance.module.css";
 
 type Who =
@@ -67,7 +69,15 @@ export default function Page() {
   const pkgs = useQuery(["patients", "packages", patientId], () => listPatientPackages(patientId as string), { enabled: !!patientId });
   const usable = (pkgs.data ?? []).filter((p) => p.sessions_used < p.sessions_total);
 
-  const stockOf = (key?: string) => Number(sellables.data?.products.find((x) => x.key === key)?.stock ?? 0);
+  // stock location the products are sold from — the selector shows only when there are several locations
+  const L = useLocations();
+  const [saleLocSel, setSaleLocSel] = useState("");
+  const saleLoc = (saleLocSel && L.active.some((l) => l.id === saleLocSel) ? saleLocSel : L.def?.id) ?? "";
+  const stockOf = (key?: string) => {
+    const p = sellables.data?.products.find((x) => x.key === key);
+    if (!p) return 0;
+    return L.multi && saleLoc ? qtyAt(L.map, p, saleLoc) : Number(p.stock);
+  };
   const reset = (w: Who | null, l: CartLine[] = []) => {
     setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
   };
@@ -97,6 +107,7 @@ export default function Page() {
   const problems: string[] = [];
   if (!who) problems.push("اختاري موعداً أو مراجعة");
   if (!lines.length) problems.push("أضيفي بنداً");
+  if (lines.some((l) => l.kind === "product" && l.qty > stockOf(l.ref))) problems.push(L.multi ? "كمية منتج لا تكفي في موقع الصرف المختار" : "كمية منتج لا تكفي في المخزون");
   if (mode === "package" && (!pkg || coveredIdx < 0)) problems.push(pkg ? "الباقة لا تشمل أي خدمة في الفاتورة" : "اختاري باقة");
   if (mode === "deferred" && !patientId) problems.push("الدفع الآجل يحتاج ملف مراجعة");
   if (lines.some((l) => l.kind === "package") && !patientId) problems.push("بيع باقة يحتاج ملف مراجعة");
@@ -113,6 +124,7 @@ export default function Page() {
       const inv = await createInvoice({
         patientId, appointmentId: who.type === "appt" ? who.appt.id : null, walkInName: who.type === "walkin" ? who.name : null,
         lines: priced, discount: dAmt, payments, patientPackageId: mode === "package" ? pkgId : null, note, dueOn: mode === "deferred" && dueOn ? dueOn : null,
+        location: L.multi && saleLoc ? saleLoc : null,
       });
       // the invoice exists now: never let a failed re-read look like a failed issue (it could be issued twice)
       if (inv) setIssued(await getInvoice(inv.id).catch(() => ({ ...inv, patients: null, invoice_items: [], invoice_payments: [], appointments: null }) as InvoiceRow));
@@ -206,7 +218,17 @@ export default function Page() {
                 </div>
               ))}
             </div>
-            <ItemSearch sellables={sellables.data} onAdd={(l) => {
+            {L.multi && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, fontWeight: 600, color: C.sub }}>
+                <Icon name="map" color={C.accentMid} size={16} />تُصرف المنتجات من
+                <select aria-label="موقع صرف المنتجات" value={saleLoc} onChange={(e) => setSaleLocSel(e.target.value)}
+                  style={{ height: 36, borderRadius: 18, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: "inherit", maxWidth: "100%" }}>
+                  {L.active.map((l) => <option key={l.id} value={l.id}>{locLabel(l)}</option>)}
+                </select>
+                {lines.some((l) => l.kind === "product" && l.qty > stockOf(l.ref)) && <span style={{ color: C.danger, fontSize: 12 }}>الكمية في هذا الموقع لا تكفي</span>}
+              </label>
+            )}
+            <ItemSearch sellables={sellables.data} stockOf={stockOf} onAdd={(l) => {
               const j = lines.findIndex((x) => x.kind === l.kind && x.ref === l.ref && l.kind !== "service");
               if (j >= 0 && l.kind === "product" && lines[j].qty >= stockOf(l.ref)) { setErr("لا توجد كمية إضافية من هذا المنتج في المخزون."); return; }
               setLines(j >= 0 ? lines.map((x, k) => (k === j ? { ...x, qty: x.qty + 1 } : x)) : [...lines, l]);
@@ -403,12 +425,12 @@ function PatientPicker({ onPick }: { onPick: (w: Who) => void }) {
 }
 
 type Sellables = Awaited<ReturnType<typeof listSellables>>;
-function ItemSearch({ sellables, onAdd }: { sellables?: Sellables; onAdd: (l: CartLine) => void }) {
+function ItemSearch({ sellables, onAdd, stockOf }: { sellables?: Sellables; onAdd: (l: CartLine) => void; stockOf: (key?: string) => number }) {
   const [q, setQ] = useState("");
   const s = q.trim();
   const hits: (CartLine & { meta: string; disabled?: boolean })[] = !s || !sellables ? [] : [
     ...sellables.services.filter((x) => x.name.includes(s)).map((x) => ({ kind: "service" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price, meta: `خدمة · ${x.minutes} دقيقة` })),
-    ...sellables.products.filter((x) => x.name.includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price ?? 0, meta: `منتج · المتوفر ${Number(x.stock)} ${x.unit}`, disabled: Number(x.stock) <= 0 })),
+    ...sellables.products.filter((x) => x.name.includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price ?? 0, meta: `منتج · المتوفر ${stockOf(x.key)} ${x.unit}`, disabled: stockOf(x.key) <= 0 })),
     ...sellables.packages.filter((x) => x.name.includes(s)).map((x) => ({ kind: "package" as const, ref: x.id, qty: 1, label: x.name, unit_price: x.price, meta: `باقة · ${x.sessions} جلسات` })),
   ].slice(0, 8);
   return (

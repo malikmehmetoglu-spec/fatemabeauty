@@ -14,7 +14,7 @@ import { money } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { isLow, listInventory, productImage, setRecommended, setShowInStore, type Product } from "@/lib/db/products";
-import { ProductDialog, ReceiveDialog } from "@/app/admin/inventory/dialogs";
+import { ProductDialog, ReceiveDialog, useLocations } from "@/app/admin/inventory/dialogs";
 import css from "@/app/admin/inventory/inventory.module.css";
 
 type Filter = "all" | "shown" | "hidden" | "rec" | "out";
@@ -27,6 +27,10 @@ export default function Page() {
   const [receiving, setReceiving] = useState<Product | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  // the store sells only from the locations that feed it
+  const L = useLocations();
+  const feeds = L.active.filter((l) => l.sells_online);
+  const onl = (p: Product) => (L.multi ? feeds.reduce((s, l) => s + Number(L.map?.[p.key]?.[l.id] ?? 0), 0) : Number(p.stock));
 
   const list = useMemo(() => (data ?? []).filter((p) => p.kind === "retail"), [data]);
   const shown = list.filter((p) => {
@@ -35,7 +39,7 @@ export default function Page() {
     if (filter === "shown") return p.show_in_store;
     if (filter === "hidden") return !p.show_in_store;
     if (filter === "rec") return p.recommended;
-    if (filter === "out") return Number(p.stock) <= 0;
+    if (filter === "out") return onl(p) <= 0;
     return true;
   });
 
@@ -56,7 +60,7 @@ export default function Page() {
         <Kpi dark label="منتجات البيع" value={list.length} sub="في المخزون" icon="bag" />
         <Kpi label="ظاهرة في المتجر" value={list.filter((p) => p.show_in_store).length} sub="تراها المراجِعات الآن" icon="eye" />
         <Kpi label="توصية الأخصائية" value={list.filter((p) => p.recommended).length} sub="تظهر بشارة في المتجر" icon="sparkle" />
-        <Kpi label="نفدت الكمية" value={list.filter((p) => Number(p.stock) <= 0).length} sub="تظهر «غير متوفر حالياً»" icon="alert" />
+        <Kpi label="نفدت الكمية" value={list.filter((p) => onl(p) <= 0).length} sub="تظهر «غير متوفر حالياً»" icon="alert" />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -77,7 +81,7 @@ export default function Page() {
         <div className={css.cards}>
           {shown.map((p) => {
             const img = productImage(p);
-            const stock = Number(p.stock);
+            const stock = onl(p);
             return (
               <article key={p.key} className={css.card}>
                 <div className={css.head}>
@@ -120,7 +124,7 @@ export default function Page() {
           rowHeight={64}
           rows={shown.map((p) => {
             const img = productImage(p);
-            const stock = Number(p.stock);
+            const stock = onl(p);
             return [
               <>
                 <span style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
