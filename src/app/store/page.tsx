@@ -13,6 +13,8 @@ import { listStore, type Product } from "@/lib/db/products";
 import { cartCount, cartStore, useCart } from "@/lib/db/orders";
 import { ProductPic } from "./c1ui";
 import css from "./store.module.css";
+import { Blank, useDesktop } from "./desk/StoreChrome";
+import { DeskHome } from "./desk/DeskHome";
 
 const chip = (on: boolean): CSSProperties => ({
   height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex",
@@ -23,6 +25,12 @@ const chip = (on: boolean): CSSProperties => ({
 });
 
 export default function StorePage() {
+  const desk = useDesktop();
+  if (desk === null) return <Blank />;
+  return desk ? <DeskHome /> : <PhoneStore />;
+}
+
+function PhoneStore() {
   const { data, loading, error } = useQuery(["products", "store"], listStore);
   const [cat, setCat] = useState("الكل");
   const [q, setQ] = useState("");

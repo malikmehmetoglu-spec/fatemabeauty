@@ -12,8 +12,16 @@ import { useQuery } from "@/lib/db/query";
 import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, setMode, useCart, useMode, itemsLabel } from "@/lib/db/orders";
 import { ArtThumb, QtyStepper, Segmented } from "../store/c1ui";
 import css from "../store/store.module.css";
+import { Blank, useDesktop } from "../store/desk/StoreChrome";
+import { DeskCart } from "../store/desk/DeskCart";
 
 export default function CartPage() {
+  const desk = useDesktop();
+  if (desk === null) return <Blank />;
+  return desk ? <DeskCart /> : <PhoneCart />;
+}
+
+function PhoneCart() {
   const cart = useCart();
   const mode = useMode();
   const keys = Object.keys(cart).sort();

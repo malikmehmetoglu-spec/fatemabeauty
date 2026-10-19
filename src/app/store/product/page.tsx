@@ -13,6 +13,8 @@ import { getProduct, type Product } from "@/lib/db/products";
 import { cartStore, useCart } from "@/lib/db/orders";
 import { ProductPic, QtyStepper } from "../c1ui";
 import css from "../store.module.css";
+import { Blank, useDesktop } from "../desk/StoreChrome";
+import { DeskLoading, DeskProduct, DeskProductState } from "../desk/DeskProduct";
 
 export default function ProductPage() {
   return <Suspense fallback={<PhoneScreen><Loading /></PhoneScreen>}><ProductLoader /></Suspense>;
@@ -21,6 +23,14 @@ export default function ProductPage() {
 function ProductLoader() {
   const key = useSearchParams().get("key") ?? "";
   const { data, loading, error } = useQuery(["products", "one", key], () => getProduct(key), { enabled: !!key });
+  const desk = useDesktop();
+  if (desk === null) return <Blank />;
+  if (desk) {
+    if (!key || (!loading && !error && !data)) return <DeskProductState title="المنتج غير موجود" text="ربما أُزيل من المتجر. تصفّحي المنتجات المتوفرة الآن." />;
+    if (error) return <DeskProductState title="تعذّر تحميل المنتج" text={error} />;
+    if (loading || !data) return <DeskLoading />;
+    return <DeskProduct p={data} />;
+  }
   if (!key || (!loading && !error && !data)) {
     return (
       <PhoneScreen wide>

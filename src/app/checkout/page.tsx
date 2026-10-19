@@ -1,17 +1,16 @@
 "use client";
 
 /** P_Checkout.dc.html — delivery / pickup + payment + order summary. Places a real order (place_order). */
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, EmptyState, ErrorNote, Icon, Loading, PrimaryButton, SecondaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
-import { useQuery } from "@/lib/db/query";
-import { placeOrder } from "@/lib/db/products";
-import { cartLines, cartStore, getProductsByKeys, useLiveRefresh, orderError, rememberReturn, setMode, useCart, useMode, itemsLabel } from "@/lib/db/orders";
-import { useSession } from "@/lib/supabase/session";
+import { setMode, itemsLabel } from "@/lib/db/orders";
+import { useCheckout } from "../store/desk/useCheckout";
+import { Blank, useDesktop } from "../store/desk/StoreChrome";
+import { DeskCheckout } from "../store/desk/DeskCheckout";
 import { ArtThumb, Field, Segmented } from "../store/c1ui";
 import css from "../store/store.module.css";
 
@@ -21,42 +20,16 @@ const PAYS: { k: Pay; icon: string; title: string; sub: string }[] = [
 ];
 
 export default function CheckoutPage() {
-  const mode = useMode();
+  const desk = useDesktop();
+  if (desk === null) return <Blank />;
+  return desk ? <DeskCheckout /> : <PhoneCheckout />;
+}
+
+function PhoneCheckout() {
   const [pay, setPay] = useState<Pay>("cash");
-  const cart = useCart();
-  const keys = Object.keys(cart).sort();
-  const { data, loading, refresh } = useQuery(["products", "cart", keys.join(",")], () => getProductsByKeys(keys), { enabled: keys.length > 0 });
-  // Prices and stock are always live: re-read when the page opens and when the tab comes back into focus.
-  useLiveRefresh(keys.length > 0 ? refresh : null);
-  const { lines, missing, count, sub, canOrder } = cartLines(cart, data);
-  // Items hidden / removed since they were added leave the cart (same as on the cart page).
-  useEffect(() => { if (data) missing.forEach((k) => cartStore.set(k, 0)); }, [data, missing]);
-  const d = mode === "d";
-  const session = useSession();
-  const router = useRouter();
-  const [addr, setAddr] = useState({ city: "", area: "", street: "", near: "" });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const setA = (k: keyof typeof addr) => (v: string) => setAddr((a) => ({ ...a, [k]: v }));
+  const { mode, d, keys, loading, lines, count, sub, canOrder, session, addr, setA, busy, error, login, submit, empty } = useCheckout();
 
-  function login() {
-    rememberReturn(R.P_Checkout);
-    window.location.href = `${R.Login}?next=${encodeURIComponent(R.P_Checkout)}`;
-  }
-
-  async function submit() {
-    setError("");
-    if (d && (!addr.city.trim() || !addr.street.trim())) { setError("اكتبي المدينة والشارع ليصل المندوب."); return; }
-    setBusy(true);
-    try {
-      const address = d ? [addr.city, addr.area, addr.street, addr.near && `قرب ${addr.near}`].map((x) => x.trim()).filter(Boolean).join("، ") : undefined;
-      const order = await placeOrder(lines.map((l) => ({ product_key: l.p.key, qty: l.qty })), d, address);
-      cartStore.clear();
-      router.push(order ? `${R.P_OrderTrack}?id=${order.id}` : R.P_OrderTrack);
-    } catch (e) { setError(orderError(e)); setBusy(false); }
-  }
-
-  if (!busy && (keys.length === 0 || (data && lines.length === 0))) return (
+  if (empty) return (
     <PhoneScreen>
       <TopBar title="الدفع والتوصيل" back={R.P_Cart} />
       <EmptyState icon="bag" title="لا شيء لإتمام الطلب" text="سلتكِ فارغة. أضيفي منتجات من المتجر ثم عودي لإتمام الطلب."
