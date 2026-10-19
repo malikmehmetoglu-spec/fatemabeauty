@@ -72,12 +72,6 @@ export function StoreChrome({ children, active = "store", search, onSearch }: {
       <header className={d.header}>
         <div className={`${d.wrap} ${d.headRow}`}>
           <Link href={R.P_Store} aria-label="متجر فاطمة بيوتي — الصفحة الأولى"><Logo height={54} /></Link>
-          <nav className={d.nav} aria-label="التنقل الرئيسي">
-            <Link className={`${d.navLink} ${active === "store" || active === "product" ? d.navOn : ""}`} href={R.P_Store}>المتجر</Link>
-            <Link className={d.navLink} href={R.P_Services}>الخدمات</Link>
-            <Link className={d.navLink} href={BOOK}>احجزي موعداً</Link>
-            <Link className={d.navLink} href={session.session ? R.Account : R.Login}>حسابي</Link>
-          </nav>
           <div className={d.headTools}>
             <form role="search" className={d.search} onSubmit={(e) => {
               e.preventDefault();
@@ -88,11 +82,10 @@ export function StoreChrome({ children, active = "store", search, onSearch }: {
               <input id="store-q" type="search" value={value} placeholder="ابحثي عن غسول، سيروم، واقي شمس"
                 onChange={(e) => (onSearch ? onSearch(e.target.value) : setLocal(e.target.value))} />
             </form>
-            {session.patient && (
-              <Link href={R.P_OrderTrack} className={d.iconBtn} aria-label="طلباتي" title="طلباتي">
-                <Icon name="box" color={C.accent} size={20} />
-              </Link>
-            )}
+            <Link href={session.patient ? R.P_OrderTrack : `${R.Login}?next=${encodeURIComponent(R.P_Store)}`} className={d.acctBtn}
+              aria-label={session.patient ? "حسابي — طلباتي" : "تسجيل الدخول"}>
+              <Icon name="user" color={C.accent} size={19} />{session.patient ? "حسابي" : "دخول"}
+            </Link>
             <button type="button" className={d.cartBtn} onClick={drawer.open} aria-haspopup="dialog"
               aria-label={count ? `السلة، فيها ${itemsLabel(count)}` : "السلة فارغة"}>
               <Icon name="bag" color="#FFFFFF" size={19} stroke={1.9} />السلة

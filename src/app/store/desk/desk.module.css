@@ -308,3 +308,8 @@
   .thumb { width: 80px; height: 94px; }
   .footGrid { grid-template-columns: 1fr 1fr; }
 }
+
+.acctBtn { height: 46px; padding: 0 18px; border-radius: 23px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  background: #FFFFFF; border: 1px solid #EADDEF; color: var(--accent, #7B4687); font-size: 14.5px; font-weight: 700; white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(123,70,135,0.08); transition: border-color .2s, box-shadow .2s; }
+.acctBtn:hover { border-color: #C9A2D8; box-shadow: 0 8px 20px rgba(123,70,135,0.14); }
