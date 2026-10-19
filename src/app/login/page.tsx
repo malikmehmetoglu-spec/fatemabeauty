@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/supabase/session";
 import { useRouter } from "next/navigation";
 import { normalizePhone, sendCode } from "@/lib/supabase/phoneAuth";
-import { PhoneScreen } from "@/components/shell";
+import { DeskHeading, PhoneScreen, phoneOnly } from "@/components/shell";
 import { Icon, Logo, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, SH } from "@/lib/tokens";
@@ -37,11 +37,12 @@ export default function LoginPage() {
     router.push(R.P_OTP);
   }
   return (
-    <PhoneScreen padding="calc(env(safe-area-inset-top, 0px) + 70px) 24px calc(env(safe-area-inset-bottom, 0px) + 26px)">
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: 18 }}>
+    <PhoneScreen auth padding="calc(env(safe-area-inset-top, 0px) + 70px) 24px calc(env(safe-area-inset-bottom, 0px) + 26px)">
+      <div className={phoneOnly} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: 18 }}>
         <Logo height={118} />
         <div style={{ fontSize: 15, color: C.sub, marginTop: 8, lineHeight: 1.6 }}>احجزي جلستكِ، وتابعي دوركِ ورحلة بشرتكِ<br />من مكان واحد</div>
       </div>
+      <DeskHeading title="أهلاً بكِ" sub={<>احجزي جلستكِ، وتابعي دوركِ ورحلة بشرتكِ من مكان واحد.</>} />
       <div style={{ position: "relative", marginTop: 22 }}>
         <label htmlFor="phone" style={{ display: "block", fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 8 }}>رقم هاتفكِ</label>
         <div dir="ltr" style={{ display: "flex", alignItems: "center", height: 58, background: C.white, border: `1px solid ${C.border}`, borderRadius: 29, padding: "0 8px 0 18px", boxShadow: SH }}>

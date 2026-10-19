@@ -77,7 +77,7 @@ export default function OtpPage() {
   };
 
   return (
-    <PhoneScreen padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
+    <PhoneScreen auth padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
       <TopBar title="رمز التحقق" back={R.Login} />
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: 40 }}>
         <div style={{ ...GLASS, position: "relative", width: 124, height: 124, borderRadius: 62, boxShadow: SH, display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PhoneScreen, TopBar } from "@/components/shell";
+import { PhoneScreen, TopBar, deskGrid } from "@/components/shell";
 import { Chip, Circ, DarkGlow, EmptyState, ErrorNote, Icon, IconButton, Loading } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
@@ -40,7 +40,7 @@ export default function ServicesPage() {
         <div style={{ fontSize: 13, color: C.sub2 }}>{countText}</div>
         <div style={{ fontSize: 12, color: C.muted }}>الأسعار للجلسة الواحدة</div>
       </div>
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className={deskGrid} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
         {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الخدمات: {error}</ErrorNote> : all.length === 0 ? (
           <EmptyState icon="sparkle" title="لا خدمات منشورة بعد" text="ستظهر هنا جلسات المركز ومدتها وأسعارها فور إضافتها من الإدارة." />
         ) : items.map((s) => (

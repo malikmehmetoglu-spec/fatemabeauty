@@ -3,7 +3,7 @@
 /** Booking.dc.html — book a session: service, specialist, day and a real free time (live, Supabase). */
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { PhoneScreen } from "@/components/shell";
+import { deskRound, PhoneScreen } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
@@ -55,7 +55,7 @@ export default function BookingPage() {
 
   return (
     <PhoneScreen padding="0" gap={0} background={C.white} blobs={false}>
-      <div style={{ height: 300, background: "linear-gradient(160deg,#F2E5F5,#E2C8EA)", position: "relative", flexShrink: 0, overflow: "hidden" }}>
+      <div className={deskRound} style={{ height: 300, background: "linear-gradient(160deg,#F2E5F5,#E2C8EA)", position: "relative", flexShrink: 0, overflow: "hidden" }}>
         {specialist?.photo_url
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={specialist.photo_url} alt={specialist.name} style={{ position: "absolute", inset: 0, width: "100%", height: 300, objectFit: "cover", objectPosition: "20% 25%" }} />

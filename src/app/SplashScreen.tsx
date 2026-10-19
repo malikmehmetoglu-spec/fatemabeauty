@@ -12,7 +12,7 @@ export function SplashScreen() {
     <div aria-hidden style={{ position: "absolute", top: "50%", left: "50%", width: size, height: size, margin: `${-size / 2}px 0 0 ${-size / 2}px`, borderRadius: "50%", border, pointerEvents: "none" }} />
   );
   return (
-    <PhoneScreen padding="calc(env(safe-area-inset-top, 0px) + 54px) 24px calc(env(safe-area-inset-bottom, 0px) + 26px)">
+    <PhoneScreen nav={false} padding="calc(env(safe-area-inset-top, 0px) + 54px) 24px calc(env(safe-area-inset-bottom, 0px) + 26px)">
       <div aria-hidden style={{ position: "absolute", bottom: -120, left: -60, width: 360, height: 360, borderRadius: "50%", zIndex: -1, background: "radial-gradient(circle, rgba(190,150,215,0.40) 0%, rgba(190,150,215,0) 70%)" }} />
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", marginTop: 40 }}>
         <div style={{ position: "relative", width: 190, height: 190, display: "flex", alignItems: "center", justifyContent: "center" }}>

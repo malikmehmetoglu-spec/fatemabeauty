@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { PhoneScreen } from "@/components/shell";
+import { DeskHeading, PhoneScreen, phoneOnly } from "@/components/shell";
+import hm from "./home.module.css";
 import { Circ, EmptyState, ErrorNote, Icon, IconButton, Loading, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
@@ -34,7 +35,8 @@ export default function HomePage() {
   return (
     <PhoneScreen tab="الرئيسية" padding="0" gap={0}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(env(safe-area-inset-top, 0px) + 22px) 22px 16px", position: "relative" }}>
-        <Logo height={54} />
+        <span className={phoneOnly}><Logo height={54} /></span>
+        <DeskHeading title={first ? `أهلاً ${first}` : "أهلاً بكِ"} sub="بشرتكِ تستحق يوماً جميلاً" />
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <IconButton icon="msg" label="الرسائل" size={48} href={R.P_Chat} />
           <IconButton icon="bell" label={unread ? "الإشعارات (جديدة)" : "الإشعارات"} size={48} href={R.Notifications} badge={unread} />
@@ -47,7 +49,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <p style={{ margin: 0, padding: "0 22px 6px", fontSize: 15, color: C.sub, position: "relative" }}>{first ? `أهلاً ${first}، ` : "أهلاً بكِ، "}بشرتكِ تستحق يوماً جميلاً</p>
+      <p className={phoneOnly} style={{ margin: 0, padding: "0 22px 6px", fontSize: 15, color: C.sub, position: "relative" }}>{first ? `أهلاً ${first}، ` : "أهلاً بكِ، "}بشرتكِ تستحق يوماً جميلاً</p>
       {next && (
         <Link href={`${R.P_AppointmentDetail}?id=${next.id}`} style={{ ...DARK, margin: "10px 22px 0", borderRadius: 26, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: "0 14px 30px rgba(123,70,135,0.30)" }}>
           <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -63,7 +65,7 @@ export default function HomePage() {
       )}
       <InstallPrompt style={{ margin: "10px 22px 0" }} />
 
-      <div style={{ display: "flex", gap: 12, padding: "10px 22px 20px", overflowX: "auto", position: "relative" }}>
+      <div className={hm.hero} style={{ display: "flex", gap: 12, padding: "10px 22px 20px", overflowX: "auto", position: "relative" }}>
         {spec && (
         <div style={{ width: 214, height: 214, flexShrink: 0, borderRadius: 30, background: "#EAD7EE", position: "relative", overflow: "hidden", boxShadow: SH }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -91,11 +93,11 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <section style={{
+      <section className={hm.sheet} style={{
         flexGrow: 1, background: C.white, borderRadius: "38px 38px 0 0", padding: "12px 22px calc(env(safe-area-inset-bottom, 0px) + 104px)",
         display: "flex", flexDirection: "column", position: "relative", boxShadow: "0 -14px 34px rgba(123,70,135,0.08)",
       }}>
-        <div aria-hidden style={{ width: 44, height: 4, borderRadius: 2, background: "#DFC9E4", alignSelf: "center", marginBottom: 16 }} />
+        <div aria-hidden className={hm.grab} style={{ width: 44, height: 4, borderRadius: 2, background: "#DFC9E4", alignSelf: "center", marginBottom: 16 }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <h2 style={{ margin: 0, lineHeight: 1.25, fontWeight: 500 }}>
             <span style={{ display: "block", fontSize: 22, color: C.ink }}>لنجد جلستكِ</span>
@@ -110,7 +112,7 @@ export default function HomePage() {
         {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الخدمات: {error}</ErrorNote> : cards.length === 0 ? (
           <EmptyState compact icon="sparkle" title="لا خدمات منشورة بعد" text="ستظهر هنا جلسات المركز وأسعارها فور إضافتها من الإدارة." />
         ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+        <div className={hm.grid} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
           {cards.map((s, i) => {
             const dark = i === cards.length - 1 && cards.length % 2 === 0;
             return (

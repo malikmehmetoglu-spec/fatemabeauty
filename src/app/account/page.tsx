@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { PhoneScreen, TopBar } from "@/components/shell";
+import { PhoneScreen, TopBar, deskGrid } from "@/components/shell";
 import { Circ, ErrorNote, Icon, Tag, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, CARD, SHB } from "@/lib/tokens";
@@ -61,6 +61,7 @@ export default function AccountPage() {
             {tier && <Tag kind="silver" style={{ height: "auto", borderRadius: 14, padding: "3px 10px", fontWeight: 700, boxShadow: "0 4px 10px rgba(0,0,0,0.10)" }}>{tier.name.replace(/^ال/, "")}</Tag>}
           </Link>
 
+          <div className={deskGrid} style={{ display: "contents" }}>
           <div style={box}>
             <Row icon="face" title="نوع بشرتي" sub={me.skin_type ?? "تحدده الأخصائية في أول جلسة"} href={R.P_SkinType} />
             <Row icon="alert" title="الحساسية والأدوية" sub="تظهر للأخصائية قبل كل جلسة" href={R.P_Allergies} />
@@ -69,11 +70,14 @@ export default function AccountPage() {
             <Row icon="receipt" title="مدفوعاتي" sub="الفواتير وسجل الزيارات" href={R.Payments} last />
           </div>
 
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {saveErr && <ErrorNote>{saveErr}</ErrorNote>}
           <div style={box}>
             <Row icon="lang" title="الإعدادات" sub="لغة الرسائل، الإشعارات، الخصوصية" href={R.P_Settings} />
             <Row icon="msg" title="تذكيرات واتساب" sub="قبل الموعد بيوم وبساعتين" right={<Toggle on={prefs.whatsapp} onChange={(v) => setPref("whatsapp", v)} label="تذكيرات واتساب" />} />
             <Row icon="bell" title="العروض والباقات" sub="إشعارات بالعروض الموسمية" last right={<Toggle on={prefs.offers} onChange={(v) => setPref("offers", v)} label="إشعارات العروض" />} />
+          </div>
+          </div>
           </div>
         </>
       )}

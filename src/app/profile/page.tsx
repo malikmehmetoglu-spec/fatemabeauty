@@ -87,7 +87,7 @@ export default function ProfilePage() {
   const [consent, setConsent] = useState(true);
 
   return (
-    <PhoneScreen gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
+    <PhoneScreen auth gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
       <TopBar title={patient?.name ? "ملفي" : "إكمال الملف"} back={patient?.name ? R.Account : R.Main} />
       <div style={{ position: "relative", marginTop: -4, fontSize: 13.5, color: C.sub, lineHeight: 1.6, textAlign: "center" }}>خطوة أخيرة لتتعرّف الأخصائية على بشرتكِ قبل أول جلسة</div>
 

@@ -3,7 +3,7 @@
 /** P_Appointments.dc.html — «مواعيدي» root tab: the signed-in patient's upcoming / past appointments (live, Supabase). */
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
-import { PhoneScreen } from "@/components/shell";
+import { PhoneScreen, deskGrid } from "@/components/shell";
 import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, IconButton, Loading, PrimaryButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
@@ -59,13 +59,13 @@ export default function AppointmentsPage() {
       </div>
 
       {s.loading || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل مواعيدكِ: {error}</ErrorNote> : tab === "up" ? (
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={next ? deskGrid : undefined} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
           {!next ? (
             <EmptyState icon="cal" title="لا مواعيد قادمة" text="احجزي جلستكِ القادمة وستظهر هنا مع تفاصيلها ورمز تسجيل الوصول."
               action={<PrimaryButton href={R.Booking} height={50}>حجز موعد</PrimaryButton>} />
           ) : (
             <>
-              <Link href={detail(next)} style={{ ...DARK, position: "relative", overflow: "hidden", borderRadius: 30, padding: "18px 20px 16px", display: "block" }}>
+              <Link href={detail(next)} data-full style={{ ...DARK, position: "relative", overflow: "hidden", borderRadius: 30, padding: "18px 20px 16px", display: "block" }}>
                 <DarkGlow />
                 <div aria-hidden style={{ position: "absolute", top: -50, left: -40, width: 170, height: 170, borderRadius: 85, border: "1px solid rgba(255,255,255,0.10)" }} />
                 <div style={{ position: "relative" }}>
@@ -91,7 +91,7 @@ export default function AppointmentsPage() {
                 </div>
               </Link>
               {next.status === "pending" && (
-                <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "0 6px", fontSize: 12.5, color: C.sub }}>
+                <div data-full style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "0 6px", fontSize: 12.5, color: C.sub }}>
                   <Icon name="clock" size={17} />سيؤكّد المركز موعدكِ قريباً
                 </div>
               )}
@@ -119,7 +119,7 @@ export default function AppointmentsPage() {
       ) : past.length === 0 ? (
         <EmptyState compact icon="cal" title="لا مواعيد سابقة بعد" text="بعد كل جلسة يظهر هنا سجلّها وتستطيعين تقييمها." />
       ) : (
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={deskGrid} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
           {past.map((a, i) => (
             <div key={a.id} style={{ ...CARD, position: "relative", borderRadius: 26, padding: "14px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -16,6 +16,8 @@ import { useQuery } from "@/lib/db/query";
 import { cancelOrder, getOrder, listMyOrders, orderError, orderSteps, STATUS_LABEL, type OrderFull, itemsLabel } from "@/lib/db/orders";
 import { useRequirePatient } from "@/lib/supabase/session";
 import css from "../../store/store.module.css";
+import { Blank, StoreChrome, useDesktop } from "../../store/desk/StoreChrome";
+import { DeskOrderList, DeskTrack, DeskShell, TAG } from "./DeskOrders";
 
 export default function OrderTrackPage() {
   return <Suspense fallback={<PhoneScreen><Loading /></PhoneScreen>}><Router /></Suspense>;
@@ -24,6 +26,16 @@ export default function OrderTrackPage() {
 function Router() {
   const id = useSearchParams().get("id");
   const s = useRequirePatient();
+  const desk = useDesktop();
+  if (desk === null) return <Blank />;
+  if (desk && (s.loading || !s.patient)) {
+    return s.loading || !s.staff ? <StoreChrome><Loading /></StoreChrome> : (
+      <DeskShell title="طلباتي">
+        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات المتجر كلها في لوحة الإدارة." />
+        <SecondaryButton href={R.W_Orders} icon="box" style={{ maxWidth: 320, margin: "18px auto 0" }}>لوحة الطلبات</SecondaryButton>
+      </DeskShell>
+    );
+  }
   if (s.loading || (!s.patient && !s.staff)) return <PhoneScreen wide><TopBar title="طلباتي" back={R.P_Store} /><Loading /></PhoneScreen>;
   if (!s.patient) {
     return (
@@ -37,12 +49,11 @@ function Router() {
   return id ? <Track id={id} /> : <MyOrders patientId={s.patient.id} />;
 }
 
-const TAG: Record<string, "lilac" | "amber" | "green" | "gray" | "pink"> = {
-  new: "lilac", preparing: "amber", ready: "green", out_for_delivery: "amber", delivered: "gray", cancelled: "pink",
-};
 
 function MyOrders({ patientId }: { patientId: string }) {
   const { data, loading, error } = useQuery(["orders", "mine", patientId], () => listMyOrders(patientId));
+  const desk = useDesktop();
+  if (desk) return <DeskOrderList data={data as OrderFull[] | null | undefined} loading={loading} error={error} />;
   return (
     <PhoneScreen wide>
       <TopBar title="طلباتي" back={R.P_Store} />
@@ -76,6 +87,14 @@ function MyOrders({ patientId }: { patientId: string }) {
 
 function Track({ id }: { id: string }) {
   const { data: o, loading, error } = useQuery(["orders", "one", id], () => getOrder(id));
+  const desk = useDesktop();
+  if (desk && (loading || error || !o)) {
+    return (
+      <DeskShell mid title="تتبع الطلب">
+        {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الطلب: {error}</ErrorNote> : <EmptyState icon="box" title="الطلب غير موجود" text="تأكّدي من الرابط، أو افتحي قائمة طلباتكِ." />}
+      </DeskShell>
+    );
+  }
   if (loading) return <PhoneScreen wide><TopBar title="تتبع الطلب" back={R.P_OrderTrack} /><Loading /></PhoneScreen>;
   if (error || !o) {
     return (
@@ -95,12 +114,14 @@ function TrackView({ o }: { o: OrderFull }) {
   const current = cancelled ? -1 : o.status === "delivered" ? steps.length : Math.max(0, steps.findIndex((s) => s.s === o.status));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const desk = useDesktop();
 
   async function cancel() {
     if (!confirm("إلغاء هذا الطلب؟")) return;
     setBusy(true); setError("");
     try { await cancelOrder(o.id); } catch (e) { setError("تعذّر الإلغاء: " + orderError(e).replace(/^تعذّر إرسال الطلب: /, "")); } finally { setBusy(false); }
   }
+  if (desk) return <DeskTrack o={o} error={error} busy={busy} onCancel={cancel} />;
 
   return (
     <PhoneScreen wide>

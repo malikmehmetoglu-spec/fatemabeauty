@@ -1,0 +1,10 @@
+/* Home on desktop (≥1024px, inside the patient side-nav shell). Phones keep the inline design. */
+@media (min-width: 1024px) {
+  .hero { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); overflow: visible !important; padding-bottom: 24px !important; }
+  .hero > * { width: auto !important; height: 260px !important; }
+  .sheet { flex-grow: 0 !important; border-radius: 34px !important; padding: 26px 28px 30px !important; margin: 0 22px; }
+  .hero > *:only-child { height: 170px !important; }
+  .grab { display: none !important; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; gap: 14px !important; }
+  .grid > * { height: 132px !important; }
+}
