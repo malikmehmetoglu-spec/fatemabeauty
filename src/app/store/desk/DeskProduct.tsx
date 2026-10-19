@@ -1,6 +1,6 @@
 "use client";
 
-/** Product page on tablets & desktop: arched gallery, details & buy box, then related products. */
+/** Product page on tablets & desktop: square gallery, details & buy box, then related products. */
 import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/ui";
