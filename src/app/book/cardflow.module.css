@@ -52,8 +52,9 @@
 
 .enterFwd { animation: enterFwd .52s cubic-bezier(.2,1.15,.32,1) both; }
 .enterBack { animation: enterBack .5s cubic-bezier(.2,1.1,.32,1) both; }
-.exitFwd { z-index: 4; pointer-events: none; animation: exitFwd .42s cubic-bezier(.5,0,.75,.4) both; }
+.exitFwd { z-index: 4; pointer-events: none; animation: exitFwd .4s cubic-bezier(.35,0,.6,1) both; }
 .exitBack { z-index: 2; pointer-events: none; animation: exitBack .38s ease both; }
+.exitFwd *, .exitBack * { animation: none !important; }
 .dragging { animation: none; transition: none; }
 .card:not(.dragging) { transition: transform .3s cubic-bezier(.2,1.2,.3,1), opacity .3s ease; }
 @keyframes enterFwd { from { transform: translateY(22px) scale(.94); opacity: .4; } to { transform: none; opacity: 1; } }
@@ -249,11 +250,11 @@
 .again { margin-top: 10px; min-height: 44px; background: none; border: none; font: inherit; font-size: 14px; color: var(--sub2); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 
 /* toast */
-.toast { position: fixed; z-index: 20; left: 16px; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: flex-start;
+.toast { position: fixed; z-index: 20; left: 16px; right: 16px; top: calc(12px + env(safe-area-inset-top)); display: flex; gap: 10px; align-items: flex-start;
   padding: 14px 16px; border-radius: 20px; color: #fff; font-size: 14px; line-height: 1.7; background: #8E2F55; box-shadow: 0 16px 34px rgba(80,20,50,0.30);
   animation: toastIn .35s cubic-bezier(.2,1.2,.3,1) both; cursor: pointer; }
 .toast svg { flex-shrink: 0; margin-top: 3px; }
-@keyframes toastIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 374px) {
   .title { font-size: 22px; }
@@ -275,3 +276,7 @@
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* pre-mount switch (FlowPending) */
+.onlyWide { display: none; }
+@media (min-width: 768px) { .onlyPhone { display: none; } .onlyWide { display: block; } }

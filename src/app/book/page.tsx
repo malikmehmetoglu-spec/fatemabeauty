@@ -18,7 +18,7 @@ import {
 import { C } from "@/lib/tokens";
 import s from "./book.module.css";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
-import CardFlow, { usePhoneCards } from "./CardFlow";
+import CardFlow, { FlowPending, usePhoneCards } from "./CardFlow";
 
 type Kind = "session" | "consult";
 const DAYS_AHEAD = 14;
@@ -208,14 +208,15 @@ export default function PublicBookingPage() {
   const siteHref = typeof window !== "undefined" && window.location.hostname.endsWith(DOMAIN) ? `https://${DOMAIN}/` : R.Site;
 
   // phones: card deck (CardFlow.tsx) — same state and rules; BOOKING_MOBILE_FLOW = "classic" or ?classic=1 restores the layout below
-  if (phoneCards) return <CardFlow ctx={{
+  const cardView = <CardFlow ctx={{
     info, loadErr, load, now, kind, service, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
     cards, curPubCat, consultCat, sessionCats, sessionServices, consultServices, kindServices, svcCat, people, noProvider, chosenPerson,
     days, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
     contact, waLink, siteHref,
   }} />;
+  if (phoneCards) return cardView;
 
-  return (
+  const classicView = (
     <div className={s.page} dir="rtl">
       <div className={s.halo1} aria-hidden />
       <div className={s.halo2} aria-hidden />
@@ -441,6 +442,8 @@ export default function PublicBookingPage() {
       </div>
     </div>
   );
+  // before mount the width is unknown: CSS shows the deck on phones and the classic layout above 768px (no flash)
+  return phoneCards === null ? <FlowPending cards={cardView} classic={classicView} /> : classicView;
 }
 
 function Summary({ rows }: { rows: [string, string, string | null][] }) {

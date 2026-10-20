@@ -35,6 +35,11 @@ export function usePhoneCards() {
   return on;
 }
 
+/** Until the width is known (first paint of the static page) render both and let CSS pick, so phones never flash the classic layout. */
+export function FlowPending({ cards, classic }: { cards: ReactNode; classic: ReactNode }) {
+  return <><div className={s.onlyPhone}>{cards}</div><div className={s.onlyWide}>{classic}</div></>;
+}
+
 type Kind = "session" | "consult";
 export type FlowCard = { kind: Kind; key: string; name: string; sub: string; icon: string; count: number; ready: boolean };
 export type BookingCtx = {
@@ -113,25 +118,22 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   }, [c.err]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // swipe right (towards the start in RTL) = back
-  function onDown(e: React.PointerEvent) {
-    if (e.pointerType === "mouse" || step === 0) return;
+  function onDown(e: React.PointerEvent) {     if (e.pointerType === "mouse" || step === 0) return;
     if ((e.target as HTMLElement).closest("[data-noswipe],input,textarea")) return;
     dragRef.current = { x: e.clientX, y: e.clientY, on: false, dx: 0 };
   }
-  function onMove(e: React.PointerEvent) {
-    const d = dragRef.current;
+  function onMove(e: React.PointerEvent) {     const d = dragRef.current;
     if (!d) return;
     const dx = e.clientX - d.x, dy = e.clientY - d.y;
     if (!d.on) {
       if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { dragRef.current = null; return; }
-      if (dx > 12) d.on = true; else return;
+      if (dx > 12) { d.on = true; try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch {} } else return;
     }
     d.dx = Math.max(0, dx);
     setDrag(d.dx);
   }
   function onUp() {
-    const d = dragRef.current;
-    dragRef.current = null;
+    const d = dragRef.current;     dragRef.current = null;
     if (!d?.on) return;
     if (d.dx > 90) back(); else setDrag(0);
   }
@@ -165,7 +167,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   ];
 
   /* ---------- the cards ---------- */
-  function Head({ n, title, sub }: { n: number; title: string; sub?: ReactNode }) {
+  function head({ n, title, sub }: { n: number; title: string; sub?: ReactNode }) {
     return (
       <div className={s.head}>
         <div className={s.eyebrow}><span className="latin">{n + 1}</span> من <span className="latin">7</span> · {STEPS[n]}</div>
@@ -180,7 +182,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     switch (n) {
       case 0: return (
         <>
-          <Head n={0} title="ما نوع موعدكِ؟" sub="استشارة لتحديد ما يناسبكِ، أو جلسة من فئات العناية مع أخصائيات المركز." />
+          {head({ n: 0, title: "ما نوع موعدكِ؟", sub: "استشارة لتحديد ما يناسبكِ، أو جلسة من فئات العناية مع أخصائيات المركز." })}
           <div className={s.body}>
             <div className={s.types}>
               {c.cards.map((card, i) => {
@@ -209,7 +211,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 1: return (
         <>
-          <Head n={1} title={c.kind === "consult" ? "اختاري نوع الاستشارة" : "اختاري الجلسة"} sub={typeName ? <>ضمن <b>{typeName}</b> · {count(c.kindServices.length)}</> : undefined} />
+          {head({ n: 1, title: c.kind === "consult" ? "اختاري نوع الاستشارة" : "اختاري الجلسة", sub: typeName ? <>ضمن <b>{typeName}</b> · {count(c.kindServices.length)}</> : undefined })}
           <div className={s.body}>
             {c.svcCat?.not_for_pregnant && <PregnancyNotice style={{ marginBottom: 12 }} />}
             <div className={s.list}>
@@ -234,7 +236,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         const consult = c.kind === "consult";
         return (
           <>
-            <Head n={2} title={consult ? "استشارتكِ مع" : "مع من تفضّلين؟"} sub={consult ? "الاستشارات مع استشارية المركز." : "اختاري أخصائية بعينها أو اتركيها لنا لنعرض لكِ كل الأوقات المتاحة."} />
+            {head({ n: 2, title: consult ? "استشارتكِ مع" : "مع من تفضّلين؟", sub: consult ? "الاستشارات مع استشارية المركز." : "اختاري أخصائية بعينها أو اتركيها لنا لنعرض لكِ كل الأوقات المتاحة." })}
             <div className={s.body}>
               {skipSession && c.service && (
                 <div className={s.autoNote}><Icon name="check" size={16} color={C.accent} stroke={2.4} />اخترنا لكِ «{c.service.name}» — الخدمة الوحيدة في هذا النوع.</div>
@@ -284,7 +286,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       }
       case 3: return (
         <>
-          <Head n={3} title="أي يوم يناسبكِ؟" sub="خلال الأسبوعين القادمين — الأيام المغلقة باهتة." />
+          {head({ n: 3, title: "أي يوم يناسبكِ؟", sub: "خلال الأسبوعين القادمين — الأيام المغلقة باهتة." })}
           <div className={s.body}>
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
@@ -332,7 +334,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 4: return (
         <>
-          <Head n={4} title="اختاري الساعة" sub={c.day && c.service ? <>{dayLabel(c.day)} · <span className="latin">{c.service.minutes}</span> دقيقة</> : undefined} />
+          {head({ n: 4, title: "اختاري الساعة", sub: c.day && c.service ? <>{dayLabel(c.day)} · <span className="latin">{c.service.minutes}</span> دقيقة</> : undefined })}
           <div className={s.body}>
             <div className={s.legend}><span><i className={s.lgFree} />متاح</span><span><i className={s.lgBusy} />محجوز</span></div>
             {c.slotErr && <div className={s.err}>{c.slotErr}<button type="button" className={s.linkBtn} onClick={c.fetchSlots}>أعيدي المحاولة</button></div>}
@@ -366,7 +368,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 5: return (
         <>
-          <Head n={5} title="بياناتكِ" sub="نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ فقط." />
+          {head({ n: 5, title: "بياناتكِ", sub: "نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ فقط." })}
           <div className={s.body}>
             <form className={s.form} onSubmit={(e) => { e.preventDefault(); reviewDetails(); }} id="cf-details">
               <label className={s.field}>
@@ -397,7 +399,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         ];
         return (
           <>
-            <Head n={6} title="راجعي موعدكِ" sub="تأكّدي من التفاصيل، ويمكنكِ تعديل أي منها." />
+            {head({ n: 6, title: "راجعي موعدكِ", sub: "تأكّدي من التفاصيل، ويمكنكِ تعديل أي منها." })}
             <div className={s.body}>
               <div className={s.receipt}>
                 <div className={s.receiptGlow} aria-hidden />
