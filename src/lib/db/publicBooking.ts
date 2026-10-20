@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { clock, dayKey } from "@/lib/format";
 import type { Hours } from "./appointments";
 import { priceLabel } from "./catalog";
+import { staffPhoto } from "./staff";
 
 /** `price` is already in SYP (dollar prices converted server-side); null = «السعر عند الاستفسار». */
 export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null };
@@ -32,7 +33,10 @@ export function localPhone(p?: string | null) {
 export async function getPublicInfo(): Promise<PubInfo> {
   const { data, error } = await supabase.rpc("public_booking_info");
   if (error) throw new Error(error.message);
-  return data as unknown as PubInfo;
+  const info = data as unknown as PubInfo;
+  // photo_url is a path in the «staff» bucket (same rule as staffPhoto) → public URL.
+  const fix = (p: PubPerson | null) => p && ({ ...p, photo_url: staffPhoto(p) });
+  return { ...info, specialists: (info.specialists ?? []).map((p) => fix(p)!), consultant: fix(info.consultant) };
 }
 
 /** Weekdays (0 = Sunday) on which the service can be booked (someone who does it works that day). rpc booking_weekdays. */

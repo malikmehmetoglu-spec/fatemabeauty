@@ -1643,6 +1643,7 @@ export type Database = {
           is_consultant: boolean
           name: string
           phone: string | null
+          photo_placeholder: boolean
           photo_url: string | null
           role: Database["public"]["Enums"]["staff_role"]
           title: string
@@ -1657,6 +1658,7 @@ export type Database = {
           is_consultant?: boolean
           name: string
           phone?: string | null
+          photo_placeholder?: boolean
           photo_url?: string | null
           role: Database["public"]["Enums"]["staff_role"]
           title?: string
@@ -1671,6 +1673,7 @@ export type Database = {
           is_consultant?: boolean
           name?: string
           phone?: string | null
+          photo_placeholder?: boolean
           photo_url?: string | null
           role?: Database["public"]["Enums"]["staff_role"]
           title?: string
@@ -2424,6 +2427,7 @@ export type Database = {
           is_consultant: boolean
           name: string
           phone: string | null
+          photo_placeholder: boolean
           photo_url: string | null
           role: Database["public"]["Enums"]["staff_role"]
           title: string

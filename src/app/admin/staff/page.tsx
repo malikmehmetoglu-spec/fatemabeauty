@@ -97,7 +97,7 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
           <StaffAvatar s={s} size={42} />
           <div style={{ lineHeight: 1.35, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{s.name}{s.id === me?.id && <span style={{ fontSize: 11.5, color: C.sub2, fontWeight: 600 }}> (أنتِ)</span>}</div>
-            <div style={{ fontSize: 12, color: C.sub2 }}>{s.title || "—"}</div>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{s.title || "—"}{s.photo_placeholder && s.photo_url && <Tag kind="amber" style={{ height: 18, padding: "0 7px", fontSize: 10.5, marginInlineStart: 6 }}>صورة مؤقتة</Tag>}</div>
           </div>
         </>,
         <Tag key="r" kind={s.role === "owner" ? "plum" : s.role === "admin" ? "lilac" : s.role === "specialist" ? "pink" : "gray"}>{ROLE_LABEL[s.role]}</Tag>,
@@ -156,7 +156,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     setBusy(true);
     try {
       const photo_url = file ? await uploadStaffPhoto(file) : member?.photo_url ?? null;
-      const row = await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, is_consultant: consultant });
+      const row = await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, ...(file ? { photo_placeholder: false } : {}), is_consultant: consultant });
       if (row && asg.data && svcKeys.slice().sort().join("|") !== curKeys) await setStaffServices(row.id, svcKeys, asg.data);
       if (row && (salN !== (curSalary?.base_salary ?? 0) || cur !== (curSalary?.salary_currency ?? "SYP"))) await saveSalary(row.id, salN, cur);
       onClose();
@@ -167,11 +167,14 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     <Modal open={open} onClose={onClose} title={member ? "تعديل بيانات الموظفة" : "إضافة موظفة"} width={600}
       footer={<SubmitButton onClick={submit} busy={busy}>{member ? "حفظ التعديلات" : "إضافة"}</SubmitButton>}>
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0 }}>
         <label style={{ width: 96, height: 96, borderRadius: 48, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", fontSize: 11.5, color: C.sub2 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {preview ? <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <><Icon name="camera" size={24} />صورة</>}
           <input type="file" accept="image/*" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
+        {!file && member?.photo_placeholder && member.photo_url && <Tag kind="amber" style={{ height: 20, padding: "0 8px", fontSize: 11 }}>صورة مؤقتة</Tag>}
+        </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
           <TextInput label="الاسم الكامل" required value={name} onChange={setName} />
           <TextInput label="المسمى الوظيفي" value={title} onChange={setTitle} placeholder="أخصائية بشرة، موظفة استقبال…" />

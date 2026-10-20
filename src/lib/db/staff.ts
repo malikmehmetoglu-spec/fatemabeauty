@@ -29,7 +29,7 @@ export async function listStaff() {
   return must(await supabase.from("staff").select("*").order("active", { ascending: false }).order("created_at"));
 }
 
-export type StaffInput = { id?: string; name: string; title: string; role: Role; phone: string | null; photo_url?: string | null; is_consultant?: boolean };
+export type StaffInput = { id?: string; name: string; title: string; role: Role; phone: string | null; photo_url?: string | null; photo_placeholder?: boolean; is_consultant?: boolean };
 
 export async function saveStaff(input: StaffInput) {
   const { id, ...rest } = input;
@@ -52,7 +52,8 @@ export async function uploadStaffPhoto(file: File) {
   const path = `${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("staff").upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(error.message);
-  return path;
+  // Store the full public URL: many screens use photo_url directly as <img src> (staffPhoto passes URLs through).
+  return supabase.storage.from("staff").getPublicUrl(path).data.publicUrl;
 }
 
 type AdminCall =
