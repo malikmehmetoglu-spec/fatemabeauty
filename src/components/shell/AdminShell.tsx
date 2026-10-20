@@ -9,6 +9,8 @@ import { BG_WIDE, C, SELECTED, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
 import { Icon, Logo } from "@/components/ui";
 import { staffPhoto } from "@/lib/db/staff";
+import { useQuery } from "@/lib/db/query";
+import { pendingCount } from "@/lib/db/bookingRequests";
 import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
@@ -46,6 +48,8 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const [pwOpen, setPwOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState("");
+  const pend = useQuery(["booking-requests", "count"], pendingCount, { enabled: !!staff });
+  const pending = pend.data ?? 0;
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   if (loading || !staff) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
@@ -71,11 +75,11 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           {NAV.map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
-                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}
+                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}
               </Link>
             ) : (
               <Link key={label} href={href} style={{ height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: C.navText }}>
-                <Icon name={icon} color={C.navIcon} size={19} />{label}
+                <Icon name={icon} color={C.navIcon} size={19} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}
               </Link>
             ),
           )}
@@ -122,6 +126,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
 }
 
 const SUB: Partial<Record<AdminSection, [string, string][]>> = {
+  "المواعيد": [["التقويم", R.W_Calendar], ["طلبات الحجز", R.W_BookingRequests]],
   "المالية": [["الكاشير", R.W_Cashier], ["الصندوق اليومي", R.W_CashBox], ["الفواتير", R.W_Invoices], ["الذمم والأقساط", R.W_Receivables], ["المصاريف", R.W_Expenses], ["التقارير المالية", R.W_FinanceReports]],
   "المتجر": [["المنتجات", R.W_Products], ["الطلبات والتوصيل", R.W_Orders], ["واجهة المتجر", "/admin/store/storefront/"]],
   "المخزون والأجهزة": [["المخزون", R.W_Inventory], ["المشتريات", R.W_Purchases], ["الجرد", R.W_Stocktake], ["المواقع", "/admin/inventory/locations/"], ["الأجهزة", R.W_Devices]],

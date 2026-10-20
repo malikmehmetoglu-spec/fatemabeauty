@@ -73,6 +73,7 @@ export const R = {
   W_Dashboard: "/admin/",
   W_Calendar: "/admin/calendar/",
   W_BookingModal: "/admin/calendar/new/",
+  W_BookingRequests: "/admin/calendar/requests/",
   W_Waitlist: "/admin/waitlist/",
   W_Queue: "/admin/queue/",
   W_Patients: "/admin/patients/",

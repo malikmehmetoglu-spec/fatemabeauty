@@ -1,0 +1,23 @@
+.wrap { display: flex; flex-direction: column; gap: 22px; min-width: 0; flex-grow: 1; }
+.note { border-radius: 18px; padding: 10px 14px; background: #F6EEF9; color: #6E4A7A; font-size: 13.5px; font-weight: 600; }
+.h { margin: 0 0 12px; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.count { min-width: 26px; height: 26px; border-radius: 13px; padding: 0 8px; background: #D0679A; color: #fff; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-rubik), sans-serif; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; }
+.card { border-radius: 26px; background: #fff; border: 1px solid #F0E6F3; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fresh { border: 1.5px solid #9BD3B2; }
+.head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.name { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name a { color: inherit; }
+.phone { font-size: 13px; color: #866F8D; text-align: right; unicode-bidi: isolate; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid #F1E8F3; font-size: 13.5px; }
+.row > span { color: #866F8D; flex-shrink: 0; }
+.row > b { text-align: left; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+.link { color: #7B4687; font-weight: 700; font-size: 13.5px; padding: 0 6px; }
+.ok { display: flex; align-items: center; gap: 8px; border-radius: 16px; padding: 9px 12px; background: #EAF7EF; color: #2F6E4A; font-size: 13.5px; font-weight: 600; }
+.reason { height: 36px; border-radius: 18px; padding: 0 14px; border: 1px solid #EADCF0; background: #fff; color: #5E4566; font-size: 13px; font-weight: 600; }
+.reasonOn { background: #F6E9FA; border-color: #C9A2D8; color: #7B4687; }
+@media (max-width: 520px) {
+  .actions > * { flex: 1 1 auto; }
+}

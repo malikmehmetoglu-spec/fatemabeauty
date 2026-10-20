@@ -10,8 +10,11 @@ import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
   bookingError, dateOfKey, endsAt, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
-  type Appointment, type Status, weekday,
+  type Appointment, type Status, useSearch, weekday,
 } from "@/lib/db/appointments";
+import { approveBooking, canConfirm, confirmText, getCentre, markConfirmSent, pendingCount } from "@/lib/db/bookingRequests";
+import { useSession } from "@/lib/supabase/session";
+import { WaButton } from "./whatsapp";
 import { apptCount, arErr } from "../patients/kit";
 import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey } from "@/lib/format";
@@ -50,6 +53,17 @@ export function CalendarBody() {
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
   const hours = useQuery(["appointments", "hours"], getHours);
   const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
+  const pend = useQuery(["booking-requests", "count"], pendingCount);
+  const sp = useSearch();
+  const [opened, setOpened] = useState<string | null>(null);
+  // deep link from «طلبات الحجز»: ?day=YYYY-MM-DD&open=<appointment id>
+  useEffect(() => { const d = sp?.get("day"); if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) setDay(d); }, [sp]);
+  useEffect(() => {
+    const id = sp?.get("open");
+    if (!id || opened === id || !appts.data) return;
+    const a = appts.data.find((x) => x.id === id);
+    if (a) { setOpen(a); setOpened(id); }
+  }, [sp, appts.data, opened]);
 
   const list = (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled");
   const cols: Col[] = useMemo(() => {
@@ -103,6 +117,14 @@ export function CalendarBody() {
           <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
         </span>
       </div>
+
+      {(pend.data ?? 0) > 0 && (
+        <Link href={R.W_BookingRequests} style={{ borderRadius: 20, padding: "12px 16px", background: "linear-gradient(135deg, #FFF6E8, #FBEAF3)", border: "1px solid #F2D8AA", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#7A4F12" }}>
+          <Icon name="bell" size={19} color="#B4781C" />
+          <b style={{ fontSize: 14 }}><span className="latin">{pend.data}</span> {pend.data === 1 ? "طلب حجز" : "طلبات حجز"} من رابط الحجز بانتظار التأكيد</b>
+          <span style={{ marginInlineStart: "auto", fontSize: 13.5, fontWeight: 700, color: C.accent }}>مراجعة الطلبات ←</span>
+        </Link>
+      )}
 
       {h && !staffHours.loading && windows.length === 0 && view === "day" && (
         <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>لا أحد من الفريق يداوم في هذا اليوم حسب «أوقات الدوام» — الحجز من التطبيق ورابط الحجز مغلق فيه.</div>
@@ -222,13 +244,22 @@ const NEXT: Partial<Record<Status, { to: Status; label: string }[]>> = {
 export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { setError(""); }, [appt]);
+  const [confirmedNow, setConfirmedNow] = useState(false);
+  const { staff } = useSession();
+  const centre = useQuery(["booking-requests", "centre"], getCentre);
+  useEffect(() => { setError(""); setConfirmedNow(false); }, [appt]);
   if (!appt) return null;
-  const a = appt;
+  const a: Appointment = confirmedNow ? { ...appt, status: "confirmed" } : appt;
+  const can = canConfirm(staff);
+  const phone = a.patient?.phone || a.walk_in_phone;
   async function go(to: Status) {
     if ((to === "cancelled" || to === "no_show") && !window.confirm(to === "cancelled" ? "إلغاء هذا الموعد؟" : "تسجيل أنها لم تحضر؟")) return;
     setBusy(true); setError("");
-    try { await setStatus(a.id, to); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); }
+    try {
+      // approving a request keeps the dialog open so the WhatsApp confirmation can be sent right away
+      if (a.status === "pending" && to === "confirmed") { await approveBooking(a.id); setConfirmedNow(true); }
+      else { await setStatus(a.id, to); onClose(); }
+    } catch (e) { setError(/not allowed/.test(String((e as Error)?.message)) ? "تأكيد المواعيد للمالكة والإدارة والاستقبال." : bookingError(e)); } finally { setBusy(false); }
   }
   const row = (label: string, value: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.line}`, fontSize: 14 }}>
@@ -237,7 +268,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   );
   return (
     <Modal open onClose={onClose} title={personName(a)} width={520}
-      footer={<>{(NEXT[a.status] ?? []).filter((n) => (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
+      footer={<>{(NEXT[a.status] ?? []).filter((n) => (can || a.status !== "pending") && (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
         ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
         : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -255,6 +286,15 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         {a.note && row("ملاحظة المراجِعة", a.note)}
         {a.cancel_reason && row("سبب الإلغاء", a.cancel_reason)}
       </div>
+      {a.status === "confirmed" && can && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: confirmedNow ? "#EAF7EF" : "#F8F2FA" }}>
+          {confirmedNow && <b style={{ fontSize: 13.5, color: "#2F6E4A" }}>تم تأكيد الموعد — أرسلي التأكيد لها على واتساب.</b>}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <WaButton phone={phone} text={confirmText(a, centre.data ?? {})} onSent={() => markConfirmSent(a.id)}>{a.confirm_sent_at ? "إعادة إرسال التأكيد" : "إرسال التأكيد على واتساب"}</WaButton>
+            {a.confirm_sent_at && <Tag kind="plum">أُرسل التأكيد</Tag>}
+          </div>
+        </div>
+      )}
       {a.patient_id && (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13.5, fontWeight: 700 }}>
           <Link href={`${R.W_Record}?id=${a.patient_id}`} style={{ color: C.accent }}>فتح ملفها</Link>

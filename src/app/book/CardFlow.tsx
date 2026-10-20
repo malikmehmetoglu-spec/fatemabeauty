@@ -13,7 +13,7 @@ import { R } from "@/lib/routes";
 import { appHref } from "@/lib/hosts";
 import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
 import { clock, dayKey } from "@/lib/format";
-import { normalisePhone, pubPrice, type PubCategory, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot } from "@/lib/db/publicBooking";
+import { localPhone, normalisePhone, pubPrice, type PubCategory, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot } from "@/lib/db/publicBooking";
 import { C } from "@/lib/tokens";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 import s from "./cardflow.module.css";
@@ -435,16 +435,17 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       <section className={`${s.card} ${s.success}`} aria-live="polite">
         <div className={s.burst} aria-hidden>{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ ["--a" as string]: `${i * 30}deg`, animationDelay: `${120 + (i % 3) * 40}ms` }} />)}</div>
         <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
-        <h2 className={s.doneTitle}>وصلنا حجزكِ، شكراً لكِ</h2>
-        <p className={s.doneText}>موعدكِ الآن <b>بانتظار التأكيد</b>، وسنتواصل معكِ على رقمكِ لتأكيده. احتفظي بالموعد في تقويمكِ حتى لا يفوتكِ.</p>
+        <h2 className={s.doneTitle}>تم استلام طلب حجزكِ</h2>
+        <p className={s.doneText}>الموعد <b>بانتظار تأكيد المركز</b>، وستصلكِ رسالة واتساب لتأكيد الحجز على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(r.phone || c.phone)}</b></p>
         <div className={s.miniSum}>
+          <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
           <div className={s.miniRow}><span>الخدمة</span><span>{r.service}</span></div>
           <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(r.starts_at)))}</span></div>
           <div className={s.miniRow}><span>الساعة</span><span><span className="latin">{clock(r.starts_at)}</span> · {r.minutes} دقيقة</span></div>
           {r.specialist && <div className={s.miniRow}><span>مع</span><span>{r.specialist}</span></div>}
         </div>
         <div className={s.doneBtns}>
-          <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
+          <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم (مبدئياً)</button>
           <a className={s.ghostBtn} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
         </div>
         <p className={s.fine}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>

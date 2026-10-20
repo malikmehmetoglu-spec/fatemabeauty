@@ -58,6 +58,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_sent_at: string | null
           created_at: string
           created_by: string | null
           eligibility: Json | null
@@ -86,6 +87,7 @@ export type Database = {
           called_at?: string | null
           cancel_reason?: string | null
           checked_in_at?: string | null
+          confirm_sent_at?: string | null
           created_at?: string
           created_by?: string | null
           eligibility?: Json | null
@@ -114,6 +116,7 @@ export type Database = {
           called_at?: string | null
           cancel_reason?: string | null
           checked_in_at?: string | null
+          confirm_sent_at?: string | null
           created_at?: string
           created_by?: string | null
           eligibility?: Json | null
@@ -1177,6 +1180,7 @@ export type Database = {
           points: number
           pregnant: boolean
           skin_type: string | null
+          source: string | null
           user_id: string | null
         }
         Insert: {
@@ -1193,6 +1197,7 @@ export type Database = {
           points?: number
           pregnant?: boolean
           skin_type?: string | null
+          source?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1209,6 +1214,7 @@ export type Database = {
           points?: number
           pregnant?: boolean
           skin_type?: string | null
+          source?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -2228,6 +2234,7 @@ export type Database = {
           starts_at: string
         }[]
       }
+      approve_booking: { Args: { p_id: string }; Returns: undefined }
       attendance_punch: {
         Args: { p_kind: string }
         Returns: {
@@ -2262,6 +2269,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_sent_at: string | null
           created_at: string
           created_by: string | null
           eligibility: Json | null
@@ -2396,6 +2404,7 @@ export type Database = {
           points: number
           pregnant: boolean
           skin_type: string | null
+          source: string | null
           user_id: string | null
         }
         SetofOptions: {
@@ -2428,6 +2437,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_confirm_sent: { Args: { p_id: string }; Returns: undefined }
       my_queue: {
         Args: never
         Returns: {
@@ -2557,6 +2567,10 @@ export type Database = {
           p_supplier?: string
           p_unit_cost?: number
         }
+        Returns: undefined
+      }
+      reject_booking: {
+        Args: { p_id: string; p_reason: string }
         Returns: undefined
       }
       save_stock_location: {

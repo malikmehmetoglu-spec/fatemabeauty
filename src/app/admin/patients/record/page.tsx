@@ -12,6 +12,7 @@ import { useQuery } from "@/lib/db/query";
 import { addCondition, getPatient, getTiers, listConditions, removeCondition, SKIN_TYPES, tierFor, updatePatient, type ConditionKind, type Patient } from "@/lib/db/patients";
 import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
+import { WaIconLink } from "../../calendar/whatsapp";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
 const TABS = ["الزيارات", "ملاحظات الجلسات", "الوصفات", "الموافقات", "الصور"];
@@ -44,10 +45,11 @@ function Record() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                 <span style={PILL_DANGER} className="latin">ملف {p.file_no}</span>
+                {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
                 {tier && <span style={{ ...PILL_GRAY, background: "linear-gradient(145deg,#FFFFFF,#CFCBD6)", color: "#4A4452" }}>العضوية {tier.name}</span>}
               </div>
               <div style={{ display: "flex", gap: 18, fontSize: 13, color: C.sub, marginTop: 4, flexWrap: "wrap" }}>
-                <span style={{ display: "flex", gap: 6, alignItems: "center" }}><Icon name="phone" size={15} color={C.accentMid} /><span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{p.phone ?? "—"}</span></span>
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}><Icon name="phone" size={15} color={C.accentMid} /><span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{p.phone ?? "—"}</span><WaIconLink phone={p.phone} name={p.name} size={30} /></span>
                 {p.birth_date && <span>الميلاد: {arDate(new Date(p.birth_date), { day: false, year: true })}</span>}
                 <span>الملف منذ: {arDate(new Date(p.created_at), { day: false, year: true })}</span>
               </div>

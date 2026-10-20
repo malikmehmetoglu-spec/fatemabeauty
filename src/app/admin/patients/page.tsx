@@ -11,15 +11,17 @@ import { useQuery } from "@/lib/db/query";
 import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
 import { C, SH } from "@/lib/tokens";
 import t from "../adminPages.module.css";
+import { WaIconLink } from "../calendar/whatsapp";
 import { arErr, Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
 
-const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً"];
+const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً", "من رابط الحجز"];
 const PAGE = 20;
 
 function matches(p: PatientRow, f: number) {
   if (f === 1) return p.packages.some((x) => x.sessions_used < x.sessions_total);
   if (f === 2) return p.due > 0;
   if (f === 3) return p.conditions.some((c) => c.kind === "allergy");
+  if (f === 5) return p.source === "public";
   if (f === 4) return !!p.lastVisit && Date.now() - new Date(p.lastVisit).getTime() > 45 * 864e5;
   return true;
 }
@@ -81,9 +83,9 @@ function Patients() {
         ) : (
           <>
             <div className={t.scroll} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
-             <div className={t.inner} style={{ minWidth: 820 }}>
+             <div className={t.inner} style={{ minWidth: 880 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
+                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", 0.6)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
               </div>
               {!shown.length && <div style={{ borderTop: "1px solid #EDE2F1", padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
               {shown.map((p) => {
@@ -98,6 +100,10 @@ function Patients() {
                         <Initials name={p.name} />
                         <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                       </Link>
+                    </div>
+                    <div style={{ ...cell, flex: 0.6, gap: 6 }}>
+                      <WaIconLink phone={p.phone} name={p.name} />
+                      <Link href={href} aria-label="فتح الملف" title="فتح الملف" style={{ width: 36, height: 36, borderRadius: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #EADCF0", background: C.white }}><Icon name="file" size={17} color={C.accent} /></Link>
                     </div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                     <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{!p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false })}</span></div>
@@ -115,7 +121,8 @@ function Patients() {
                       {p.pregnant && <Tag kind="amber">حامل</Tag>}
                       {p.breastfeeding && <Tag kind="amber">مرضع</Tag>}
                       {p.skin_type && <Tag kind="gray">{p.skin_type}</Tag>}
-                      {!allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && <span style={{ color: C.muted }}>—</span>}
+                      {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
+                      {!allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && p.source !== "public" && <span style={{ color: C.muted }}>—</span>}
                     </div>
                   </div>
                 );

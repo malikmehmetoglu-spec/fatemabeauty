@@ -21,7 +21,13 @@ export type PubInfo = {
   centre: { phone: string | null; whatsapp: string | null } | null; horizon_days: number;
 };
 export type PubSlot = { starts_at: string; available: boolean };
-export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null };
+export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null; phone?: string | null };
+
+/** "+963991234567" → "0991 234 567" (shown on the success screen). */
+export function localPhone(p?: string | null) {
+  const d = (p ?? "").replace(/\D/g, "").replace(/^(00963|963|0)/, "");
+  return d.length === 9 ? `0${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : (p ?? "");
+}
 
 export async function getPublicInfo(): Promise<PubInfo> {
   const { data, error } = await supabase.rpc("public_booking_info");
@@ -94,8 +100,8 @@ export function icsFile(r: PubResult, place: string) {
   return [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Fatema Beauty//Booking//AR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
     "BEGIN:VEVENT", `UID:${f(s)}-${Math.random().toString(36).slice(2)}@fatema.beauty`, `DTSTAMP:${f(new Date())}`,
-    `DTSTART:${f(s)}`, `DTEND:${f(e)}`, `SUMMARY:${esc(`${r.service} — ${place}`)}`,
-    `DESCRIPTION:${esc(`موعدكِ في ${place} الساعة ${clock(s)} (بتوقيت دمشق). سنتواصل معكِ لتأكيده.`)}`,
+    `DTSTART:${f(s)}`, `DTEND:${f(e)}`, `SUMMARY:${esc(`${r.service} — ${place} (بانتظار التأكيد)`)}`,
+    `DESCRIPTION:${esc(`موعدكِ في ${place} الساعة ${clock(s)} (بتوقيت دمشق). الموعد بانتظار تأكيد المركز، وستصلكِ رسالة واتساب لتأكيده.`)}`,
     `LOCATION:${esc(place)}`, "BEGIN:VALARM", "TRIGGER:-PT2H", "ACTION:DISPLAY", "DESCRIPTION:تذكير بموعدكِ", "END:VALARM",
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");

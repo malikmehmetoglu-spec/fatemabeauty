@@ -12,7 +12,7 @@ import { appHref, DOMAIN } from "@/lib/hosts";
 import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
 import { clock, dayKey } from "@/lib/format";
 import {
-  getBookingWeekdays, getPublicInfo, getPublicSlots, icsFile, nextDays, normalisePhone, publicBook, publicError,
+  getBookingWeekdays, getPublicInfo, getPublicSlots, icsFile, localPhone, nextDays, normalisePhone, publicBook, publicError,
   pubPrice, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot,
 } from "@/lib/db/publicBooking";
 import { C } from "@/lib/tokens";
@@ -229,16 +229,17 @@ export default function PublicBookingPage() {
         {result ? (
           <section className={s.done} aria-live="polite">
             <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
-            <h1 className={s.doneTitle}>وصلنا حجزكِ، شكراً لكِ</h1>
-            <p className={s.doneText}>موعدكِ الآن <b style={{ color: C.accent }}>بانتظار التأكيد</b>، وسنتواصل معكِ على رقمكِ لتأكيده. احتفظي بالموعد في تقويمكِ حتى لا يفوتكِ.</p>
+            <h1 className={s.doneTitle}>تم استلام طلب حجزكِ</h1>
+            <p className={s.doneText}>الموعد <b style={{ color: C.accent }}>بانتظار تأكيد المركز</b>، وستصلكِ رسالة واتساب لتأكيد الحجز على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(result.phone || phone)}</b></p>
             <div className={`${s.miniSum} ${s.doneCard}`}>
+              <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
               <div className={s.miniRow}><span>الخدمة</span><span>{result.service}</span></div>
               <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(result.starts_at)))}</span></div>
               <div className={s.miniRow}><span>الساعة</span><span>{clock(result.starts_at)} · {result.minutes} دقيقة</span></div>
               {result.specialist && <div className={s.miniRow}><span>مع</span><span>{result.specialist}</span></div>}
             </div>
             <div className={s.doneBtns}>
-              <button type="button" className={s.btnPrimary} onClick={downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
+              <button type="button" className={s.btnPrimary} onClick={downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم (مبدئياً)</button>
               <a className={s.btnGhost} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
             </div>
             <p className={s.stepSub} style={{ marginTop: 14 }}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>
@@ -279,7 +280,7 @@ export default function PublicBookingPage() {
                   <Summary rows={summary} />
                   <div className={s.trust}>
                     <span><Icon name="shield" size={17} />نستخدم رقمكِ لتأكيد الموعد فقط</span>
-                    <span><Icon name="msg" size={17} />نتواصل معكِ لتأكيد الحجز</span>
+                    <span><Icon name="msg" size={17} />تصلكِ رسالة واتساب لتأكيد الحجز</span>
                   </div>
                 </aside>
 
@@ -462,7 +463,7 @@ function Summary({ rows }: { rows: [string, string, string | null][] }) {
           </div>
         ))}
       </div>
-      <div className={s.sumFoot}>يبقى الموعد بانتظار تأكيد المركز، وسنتواصل معكِ على رقمكِ.</div>
+      <div className={s.sumFoot}>يبقى الموعد بانتظار تأكيد المركز، وتصلكِ رسالة واتساب لتأكيده.</div>
     </div>
   );
 }
