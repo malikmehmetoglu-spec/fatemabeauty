@@ -67,6 +67,7 @@ function Patients() {
   }
 
   const lastVisit = (p: PatientRow) => !p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false });
+  const act = `0 0 ${canEdit ? 160 : 120}px`;
   /** The whole row/card opens the file: click, or Enter/Space when it has focus. */
   const openProps = (p: PatientRow) => {
     const href = fileHref(R.W_Record, "id", p.id);
@@ -77,7 +78,7 @@ function Patients() {
     };
   };
 
-  const head = (t: string, flex: number) => <div style={{ flex, minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{t}</div>;
+  const head = (t: string, flex: number | string) => <div style={{ flex, minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{t}</div>;
   const cell = { minWidth: 0, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 } as const;
 
   return (
@@ -105,7 +106,7 @@ function Patients() {
             <div className={`${t.scroll} ${css.table}`} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
              <div className={t.inner} style={{ minWidth: 960 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", canEdit ? 1.05 : 0.8)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
+                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", act)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
               </div>
               {!shown.length && <div style={{ borderTop: "1px solid #EDE2F1", padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
               {shown.map((p) => {
@@ -117,7 +118,7 @@ function Patients() {
                       <Initials name={p.name} />
                       <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                     </div>
-                    <div style={{ ...cell, flex: canEdit ? 1.05 : 0.8, gap: 6 }}><RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} /></div>
+                    <div style={{ ...cell, flex: act, gap: 6 }}><RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} /></div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                     <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{lastVisit(p)}</span></div>
                     <div style={{ ...cell, flex: 1.15 }}>
