@@ -110,8 +110,9 @@ export async function listDevices() {
 
 /** Specialists shown to patients (public team listing). */
 export async function listSpecialists(): Promise<Specialist[]> {
-  const rows = must(await supabase.from("staff").select("id,name,title,photo_url,role").eq("active", true).in("role", ["specialist", "admin", "owner"]).order("created_at")) ?? [];
-  return rows.filter((s) => s.role === "specialist" || !!s.photo_url);
+  const rows = must(await supabase.from("staff").select("id,name,title,photo_url,role,is_consultant").eq("active", true).order("created_at")) ?? [];
+  // the consultant first, then the specialists (reception/accounting/owner are not shown to clients)
+  return rows.filter((s) => s.role === "specialist" || s.is_consultant).sort((a, b) => Number(b.is_consultant) - Number(a.is_consultant));
 }
 
 /** Saving vs. paying each session at the single-session price. */

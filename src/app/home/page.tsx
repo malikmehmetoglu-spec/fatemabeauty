@@ -8,6 +8,7 @@ import hm from "./home.module.css";
 import { Circ, EmptyState, ErrorNote, Icon, IconButton, Loading, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
+import { staffPhoto } from "@/lib/db/staff";
 import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { useSession } from "@/lib/supabase/session";
 import { GuestPill } from "@/components/guest";
@@ -73,21 +74,21 @@ export default function HomePage() {
       <InstallPrompt style={{ margin: "10px 22px 0" }} />
 
       <div className={hm.hero} style={{ display: "flex", gap: 12, padding: "10px 22px 20px", overflowX: "auto", position: "relative" }}>
-        {spec && (
-        <div style={{ width: 214, height: 214, flexShrink: 0, borderRadius: 30, background: "#EAD7EE", position: "relative", overflow: "hidden", boxShadow: SH }}>
+        {(team ?? []).map((spec) => (
+        <div key={spec.id} style={{ width: 214, height: 214, flexShrink: 0, borderRadius: 30, background: "#EAD7EE", position: "relative", overflow: "hidden", boxShadow: SH }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {spec.photo_url && <img src={spec.photo_url} alt={spec.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 15%" }} />}
-          <div style={{ ...GLASS, position: "absolute", bottom: 10, left: 10, right: 10, borderRadius: 22, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>{spec.name}</div>
-              <div style={{ fontSize: 12, color: C.sub }}>{spec.title || "أخصائية عناية بالبشرة"}</div>
+          {spec.photo_url && <img src={staffPhoto(spec) ?? spec.photo_url} alt={spec.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 15%" }} />}
+          <div style={{ ...GLASS, position: "absolute", bottom: 10, left: 10, right: 10, borderRadius: 22, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{spec.name}</div>
+              <div style={{ fontSize: 12, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{spec.title || "أخصائية عناية بالبشرة"}</div>
             </div>
-            <Link href={R.Booking} aria-label={`احجزي مع ${spec.name}`} style={{ ...DARK, width: 42, height: 42, borderRadius: 21, boxShadow: "0 8px 18px rgba(123,70,135,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Link href={R.Booking} aria-label={`احجزي مع ${spec.name}`} style={{ ...DARK, width: 42, height: 42, flexShrink: 0, borderRadius: 21, boxShadow: "0 8px 18px rgba(123,70,135,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="arrow" color="#FFFFFF" size={16} stroke={2} />
             </Link>
           </div>
         </div>
-        )}
+        ))}
         <Link href={R.Consult} style={{
           width: spec ? 214 : "100%", height: spec ? 214 : 150, flexShrink: 0, borderRadius: 30, background: "linear-gradient(160deg, #FFFFFF 0%, #FAF3FB 100%)",
           border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between",
