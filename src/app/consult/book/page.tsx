@@ -11,6 +11,7 @@ import { atDamascus, dayKey, dayName, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { bookConsult, getConsultService, getHours } from "@/lib/db/consult";
 import { appSlots, bookingWeekdays } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, SOFT_PANEL } from "@/lib/tokens";
 
@@ -23,7 +24,7 @@ const sel = (on: boolean): CSSProperties => ({
 const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 
 export default function ConsultBookPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const { data: svc, loading: l1 } = useQuery(["consult", "service"], getConsultService);
   const { data: hours, loading: l2 } = useQuery(["consult", "hours"], getHours);
   const [day, setDay] = useState(0);
@@ -62,6 +63,7 @@ export default function ConsultBookPage() {
     finally { setBusy(false); }
   };
 
+  if (guest) return <PhoneScreen><TopBar title="حجز استشارة أونلاين" back={R.Consult} /><GuestCard icon="cam" what="حجوزات استشاراتكِ" /></PhoneScreen>;
   if (sLoading || !patient || l1 || l2) return <PhoneScreen><TopBar title="حجز استشارة أونلاين" back={R.Consult} /><Loading /></PhoneScreen>;
   if (!svc) return (
     <PhoneScreen>

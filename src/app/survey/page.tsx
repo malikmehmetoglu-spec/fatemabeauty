@@ -8,6 +8,7 @@ import { R } from "@/lib/routes";
 import { arDate } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getMyAppointment, getMyLastDone, submitSurvey } from "@/lib/db/marketing";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, SH_SOFT } from "@/lib/tokens";
 import { StaffAvatar, toggleChip } from "../consult/ui";
@@ -20,7 +21,7 @@ const QS: [string, string, string[]][] = [
 ];
 
 export default function Survey48Page() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const [apptId, setApptId] = useState<string | null | undefined>(undefined);
   useEffect(() => { setApptId(new URLSearchParams(window.location.search).get("appointment")); }, []);
   const { data: appt, loading } = useQuery(["survey", "appt", apptId, patient?.id],
@@ -44,6 +45,7 @@ export default function Survey48Page() {
     finally { setBusy(false); }
   };
 
+  if (guest) return <PhoneScreen><TopBar title="كيف بشرتكِ اليوم؟" back={R.Journey} /><GuestCard icon="sparkle" what="متابعة بشرتكِ بعد الجلسة" /></PhoneScreen>;
   if (sLoading || !patient || loading) return <PhoneScreen><TopBar title="كيف بشرتكِ اليوم؟" back={R.Journey} /><Loading /></PhoneScreen>;
   if (done) return (
     <PhoneScreen>

@@ -8,6 +8,7 @@ import { R } from "@/lib/routes";
 import { arDate } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getMyAppointment, getMyLastDone, submitReview } from "@/lib/db/marketing";
+import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, SH } from "@/lib/tokens";
 import { StaffAvatar, toggleChip } from "../consult/ui";
@@ -17,7 +18,7 @@ const TAGS = ["لطف التعامل", "الالتزام بالموعد", "نت�
 const STAR = "M12 17.75l-6.17 3.24 1.18-6.87-5-4.87 6.9-1 3.08-6.25 3.08 6.25 6.9 1-5 4.87 1.18 6.87z";
 
 export default function ReviewPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const [apptId, setApptId] = useState<string | null | undefined>(undefined);
   useEffect(() => { setApptId(new URLSearchParams(window.location.search).get("appointment")); }, []);
   const { data: appt, loading } = useQuery(["reviews", "appt", apptId, patient?.id],
@@ -31,14 +32,15 @@ export default function ReviewPage() {
   const [done, setDone] = useState(false);
 
   const send = async () => {
-    if (!patient || !rating) return;
+    if (!rating) return;
+    if (!patient) { askLogin({ text: "سجّلي الدخول لنرسل تقييمكِ إلى فريق المركز." }); return; }
     setBusy(true); setErr(null);
     try { await submitReview({ patient_id: patient.id, appointment_id: appt?.id ?? null, stars: rating, tags, note }); setDone(true); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   };
 
-  if (sLoading || !patient || loading) return <PhoneScreen><TopBar title="قيّمي تجربتكِ" back={R.P_Appointments} /><Loading /></PhoneScreen>;
+  if (sLoading || (!patient && !guest) || loading) return <PhoneScreen><TopBar title="قيّمي تجربتكِ" back={R.P_Appointments} /><Loading /></PhoneScreen>;
 
   if (done) return (
     <PhoneScreen>

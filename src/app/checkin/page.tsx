@@ -7,6 +7,7 @@ import { Circ, EmptyState, IconButton, Loading, PrimaryButton, Tag } from "@/com
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { getAppointment, myToday, timeOf, useSearch } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate, dayKey } from "@/lib/format";
 import { C, CARD, GLASS, SH_SOFT } from "@/lib/tokens";
@@ -35,6 +36,7 @@ export default function CheckinPage() {
   const today = useQuery(["appointments", "today", s.patient?.id], () => myToday(s.patient!.id), { enabled: !id && !!q && !!s.patient });
   const a = id ? byId.data : today.data;
 
+  if (s.guest) return <PhoneScreen><TopBar title="تسجيل الوصول" back={R.P_Appointments} /><GuestCard icon="cal" what="رمز تسجيل وصولكِ" /></PhoneScreen>;
   if (s.loading || !s.patient || !q || (id ? byId.loading : today.loading)) return <PhoneScreen><Loading /></PhoneScreen>;
   const back = a ? `${R.P_AppointmentDetail}?id=${a.id}` : R.P_Appointments;
   if (!a || a.status === "cancelled" || a.status === "done" || a.status === "no_show") return (

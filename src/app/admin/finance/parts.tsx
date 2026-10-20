@@ -2,11 +2,9 @@
 
 /** Small building blocks shared by the finance & reports screens (not a route). */
 import type { CSSProperties, ReactNode } from "react";
-import css from "./finance.module.css";
 import { Icon } from "@/components/ui";
 import { AR_MONTHS } from "@/lib/data";
-import { arDate, clock, money } from "@/lib/format";
-import { customerName, outstanding, PAY_LABEL, type InvoiceRow } from "@/lib/db/finance";
+import { money } from "@/lib/format";
 import { C, DEEP_SHADOW, ICON_FILL, SELECTED, SH, SHB, SHEEN } from "@/lib/tokens";
 
 export const OFF: CSSProperties = { background: "#FFFFFF", border: "1px solid #EADCF0", color: "#866F8D", boxShadow: "0 3px 10px rgba(123,70,135,0.05)" };
@@ -172,36 +170,3 @@ export const PrintStyles = () => (
   body:has(.fin-print-now) .fin-print-now, body:has(.fin-print-now) .fin-print-now * { visibility: visible !important; }
 }`}</style>
 );
-
-/** Printed receipt of one invoice: hidden on screen, the only thing printed while it is mounted. */
-export function Receipt({ inv, issuer }: { inv: InvoiceRow; issuer?: string }) {
-  const left = outstanding(inv);
-  return (
-    <div className={`${css.receipt} fin-print-now`} dir="rtl" aria-hidden>
-      <PrintStyles />
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <div style={{ fontSize: "16pt", fontWeight: 700 }}>فاطمة بيوتي — Fatema Beauty</div>
-        <div>فاتورة <span dir="ltr">{inv.no}</span> · {arDate(new Date(inv.created_at))} <span dir="ltr">{clock(inv.created_at)}</span></div>
-        <div>{customerName(inv)}{inv.patients?.file_no ? ` · ملف ${inv.patients.file_no}` : ""}{issuer ? ` · ${issuer}` : ""}</div>
-        {inv.void && <div style={{ fontWeight: 700 }}>ملغاة</div>}
-      </div>
-      <table>
-        <thead><tr><th>البند</th><th className={css.num}>الكمية</th><th className={css.num}>السعر</th><th className={css.num}>المبلغ</th></tr></thead>
-        <tbody>
-          {(inv.invoice_items ?? []).map((x) => (
-            <tr key={x.id}><td>{x.label}</td><td className={css.num}>{x.qty}</td><td className={css.num}>{money(x.unit_price, false)}</td><td className={css.num}>{money(x.qty * x.unit_price, false)}</td></tr>
-          ))}
-          <tr><td colSpan={3}>المجموع</td><td className={css.num}>{money(inv.subtotal, false)}</td></tr>
-          {inv.discount > 0 && <tr><td colSpan={3}>الخصم</td><td className={css.num}>− {money(inv.discount, false)}</td></tr>}
-          <tr><td colSpan={3}><b>الصافي</b></td><td className={css.num}><b>{money(inv.total)}</b></td></tr>
-          {(inv.invoice_payments ?? []).map((p) => (
-            <tr key={p.id}><td colSpan={3}>{PAY_LABEL[p.method]} · {arDate(new Date(p.paid_at), { day: false })}</td><td className={css.num}>{p.method === "package" ? "جلسة" : money(p.amount, false)}</td></tr>
-          ))}
-          {left > 0 && <tr><td colSpan={3}><b>المتبقي</b>{inv.due_on ? ` · يستحق ${inv.due_on}` : ""}</td><td className={css.num}><b>{money(left)}</b></td></tr>}
-        </tbody>
-      </table>
-      {inv.note && <div style={{ marginTop: 8 }}>{inv.note}</div>}
-      <div style={{ textAlign: "center", marginTop: 12 }}>شكراً لزيارتكِ</div>
-    </div>
-  );
-}

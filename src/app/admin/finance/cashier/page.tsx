@@ -13,14 +13,15 @@ import { EmptyState, ErrorNote, Icon, Loading, NumberInput, TextInput } from "@/
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import {
-  createInvoice, financeError, getInvoice, getOpenShift, getPolicies, listCashierQueue, listInvoices, listPatientPackages, listSellables, searchPatients,
-  customerName, type CartLine, type CashierAppt, type InvoiceRow, type PayMethod,
+  createInvoice, financeError, getInvoice, getPolicies, listCashierQueue, listInvoices, listPatientPackages, listSellables, searchPatients,
+  collected, customerName, outstanding, type CartLine, type CashierAppt, type InvoiceRow, type PayMethod,
 } from "@/lib/db/finance";
 import { initials } from "@/lib/data";
 import { arDate, clock, dayRange, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
-import { Amount, LATIN, OFF, PANEL, Receipt } from "../parts";
+import { Amount, LATIN, OFF, PANEL } from "../parts";
+import { InvoiceActions, useInvoicePrint } from "../InvoicePrint";
 import { locLabel, useLocations } from "../../inventory/dialogs";
 import { qtyAt } from "@/lib/db/products";
 import { getPatient } from "@/lib/db/patients";
@@ -46,7 +47,6 @@ export default function Page() {
   const isAdmin = staff?.role === "owner" || staff?.role === "admin";
   const today = dayRange();
   const queue = useQuery(["queue", "cashier"], listCashierQueue);
-  const shift = useQuery(["finance", "shift", "open"], getOpenShift);
   const policies = useQuery(["finance", "policies"], getPolicies);
   const sellables = useQuery(["finance", "sellables"], listSellables);
   const todays = useQuery(["invoices", "today", today.from], () => listInvoices(today.from, today.to));
@@ -124,7 +124,6 @@ export default function Page() {
   if (discMode === "amt" && Number(discAmt) > sub) problems.push("الخصم أكبر من المجموع");
   if (mode === "split" && (Number(splitCash) || 0) > total) problems.push("المبلغ النقدي أكبر من المطلوب");
   if (mode === "deferred" && (Number(paidNow) || 0) > total) problems.push("المدفوع أكبر من المطلوب");
-  if (!shift.loading && !shift.data && payments.some((p) => p.method === "cash" && p.amount > 0)) problems.push("الصندوق مغلق — افتحي وردية من «الصندوق اليومي» أو اختاري البطاقة");
 
   const issue = async () => {
     if (!who || problems.length || busy) return;
@@ -147,12 +146,12 @@ export default function Page() {
   const whoName = who ? (who.type === "appt" ? customerName({ patients: who.appt.patients, walk_in_name: who.appt.walk_in_name }) : who.name) : "";
   const whoPhone = who?.type === "appt" ? who.appt.patients?.phone : who?.type === "patient" ? who.phone : null;
   const nowLabel = `${arDate(new Date())} · ${clock()}`;
-  const shiftLabel = shift.data ? `الصندوق مفتوح منذ ${clock(shift.data.opened_at)}` : "الصندوق مغلق — افتحيه قبل قبض النقد";
+  const receipt = useInvoicePrint();
 
   return (
-    <AdminShell active="المالية" title="الكاشير" subtitle={`${nowLabel} · ${shiftLabel}`} actions={
-      <Link href={R.W_CashBox} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
-        <Icon name="cash" color={C.accent} size={17} stroke={1.9} />الصندوق اليومي
+    <AdminShell active="المالية" title="الكاشير" subtitle={nowLabel} actions={
+      <Link href={R.W_Invoices} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
+        <Icon name="receipt" color={C.accent} size={17} stroke={1.9} />كل الفواتير
       </Link>}>
       <div className={css.cashier}>
         {/* ---------- left: who pays ---------- */}
@@ -306,7 +305,7 @@ export default function Page() {
               ملاحظة على الفاتورة (اختياري)
               <textarea aria-label="ملاحظة على الفاتورة" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="تظهر في نسخة المراجعة" style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13, color: C.ink, resize: "none", outline: "none" }} />
             </label>
-            {staff && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub2 }}><Icon name="shield" color={C.accentMid} size={16} /><span>تُسجَّل باسم {staff.name} وتظهر في الصندوق اليومي.</span></div>}
+            {staff && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.sub2 }}><Icon name="shield" color={C.accentMid} size={16} /><span>تُسجَّل باسم {staff.name} وتظهر في الفواتير والتقارير المالية.</span></div>}
           </>)}
         </div>
 
@@ -346,11 +345,19 @@ export default function Page() {
           )}
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
-            {issued && <Receipt inv={issued} issuer={staff?.name} />}
             {err && <ErrorNote>{err}</ErrorNote>}
             {issued ? (
-              <div style={{ borderRadius: 18, padding: "12px 14px", background: "#E6F4EC", color: C.okDeep, fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="check" color={C.okDeep} size={18} />صدرت الفاتورة <span dir="ltr" style={LATIN}>{issued.no}</span>
+              <div className={css.success} role="status">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.okDeep, fontSize: 15, fontWeight: 700 }}>
+                  <Icon name="check" color={C.okDeep} size={19} />صدرت الفاتورة <span dir="ltr" style={LATIN}>{issued.no}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>
+                  <SumRow label="المراجِعة" value={customerName(issued)} />
+                  <SumRow label="الإجمالي" value={<Amount n={issued.total} />} />
+                  <SumRow label="المدفوع" value={<Amount n={collected(issued)} />} />
+                  <SumRow label="المتبقي" value={outstanding(issued) > 0 ? <Amount n={outstanding(issued)} color="#8A5A12" /> : "لا شيء"} />
+                </div>
+                <InvoiceActions inv={issued} onPrint={receipt.print} phone={issued.patients?.phone ?? whoPhone} extras={{ staff: staff?.name }} style={{ flexWrap: "wrap" }} />
               </div>
             ) : who && problems.length ? <div style={{ fontSize: 12.5, color: C.sub2, textAlign: "center" }}>{problems[0]}</div> : null}
             {issued ? (
@@ -362,19 +369,14 @@ export default function Page() {
                 <Icon name="receipt" color={C.white} size={19} />{busy ? "جارٍ الإصدار…" : blockedByApproval ? "بانتظار موافقة الإدارة" : "إصدار الفاتورة"}
               </button>
             )}
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" disabled={!issued} onClick={() => window.print()} style={{ ...ghost, flex: 1, opacity: issued ? 1 : 0.5 }}><Icon name="print" color={C.accent} size={17} stroke={1.9} />طباعة</button>
-              <button type="button" disabled={!issued || !whoPhone} onClick={() => issued && whoPhone && window.open(`https://wa.me/${whoPhone.replace(/\D/g, "").replace(/^0/, "963")}?text=${encodeURIComponent(`فاتورة ${issued.no} — المبلغ ${money(issued.total)}. شكراً لزيارتكِ Fatema Beauty.`)}`, "_blank")}
-                style={{ ...ghost, flex: 1, opacity: issued && whoPhone ? 1 : 0.5 }}><Icon name="send" color={C.accent} size={17} stroke={1.9} />إرسال واتساب</button>
-            </div>
           </div>
         </div>
       </div>
+      {receipt.node}
     </AdminShell>
   );
 }
 
-const ghost: CSSProperties = { height: 40, borderRadius: 20, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" };
 
 function Row({ label, value, dark }: { label: string; value: string; dark?: boolean }) {
   return <div style={{ position: "relative", display: "flex", justifyContent: "space-between", fontSize: 13, color: dark ? C.onDark : C.sub2, marginTop: 6 }}><span>{label}</span><span style={LATIN}>{value}</span></div>;

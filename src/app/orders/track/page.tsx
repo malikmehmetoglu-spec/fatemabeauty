@@ -14,6 +14,7 @@ import { arDate, clock, money } from "@/lib/format";
 import { C, CARD, SHB } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { cancelOrder, getOrder, listMyOrders, orderError, orderSteps, STATUS_LABEL, type OrderFull, itemsLabel } from "@/lib/db/orders";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import css from "../../store/store.module.css";
 import { Blank, StoreChrome, useDesktop } from "../../store/desk/StoreChrome";
@@ -28,6 +29,7 @@ function Router() {
   const s = useRequirePatient();
   const desk = useDesktop();
   if (desk === null) return <Blank />;
+  if (s.guest) return <PhoneScreen wide><TopBar title="طلباتي" back={R.P_Store} /><GuestCard icon="box" what="طلباتكِ من المتجر" /></PhoneScreen>;
   if (desk && (s.loading || !s.patient)) {
     return s.loading || !s.staff ? <StoreChrome><Loading /></StoreChrome> : (
       <DeskShell title="طلباتي">

@@ -10,7 +10,7 @@ import { EmptyState, ErrorNote, Icon, Loading, Modal, SubmitButton, GhostButton,
 import { R } from "@/lib/routes";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
-import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
+import { createPatient, deletePatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } from "@/lib/db/patients";
 import { C, SH } from "@/lib/tokens";
 import t from "../adminPages.module.css";
 import { WaIconLink } from "../calendar/whatsapp";
@@ -45,10 +45,12 @@ function Patients() {
   const [page, setPage] = useState(0);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<PatientRow | null>(null);
+  const [removing, setRemoving] = useState<PatientRow | null>(null);
   const router = useRouter();
   const { staff } = useSession();
   // same rule as the rest of the admin: specialists and the accountant only read
   const canEdit = !!staff && (staff.role === "owner" || staff.role === "admin" || staff.role === "reception");
+  const canDelete = !!staff && (staff.role === "owner" || staff.role === "admin");
 
   const rows = useMemo(() => {
     const s = q.trim().replace(/\s+/g, " ");
@@ -67,7 +69,7 @@ function Patients() {
   }
 
   const lastVisit = (p: PatientRow) => !p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false });
-  const act = `0 0 ${canEdit ? 160 : 120}px`;
+  const act = `0 0 ${canDelete ? 216 : canEdit ? 174 : 132}px`;
   /** The whole row/card opens the file: click, or Enter/Space when it has focus. */
   const openProps = (p: PatientRow) => {
     const href = fileHref(R.W_Record, "id", p.id);
@@ -104,9 +106,9 @@ function Patients() {
         ) : (
           <>
             <div className={`${t.scroll} ${css.table}`} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
-             <div className={t.inner} style={{ minWidth: 960 }}>
+             <div className={t.inner} style={{ minWidth: 1120 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", act)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
+                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.8)}{head("الباقة", 1.1)}{head("الرصيد", 0.8)}{head("وسوم", 1.2)}{head("إجراءات", act)}
               </div>
               {!shown.length && <div style={{ borderTop: "1px solid #EDE2F1", padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
               {shown.map((p) => {
@@ -118,10 +120,9 @@ function Patients() {
                       <Initials name={p.name} />
                       <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                     </div>
-                    <div style={{ ...cell, flex: act, gap: 6 }}><RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} /></div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
-                    <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{lastVisit(p)}</span></div>
-                    <div style={{ ...cell, flex: 1.15 }}>
+                    <div style={{ ...cell, flex: 0.8 }}><span style={{ color: C.sub, whiteSpace: "nowrap" }}>{lastVisit(p)}</span></div>
+                    <div style={{ ...cell, flex: 1.1 }}>
                       {pkg ? (
                         <div style={{ width: "100%", lineHeight: 1.3 }}>
                           <div style={{ fontSize: 12.5, fontWeight: 600 }}>{pkg.packages?.name ?? "باقة"} · {pkg.sessions_used}/{pkg.sessions_total}</div>
@@ -129,8 +130,9 @@ function Patients() {
                         </div>
                       ) : <span style={{ color: C.muted }}>—</span>}
                     </div>
-                    <div style={{ ...cell, flex: 0.95 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div>
-                    <div style={{ ...cell, flex: 1.55, flexWrap: "wrap" }}><Tags p={p} /></div>
+                    <div style={{ ...cell, flex: 0.8 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div>
+                    <div style={{ ...cell, flex: 1.2, flexWrap: "wrap" }}><Tags p={p} /></div>
+                    <div style={{ ...cell, flex: act, justifyContent: "flex-end" }}><RowActions p={p} canEdit={canEdit} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} /></div>
                   </div>
                 );
               })}
@@ -148,7 +150,7 @@ function Patients() {
                         <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</div>
                         <div style={{ fontSize: 12, color: C.sub2 }}>ملف <span className="latin" style={{ color: C.accent, fontWeight: 700 }}>{p.file_no}</span> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                       </div>
-                      <RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} compact />
+                      <RowActions p={p} canEdit={canEdit} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} compact />
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontSize: 12, color: C.sub }}>
                       <span>آخر زيارة: {lastVisit(p)}</span>
@@ -175,6 +177,7 @@ function Patients() {
       </div>
       <AddPatient open={adding} onClose={() => setAdding(false)} />
       {editing && <EditPatient p={editing} onClose={() => setEditing(null)} />}
+      {removing && <DeletePatient p={removing} onClose={() => setRemoving(null)} />}
     </AdminShell>
   );
 }
@@ -235,7 +238,7 @@ function Tags({ p, hideEmpty }: { p: PatientRow; hideEmpty?: boolean }) {
 const MORE = "M5 12h.01M12 12h.01M19 12h.01";
 
 /** WhatsApp + quick actions. Clicks/keys never reach the row (which opens the file). `compact` = WhatsApp + «⋯» menu (phones). */
-function RowActions({ p, canEdit, onEdit, compact }: { p: PatientRow; canEdit: boolean; onEdit: () => void; compact?: boolean }) {
+function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: PatientRow; canEdit: boolean; canDelete: boolean; onEdit: () => void; onDelete: () => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -256,16 +259,57 @@ function RowActions({ p, canEdit, onEdit, compact }: { p: PatientRow; canEdit: b
           {canEdit && <button type="button" role="menuitem" className={css.menuItem} onClick={() => { setOpen(false); onEdit(); }}><Icon name="edit" size={17} color={C.accent} />تعديل البيانات</button>}
           <Link role="menuitem" href={appt} className={css.menuItem}><Icon name="calcheck" size={17} color={C.accent} />موعد جديد</Link>
           <Link role="menuitem" href={bill} className={css.menuItem}><Icon name="receipt" size={17} color={C.accent} />فاتورة</Link>
+          {canDelete && <button type="button" role="menuitem" className={css.menuItem} style={{ color: C.danger }} onClick={() => { setOpen(false); onDelete(); }}><Icon name="trash" size={17} color={C.danger} />حذف الملف</button>}
         </div>
       )}
     </div>
   );
   return (
-    <div {...stop} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+    <div {...stop} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
       <WaIconLink phone={p.phone} name={p.name} size={34} />
       {canEdit && <button type="button" className={css.iconBtn} aria-label="تعديل البيانات" title="تعديل البيانات" onClick={onEdit}><Icon name="edit" size={16} color={C.accent} /></button>}
       <Link href={appt} className={css.iconBtn} aria-label="موعد جديد" title="موعد جديد"><Icon name="calcheck" size={16} color={C.accent} /></Link>
       <Link href={bill} className={css.iconBtn} aria-label="فاتورة" title="فاتورة"><Icon name="receipt" size={16} color={C.accent} /></Link>
+      {canDelete && <button type="button" className={`${css.iconBtn} ${css.danger}`} aria-label="حذف الملف" title="حذف الملف" onClick={onDelete}><Icon name="trash" size={16} color={C.danger} /></button>}
     </div>
+  );
+}
+
+/** Delete a patient file — confirm button unlocks after a 10-second countdown. Files with history can't be deleted. */
+function DeletePatient({ p, onClose }: { p: PatientRow; onClose: () => void }) {
+  const [left, setLeft] = useState(10);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    if (left <= 0) return;
+    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  async function go() {
+    setBusy(true); setErr("");
+    try { await deletePatient(p.id); onClose(); }
+    catch (e) {
+      const m = e instanceof Error ? e.message : "";
+      setErr(m === "HISTORY" ? "لهذه المراجِعة سجلّ في المركز (مواعيد أو فواتير أو ملاحظات)، لذلك لا يمكن حذف ملفها حفاظاً على السجلات."
+        : m === "NOT_ALLOWED" ? "ليست لديكِ صلاحية حذف هذا الملف." : arErr(e));
+    }
+    setBusy(false);
+  }
+  return (
+    <Modal open onClose={onClose} title="حذف ملف المراجِعة" width={460}
+      footer={<>
+        <button type="button" onClick={go} disabled={left > 0 || busy}
+          style={{ height: 48, padding: "0 22px", borderRadius: 24, border: "none", fontSize: 15, fontWeight: 700, color: "#fff",
+            background: left > 0 ? "#D9B9C6" : C.danger, cursor: left > 0 ? "not-allowed" : "pointer", fontFamily: "var(--font-rubik)" }}>
+          {busy ? "جارٍ الحذف…" : left > 0 ? `تأكيد الحذف (${left})` : "تأكيد الحذف"}
+        </button>
+        <GhostButton onClick={onClose}>إلغاء</GhostButton>
+      </>}>
+      <div style={{ fontSize: 14.5, lineHeight: 1.9, color: C.ink }}>
+        سيُحذف ملف <b>{displayName(p.name)}</b> (رقم الملف <span className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</span>) نهائياً، ولا يمكن التراجع عن ذلك.
+      </div>
+      <div style={{ fontSize: 13, color: C.sub2, lineHeight: 1.8 }}>لا يمكن حذف ملف له مواعيد أو فواتير أو ملاحظات جلسات.</div>
+      {err && <ErrorNote>{err}</ErrorNote>}
+    </Modal>
   );
 }

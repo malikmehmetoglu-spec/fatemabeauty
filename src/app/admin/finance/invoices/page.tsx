@@ -13,6 +13,7 @@ import { arDate, clock, dayKey, dayRange, money } from "@/lib/format";
 import { C, SHB } from "@/lib/tokens";
 import { Amount, Big, DeepBtn, LATIN, LightBtn, Pill, PANEL, StatCard, downloadCsv } from "../parts";
 import { InvoiceDialog } from "./InvoiceDialog";
+import { InvoiceActions, useInvoicePrint } from "../InvoicePrint";
 import css from "../finance.module.css";
 
 type F = "all" | "cash" | "card" | "package" | "open" | "void";
@@ -26,6 +27,7 @@ export default function Page() {
   const r = dayRange(day);
   const { data, loading, error } = useQuery(["invoices", "day", day], () => listInvoices(r.from, r.to));
   const names = useQuery(["finance", "staffNames"], staffNames);
+  const receipt = useInvoicePrint();
 
   const all = data ?? [];
   const live = all.filter((i) => !i.void);
@@ -73,7 +75,7 @@ export default function Page() {
         ) : list.length === 0 ? <EmptyState compact icon="search" title="لا فواتير تطابق هذا الاختيار" /> : (
           <div style={{ ...PANEL, padding: "8px 20px 14px" }}>
             <div className={css.thead}>
-              {[["رقم الفاتورة", 1.3], ["الوقت", 0.7], ["المراجعة", 1.7], ["البنود", 1.7], ["الأخصائية", 1.1], ["الدفع", 0.9], ["المبلغ", 1.1], ["الحالة", 1], ["", 0.4]].map(([h, w], i) => (
+              {[["رقم الفاتورة", 1.3], ["الوقت", 0.7], ["المراجعة", 1.7], ["البنود", 1.7], ["الأخصائية", 1.1], ["الدفع", 0.9], ["المبلغ", 1.1], ["الحالة", 1], ["", 1.1]].map(([h, w], i) => (
                 <div key={i} style={{ flex: w as number }}>{h}</div>
               ))}
             </div>
@@ -92,7 +94,8 @@ export default function Page() {
                   <div style={{ flex: 0.9, minWidth: 0 }}><Tag kind={METHOD_TAG[i.method]}>{new Set((i.invoice_payments ?? []).map((p) => p.method)).size > 1 ? "مقسّم" : PAY_LABEL[i.method]}</Tag></div>
                   <div style={{ flex: 1.1, minWidth: 0 }}><Amount n={i.total} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}><Status i={i} /></div>
-                  <div className={css.tight} style={{ flex: 0.4, minWidth: 0 }}>
+                  <div className={css.tight} style={{ flex: 1.1, minWidth: 0, display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    <InvoiceActions compact inv={i} onPrint={receipt.print} extras={{ staff: i.created_by ? names.data?.[i.created_by] : null }} />
                     <button type="button" aria-label="عرض الفاتورة" onClick={() => setOpen(i)} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="eye" color={C.accent} size={16} /></button>
                   </div>
                 </div>
@@ -108,6 +111,7 @@ export default function Page() {
           </div>
         )}
       </div>
+      {receipt.node}
       <InvoiceDialog inv={open} names={names.data ?? {}} onClose={() => setOpen(null)} />
     </AdminShell>
   );

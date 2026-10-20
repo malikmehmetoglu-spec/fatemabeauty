@@ -2,11 +2,12 @@
 
 /** P_Booked.dc.html — booking success, showing the real appointment (?id=). */
 import { Fragment, type CSSProperties } from "react";
-import { PhoneScreen } from "@/components/shell";
+import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, EmptyState, Icon, IconButton, Loading, PrimaryButton, SecondaryButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { getAppointment, STATUS_KIND, STATUS_LABEL, timeOf, useSearch } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate } from "@/lib/format";
 import { C, CARD, DONE_GRAD, GLASS } from "@/lib/tokens";
@@ -39,6 +40,7 @@ export default function BookedPage() {
     <span aria-hidden style={abs(top, left, { width: size, height: size, borderRadius: "50%", background: color })} />
   );
 
+  if (s.guest) return <PhoneScreen><TopBar title="تمّ الحجز" back={R.Main} /><GuestCard icon="cal" what="مواعيدكِ" /></PhoneScreen>;
   if (s.loading || !s.patient || !q || (id && loading)) return <PhoneScreen><Loading /></PhoneScreen>;
   if (!a) return (
     <PhoneScreen>

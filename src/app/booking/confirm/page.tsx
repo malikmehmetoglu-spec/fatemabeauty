@@ -9,6 +9,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { getService, listRooms, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { book, bookingError, cancelMine, dateOfKey, freeChangeHours, myPackagesFor, useSearch } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate, dayName, money } from "@/lib/format";
 import { C, DARK } from "@/lib/tokens";
@@ -29,6 +30,7 @@ export default function ConfirmPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  if (s.guest) return <PhoneScreen><TopBar title="تأكيد الحجز" back={R.Booking} /><GuestCard icon="cal" what="تفاصيل حجزكِ" /></PhoneScreen>;
   if (s.loading || !s.patient || !q) return <PhoneScreen><Loading /></PhoneScreen>;
   const service = svc.data;
   const sp = (team.data ?? []).find((t) => t.id === spId) ?? null;

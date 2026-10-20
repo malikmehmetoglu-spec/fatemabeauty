@@ -8,6 +8,7 @@ import { R } from "@/lib/routes";
 import { Icon, IconButton, Logo } from "@/components/ui";
 import Link from "next/link";
 import ps from "./phone.module.css";
+import { GuestPill, GuestSheetHost } from "@/components/guest";
 
 /** Soft lilac + white halos behind the content (design-system §3). */
 export function Blobs({ width = 390 }: { width?: number }) {
@@ -133,7 +134,7 @@ const SIDE: [string, TabLabel, string, string[]][] = [
 /** Desktop (≥1024px) navigation for the patient app — replaces the floating tab bar. Right side (RTL). */
 function SideNav({ active }: { active?: TabLabel }) {
   const path = usePathname() ?? "";
-  const { patient } = useSession();
+  const { patient, guest } = useSession();
   const on = active ?? SIDE.find(([, , , ps_]) => ps_.some((p) => path.startsWith(p)))?.[1];
   return (
     <nav aria-label="التنقل الرئيسي" className={ps.side}>
@@ -152,6 +153,7 @@ function SideNav({ active }: { active?: TabLabel }) {
           <span className={ps.sideUserText}><b>{patient.name || "حسابي"}</b><small dir="ltr" className="latin">{patient.phone}</small></span>
         </Link>
       )}
+      {guest && <div style={{ marginTop: "auto", paddingTop: 14 }}><GuestPill compact /></div>}
     </nav>
   );
 }
@@ -192,6 +194,7 @@ export function PhoneScreen({
       </main>
       {app && <SideNav active={tab} />}
       {tab && <TabBar active={tab} />}
+      <GuestSheetHost />
     </div>
   );
 }

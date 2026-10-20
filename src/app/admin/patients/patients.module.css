@@ -17,3 +17,6 @@
   .table { display: none; }
   .cards { display: flex; flex-direction: column; gap: 10px; }
 }
+
+.danger { border-color: #F2D3DE; }
+.danger:hover { background: #FBEAF1; border-color: #E9B7C8; }

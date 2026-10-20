@@ -10,6 +10,7 @@ import { useQuery } from "@/lib/db/query";
 import { listServices } from "@/lib/db/catalog";
 import { dateOfKey, getHours, joinWaitlist, myWaitlist, openDays, setWaitStatus, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
+import { askLogin } from "@/components/guest";
 import { arDate, dayName } from "@/lib/format";
 import { C, CARD, DARK, SELECTED } from "@/lib/tokens";
 
@@ -35,12 +36,13 @@ export default function WaitlistPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => { if (q && day === null) setDay(q.get("day") || ""); }, [q, day]);
-  if (s.loading || !s.patient || !q) return <PhoneScreen><Loading /></PhoneScreen>;
+  if (s.loading || (!s.patient && !s.guest) || !q) return <PhoneScreen><Loading /></PhoneScreen>;
   const svc = (services.data ?? []).find((x) => x.key === q.get("service")) ?? null;
   const near = hours.data ? openDays(hours.data, 6) : [];
   const spId = q.get("sp");
 
   async function join() {
+    if (!s.patient) { askLogin({ booking: true, text: "سجّلي الدخول لنضيفكِ إلى قائمة الانتظار ونتواصل معكِ إذا فرغ موعد." }); return; }
     setBusy(true); setError("");
     try {
       await joinWaitlist({ patient_id: s.patient!.id, service_key: svc?.key ?? null, specialist_id: spId, preferred_day: day || null, part });

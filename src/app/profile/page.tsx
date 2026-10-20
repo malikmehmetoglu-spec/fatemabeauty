@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { refreshSession, useRequirePatient } from "@/lib/supabase/session";
 import { invalidate } from "@/lib/db/query";
 import { PhoneScreen, TopBar } from "@/components/shell";
+import { GuestCard } from "@/components/guest";
 import { Circ, Icon, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, CARD, DONE_GRAD, SELECTED } from "@/lib/tokens";
@@ -31,7 +32,7 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { patient } = useRequirePatient();
+  const { patient, guest } = useRequirePatient();
   const [existing, setExisting] = useState<{ kind: string; name: string }[]>([]);
   const filled = useRef(false);
   // Editing an existing profile (from «حسابي»): start from what is already saved instead of wiping it.
@@ -86,6 +87,7 @@ export default function ProfilePage() {
   const [answers, setAnswers] = useState<Record<string, string>>({ preg: "no", iso: "no" });
   const [consent, setConsent] = useState(true);
 
+  if (guest) return <PhoneScreen><TopBar title="ملفي" back={R.Account} /><GuestCard what="ملفكِ الصحي" /></PhoneScreen>;
   return (
     <PhoneScreen auth gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">
       <TopBar title={patient?.name ? "ملفي" : "إكمال الملف"} back={patient?.name ? R.Account : R.Main} />

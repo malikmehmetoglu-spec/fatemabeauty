@@ -9,6 +9,7 @@ import { R } from "@/lib/routes";
 import { invalidate, useQuery } from "@/lib/db/query";
 import { getAppointment, myQueue, timeOf } from "@/lib/db/appointments";
 import { supabase } from "@/lib/supabase/client";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, SH } from "@/lib/tokens";
 import { SpecialistAvatar } from "../booking/SpecialistAvatar";
@@ -29,6 +30,7 @@ export default function QueuePage() {
     return () => { clearInterval(t); supabase.removeChannel(ch); };
   }, [s.patient]);
 
+  if (s.guest) return <PhoneScreen><TopBar title="موعدي اليوم" back={R.Main} /><GuestCard icon="clock" what="دوركِ في المركز" /></PhoneScreen>;
   if (s.loading || !s.patient || q.loading) return <PhoneScreen><Loading /></PhoneScreen>;
   const me = q.data;
   if (!me) return (

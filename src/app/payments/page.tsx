@@ -7,17 +7,19 @@ import { useQuery } from "@/lib/db/query";
 import { collected, myInvoices, myPackages, outstanding, PAY_LABEL } from "@/lib/db/finance";
 import { AR_MONTHS } from "@/lib/data";
 import { arDate, dayKey, dayName, money } from "@/lib/format";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK, ICON_FILL } from "@/lib/tokens";
 
 const stat = { flex: 1, minWidth: 0, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 18, padding: "8px 12px", lineHeight: 1.35 } as const;
 
 export default function PaymentsPage() {
-  const { loading: sLoading, patient } = useRequirePatient();
+  const { loading: sLoading, patient, guest } = useRequirePatient();
   const pid = patient?.id ?? null;
   const invs = useQuery(["invoices", "mine", pid], () => myInvoices(pid as string), { enabled: !!pid });
   const pkgs = useQuery(["patients", "packages", pid], () => myPackages(pid as string), { enabled: !!pid });
 
+  if (guest) return <PhoneScreen><TopBar title="مدفوعاتي" back="/account/" /><GuestCard icon="card" what="فواتيركِ وباقاتكِ" /></PhoneScreen>;
   if (sLoading || !patient) return <PhoneScreen><TopBar title="مدفوعاتي" /><Loading /></PhoneScreen>;
 
   const list = invs.data ?? [];

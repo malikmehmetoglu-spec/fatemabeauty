@@ -137,3 +137,17 @@ export function useMe() {
   const q = useQuery(["me", id], () => getPatient(id), { enabled: !!id });
   return { me: q.data ?? null, loading: s.loading || (!!id && q.loading), error: q.error, signedOut: !s.loading && !s.patient };
 }
+
+/** Deletes a patient file that has no history. Throws «HISTORY» when appointments/invoices/etc. reference her. */
+export async function deletePatient(id: string) {
+  await supabase.from("app_installs").update({ patient_id: null }).eq("patient_id", id);
+  await supabase.from("notifications").delete().eq("patient_id", id);
+  await supabase.from("patient_conditions").delete().eq("patient_id", id);
+  const { error, count } = await supabase.from("patients").delete({ count: "exact" }).eq("id", id);
+  if (error) {
+    if (error.code === "23503" || /foreign key/i.test(error.message)) throw new Error("HISTORY");
+    throw new Error(error.message);
+  }
+  if (!count) throw new Error("NOT_ALLOWED");
+  invalidate("patients");
+}

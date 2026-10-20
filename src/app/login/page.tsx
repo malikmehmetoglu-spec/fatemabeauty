@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "@/lib/supabase/session";
+import { setGuest, useSession } from "@/lib/supabase/session";
 import { useRouter } from "next/navigation";
 import { normalizePhone, sendCode } from "@/lib/supabase/phoneAuth";
 import { DeskHeading, PhoneScreen, phoneOnly } from "@/components/shell";
@@ -22,6 +22,13 @@ export default function LoginPage() {
     const n = new URLSearchParams(window.location.search).get("next");
     router.replace(n && n.startsWith("/") && !n.startsWith("//") ? n : patient.name ? R.Main : R.P_Profile);
   }, [patient, router]);
+  /** «المتابعة كزائرة»: browse the app without an account (no data access, actions ask to sign in). */
+  function asGuest() {
+    setGuest(true);
+    const n = new URLSearchParams(window.location.search).get("next");
+    const ok = n && n.startsWith("/") && !n.startsWith("//") && !n.startsWith("/admin") && !n.startsWith("/login");
+    router.push(ok ? n : R.Main);
+  }
   async function next() {
     setError("");
     const p = normalizePhone(phone);
@@ -57,6 +64,9 @@ export default function LoginPage() {
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
         {error && <div role="alert" style={{ fontSize: 13.5, fontWeight: 600, color: C.danger, background: "#FBEAF1", borderRadius: 14, padding: "10px 14px", textAlign: "center" }}>{error}</div>}
         <PrimaryButton onClick={next} disabled={busy}>{busy ? "جارٍ الإرسال…" : "متابعة"}</PrimaryButton>
+        <button type="button" onClick={asGuest} style={{ height: 50, borderRadius: 25, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.55)", color: C.accent, fontFamily: "inherit", fontSize: 15.5, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
+          <Icon name="user" color={C.accent} size={17} stroke={1.8} />المتابعة كزائرة
+        </button>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, color: C.sub2, textAlign: "center" }}>
           <Icon name="lock" color={C.muted} size={14} />بياناتكِ الصحية محمية ولا يطّلع عليها إلا فريق المركز
         </div>

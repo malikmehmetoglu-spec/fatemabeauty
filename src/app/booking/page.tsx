@@ -11,6 +11,7 @@ import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 import { appSlots, bookingWeekdays, getHours, openDays, provides, serviceProviders, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
+import { askLogin } from "@/components/guest";
 import { AR_MONTHS, initials } from "@/lib/data";
 import { dayName } from "@/lib/format";
 import { C, CARD, GLASS } from "@/lib/tokens";
@@ -63,7 +64,7 @@ export default function BookingPage() {
   const slots = busy.data ?? [];
   useEffect(() => { setTime(null); }, [svcKey, sp, day]);
 
-  if (s.loading || !s.patient) return <PhoneScreen><Loading /></PhoneScreen>;
+  if (s.loading || (!s.patient && !s.guest)) return <PhoneScreen><Loading /></PhoneScreen>;
   const loading = services.loading || hours.loading || team.loading;
   const error = services.error || hours.error || team.error || busy.error;
   const replace = q?.get("replace") ?? "";
@@ -161,7 +162,12 @@ export default function BookingPage() {
               )}
 
               <div style={{ fontSize: 13, color: C.sub2, margin: "16px 0 8px" }}>اختاري الوقت</div>
-              {busy.loading ? <Loading label="نبحث عن الأوقات المتاحة…" style={{ padding: 12 }} /> : slots.length === 0 ? (
+              {s.guest ? (
+                <div style={{ ...CARD, borderRadius: 20, padding: "14px 16px", fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>
+                  تظهر الأوقات المتاحة بعد تسجيل الدخول، أو احجزي مباشرة عبر{" "}
+                  <Link href="/book/" style={{ color: C.accent, fontWeight: 700 }}>رابط الحجز</Link>.
+                </div>
+              ) : busy.loading ? <Loading label="نبحث عن الأوقات المتاحة…" style={{ padding: 12 }} /> : slots.length === 0 ? (
                 <div style={{ ...CARD, borderRadius: 20, padding: "14px 16px", fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>
                   لا أوقات متاحة في هذا اليوم.{" "}
                   {svc && curDay && <Link href={`${R.P_Waitlist}?service=${svc.key}&day=${curDay}${sp ? `&sp=${sp}` : ""}`} style={{ color: C.accent, fontWeight: 700 }}>انضمي لقائمة الانتظار</Link>}
@@ -174,7 +180,9 @@ export default function BookingPage() {
                   ))}
                 </div>
               )}
-              <PrimaryButton href={next} disabled={!next} style={{ marginTop: 18, ...(next ? {} : { opacity: 0.55, pointerEvents: "none" }) }}>{replace ? "متابعة لتغيير الموعد" : "احجزي الجلسة"}</PrimaryButton>
+              {s.guest ? (
+                <PrimaryButton onClick={() => askLogin({ booking: true, text: "سجّلي الدخول لتأكيد حجزكِ باسمكِ، أو احجزي الآن عبر رابط الحجز دون حساب." })} style={{ marginTop: 18 }}>احجزي الجلسة</PrimaryButton>
+              ) : <PrimaryButton href={next} disabled={!next} style={{ marginTop: 18, ...(next ? {} : { opacity: 0.55, pointerEvents: "none" }) }}>{replace ? "متابعة لتغيير الموعد" : "احجزي الجلسة"}</PrimaryButton>}
             </div>
           </>
         )}

@@ -8,6 +8,7 @@ import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, IconButton, Loading, Prima
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { ACTIVE, listMine, STATUS_KIND, STATUS_LABEL, timeOf, type Appointment } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_DAYS, AR_MONTHS } from "@/lib/data";
 import { arDate, dayKey } from "@/lib/format";
@@ -58,7 +59,7 @@ export default function AppointmentsPage() {
         ))}
       </div>
 
-      {s.loading || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل مواعيدكِ: {error}</ErrorNote> : tab === "up" ? (
+      {s.guest ? <GuestCard icon="cal" what="مواعيدكِ" /> : s.loading || loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل مواعيدكِ: {error}</ErrorNote> : tab === "up" ? (
         <div className={next ? deskGrid : undefined} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
           {!next ? (
             <EmptyState icon="cal" title="لا مواعيد قادمة" text="احجزي جلستكِ القادمة وستظهر هنا مع تفاصيلها ورمز تسجيل الوصول."

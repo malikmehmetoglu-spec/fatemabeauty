@@ -9,6 +9,8 @@ import { C, CARD, SHB } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
 import { getTiers, prefsOf, signOut, tierFor, updatePatient, useMe, type NotifyPrefs } from "@/lib/db/patients";
 import { Wait } from "./Wait";
+import { GuestCard, GuestPill } from "@/components/guest";
+import { useSession } from "@/lib/supabase/session";
 
 function Row({ icon, title, sub, href, right, last }: { icon: string; title: string; sub?: string; href?: string; right?: ReactNode; last?: boolean }) {
   const style = { display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: last ? undefined : `1px solid ${C.line}` } as const;
@@ -30,6 +32,7 @@ const box = { ...CARD, border: "none", position: "relative", borderRadius: 26, p
 /** Account.dc.html — «حسابي» root tab. */
 export default function AccountPage() {
   const { me, loading, error } = useMe();
+  const { guest } = useSession();
   const { data: tiers } = useQuery(["settings", "tiers"], getTiers);
   const tier = me ? tierFor(me.points, tiers ?? []) : null;
   const prefs = prefsOf(me?.notify);
@@ -44,7 +47,18 @@ export default function AccountPage() {
   return (
     <PhoneScreen tab="حسابي">
       <TopBar title="حسابي" />
-      {!me ? <Wait loading={loading} error={error} /> : (
+      {guest ? (
+        <>
+          <GuestPill />
+          <GuestCard what="ملفكِ ونقاطكِ ومدفوعاتكِ" />
+          <div style={box}>
+            <Row icon="sparkle" title="الخدمات والأسعار" href={R.P_Services} />
+            <Row icon="gift" title="الباقات وبطاقات الهدايا" href={R.Packages} />
+            <Row icon="bag" title="المتجر" href={R.P_Store} />
+            <Row icon="help" title="المساعدة والأسئلة الشائعة" href={R.P_Help} last />
+          </div>
+        </>
+      ) : !me ? <Wait loading={loading} error={error} /> : (
         <>
           <Link href={R.P_Profile} style={{ ...CARD, border: "none", position: "relative", display: "flex", alignItems: "center", gap: 14, borderRadius: 28, padding: "14px 16px" }}>
             <span style={{
@@ -82,12 +96,12 @@ export default function AccountPage() {
         </>
       )}
 
-      <button type="button" onClick={logout} style={{
+      {!guest && <button type="button" onClick={logout} style={{
         marginTop: "auto", position: "relative", height: 54, borderRadius: 27, border: "1px solid #E9D6EE", background: C.white, boxShadow: SHB,
         color: C.danger, fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%",
       }}>
         <Icon name="logout" color={C.danger} size={18} stroke={1.9} />تسجيل الخروج
-      </button>
+      </button>}
     </PhoneScreen>
   );
 }

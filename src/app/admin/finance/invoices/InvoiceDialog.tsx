@@ -7,7 +7,8 @@ import { customerName, financeError, outstanding, PAY_LABEL, voidInvoice, type I
 import { arDate, clock, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import { C } from "@/lib/tokens";
-import { Amount, DeepBtn, LATIN, LightBtn, Receipt } from "../parts";
+import { Amount, DeepBtn, LATIN, LightBtn } from "../parts";
+import { InvoiceActions, useInvoicePrint } from "../InvoicePrint";
 import { PayDialog } from "../receivables/PayDialog";
 
 export function InvoiceDialog({ inv, names, onClose }: { inv: InvoiceRow | null; names: Record<string, string>; onClose: () => void }) {
@@ -18,6 +19,7 @@ export function InvoiceDialog({ inv, names, onClose }: { inv: InvoiceRow | null;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const receipt = useInvoicePrint();
   if (!inv) return null;
   const cashPaid = (inv.invoice_payments ?? []).filter((p) => p.method === "cash").reduce((s, p) => s + p.amount, 0);
   const close = () => { setVoiding(false); setReason(""); setErr(null); onClose(); };
@@ -55,19 +57,19 @@ export function InvoiceDialog({ inv, names, onClose }: { inv: InvoiceRow | null;
           {!inv.void && outstanding(inv) > 0 && <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: "#8A5A12" }}>المتبقي {money(outstanding(inv))}{inv.due_on ? ` · يستحق ${arDate(new Date(inv.due_on), { day: false })}` : ""}</div>}
         </div>
         {inv.note && <div style={{ fontSize: 13, color: C.sub, background: C.tint, borderRadius: 14, padding: "8px 12px" }}>{inv.note}</div>}
-        {inv.void && <div style={{ fontSize: 13, color: C.danger, fontWeight: 600 }}>فاتورة ملغاة{inv.void_at ? ` · ${arDate(new Date(inv.void_at), { day: false })}` : ""}{inv.refund_cash ? ` · أُعيد ${money(inv.refund_cash)} نقداً من الصندوق` : ""}</div>}
+        {inv.void && <div style={{ fontSize: 13, color: C.danger, fontWeight: 600 }}>فاتورة ملغاة{inv.void_at ? ` · ${arDate(new Date(inv.void_at), { day: false })}` : ""}{inv.refund_cash ? ` · أُعيد ${money(inv.refund_cash)} نقداً` : ""}</div>}
         {voiding && <TextInput label="سبب الإلغاء" required value={reason} onChange={setReason} placeholder="مثلاً: خطأ في الإدخال" />}
         {err && <ErrorNote>{err}</ErrorNote>}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <LightBtn icon="print" onClick={() => window.print()}>طباعة</LightBtn>
+          <InvoiceActions inv={inv} onPrint={receipt.print} extras={{ staff: inv.created_by ? names[inv.created_by] : null }} />
           {!inv.void && outstanding(inv) > 0 && <DeepBtn icon="cash" onClick={() => setPaying(true)} style={{ height: 40 }}>تسجيل دفعة</DeepBtn>}
           {isAdmin && !inv.void && (voiding
             ? <LightBtn icon="x" onClick={doVoid} disabled={busy} style={{ color: C.danger }}>{busy ? "جارٍ الإلغاء…" : "تأكيد الإلغاء"}</LightBtn>
             : <LightBtn icon="trash" onClick={() => setVoiding(true)} style={{ color: C.danger }}>إلغاء الفاتورة</LightBtn>)}
         </div>
-        {isAdmin && voiding && <div style={{ fontSize: 12, color: C.sub2 }}>الإلغاء يعيد المنتجات إلى المخزون ويعيد جلسة الباقة ويلغي الباقة المباعة إن لم تُستخدم{cashPaid ? `، ويُسجَّل إرجاع ${money(cashPaid)} نقداً من الوردية المفتوحة` : ""}. تبقى الفاتورة في السجل.</div>}
-        {!paying && <Receipt inv={inv} issuer={inv.created_by ? names[inv.created_by] : undefined} />}
+        {isAdmin && voiding && <div style={{ fontSize: 12, color: C.sub2 }}>الإلغاء يعيد المنتجات إلى المخزون ويعيد جلسة الباقة ويلغي الباقة المباعة إن لم تُستخدم{cashPaid ? `، ويُسجَّل إرجاع ${money(cashPaid)} نقداً` : ""}. تبقى الفاتورة في السجل.</div>}
       </Modal>
+      {receipt.node}
       <PayDialog inv={paying ? inv : null} onClose={() => { setPaying(false); close(); }} />
     </>
   );

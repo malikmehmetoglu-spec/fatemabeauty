@@ -8,17 +8,18 @@ import { R } from "@/lib/routes";
 import { arDate, clock } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getConsultService, myConsults } from "@/lib/db/consult";
+import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, SH } from "@/lib/tokens";
 
 const STATUS: Record<string, string> = { pending: "بانتظار التأكيد", confirmed: "مؤكدة", checked_in: "حاضرة", in_session: "جارية", done: "منتهية", no_show: "لم تحضر" };
 
 export default function ConsultPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const { data: svc, loading: l1, error: e1 } = useQuery(["consult", "service"], getConsultService);
   const { data: list, loading: l2, error: e2 } = useQuery(["consult", "mine", svc?.key, patient?.id], () => myConsults(svc!.key), { enabled: !!svc && !!patient });
 
-  if (sLoading || !patient || l1 || (svc && l2)) return <PhoneScreen><TopBar title="استشارة أونلاين" /><Loading /></PhoneScreen>;
+  if (sLoading || (!patient && !guest) || l1 || (svc && l2)) return <PhoneScreen><TopBar title="استشارة أونلاين" /><Loading /></PhoneScreen>;
   const now = Date.now();
   const upcoming = (list ?? []).filter((a) => new Date(a.starts_at).getTime() + a.minutes * 6e4 > now && a.status !== "done").reverse();
   const past = (list ?? []).filter((a) => !upcoming.includes(a));

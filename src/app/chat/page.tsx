@@ -6,6 +6,7 @@ import { Chip, EmptyState, ErrorNote, Icon, IconButton, Loading } from "@/compon
 import { R } from "@/lib/routes";
 import { arDate, clock, dayKey } from "@/lib/format";
 import { listMessages, sendMessage, subscribeMessages, type Message } from "@/lib/db/consult";
+import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, GLASS, ICON_FILL } from "@/lib/tokens";
 
@@ -22,7 +23,7 @@ const bubble = (m: Msg): CSSProperties => ({
 
 /** P_Chat.dc.html — chat with the centre team (messages table, live via Realtime). */
 export default function ChatPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const [rows, setRows] = useState<Message[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -39,7 +40,8 @@ export default function ChatPage() {
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }); }, [rows]);
 
   const send = async (text: string) => {
-    if (!patient || !text.trim() || busy) return;
+    if (!text.trim() || busy) return;
+    if (!patient) { askLogin({ text: "سجّلي الدخول لتصل رسالتكِ إلى فريق المركز ويردّ عليكِ هنا." }); return; }
     setBusy(true); setErr(null);
     try { await sendMessage(patient.id, text); setDraft(""); setRows(await listMessages(patient.id)); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
@@ -64,7 +66,7 @@ export default function ChatPage() {
 
       {err && <ErrorNote>{err}</ErrorNote>}
       <div ref={logRef} role="log" aria-label="المحادثة" style={{ flexGrow: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, margin: "0 -20px", padding: "0 20px 10px" }}>
-        {(sLoading || !patient || rows === null) && !err ? <Loading style={{ marginTop: "auto" }} /> : msgs.length === 0 ? (
+        {guest ? <GuestCard icon="msg" what="محادثتكِ مع فريق المركز" style={{ marginTop: "auto" }} /> : (sLoading || !patient || rows === null) && !err ? <Loading style={{ marginTop: "auto" }} /> : msgs.length === 0 ? (
           <EmptyState compact icon="msg" title="لا توجد رسائل بعد" text="اكتبي سؤالكِ عن بشرتكِ أو موعدكِ، وسيرد عليكِ فريق المركز هنا." style={{ marginTop: "auto" }} />
         ) : <div style={{ marginTop: "auto" }} />}
         {msgs.map((m, i) => {

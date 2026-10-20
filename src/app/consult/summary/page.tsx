@@ -8,13 +8,14 @@ import { R } from "@/lib/routes";
 import { arDate, clock, dayKey, dayRange } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getConsultService, myConsults, myPrescriptionsBetween } from "@/lib/db/consult";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD } from "@/lib/tokens";
 
 type RxItem = { name?: string; product?: string; how?: string; usage?: string; note?: string };
 
 export default function ConsultSummaryPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const [apptId, setApptId] = useState<string | null | undefined>(undefined);
   useEffect(() => { setApptId(new URLSearchParams(window.location.search).get("appointment")); }, []);
   const { data: svc, loading: l1 } = useQuery(["consult", "service"], getConsultService);
@@ -23,6 +24,7 @@ export default function ConsultSummaryPage() {
   const range = appt ? dayRange(dayKey(new Date(appt.starts_at))) : null;
   const { data: rx } = useQuery(["consult", "rx", range?.from], () => myPrescriptionsBetween(range!.from, range!.to), { enabled: !!range });
 
+  if (guest) return <PhoneScreen><TopBar title="ملخص الاستشارة" back={R.Consult} /><GuestCard icon="cam" what="ملخصات استشاراتكِ" /></PhoneScreen>;
   if (sLoading || !patient || l1 || (svc && (l2 || apptId === undefined))) return <PhoneScreen><TopBar title="ملخص الاستشارة" back={R.Consult} /><Loading /></PhoneScreen>;
 
   if (!appt) return (

@@ -8,6 +8,7 @@ import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, IconButton, Loading, Prima
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { freeChangeHours, getAppointment, STATUS_KIND, STATUS_LABEL, timeOf, useSearch } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_DAYS, AR_MONTHS } from "@/lib/data";
 import { dayKey, money } from "@/lib/format";
@@ -24,6 +25,7 @@ export default function AppointmentDetailPage() {
   const { data: a, loading } = useQuery(["appointments", "one", id], () => getAppointment(id), { enabled: !!id && !!s.patient });
   const policy = useQuery(["appointments", "policy"], freeChangeHours);
 
+  if (s.guest) return <PhoneScreen><TopBar title="تفاصيل الموعد" back={R.P_Appointments} /><GuestCard icon="cal" what="مواعيدكِ" /></PhoneScreen>;
   if (s.loading || !s.patient || !q || (id && loading)) return <PhoneScreen><Loading /></PhoneScreen>;
   if (!a) return (
     <PhoneScreen gap={12}>

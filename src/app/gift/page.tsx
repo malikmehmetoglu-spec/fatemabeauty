@@ -9,6 +9,7 @@ import { money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { listServices } from "@/lib/db/catalog";
 import { submitGift } from "@/lib/db/marketing";
+import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK } from "@/lib/tokens";
 import { fieldStyle, toggleChip } from "../consult/ui";
@@ -20,7 +21,7 @@ const chip = (on: boolean): CSSProperties => ({
 });
 
 export default function GiftCardPage() {
-  const { patient, loading: sLoading } = useRequirePatient();
+  const { patient, guest, loading: sLoading } = useRequirePatient();
   const { data: services, loading } = useQuery(["catalog", "services"], listServices);
   const sessions = (services ?? []).filter((s) => s.price > 0);
   const [mode, setMode] = useState<Mode>("s");
@@ -38,7 +39,8 @@ export default function GiftCardPage() {
   const ok = !!name.trim() && value > 0;
 
   const send = async () => {
-    if (!patient || !ok) return;
+    if (!ok) return;
+    if (!patient) { askLogin({ text: "سجّلي الدخول لنرسل بطاقة الهدية باسمكِ." }); return; }
     setBusy(true); setErr(null);
     try {
       await submitGift({ patient_id: patient.id, recipient_name: name.trim(), recipient_phone: phone, amount: value, service_key: mode === "s" ? key : null, message: msg });
@@ -47,7 +49,7 @@ export default function GiftCardPage() {
     finally { setBusy(false); }
   };
 
-  if (sLoading || !patient || loading) return <PhoneScreen><TopBar title="بطاقة هدية" back={R.Packages} /><Loading /></PhoneScreen>;
+  if (sLoading || (!patient && !guest) || loading) return <PhoneScreen><TopBar title="بطاقة هدية" back={R.Packages} /><Loading /></PhoneScreen>;
   if (sent) return (
     <PhoneScreen>
       <TopBar title="بطاقة هدية" back={R.Packages} />

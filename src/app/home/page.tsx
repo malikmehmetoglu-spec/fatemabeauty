@@ -10,6 +10,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { useSession } from "@/lib/supabase/session";
+import { GuestPill } from "@/components/guest";
 import { ACTIVE, listMine, STATUS_LABEL } from "@/lib/db/appointments";
 import { listMyNotifications } from "@/lib/db/patients";
 import { arDate, clock } from "@/lib/format";
@@ -22,7 +23,7 @@ import { C, CARD, DARK, GLASS, SH, SHB } from "@/lib/tokens";
 export default function HomePage() {
   const { data: services, loading, error } = useQuery(["catalog", "services"], listServices);
   const { data: team } = useQuery(["catalog", "specialists"], listSpecialists);
-  const { patient } = useSession();
+  const { patient, guest } = useSession();
   const first = (patient?.name ?? "").trim().split(/\s+/)[0];
   const pid = patient?.id ?? "";
   const { data: mine } = useQuery(["appointments", "mine", pid], () => listMine(pid), { enabled: !!pid });
@@ -55,6 +56,7 @@ export default function HomePage() {
       </header>
 
       <p className={phoneOnly} style={{ margin: 0, padding: "0 22px 6px", fontSize: 15, color: C.sub, position: "relative" }}>{first ? `أهلاً ${first}، ` : "أهلاً بكِ، "}بشرتكِ تستحق يوماً جميلاً</p>
+      {guest && <div className={phoneOnly} style={{ margin: "8px 22px 0", position: "relative" }}><GuestPill /></div>}
       {next && (
         <Link href={`${R.P_AppointmentDetail}?id=${next.id}`} style={{ ...DARK, margin: "10px 22px 0", borderRadius: 26, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, position: "relative", boxShadow: "0 14px 30px rgba(123,70,135,0.30)" }}>
           <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: "rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>

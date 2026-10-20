@@ -9,6 +9,7 @@ import { Circ, DarkGlow, EmptyState, ErrorNote, Icon, Loading, PrimaryButton, Se
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { bookingError, cancelMine, getAppointment, timeOf, useSearch } from "@/lib/db/appointments";
+import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK, SH_SOFT, SHEEN } from "@/lib/tokens";
 import { arDate } from "@/lib/format";
@@ -47,6 +48,7 @@ export default function CancelConfirmPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  if (s.guest) return <PhoneScreen><TopBar title="إلغاء الموعد" back={R.P_Appointments} /><GuestCard icon="cal" what="مواعيدكِ" /></PhoneScreen>;
   if (s.loading || !s.patient || !q || (id && loading)) return <PhoneScreen><Loading /></PhoneScreen>;
   const can = a && (a.status === "pending" || a.status === "confirmed") && new Date(a.starts_at).getTime() > Date.now();
   if (!a || !can) return (
