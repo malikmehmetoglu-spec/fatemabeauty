@@ -18,6 +18,7 @@ import {
 import { C } from "@/lib/tokens";
 import s from "./book.module.css";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
+import CardFlow, { usePhoneCards } from "./CardFlow";
 
 type Kind = "session" | "consult";
 const DAYS_AHEAD = 14;
@@ -67,6 +68,7 @@ export default function PublicBookingPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [result, setResult] = useState<PubResult | null>(null);
+  const phoneCards = usePhoneCards();
 
   const refs = { 1: useRef<HTMLElement>(null), 2: useRef<HTMLElement>(null), 3: useRef<HTMLElement>(null), 4: useRef<HTMLElement>(null), top: useRef<HTMLDivElement>(null) };
   const goTo = (r: React.RefObject<HTMLElement | HTMLDivElement | null>) => setTimeout(() => r.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
@@ -204,6 +206,14 @@ export default function PublicBookingPage() {
   const contact = info?.centre?.whatsapp || info?.centre?.phone || null;
   const waLink = info?.centre?.whatsapp ? `https://wa.me/${info.centre.whatsapp.replace(/\D/g, "")}` : null;
   const siteHref = typeof window !== "undefined" && window.location.hostname.endsWith(DOMAIN) ? `https://${DOMAIN}/` : R.Site;
+
+  // phones: card deck (CardFlow.tsx) — same state and rules; BOOKING_MOBILE_FLOW = "classic" or ?classic=1 restores the layout below
+  if (phoneCards) return <CardFlow ctx={{
+    info, loadErr, load, now, kind, service, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
+    cards, curPubCat, consultCat, sessionCats, sessionServices, consultServices, kindServices, svcCat, people, noProvider, chosenPerson,
+    days, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
+    contact, waLink, siteHref,
+  }} />;
 
   return (
     <div className={s.page} dir="rtl">
