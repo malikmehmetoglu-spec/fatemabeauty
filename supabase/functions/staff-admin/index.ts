@@ -4,6 +4,7 @@
 //   { action: "create", staff_id, login, password }    → creates auth user, links staff.user_id
 //   { action: "password", staff_id, password }         → sets a new password
 //   { action: "disable" | "enable", staff_id }         → bans / unbans the login and sets staff.active
+//   { action: "delete", staff_id }                     → deletes a member with no work history (+ her login)
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = {
@@ -52,6 +53,20 @@ Deno.serve(async (req) => {
       const { error: le } = await admin.from("staff").update({ user_id: created.user.id, email: login, username }).eq("id", target.id);
       if (le) { await admin.auth.admin.deleteUser(created.user.id); return json({ error: le.message }, 400); }
       return json({ ok: true, email: login });
+    }
+
+    if (action === "delete") {
+      if (target.id === me.id) return json({ error: "لا يمكنكِ حذف حسابكِ" }, 400);
+      if (target.role === "owner") return json({ error: "لا يمكن حذف حساب المدير العام" }, 403);
+      const refs = [["appointments", "specialist_id"], ["session_notes", "author_id"], ["prescriptions", "author_id"], ["messages", "staff_id"], ["waitlist", "specialist_id"]];
+      for (const [t, c] of refs) {
+        const { count } = await admin.from(t).select("id", { count: "exact", head: true }).eq(c, target.id);
+        if ((count ?? 0) > 0) return json({ error: "لهذه الموظفة سجلّ عمل (مواعيد أو ملاحظات أو رسائل)، لذلك لا يمكن حذفها حفاظاً على السجلات. استخدمي «إيقاف» بدلاً من الحذف." }, 409);
+      }
+      const { error: de } = await admin.from("staff").delete().eq("id", target.id);
+      if (de) return json({ error: "تعذّر حذف الموظفة. استخدمي «إيقاف» بدلاً من ذلك." }, 400);
+      if (target.user_id) await admin.auth.admin.deleteUser(target.user_id);
+      return json({ ok: true });
     }
 
     if (!target.user_id) return json({ error: "لا يوجد حساب دخول لهذه الموظفة" }, 400);

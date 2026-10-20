@@ -38,6 +38,12 @@ export default function StaffPage() {
     try { await setStaffActive(s, !s.active); } catch (e) { setMsg(errText(e)); }
   }
 
+  async function deleteMember(s: Staff) {
+    if (!confirm(`حذف «${s.name}» نهائياً مع حساب دخولها؟ لا يمكن التراجع عن الحذف.`)) return;
+    setMsg("");
+    try { await staffAdmin({ action: "delete", staff_id: s.id }); } catch (e) { setMsg(errText(e)); }
+  }
+
   return (
     <AdminShell active="فريق العمل" title="فريق العمل" subtitle={arDate(new Date())}
       actions={canManage ? <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة موظفة</GhostButton> : undefined}>
@@ -53,7 +59,7 @@ export default function StaffPage() {
 
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الفريق: {error}</ErrorNote> : (
         <>
-          {shown.length > 0 && <TeamTable rows={shown} me={me} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onToggle={toggleActive} />}
+          {shown.length > 0 && <TeamTable rows={shown} me={me} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onToggle={toggleActive} onDelete={deleteMember} />}
           {list.length > active.length && (
             <button type="button" onClick={() => setShowInactive((v) => !v)} style={{ alignSelf: "flex-start", border: "none", background: "none", color: C.accent, fontSize: 13.5, fontWeight: 600 }}>
               {showInactive ? "إخفاء الموقوفات" : `إظهار الموقوفات (${list.length - active.length})`}
@@ -73,11 +79,11 @@ export default function StaffPage() {
   );
 }
 
-function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle }: {
-  rows: Staff[]; me: Staff | null; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void;
+function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle, onDelete }: {
+  rows: Staff[]; me: Staff | null; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
 }) {
   return (
-    <DataTable headers={["الموظفة", "الدور", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2.1, 1, 1.1, 1.4, 0.8, 3]} minWidth={1100} rowHeight={64}
+    <DataTable headers={["الموظفة", "الدور", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 0.9, 1.1, 1.3, 0.7, 3.8]} minWidth={1180} rowHeight={64}
       rows={rows.map((s) => [
         <>
           <StaffAvatar s={s} size={42} />
@@ -97,6 +103,7 @@ function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle }: {
             <RowBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} />
             <RowBtn icon="lock" label={s.user_id ? "كلمة المرور" : "إنشاء حساب"} onClick={() => onLogin(s)} />
             {s.id !== me?.id && s.role !== "owner" && <RowBtn icon={s.active ? "pause" : "refresh"} label={s.active ? "إيقاف" : "تفعيل"} color={s.active ? C.danger : C.okDeep} onClick={() => onToggle(s)} />}
+            {s.id !== me?.id && s.role !== "owner" && <RowBtn icon="trash" label="حذف" color={C.danger} onClick={() => onDelete(s)} />}
           </span>
         ) : <span key="b" />,
       ])} />

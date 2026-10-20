@@ -58,7 +58,7 @@ export async function uploadStaffPhoto(file: File) {
 type AdminCall =
   | { action: "create"; staff_id: string; login: string; password: string }
   | { action: "password"; staff_id: string; password: string }
-  | { action: "enable" | "disable"; staff_id: string };
+  | { action: "enable" | "disable" | "delete"; staff_id: string };
 
 /** Calls the «staff-admin» Edge Function (service role on the server; caller must be owner/admin). */
 export async function staffAdmin(body: AdminCall) {
