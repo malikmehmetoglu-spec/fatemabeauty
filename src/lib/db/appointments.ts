@@ -88,6 +88,14 @@ const toHHMM = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${
 export const weekday = (key: string) => new Date(`${key}T12:00:00+03:00`).getUTCDay();
 export const isOpen = (h: Hours, key: string) => h.days.includes(weekday(key));
 
+/**
+ * Weekdays (0 = Sunday) on which a service can be booked: someone who does it works that day (her «أوقات الدوام»,
+ * or the default hours without a schedule). rpc booking_weekdays — same rule as the server's slot grid.
+ */
+export async function bookingWeekdays(service: string, specialist: string | null): Promise<number[]> {
+  return must(await supabase.rpc("booking_weekdays", { p_service: service, p_specialist: specialist ?? undefined })) ?? [];
+}
+
 /** Next `n` open day keys starting today. */
 export function openDays(h: Hours, n: number) {
   const out: string[] = [];

@@ -12,7 +12,7 @@ import {
   book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
 import { getPatient } from "@/lib/db/patients";
-import { listStaffHours, worksAt } from "@/lib/db/staff";
+import { dayWindows, listStaffHours, rangesOn, worksAt } from "@/lib/db/staff";
 import { weekday } from "@/lib/db/appointments";
 import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
@@ -20,6 +20,7 @@ import { CalendarBody } from "../CalendarBoard";
 import css from "../appts.module.css";
 
 type Mode = "existing" | "new" | "walkin";
+const hm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
 export default function BookingModalPage() {
   const router = useRouter();
@@ -76,10 +77,17 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => { setRoom(svc?.room_id ?? ""); setTime(""); }, [svc?.key, svc?.room_id]);
 
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
-  const slots = useMemo(() => (svc && hours.data && busyQ.data ? freeSlots({ ...hours.data, days: [0, 1, 2, 3, 4, 5, 6] }, day, svc.minutes, busyQ.data, room || null, sp || null) : []),
-    [svc, hours.data, busyQ.data, day, room, sp]);
+  // candidate times: the chosen specialist's own hours, or the union of everyone's hours (default hours without a schedule)
+  const slots = useMemo(() => {
+    if (!svc || !hours.data || !busyQ.data || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return [];
+    const rows = staffHours.data ?? [], wd = weekday(day);
+    const ids = [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
+    const wins = sp ? rangesOn(rows, sp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
+    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, svc.minutes, busyQ.data!, room || null, sp || null));
+    return [...new Set(all)].sort();
+  }, [svc, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
-  /** Does the chosen specialist work (her «أوقات الدوام», clipped to the clinic hours) for the whole visit at time t? */
+  /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
     worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + svc.minutes, hours.data);
   const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);

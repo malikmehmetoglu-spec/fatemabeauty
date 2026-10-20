@@ -23,6 +23,13 @@ export async function getPublicInfo(): Promise<PubInfo> {
   return data as unknown as PubInfo;
 }
 
+/** Weekdays (0 = Sunday) on which the service can be booked (someone who does it works that day). rpc booking_weekdays. */
+export async function getBookingWeekdays(service: string, specialist: string | null): Promise<number[]> {
+  const { data, error } = await supabase.rpc("booking_weekdays", { p_service: service, p_specialist: specialist ?? undefined });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as number[];
+}
+
 export async function getPublicSlots(day: string, service: string, specialist: string | null): Promise<PubSlot[]> {
   const { data, error } = await supabase.rpc("public_slots", { p_day: day, p_service: service, p_specialist: specialist ?? undefined });
   if (error) throw new Error(error.message);

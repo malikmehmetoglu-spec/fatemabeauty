@@ -13,7 +13,7 @@ import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
 import { clock, dayKey } from "@/lib/format";
 import { priceLabel } from "@/lib/db/catalog";
 import {
-  getPublicInfo, getPublicSlots, icsFile, nextDays, normalisePhone, publicBook, publicError,
+  getBookingWeekdays, getPublicInfo, getPublicSlots, icsFile, nextDays, normalisePhone, publicBook, publicError,
   type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot,
 } from "@/lib/db/publicBooking";
 import { C } from "@/lib/tokens";
@@ -90,10 +90,24 @@ export default function PublicBookingPage() {
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
 
   const days = useMemo(() => (now ? nextDays(DAYS_AHEAD) : []), [now?.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
-  const isOpen = (k: string) => (info?.hours.days ?? []).includes(weekday(k));
-
   // availability of the chosen day
   const specialistParam = kind === "consult" ? info?.consultant?.id ?? null : specialist;
+  // open weekdays follow the team's «أوقات الدوام»: a day is open when someone who does this service works it
+  const [wdays, setWdays] = useState<{ key: string; days: number[] } | null>(null);
+  const wKey = service ? `${service.key}|${specialistParam ?? ""}` : "";
+  useEffect(() => {
+    if (!service) return;
+    let live = true;
+    getBookingWeekdays(service.key, specialistParam).then((d) => live && setWdays({ key: wKey, days: d })).catch(() => {});
+    return () => { live = false; };
+  }, [wKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const openWd = wdays && wdays.key === wKey ? wdays.days : info?.hours.days ?? [];
+  const isOpen = (k: string) => openWd.includes(weekday(k));
+  // the chosen day closed for this choice (e.g. another specialist) → move to the first open day
+  useEffect(() => {
+    if (!wdays || wdays.key !== wKey || !service) return;
+    if (!day || !wdays.days.includes(weekday(day))) { setDay(days.find((k) => wdays.days.includes(weekday(k))) ?? null); setTime(null); }
+  }, [wdays]); // eslint-disable-line react-hooks/exhaustive-deps
   const fetchSlots = useCallback(async () => {
     if (!service || !day) return;
     setSlots(null); setSlotErr("");

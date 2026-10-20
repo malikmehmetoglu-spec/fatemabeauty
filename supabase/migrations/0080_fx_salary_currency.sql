@@ -85,3 +85,61 @@ begin
 end $$;
 revoke execute on function private.payroll_fx() from public, anon, authenticated;
 create or replace trigger payroll_fx before insert or update on public.payroll_entries for each row execute function private.payroll_fx();
+
+-- ---------- «fx_numeric_source»: new Syrian pound → rate with 2 decimals (e.g. 141.75), source for the auto feed ----------
+-- The hourly sp-today feed (Edge Function, service role) calls:
+--   select public.set_exchange_rate(<sell rate>, 'sp-today', 'sp-today');
+-- A manual entry from the app uses source 'manual'; the latest row (any source) is the current rate.
+alter table public.exchange_rates alter column usd_to_syp type numeric(12,2);
+alter table public.exchange_rates add column if not exists source text not null default 'manual' check (source in ('manual','sp-today'));
+alter table public.payroll_entries alter column fx_rate type numeric(12,2);
+
+create or replace function private.usd_rate() returns numeric
+language sql stable security definer set search_path = '' as $$
+  select r.usd_to_syp from public.exchange_rates r order by r.effective_at desc, r.created_at desc limit 1;
+$$;
+revoke execute on function private.usd_rate() from public, anon;
+grant execute on function private.usd_rate() to authenticated, service_role;
+
+create or replace function private.payroll_fx() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare r numeric;
+begin
+  if new.currency = 'USD' then
+    if new.amount_original is null then raise exception 'اكتبي الراتب بالدولار'; end if;
+    if tg_op = 'UPDATE' and old.paid_at is not null and new.paid_at is not null and old.currency = 'USD' then
+      r := old.fx_rate;
+    else
+      r := private.usd_rate();
+      if r is null then raise exception 'لم يُحدَّد سعر الصرف بعد — حدّديه من المالية ← سعر الصرف'; end if;
+    end if;
+    new.fx_rate := r;
+    new.base_salary := round(new.amount_original * r)::integer;
+  else
+    new.fx_rate := null;
+    if new.amount_original is null or (tg_op = 'UPDATE' and new.base_salary is distinct from old.base_salary and new.amount_original is not distinct from old.amount_original) then
+      new.amount_original := new.base_salary;
+    end if;
+    new.base_salary := new.amount_original;
+  end if;
+  return new;
+end $$;
+
+create or replace function public.set_exchange_rate(p_rate numeric, p_note text default '', p_source text default 'manual') returns public.exchange_rates
+language plpgsql security invoker set search_path = '' as $$
+declare rec public.exchange_rates;
+begin
+  if p_rate is null or p_rate <= 0 then raise exception 'سعر الصرف يجب أن يكون رقماً أكبر من صفر'; end if;
+  insert into public.exchange_rates (usd_to_syp, note, source, effective_at, created_at)
+    values (round(p_rate, 2), coalesce(trim(p_note), ''), coalesce(p_source, 'manual'), clock_timestamp(), clock_timestamp()) returning * into rec;
+  update public.payroll_entries set fx_rate = rec.usd_to_syp where currency = 'USD' and paid_at is null;
+  return rec;
+end $$;
+revoke execute on function public.set_exchange_rate(numeric, text, text) from public, anon;
+grant execute on function public.set_exchange_rate(numeric, text, text) to authenticated, service_role;
+
+-- legacy integer versions (kept; DROP needs owner confirmation) delegate to the numeric ones
+create or replace function private.current_usd_rate() returns integer
+language sql stable security definer set search_path = '' as $$ select round(private.usd_rate())::integer $$;
+create or replace function public.set_usd_rate(p_rate integer, p_note text default '') returns public.exchange_rates
+language sql security invoker set search_path = '' as $$ select public.set_exchange_rate(p_rate::numeric, p_note, 'manual') $$;

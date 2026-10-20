@@ -398,6 +398,7 @@ export type Database = {
           effective_at: string
           id: string
           note: string
+          source: string
           usd_to_syp: number
         }
         Insert: {
@@ -406,6 +407,7 @@ export type Database = {
           effective_at?: string
           id?: string
           note?: string
+          source?: string
           usd_to_syp: number
         }
         Update: {
@@ -414,6 +416,7 @@ export type Database = {
           effective_at?: string
           id?: string
           note?: string
+          source?: string
           usd_to_syp?: number
         }
         Relationships: []
@@ -2214,6 +2217,10 @@ export type Database = {
           starts_at: string
         }[]
       }
+      booking_weekdays: {
+        Args: { p_service: string; p_specialist?: string }
+        Returns: number[]
+      }
       cancel_my_appointment: {
         Args: { p_id: string; p_reason: string }
         Returns: undefined
@@ -2492,6 +2499,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_exchange_rate: {
+        Args: { p_note?: string; p_rate: number; p_source?: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          note: string
+          source: string
+          usd_to_syp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "exchange_rates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_usd_rate: {
         Args: { p_note?: string; p_rate: number }
         Returns: {
@@ -2500,6 +2525,7 @@ export type Database = {
           effective_at: string
           id: string
           note: string
+          source: string
           usd_to_syp: number
         }
         SetofOptions: {

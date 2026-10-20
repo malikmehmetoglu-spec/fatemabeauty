@@ -9,8 +9,8 @@ import { R } from "@/lib/routes";
 import { initials } from "@/lib/data";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/queue";
-import { listStaffHours, worksAt } from "@/lib/db/staff";
-import { weekday } from "@/lib/db/appointments";
+import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
+import { DEFAULT_HOURS, getHours, weekday } from "@/lib/db/appointments";
 import { useQuery } from "@/lib/db/query";
 import { clock, dayKey } from "@/lib/format";
 import { css } from "../css";
@@ -20,13 +20,12 @@ import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
 /** T_QuickBook.dc.html */
 const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
 const toMin = (hm: string) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
-const END = 18 * 60, D0 = 600, DL = END - D0;
-const pc = (m: number) => ((m - D0) / DL * 100).toFixed(2) + "%";
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 
-function slotsFor(b: [number, number][], dur: number, NOW: number) {
+/** Candidate start times on the timeline [D0, END] (minutes), every `step` minutes, plus the end of each booking. */
+function slotsFor(b: [number, number][], dur: number, NOW: number, D0: number, END: number, step: number) {
   const set = new Set<number>();
-  for (let t = Math.max(D0, Math.ceil((NOW + 15) / 15) * 15); t <= END - 15; t += 15) set.add(t);
+  for (let t = Math.max(D0, Math.ceil((NOW + step) / step) * step); t <= END - step; t += step) set.add(t);
   b.forEach((x) => { if (x[1] > NOW && x[1] < END) set.add(x[1]); });
   return [...set].sort((x, y) => x - y).map((t) => {
     const taken = b.some((x) => t >= x[0] && t < x[1]);
@@ -40,8 +39,8 @@ export default function Page() {
   const k = useKiosk();
   const router = useRouter();
   const q = useQuery(["queue", "quick-book"], async () => {
-    const [services, specialists, rooms, today, hours] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday(), listStaffHours().catch(() => [])]);
-    return { services, specialists, rooms, today, hours };
+    const [services, specialists, rooms, today, hours, clinic] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday(), listStaffHours().catch(() => []), getHours().catch(() => DEFAULT_HOURS)]);
+    return { services, specialists, rooms, today, hours, clinic };
   }, { enabled: !k.gate });
   const [st, setSt] = useState<{ svc: number; sp: number; slot: number | null }>({ svc: 0, sp: -1, slot: null });
   const [term, setTerm] = useState("");
@@ -62,8 +61,19 @@ export default function Page() {
   const busyList = today.filter((a) => a.status !== "no_show" && (s?.room_id ? a.room_id === s.room_id : p ? a.specialist_id === p.id : false));
   const B: [number, number][] = busyList.map((a) => { const m = toMin(clock(a.starts_at)); return [m, m + a.minutes]; });
   const WD = weekday(dayKey());
-  // outside the chosen specialist's working hours («أوقات الدوام»): still bookable by staff, but flagged
-  const cs = (s ? slotsFor(B, s.minutes, NOW) : []).map((c) => ({ ...c, off: !!p && !!s && !worksAt(q.data?.hours ?? [], p.id, WD, c.t, c.t + s.minutes) }));
+  // working windows today: the chosen specialist's «أوقات الدوام» (or the default hours without a schedule),
+  // otherwise everyone's hours together. The timeline spans them (default 10:00–18:00 when nobody works).
+  const HR = q.data?.hours ?? [];
+  const clinic = q.data?.clinic ?? DEFAULT_HOURS;
+  const wins = p ? rangesOn(HR, p.id, WD, clinic) ?? [] : dayWindows(HR, [...new Set([...SP.map((x) => x.id), ...HR.map((r) => r.staff_id)])], WD, clinic);
+  const D0 = Math.floor(Math.min(600, ...wins.map((w) => w.from)) / 60) * 60;
+  const END = Math.ceil(Math.max(wins.length ? 0 : 1080, ...wins.map((w) => w.to)) / 60) * 60;
+  const DL = Math.max(60, END - D0);
+  const pc = (m: number) => ((m - D0) / DL * 100).toFixed(2) + "%";
+  const ticks = Array.from({ length: 5 }, (_, i) => fmt(Math.round((D0 + (DL * i) / 4) / 15) * 15));
+  // outside working hours: still bookable by staff, but flagged
+  const cs = (s ? slotsFor(B, s.minutes, NOW, D0, END, Math.max(5, clinic.slot || 15)) : [])
+    .map((c) => ({ ...c, off: !wins.some((w) => w.from <= c.t && w.to >= c.t + s!.minutes) }));
   let slot = st.slot;
   if (slot === null || !cs.some((c) => c.t === slot && c.fits)) { const f = cs.find((c) => c.fits && !c.off) ?? cs.find((c) => c.fits); slot = f ? f.t : null; }
   const slotOff = slot !== null && !!cs.find((c) => c.t === slot)?.off;
@@ -102,7 +112,7 @@ export default function Page() {
   const canBook = !!s && slot !== null && (!!pat || (isPhone && !!newName.trim()));
   const book = async () => {
     if (!s || slot === null) return;
-    if (slotOff && !confirm(`خارج دوام الأخصائية: ${p?.name ?? ""} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟`)) return;
+    if (slotOff && !confirm(p ? `خارج دوام الأخصائية: ${p.name} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟` : "خارج أوقات الدوام: لا أحد من الفريق يداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟")) return;
     setBusy(true); setErr(null);
     try {
       await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null });
@@ -250,16 +260,7 @@ export default function Page() {
                   <span style={nowStyle} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 12, color: C.muted, marginTop: 8 }}>
-                  <span>10:00
-                  </span>
-                  <span>12:00
-                  </span>
-                  <span>14:00
-                  </span>
-                  <span>16:00
-                  </span>
-                  <span>18:00
-                  </span>
+                  {ticks.map((t, i) => <span key={i}>{t}</span>)}
                 </div>
               </div>
             </div>
@@ -277,7 +278,7 @@ export default function Page() {
                 </div>
                 <div style={{ fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sum.sp} · {sum.room} · {sum.price}
                 </div>
-                {slotOff && <div role="alert" style={{ fontSize: 13, fontWeight: 700, color: "#9A6A1E" }}>خارج دوام الأخصائية</div>}
+                {slotOff && <div role="alert" style={{ fontSize: 13, fontWeight: 700, color: "#9A6A1E" }}>{p ? "خارج دوام الأخصائية" : "خارج أوقات الدوام"}</div>}
               </div>
               <button type="button" onClick={book} disabled={!canBook || busy} style={{ opacity: canBook && !busy ? 1 : 0.55, fontFamily: "inherit", height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

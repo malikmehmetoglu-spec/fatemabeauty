@@ -8,7 +8,7 @@ import { EmptyState, ErrorNote, Icon, Loading, PrimaryButton } from "@/component
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
-import { appSlots, getHours, openDays, useSearch } from "@/lib/db/appointments";
+import { appSlots, bookingWeekdays, getHours, openDays, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_MONTHS, initials } from "@/lib/data";
 import { dayName } from "@/lib/format";
@@ -38,8 +38,10 @@ export default function BookingPage() {
 
   useEffect(() => { if (q && !svcKey) setSvcKey(q.get("service")); }, [q, svcKey]);
   const svc = bookable.find((x) => x.key === svcKey) ?? bookable[0] ?? null;
-  const days = useMemo(() => (hours.data ? openDays(hours.data, 7) : []), [hours.data]);
-  const curDay = day ?? days[0] ?? null;
+  // open days = days on which someone who does this service works (or the chosen specialist works)
+  const wdays = useQuery(["appointments", "booking_weekdays", svc?.key, sp], () => bookingWeekdays(svc!.key, sp), { enabled: !!svc });
+  const days = useMemo(() => (hours.data && wdays.data ? openDays({ ...hours.data, days: wdays.data }, 7) : []), [hours.data, wdays.data]);
+  const curDay = (day && days.includes(day) ? day : null) ?? days[0] ?? null;
   const specialist = (team.data ?? []).find((t) => t.id === sp) ?? null;
 
   // free times come from the server (rpc app_slots): opening hours, overlaps and each specialist's working hours
@@ -111,7 +113,7 @@ export default function BookingPage() {
                 <div style={{ fontSize: 13, color: C.sub2 }}>اختاري اليوم</div>
                 {curDay && <div style={{ fontSize: 15, fontWeight: 600, color: C.ink }}>{AR_MONTHS[dateOf(curDay).getMonth()]}</div>}
               </div>
-              {days.length === 0 ? <div style={{ fontSize: 13.5, color: C.sub }}>لم تُحدَّد أيام الدوام بعد.</div> : (
+              {days.length === 0 ? <div style={{ fontSize: 13.5, color: C.sub }}>{wdays.loading ? "نبحث عن أيام الدوام…" : "لا أيام دوام متاحة لهذا الاختيار حالياً."}</div> : (
                 <div role="radiogroup" aria-label="اليوم" style={{ display: "flex", gap: 6 }}>
                   {days.map((k) => {
                     const on = curDay === k; const d = dateOf(k);

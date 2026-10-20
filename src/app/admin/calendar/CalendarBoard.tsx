@@ -1,23 +1,21 @@
 "use client";
 
 /** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new. */
-import { listStaffHours, rangesOn } from "@/lib/db/staff";
+import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Chip, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Segment, SubmitButton, Tag, TextInput } from "@/components/ui";
+import { Chip, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Segment, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
-  bookingError, dateOfKey, endsAt, getHours, listRange, personName, saveHours, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
-  type Appointment, type Hours, type Status, weekday,
+  bookingError, dateOfKey, endsAt, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
+  type Appointment, type Status, weekday,
 } from "@/lib/db/appointments";
 import { apptCount, arErr } from "../patients/kit";
 import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey } from "@/lib/format";
-import { useSession } from "@/lib/supabase/session";
 import { C, SH, SHB } from "@/lib/tokens";
-import css from "./appts.module.css";
 
 const HOUR = 75; // px per hour
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
@@ -37,13 +35,11 @@ const LOOK: Record<Status, CSSProperties> = {
 type Col = { id: string | null; name: string };
 
 export function CalendarBody() {
-  const { staff } = useSession();
   const [day, setDay] = useState(dayKey());
   const [view, setView] = useState<"day" | "week">("day");
   const [by, setBy] = useState<"room" | "specialist">("room");
   const [showCancelled, setShowCancelled] = useState(false);
   const [open, setOpen] = useState<Appointment | null>(null);
-  const [editHours, setEditHours] = useState(false);
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
 
@@ -64,22 +60,22 @@ export function CalendarBody() {
   }, [by, rooms.data, team.data, list]);
 
   const h = hours.data;
-  const startMin = Math.min(h ? toMin(h.from) : 600, ...list.map((a) => toMin(clock(a.starts_at))));
-  const endMin = Math.max(h ? toMin(h.to) : 1080, ...list.map((a) => toMin(clock(endsAt(a)))));
+  // visible range: earliest start / latest end of anyone's working hours that day (own schedule or the default hours)
+  const rows = staffHours.data ?? [];
+  const ids = [...new Set([...(team.data ?? []).map((s) => s.id), ...rows.map((r) => r.staff_id)])];
+  const windows = h ? dayWindows(rows, ids, weekday(day), h) : [];
+  const startMin = Math.min(windows.length ? windows[0].from : 600, ...list.map((a) => toMin(clock(a.starts_at))));
+  const endMin = Math.max(windows.length ? Math.max(...windows.map((w) => w.to)) : 1080, ...list.map((a) => toMin(clock(endsAt(a)))));
   const first = Math.floor(startMin / 60) * 60, last = Math.ceil(endMin / 60) * 60;
   const yOf = (m: number) => ((m - first) * HOUR) / 60;
   const isToday = day === dayKey();
   const nowM = toMin(clock());
   const loading = appts.loading || rooms.loading || hours.loading;
   const err = appts.error || rooms.error || hours.error;
-  const isAdmin = staff?.role === "admin" || staff?.role === "owner";
-  /** Working ranges (minutes) of a specialist column on this day: her «أوقات الدوام» clipped to the clinic hours; null = not a specialist column. */
+  /** Working ranges (minutes) of a specialist column on this day: her «أوقات الدوام», or the default hours without a schedule; null = not a specialist column. */
   const workOf = (id: string | null) => {
     if (by !== "specialist" || !id || !h) return null;
-    if (!h.days.includes(weekday(day))) return [];
-    const cf = toMin(h.from), ct = toMin(h.to);
-    const r = rangesOn(staffHours.data ?? [], id, weekday(day)) ?? [{ from: cf, to: ct }];
-    return r.map((x) => ({ from: Math.max(cf, x.from), to: Math.min(ct, x.to) })).filter((x) => x.to > x.from).sort((a, b) => a.from - b.from);
+    return rangesOn(rows, id, weekday(day), h);
   };
   const offBands = (work: { from: number; to: number }[]) => {
     const out: { from: number; to: number }[] = []; let t = first;
@@ -105,12 +101,11 @@ export function CalendarBody() {
           <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
           {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "الغرف" }, { value: "specialist", label: "الأخصائيات" }]} />}
           <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
-          {isAdmin && <GhostButton icon="clock" onClick={() => setEditHours(true)}>ساعات الدوام</GhostButton>}
         </span>
       </div>
 
-      {h && !h.days.includes(weekday(day)) && view === "day" && (
-        <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>هذا اليوم خارج أيام الدوام المحدّدة — الحجز من التطبيق مغلق فيه.</div>
+      {h && !staffHours.loading && windows.length === 0 && view === "day" && (
+        <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>لا أحد من الفريق يداوم في هذا اليوم حسب «أوقات الدوام» — الحجز من التطبيق ورابط الحجز مغلق فيه.</div>
       )}
 
       {loading ? <Loading /> : err ? <ErrorNote>{arErr(err, "تعذّر تحميل المواعيد. أعيدي تحميل الصفحة.")}</ErrorNote> : view === "week" ? (
@@ -176,7 +171,6 @@ export function CalendarBody() {
       )}
 
       <AppointmentDialog appt={open} onClose={() => setOpen(null)} />
-      {h && <HoursDialog open={editHours} hours={h} onClose={() => setEditHours(false)} />}
     </div>
   );
 }
@@ -267,34 +261,6 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
           {(a.status === "in_session" || a.status === "done") && <Link href={`${R.W_SessionNote}?appointment=${a.id}&patient=${a.patient_id}`} style={{ color: C.accent }}>ملاحظة الجلسة</Link>}
         </div>
       )}
-      {error && <ErrorNote>{error}</ErrorNote>}
-    </Modal>
-  );
-}
-
-function HoursDialog({ open, hours, onClose }: { open: boolean; hours: Hours; onClose: () => void }) {
-  const [h, setH] = useState(hours);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => { if (open) { setH(hours); setError(""); } }, [open, hours]);
-  async function save() {
-    if (!/^\d{2}:\d{2}$/.test(h.from) || !/^\d{2}:\d{2}$/.test(h.to) || toMin(h.to) <= toMin(h.from)) { setError("تحقّقي من وقت البداية والنهاية."); return; }
-    setBusy(true);
-    try { await saveHours(h); onClose(); } catch (e) { setError(arErr(e)); } finally { setBusy(false); }
-  }
-  return (
-    <Modal open={open} onClose={onClose} title="ساعات الدوام" width={520} footer={<SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton>}>
-      <div style={{ fontSize: 13.5, color: C.sub }}>تُستخدم لحساب الأوقات المتاحة للحجز من التطبيق.</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {AR_DAYS.map((n, i) => (
-          <Chip key={i} selected={h.days.includes(i)} onClick={() => setH({ ...h, days: h.days.includes(i) ? h.days.filter((x) => x !== i) : [...h.days, i].sort() })}>{n}</Chip>
-        ))}
-      </div>
-      <div className={css.grid3}>
-        <TextInput label="من" type="time" dir="ltr" value={h.from} onChange={(v) => setH({ ...h, from: v })} />
-        <TextInput label="إلى" type="time" dir="ltr" value={h.to} onChange={(v) => setH({ ...h, to: v })} />
-        <TextInput label="الفاصل (دقيقة)" dir="ltr" value={String(h.slot)} onChange={(v) => setH({ ...h, slot: Math.max(5, Number(v.replace(/\D/g, "")) || 15) })} />
-      </div>
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
   );

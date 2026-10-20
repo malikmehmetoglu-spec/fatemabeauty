@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { ErrorNote, Icon, Loading, Modal, NumberInput, SubmitButton, TextInput } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { fxError, listRates, setUsdRate } from "@/lib/db/fx";
+import { fxError, listRates, setUsdRate, SOURCE_AR } from "@/lib/db/fx";
 import { useSession } from "@/lib/supabase/session";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
@@ -32,7 +32,7 @@ export function FxCard({ compact }: { compact?: boolean }) {
         <div style={{ fontSize: 12.5, color: C.sub2 }}>سعر الصرف</div>
         {loading ? <div style={{ fontSize: 13, color: C.muted }}>جارٍ التحميل…</div> : error ? <div style={{ fontSize: 13, color: C.danger }}>تعذّر تحميل سعر الصرف</div> : rate ? (<>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.ink }}>1 دولار = <span dir="ltr" style={LATIN}>{money(rate.usd_to_syp, false)}</span> ل.س</div>
-          <div style={{ fontSize: 12, color: C.sub2 }}>آخر تحديث {whenAr(rate.effective_at)}</div>
+          <div style={{ fontSize: 12, color: C.sub2 }}>آخر تحديث {whenAr(rate.effective_at)} · {SOURCE_AR[rate.source] ?? rate.source}</div>
         </>) : <div style={{ fontSize: 13.5, color: C.sub }}>لم يُحدَّد سعر الصرف بعد — يلزم لرواتب الدولار.</div>}
       </div>
       <LightBtn icon={canEdit ? "edit" : "list"} onClick={() => setOpen(true)}>{canEdit ? (rate ? "تحديث السعر" : "تحديد السعر") : "السجل"}</LightBtn>
@@ -46,8 +46,8 @@ function FxDialog({ open, onClose, canEdit, rows, loading }: { open: boolean; on
   const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const close = () => { setV(""); setNote(""); setErr(""); onClose(); };
   async function submit() {
-    const n = Math.round(Number(v));
-    if (!v || !Number.isFinite(n) || n <= 0) { setErr("اكتبي سعر الدولار بالليرة السورية (رقم أكبر من صفر)."); return; }
+    const n = Math.round(Number(v) * 100) / 100;
+    if (!v || !Number.isFinite(n) || n <= 0) { setErr("اكتبي سعر الدولار بالليرة السورية الجديدة (رقم أكبر من صفر، مثل 141.75)."); return; }
     setBusy(true); setErr("");
     try { await setUsdRate(n, note.trim()); setV(""); setNote(""); } catch (e) { setErr(fxError(e)); } finally { setBusy(false); }
   }
@@ -57,7 +57,7 @@ function FxDialog({ open, onClose, canEdit, rows, loading }: { open: boolean; on
       {canEdit && (<>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 15, fontWeight: 700, paddingBottom: 14, whiteSpace: "nowrap" }}>1 دولار =</div>
-          <NumberInput label="السعر بالليرة السورية" required value={v} onChange={(x) => setV(x.replace(/\./g, ""))} suffix="ل.س" style={{ flex: "1 1 180px" }} />
+          <NumberInput label="السعر بالليرة السورية الجديدة" required value={v} onChange={setV} placeholder="141.75" suffix="ل.س" style={{ flex: "1 1 180px" }} />
         </div>
         <TextInput label="ملاحظة (اختياري)" value={note} onChange={setNote} placeholder="مثلاً: سعر السوق صباحاً" />
         <div style={{ fontSize: 12.5, color: C.sub2, lineHeight: 1.7 }}>
@@ -71,7 +71,7 @@ function FxDialog({ open, onClose, canEdit, rows, loading }: { open: boolean; on
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, borderTop: `1px solid ${C.line}`, fontSize: 13.5, flexWrap: "wrap", padding: "4px 0" }}>
             {i === 0 ? <Icon name="check" color={C.okDeep} size={15} /> : <span style={{ width: 15 }} />}
             <b dir="ltr" style={{ ...LATIN, minWidth: 90 }}>{money(r.usd_to_syp, false)}</b>
-            <span style={{ color: C.sub2, fontSize: 12.5, flex: 1, minWidth: 0 }}>{whenAr(r.effective_at)}{r.note ? ` · ${r.note}` : ""}</span>
+            <span style={{ color: C.sub2, fontSize: 12.5, flex: 1, minWidth: 0 }}>{whenAr(r.effective_at)} · {SOURCE_AR[r.source] ?? r.source}{r.note ? ` · ${r.note}` : ""}</span>
             {i === 0 && <span style={{ fontSize: 11.5, color: C.okDeep, fontWeight: 700 }}>الحالي</span>}
           </div>
         ))}

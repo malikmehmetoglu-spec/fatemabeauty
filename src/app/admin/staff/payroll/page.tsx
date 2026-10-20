@@ -22,7 +22,7 @@ import { RowBtn, StaffCell, TeamTabs, errText, useTeam } from "../team-ui";
 const monthLabel = (p: string) => `${AR_MONTHS[Number(p.slice(5)) - 1]} ${p.slice(0, 4)}`;
 const shiftMonth = (p: string, n: number) => { const d = new Date(Date.UTC(Number(p.slice(0, 4)), Number(p.slice(5)) - 1 + n, 15)); return d.toISOString().slice(0, 7); };
 const monthStart = (p: string) => new Date(`${p}-01T00:00:00+03:00`).toISOString();
-const num = (n: number) => n.toLocaleString("en-US");
+const num = (n: number | string) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
 const LAT = { fontFamily: "var(--font-rubik), sans-serif", unicodeBidi: "isolate" as const };
 
 /** Commission due per member for a month (same rule as the commissions page). */
@@ -84,7 +84,7 @@ export default function PayrollPage() {
       <TeamTabs />
       <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="صافي الرواتب المسجّلة" value={money(total)}
-          sub={`${entries.length} موظفة في مسير ${monthLabel(period)}${rate && total > 0 ? ` · ≈ ${usd(Math.round(total / rate.usd_to_syp))} بسعر اليوم` : ""}`} icon="wallet" />
+          sub={`${entries.length} موظفة في مسير ${monthLabel(period)}${rate && total > 0 ? ` · ≈ ${usd(Math.round(total / Number(rate.usd_to_syp)))} بسعر اليوم` : ""}`} icon="wallet" />
         <Kpi label="مدفوعة" value={paid.length} sub={money(paid.reduce((n, p) => n + netPay(p), 0))} icon="check" />
         <Kpi label="غير مدفوعة" value={entries.length - paid.length} icon="clock" />
       </div>
@@ -121,7 +121,7 @@ export default function PayrollPage() {
           رواتب الدولار تُحوَّل بسعر الصرف الحالي ما دامت غير مدفوعة، وعند تفعيل «مدفوع» يُثبَّت السعر ويُسجَّل المبلغ بالليرة في المالية (الرواتب) ولا يتغير لاحقاً.
         </div>
       )}
-      <PayrollDialog target={editing} period={period} salary={editing ? salOf.get(editing.s.id) : undefined} commission={editing ? com.due.get(editing.s.id) : undefined} rate={rate?.usd_to_syp ?? null} onClose={() => setEditing(null)} />
+      <PayrollDialog target={editing} period={period} salary={editing ? salOf.get(editing.s.id) : undefined} commission={editing ? com.due.get(editing.s.id) : undefined} rate={rate ? Number(rate.usd_to_syp) : null} onClose={() => setEditing(null)} />
     </AdminShell>
   );
 }
@@ -151,7 +151,7 @@ function PayrollDialog({ target, period, salary, commission, rate, onClose }: {
   const n = (s: string) => Math.round(Number(s || 0));
   const frozen = !!target?.p?.paid_at && target.p.currency === "USD" && f.cur === "USD";
   const useRate = frozen ? target?.p?.fx_rate ?? null : rate;
-  const baseSyp = f.cur === "USD" ? (useRate ? n(f.base) * useRate : null) : n(f.base);
+  const baseSyp = f.cur === "USD" ? (useRate ? Math.round(n(f.base) * Number(useRate)) : null) : n(f.base);
 
   async function submit() {
     if (!target) return;

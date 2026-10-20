@@ -30,7 +30,7 @@ export default function Page() {
   const profit = revenue - expenses;
   const sessions = invs.filter((i) => i.appointment_id).length;
   const { rate } = useUsdRate();
-  const inUsd = (n: number) => (rate ? usd(Math.round(n / rate.usd_to_syp)) : "");
+  const inUsd = (n: number) => (rate ? usd(Math.round(n / Number(rate.usd_to_syp))) : "");
 
   // net value per line: share of the invoice discount spread over its lines
   const lines = invs.flatMap((i) => (i.invoice_items ?? []).map((x) => ({ ...x, net: i.subtotal ? (x.qty * x.unit_price * i.total) / i.subtotal : 0, spec: i.appointments?.staff?.name })));
@@ -102,7 +102,7 @@ export default function Page() {
           </div>
           {rate && (revenue > 0 || expenses > 0) && (
             <div style={{ marginTop: 10, fontSize: 12, color: C.sub2, lineHeight: 1.7 }}>
-              بالدولار بسعر اليوم (<span dir="ltr" style={LATIN}>{money(rate.usd_to_syp, false)}</span> ل.س): الإيرادات <span dir="ltr" style={LATIN}>{inUsd(revenue)}</span> · المصاريف <span dir="ltr" style={LATIN}>{inUsd(expenses)}</span> · صافي الربح <span dir="ltr" style={LATIN}>{profit < 0 ? "−" : ""}{inUsd(Math.abs(profit))}</span>.
+              بالدولار بسعر اليوم (<span dir="ltr" style={LATIN}>{money(Number(rate.usd_to_syp), false)}</span> ل.س): الإيرادات <span dir="ltr" style={LATIN}>{inUsd(revenue)}</span> · المصاريف <span dir="ltr" style={LATIN}>{inUsd(expenses)}</span> · صافي الربح <span dir="ltr" style={LATIN}>{profit < 0 ? "−" : ""}{inUsd(Math.abs(profit))}</span>.
               الرواتب محسوبة بالليرة بسعر يوم دفعها.
             </div>
           )}
