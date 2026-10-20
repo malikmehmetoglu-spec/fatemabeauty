@@ -4,14 +4,20 @@
 import { supabase, type Tables } from "@/lib/supabase/client";
 import { invalidate, must } from "./query";
 
-export type Service = Tables<"services">;
+/** A service row as screens use it. `price` is the client price in SYP (USD prices converted with the current rate,
+ * rounded up to 5 ل.س); `price_syp` null = no rate yet («السعر عند الاستفسار»). Admin rows (listAllServices) keep the
+ * stored `price` + `price_currency` and carry `price_syp` as a hint. */
+export type Service = Tables<"services"> & { price_syp: number | null };
+export type Category = Tables<"service_categories">;
 export type Package = Tables<"packages">;
 export type Room = Tables<"rooms">;
 export type Device = Tables<"devices">;
 export type Specialist = Pick<Tables<"staff">, "id" | "name" | "title" | "photo_url" | "role">;
 
 /** "1,500 ل.س" / "من 1,500 ل.س" / "مجانية". */
-export function priceLabel(s: Pick<Service, "price" | "price_from">) {
+export const PRICE_ON_REQUEST = "السعر عند الاستفسار";
+export function priceLabel(s: Pick<Service, "price" | "price_from"> & { price_syp?: number | null }) {
+  if (s.price_syp === null) return PRICE_ON_REQUEST;
   if (s.price === 0) return "مجانية";
   return (s.price_from ? "من " : "") + s.price.toLocaleString("en-US") + " ل.س";
 }
@@ -27,19 +33,59 @@ export function serviceIcon(name: string) {
 
 /* ---------- reads ---------- */
 
-/** Public: active services (RLS shows only active ones to visitors). */
-export async function listServices() {
-  return must(await supabase.from("services").select("*").eq("active", true).order("sort").order("name"));
+async function sypPrices() {
+  const rows = must(await supabase.rpc("service_prices_syp")) ?? [];
+  return new Map(rows.map((r) => [r.key, r.price_syp] as const));
+}
+/** Client view: price replaced by the SYP price (never dollars). */
+function toClient(r: Tables<"services">, m: Map<string, number | null>): Service {
+  const syp = m.has(r.key) ? (m.get(r.key) ?? null) : r.price_currency === "USD" ? null : r.price;
+  return { ...r, price: syp ?? 0, price_currency: "SYP", price_syp: syp };
+}
+/** Sort by category order, then service order. */
+function byCategory(rows: Tables<"services">[], cats: Category[]) {
+  const o = new Map(cats.map((c) => [c.key, c.sort]));
+  const k = (r: Tables<"services">) => (r.category_id && o.has(r.category_id) ? o.get(r.category_id)! : 999);
+  return [...rows].sort((a, b) => k(a) - k(b) || a.sort - b.sort || a.name.localeCompare(b.name, "ar"));
 }
 
-/** Admin: every service, active or not. */
-export async function listAllServices() {
-  return must(await supabase.from("services").select("*").order("sort").order("name"));
+/** Public: active services (RLS shows only active ones to visitors), prices in SYP, ordered by category. */
+export async function listServices(): Promise<Service[]> {
+  const [rows, m, cats] = await Promise.all([
+    supabase.from("services").select("*").eq("active", true).order("sort").order("name").then(must), sypPrices(), listCategories(),
+  ]);
+  return byCategory(rows ?? [], cats).map((r) => toClient(r, m));
 }
 
-export async function getService(key: string) {
-  return must(await supabase.from("services").select("*").eq("key", key).eq("active", true).maybeSingle());
+/** Admin: every service, active or not — stored price/currency kept, `price_syp` as hint. */
+export async function listAllServices(): Promise<Service[]> {
+  const [rows, m, cats] = await Promise.all([supabase.from("services").select("*").order("sort").order("name").then(must), sypPrices(), listCategories(true)]);
+  return byCategory(rows ?? [], cats).map((r) => ({ ...r, price_syp: m.get(r.key) ?? (r.price_currency === "USD" ? null : r.price) }));
 }
+
+export async function getService(key: string): Promise<Service | null> {
+  const [r, m] = await Promise.all([supabase.from("services").select("*").eq("key", key).eq("active", true).maybeSingle().then(must), sypPrices()]);
+  return r ? toClient(r, m) : null;
+}
+
+export async function getCategory(key: string | null | undefined) {
+  if (!key) return null;
+  return must(await supabase.from("service_categories").select("*").eq("key", key).maybeSingle());
+}
+
+export async function listCategories(all = false): Promise<Category[]> {
+  let q = supabase.from("service_categories").select("*");
+  if (!all) q = q.eq("active", true);
+  return must(await q.order("sort").order("name")) ?? [];
+}
+
+/** Today's USD → SYP rate (staff only; null when none). */
+export async function usdRate(): Promise<number | null> {
+  const r = must(await supabase.from("exchange_rates").select("usd_to_syp").order("effective_at", { ascending: false }).order("created_at", { ascending: false }).limit(1));
+  return r?.[0]?.usd_to_syp ?? null;
+}
+/** Same rule as public.syp_ceil5: round UP to the nearest 5 ل.س. */
+export const sypCeil5 = (n: number) => Math.ceil(n / 5) * 5;
 
 export async function listPackages(all = false) {
   let q = supabase.from("packages").select("*");
@@ -70,7 +116,7 @@ export async function listSpecialists(): Promise<Specialist[]> {
 
 /** Saving vs. paying each session at the single-session price. */
 export function packageSaving(p: Package, s?: Service | null) {
-  return s ? Math.max(0, s.price * p.sessions - p.price) : 0;
+  return s ? Math.max(0, (s.price_syp ?? 0) * p.sessions - p.price) : 0;
 }
 
 /* ---------- writes ---------- */
@@ -80,15 +126,36 @@ function slug(name: string) {
   return (ascii || "svc") + "-" + crypto.randomUUID().slice(0, 8);
 }
 
-export type ServiceInput = Omit<Service, "key" | "sort"> & { key?: string; sort?: number };
+export type ServiceInput = Omit<Tables<"services">, "key" | "sort"> & { key?: string; sort?: number; price_syp?: unknown };
 
 export async function saveService(input: ServiceInput) {
-  const { key, ...rest } = input;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { key, price_syp, ...rest } = input;
   const row = key
     ? must(await supabase.from("services").update(rest).eq("key", key).select().single())
     : must(await supabase.from("services").insert({ ...rest, key: slug(rest.name) }).select().single());
   invalidate("catalog");
   return row;
+}
+
+export type CategoryInput = Partial<Category> & { name: string };
+export async function saveCategory(input: CategoryInput, isNew: boolean) {
+  const { key, created_at, ...rest } = input; void created_at;
+  const row = !isNew && key
+    ? must(await supabase.from("service_categories").update(rest).eq("key", key).select().single())
+    : must(await supabase.from("service_categories").insert({ ...rest, key: key || slug(rest.name) }).select().single());
+  invalidate("catalog");
+  return row;
+}
+
+/** Swap a category with its neighbour (dir -1 = up, 1 = down). */
+export async function moveCategory(cats: Category[], key: string, dir: -1 | 1) {
+  const list = [...cats].sort((a, b) => a.sort - b.sort);
+  const i = list.findIndex((c) => c.key === key), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  await Promise.all(list.map((c, n) => c.sort === n + 1 ? null : supabase.from("service_categories").update({ sort: n + 1 }).eq("key", c.key).then(must)));
+  invalidate("catalog");
 }
 
 export async function setServiceActive(key: string, active: boolean) {

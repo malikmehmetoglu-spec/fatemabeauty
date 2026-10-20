@@ -3,13 +3,15 @@
 /**
  * أوقات الدوام — fixed weekly working hours per staff member (Supabase `staff_hours`).
  * Replaces the old dated «الورديات» grid (table staff_shifts is kept but no longer shown).
- * Bookings follow these hours (database: private.staff_available). A member with no hours follows the clinic opening hours.
+ * Bookings follow these hours exactly, on any weekday (database: private.staff_available / slot_grid — no clinic clipping).
+ * A member with no hours follows the default hours «الدوام الافتراضي» (settings.hours, edited at the top of this page,
+ * together with the slot length).
  */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AdminShell } from "@/components/shell";
-import { Card, EmptyState, ErrorNote, Icon, Loading, Tag, Toggle } from "@/components/ui";
+import { Card, Chip, EmptyState, ErrorNote, Icon, Loading, Tag, Toggle } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { getHours, type Hours } from "@/lib/db/appointments";
+import { getHours, saveHours, type Hours } from "@/lib/db/appointments";
 import { listStaffHours, saveStaffHours, type HourRange, type Staff, type StaffHour } from "@/lib/db/staff";
 import { ROLE_LABEL, useSession } from "@/lib/supabase/session";
 import { AR_DAYS } from "@/lib/data";
@@ -22,6 +24,10 @@ const WEEK = [6, 0, 1, 2, 3, 4, 5];
 const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
 const hhmm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 const hm = (t: string) => t.slice(0, 5);
+/** Pickers span the whole working day: 06:00 … 24:00 in slot steps. */
+const DAY_FROM = 6 * 60, DAY_TO = 24 * 60;
+const dayTimes = (step: number) => { const out: string[] = []; for (let t = DAY_FROM; t <= DAY_TO; t += step) out.push(hhmm(t)); return out; };
+const SLOT_CHOICES = [5, 10, 15, 20, 30, 45, 60];
 
 type Range = { from: string; to: string };
 type Week = Record<number, Range[]>; // weekday → ranges (empty = day off)
@@ -41,7 +47,7 @@ const sameRanges = (a: Range[], b: Range[]) => a.length === b.length && a.every(
 
 /** «السبت–الخميس 10:00–13:00 · الجمعة 16:00–18:00» */
 function summary(w: Week | null): ReactNode {
-  if (!w) return "يتبع دوام المركز (لم يُحدَّد جدول بعد)";
+  if (!w) return "يتبع الدوام الافتراضي (لم يُحدَّد جدول بعد)";
   const parts: { days: string; times: string }[] = [];
   let i = 0;
   while (i < WEEK.length) {
@@ -77,14 +83,16 @@ export default function WorkingHoursPage() {
       <div className={css.hint}>
         <Icon name="clock" size={20} color={C.accent} />
         <div>
-          <b>الحجوزات تتبع هذه الأوقات.</b> لا تظهر للمراجِعات (في التطبيق ورابط الحجز) إلا الأوقات التي تداوم فيها الأخصائية، ومواعيد الاستشارة تتبع دوام المستشارة.
-          الموظفة التي لم يُحدَّد لها جدول تتبع ساعات دوام المركز. يمكن للاستقبال الحجز خارج الدوام عند الحاجة مع تنبيه.
+          <b>الحجوزات تتبع هذه الأوقات.</b> لكل أخصائية ومستشارة دوامها الخاص في أي يوم من الأسبوع (حتى الجمعة والمساء)، ولا تظهر للمراجِعات
+          (في التطبيق ورابط الحجز) إلا الأوقات التي تداوم فيها. يُفتح اليوم للحجز إذا كانت إحداهن تداوم فيه.
+          الموظفة التي لم يُحدَّد لها جدول تتبع «الدوام الافتراضي». يمكن للاستقبال الحجز خارج الدوام عند الحاجة مع تنبيه.
         </div>
       </div>
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل أوقات الدوام: {error}</ErrorNote> : members.length === 0 ? (
         <EmptyState icon="users" title="لا يوجد فريق بعد" text="أضيفي الموظفات من صفحة الفريق أولاً، ثم حدّدي أوقات دوام كل واحدة هنا." />
       ) : (
         <div className={css.list}>
+          {canManage && <DefaultHoursCard hours={hours.data!} />}
           {members.map((s) => (
             <MemberCard key={s.id} s={s} clinic={hours.data!} saved={weekOf(rows.data ?? [], s.id)} canManage={canManage} />
           ))}
@@ -104,13 +112,9 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
   useEffect(() => { setWeek(saved ?? emptyWeek()); }, [savedKey]);
 
   const step = Math.max(5, clinic.slot || 15);
-  const times = useMemo(() => {
-    const out: string[] = [];
-    for (let t = toMin(clinic.from); t <= toMin(clinic.to); t += step) out.push(hhmm(t));
-    return out;
-  }, [clinic.from, clinic.to, step]);
+  const times = useMemo(() => dayTimes(step), [step]);
   const clinicRange: Range = { from: hhmm(toMin(clinic.from)), to: hhmm(toMin(clinic.to)) };
-  const isOpen = (d: number) => clinic.days.includes(d);
+  const isDefaultDay = (d: number) => clinic.days.includes(d);
   const dirty = JSON.stringify(week) !== JSON.stringify(saved ?? emptyWeek());
 
   const setDay = (d: number, r: Range[]) => { setWeek((w) => ({ ...w, [d]: r })); setMsg(null); };
@@ -129,11 +133,11 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
     const err = validate();
     if (err) { setMsg({ ok: false, text: err }); return; }
     const ranges: HourRange[] = WEEK.flatMap((d) => w[d].map((x) => ({ weekday: d, starts: x.from, ends: x.to })));
-    if (!ranges.length && saved && !confirm(`لا أيام عمل في الجدول — ستتبع ${s.name} ساعات دوام المركز. متابعة؟`)) return;
+    if (!ranges.length && saved && !confirm(`لا أيام عمل في الجدول — ستتبع ${s.name} الدوام الافتراضي. متابعة؟`)) return;
     setBusy(true); setMsg(null);
     try {
       await saveStaffHours(s.id, ranges);
-      setMsg({ ok: true, text: ranges.length ? "حُفظت أوقات الدوام." : "أُلغي الجدول — تتبع الآن دوام المركز." });
+      setMsg({ ok: true, text: ranges.length ? "حُفظت أوقات الدوام." : "أُلغي الجدول — تتبع الآن الدوام الافتراضي." });
     } catch (e) { setMsg({ ok: false, text: errText(e) }); } finally { setBusy(false); }
   }
 
@@ -145,7 +149,7 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
       <div className={css.head}>
         <StaffAvatar s={s} size={46} />
         <div className={css.who}>
-          <div className={css.name}><b>{s.name}</b>{roleTag}{!saved && <Tag kind="silver">دوام المركز</Tag>}</div>
+          <div className={css.name}><b>{s.name}</b>{roleTag}{!saved && <Tag kind="silver">الدوام الافتراضي</Tag>}</div>
           <div className={css.sum}>{summary(saved)}</div>
         </div>
         <button type="button" className={css.toggleBtn} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -157,26 +161,25 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
         <div className={css.body}>
           {canManage && (
             <div className={css.quick}>
-              <button type="button" className={css.chip} onClick={() => setWeek(Object.fromEntries(WEEK.map((d) => [d, isOpen(d) ? [{ ...clinicRange }] : []])) as unknown as Week)}>مثل دوام المركز</button>
+              <button type="button" className={css.chip} onClick={() => setWeek(Object.fromEntries(WEEK.map((d) => [d, isDefaultDay(d) ? [{ ...clinicRange }] : []])) as unknown as Week)}>الدوام الافتراضي</button>
               <button type="button" className={css.chip} disabled={firstWorking === undefined}
-                onClick={() => firstWorking !== undefined && setWeek(Object.fromEntries(WEEK.map((d) => [d, isOpen(d) ? week[firstWorking].map((x) => ({ ...x })) : []])) as unknown as Week)}>
+                onClick={() => firstWorking !== undefined && setWeek(Object.fromEntries(WEEK.map((d) => [d, week[d].length || isDefaultDay(d) ? week[firstWorking].map((x) => ({ ...x })) : []])) as unknown as Week)}>
                 نسخ {firstWorking !== undefined ? `دوام ${AR_DAYS[firstWorking]}` : ""} إلى كل الأيام
               </button>
-              {saved && <button type="button" className={css.chip} onClick={() => { if (!confirm(`إلغاء جدول ${s.name}؟ ستتبع ساعات دوام المركز.`)) return; setWeek(emptyWeek()); void saveStaffHours(s.id, []).then(() => setMsg({ ok: true, text: "أُلغي الجدول — تتبع الآن دوام المركز." })).catch((e) => setMsg({ ok: false, text: errText(e) })); }}>إلغاء الجدول (اتباع دوام المركز)</button>}
+              {saved && <button type="button" className={css.chip} onClick={() => { if (!confirm(`إلغاء جدول ${s.name}؟ ستتبع الدوام الافتراضي.`)) return; setWeek(emptyWeek()); void saveStaffHours(s.id, []).then(() => setMsg({ ok: true, text: "أُلغي الجدول — تتبع الآن الدوام الافتراضي." })).catch((e) => setMsg({ ok: false, text: errText(e) })); }}>إلغاء الجدول (اتباع الدوام الافتراضي)</button>}
             </div>
           )}
           <div className={css.days}>
             {WEEK.map((d) => {
               const r = (shown ?? emptyWeek())[d];
-              const closed = !isOpen(d);
               const on = r.length > 0;
               return (
-                <div key={d} className={css.day} data-off={!on || closed ? "1" : undefined}>
+                <div key={d} className={css.day} data-off={!on ? "1" : undefined}>
                   <div className={css.dayName}>{AR_DAYS[d]}</div>
-                  {closed ? <div className={css.closed}>المركز مغلق</div> : (
+                  {(
                     <>
                       <label className={css.work}>
-                        <Toggle on={on} label={`يوم عمل — ${AR_DAYS[d]}`} onChange={canManage ? (v) => setDay(d, v ? [{ ...clinicRange }] : []) : undefined} />
+                        <Toggle on={on} label={`يوم عمل — ${AR_DAYS[d]}`} onChange={canManage ? (v) => setDay(d, v ? [{ ...(WEEK.map((x) => week[x]).find((x) => x.length)?.[0] ?? clinicRange) }] : []) : undefined} />
                         <span>{on ? "يوم عمل" : "عطلة"}</span>
                       </label>
                       <div className={css.ranges}>
@@ -189,7 +192,7 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
                           </div>
                         ))}
                         {canManage && r.length === 1 && (
-                          <button type="button" className={css.add} onClick={() => setDay(d, [...r, { from: r[0].to < clinicRange.to ? r[0].to : clinicRange.from, to: clinicRange.to }])}>
+                          <button type="button" className={css.add} onClick={() => setDay(d, [...r, { from: r[0].to < "23:00" ? r[0].to : "06:00", to: hhmm(Math.min(DAY_TO, toMin(r[0].to < "23:00" ? r[0].to : "06:00") + 180)) }])}>
                             <Icon name="plus" size={13} color={C.accent} /> فترة ثانية
                           </button>
                         )}
@@ -218,5 +221,57 @@ function TimeSel({ label, value, times, onChange, disabled }: { label: string; v
     <select aria-label={label} className={`${css.time} latin`} dir="ltr" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={{ boxShadow: SHB }}>
       {opts.map((t) => <option key={t} value={t}>{t}</option>)}
     </select>
+  );
+}
+
+/** «الدوام الافتراضي ومدة الموعد» — settings.hours: fallback hours for members without their own schedule + slot length. */
+function DefaultHoursCard({ hours }: { hours: Hours }) {
+  const [h, setH] = useState(hours);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const key = JSON.stringify(hours);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setH(hours); }, [key]);
+  const times = useMemo(() => dayTimes(Math.max(5, h.slot || 15)), [h.slot]);
+  const dirty = JSON.stringify(h) !== key;
+  async function save() {
+    if (!/^\d{2}:\d{2}$/.test(h.from) || !/^\d{2}:\d{2}$/.test(h.to) || toMin(h.to) <= toMin(h.from)) { setMsg({ ok: false, text: "تحقّقي من وقت البداية والنهاية." }); return; }
+    setBusy(true); setMsg(null);
+    try { await saveHours(h); setMsg({ ok: true, text: "حُفظ الدوام الافتراضي ومدة الموعد." }); }
+    catch (e) { setMsg({ ok: false, text: errText(e) }); } finally { setBusy(false); }
+  }
+  return (
+    <Card padding={0} style={{ overflow: "hidden" }}>
+      <div className={css.defHead}>
+        <div className={css.who}>
+          <div className={css.name}><b>الدوام الافتراضي ومدة الموعد</b></div>
+          <div className={css.sum}>يُطبَّق فقط على من ليس لها جدول خاص بها أدناه. مدة الموعد هي الفاصل بين أوقات الحجز للجميع.</div>
+        </div>
+      </div>
+      <div className={css.body}>
+        <div className={css.quick} role="group" aria-label="أيام الدوام الافتراضي">
+          {WEEK.map((d) => (
+            <Chip key={d} selected={h.days.includes(d)} onClick={() => { setMsg(null); setH({ ...h, days: h.days.includes(d) ? h.days.filter((x) => x !== d) : [...h.days, d].sort() }); }}>{AR_DAYS[d]}</Chip>
+          ))}
+        </div>
+        <div className={css.defRow}>
+          <span className={css.range}>
+            <TimeSel label="من" value={h.from} times={times.slice(0, -1)} onChange={(v) => { setMsg(null); setH({ ...h, from: v }); }} />
+            <span className={css.dash}>—</span>
+            <TimeSel label="إلى" value={h.to} times={times.slice(1)} onChange={(v) => { setMsg(null); setH({ ...h, to: v }); }} />
+          </span>
+          <label className={css.work}>مدة الموعد
+            <select aria-label="مدة الموعد (دقيقة)" className={`${css.time} latin`} dir="ltr" value={h.slot} style={{ boxShadow: SHB }}
+              onChange={(e) => { setMsg(null); setH({ ...h, slot: Number(e.target.value) }); }}>
+              {(SLOT_CHOICES.includes(h.slot) ? SLOT_CHOICES : [h.slot, ...SLOT_CHOICES]).map((n) => <option key={n} value={n}>{n} د</option>)}
+            </select>
+          </label>
+        </div>
+        <div className={css.foot}>
+          {msg && <span style={{ color: msg.ok ? C.okDeep : C.danger, fontSize: 13.5, fontWeight: 600 }}>{msg.text}</span>}
+          <button type="button" className={css.save} disabled={busy || !dirty} onClick={save}>{busy ? "جارٍ الحفظ…" : "حفظ"}</button>
+        </div>
+      </div>
+    </Card>
   );
 }

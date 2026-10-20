@@ -7,6 +7,8 @@
 .hint > svg { flex-shrink: 0; margin-top: 4px; }
 .list { display: flex; flex-direction: column; gap: 14px; }
 
+.defHead { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.defRow { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
 .head { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
 .who { flex: 1; min-width: 0; line-height: 1.5; }
 .name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; }
@@ -31,7 +33,6 @@
 }
 .day[data-off] { background: #FAF7FB; }
 .dayName { font-size: 14px; font-weight: 700; color: #3F2A47; }
-.closed { grid-column: 2 / -1; font-size: 13px; color: #A99AAE; }
 .work { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #6E5D75; font-weight: 600; }
 .ranges { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; min-width: 0; }
 .range { display: inline-flex; align-items: center; gap: 6px; }
@@ -58,5 +59,4 @@
   .day { grid-template-columns: 1fr auto; gap: 8px; padding: 10px 12px; }
   .ranges { grid-column: 1 / -1; }
   .ranges:empty { display: none; }
-  .closed { grid-column: 2; }
 }

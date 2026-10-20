@@ -3,16 +3,16 @@
 /** Service and package dialogs (live, Supabase). */
 import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
-import { ErrorNote, Modal, NumberInput, Select, SubmitButton, TextArea, TextInput, Toggle } from "@/components/ui";
-import { saveService, savePackage, setPackageActive, type Device, type Package, type Room, type Service } from "@/lib/db/catalog";
+import { ErrorNote, Icon, Modal, NumberInput, Segment, Select, SubmitButton, TextArea, TextInput, Toggle } from "@/components/ui";
+import { saveCategory, saveService, savePackage, setPackageActive, sypCeil5, type Category, type Device, type Package, type Room, type Service } from "@/lib/db/catalog";
 import { C } from "@/lib/tokens";
 import { Row } from "@/app/admin/settings/rooms/dialogs";
 
 const err = (e: unknown) => arError(e);
-const blank = () => ({ name: "", short: "", desc: "", price: "", from: false, minutes: "", room: "", device: "", online: true, consult: false, active: true, sort: "" });
+const blank = (cat = "") => ({ name: "", short: "", desc: "", price: "", cur: "SYP" as "SYP" | "USD", cat, from: false, minutes: "", room: "", device: "", online: true, consult: false, active: true, sort: "" });
 
-export function ServiceDialog({ open, service, rooms, devices, onClose }: {
-  open: boolean; service: Service | null; rooms: Room[]; devices: Device[]; onClose: () => void;
+export function ServiceDialog({ open, service, rooms, devices, categories, rate, defaultCategory, onClose }: {
+  open: boolean; service: Service | null; rooms: Room[]; devices: Device[]; categories: Category[]; rate: number | null; defaultCategory?: string; onClose: () => void;
 }) {
   const [f, setF] = useState(blank());
   const [busy, setBusy] = useState(false);
@@ -21,11 +21,11 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
     if (!open) return;
     setError("");
     setF(service ? {
-      name: service.name, short: service.short_name, desc: service.description, price: String(service.price), from: service.price_from,
+      name: service.name, short: service.short_name, desc: service.description, price: String(service.price), cur: service.price_currency === "USD" ? "USD" : "SYP", cat: service.category_id ?? "", from: service.price_from,
       minutes: String(service.minutes), room: service.room_id ?? "", device: service.device_id ?? "", online: service.bookable_online, consult: service.is_consultation,
       active: service.active, sort: String(service.sort),
-    } : blank());
-  }, [open, service]);
+    } : blank(defaultCategory ?? categories[0]?.key ?? ""));
+  }, [open, service, defaultCategory, categories]);
   const set = <K extends keyof ReturnType<typeof blank>>(k: K, v: ReturnType<typeof blank>[K]) => setF((x) => ({ ...x, [k]: v }));
 
   async function submit() {
@@ -38,14 +38,15 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
     try {
       await saveService({
         key: service?.key, name: f.name.trim(), short_name: f.short.trim() || f.name.trim(), description: f.desc.trim(),
-        price: Math.round(price), price_from: f.from, minutes: Math.round(minutes), room_id: f.room || null, device_id: f.device || null,
+        price: Math.round(price), price_currency: f.cur, category_id: f.cat || null, price_from: f.from, minutes: Math.round(minutes), room_id: f.room || null, device_id: f.device || null,
         bookable_online: f.online, is_consultation: f.consult, active: f.active, sort: Number(f.sort) || 0,
       });
       onClose();
     } catch (e) { setError(err(e)); } finally { setBusy(false); }
   }
 
-  const row = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } as const;
+  const row = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 } as const;
+  const cat = categories.find((c) => c.key === f.cat);
   return (
     <Modal open={open} onClose={onClose} title={service ? "تعديل الخدمة" : "خدمة جديدة"} width={620}
       footer={<SubmitButton onClick={submit} busy={busy}>{service ? "حفظ التغييرات" : "إضافة الخدمة"}</SubmitButton>}>
@@ -54,8 +55,17 @@ export function ServiceDialog({ open, service, rooms, devices, onClose }: {
         <TextInput label="الاسم المختصر" value={f.short} onChange={(v) => set("short", v)} hint="يظهر في البطاقات الصغيرة وشاشة الانتظار" />
       </div>
       <TextArea label="الوصف" value={f.desc} onChange={(v) => set("desc", v)} rows={2} />
+      <Select label="الفئة" value={f.cat} onChange={(v) => set("cat", v)} options={[{ value: "", label: "بلا فئة" }, ...categories.map((c) => ({ value: c.key, label: c.name }))]} />
+      {cat?.instructions && <div style={{ fontSize: 12.5, color: C.sub2, background: "#FBF6FC", border: "1px solid #F0E4F3", borderRadius: 16, padding: "10px 14px", lineHeight: 1.7 }}>
+        <div style={{ fontWeight: 700, color: C.ink, marginBottom: 2 }}>تعليمات الفئة (تظهر للمراجعات مع كل خدمة فيها)</div>
+        {cat.instructions.split("\n").filter(Boolean).map((t) => <div key={t}>• {t}</div>)}
+      </div>}
       <div style={row}>
-        <NumberInput label="السعر" required suffix="ل.س" value={f.price} onChange={(v) => set("price", v)} hint="0 = مجانية" />
+        <div>
+          <NumberInput label="السعر" required suffix={f.cur === "USD" ? "$" : "ل.س"} value={f.price} onChange={(v) => set("price", v)}
+            hint={f.cur === "USD" ? (rate ? <>≈ {sypCeil5(Number(f.price || 0) * rate).toLocaleString("en-US")} ل.س بسعر اليوم ({rate.toLocaleString("en-US")} ل.س للدولار). المراجعات يرين الليرة فقط.</> : "لم يُحدَّد سعر الصرف بعد: يظهر «السعر عند الاستفسار» للمراجعات.") : "0 = مجانية"} />
+          <div style={{ marginTop: 8 }}><Segment label="عملة السعر" value={f.cur} onChange={(v) => set("cur", v)} options={[{ value: "SYP", label: "ل.س" }, { value: "USD", label: "$" }]} /></div>
+        </div>
         <NumberInput label="المدة" required suffix="دقيقة" value={f.minutes} onChange={(v) => set("minutes", v)} />
       </div>
       <div style={row}>
@@ -125,6 +135,61 @@ export function PackageDialog({ open, pkg, services, onClose }: { open: boolean;
           بسعر الجلسة المنفردة: {full.toLocaleString("en-US")} ل.س — {full > p ? `توفّر المراجعة ${(full - p).toLocaleString("en-US")} ل.س` : "لا توفير"}
         </div>
       )}
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </Modal>
+  );
+}
+
+/** Icons offered for a category (keys of the app's Icon set). */
+export const CATEGORY_ICONS = ["sparkle", "face", "drop", "eye", "msg", "hand", "sun", "heart", "star"];
+
+export function CategoryDialog({ open, category, nextSort, onClose }: { open: boolean; category: Category | null; nextSort: number; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [short, setShort] = useState("");
+  const [ins, setIns] = useState("");
+  const [icon, setIcon] = useState("sparkle");
+  const [preg, setPreg] = useState(false);
+  const [active, setActive] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!open) return;
+    setError(""); setName(category?.name ?? ""); setShort(category?.short_description ?? ""); setIns(category?.instructions ?? "");
+    setIcon(category?.icon ?? "sparkle"); setPreg(category?.not_for_pregnant ?? false); setActive(category?.active ?? true);
+  }, [open, category]);
+
+  async function submit() {
+    setError("");
+    if (!name.trim()) { setError("اكتبي اسم الفئة."); return; }
+    setBusy(true);
+    try {
+      const instructions = ins.split("\n").map((t) => t.trim()).filter(Boolean).join("\n");
+      await saveCategory({ key: category?.key, name: name.trim(), short_description: short.trim(), instructions, icon, not_for_pregnant: preg, active, sort: category?.sort ?? nextSort }, !category);
+      onClose();
+    } catch (e) { setError(err(e)); } finally { setBusy(false); }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={category ? "تعديل الفئة" : "فئة جديدة"} width={560}
+      footer={<SubmitButton onClick={submit} busy={busy}>{category ? "حفظ التغييرات" : "إضافة الفئة"}</SubmitButton>}>
+      <TextInput label="اسم الفئة" required value={name} onChange={setName} placeholder="مثلاً: العناية بالشعر" />
+      <TextInput label="وصف قصير" value={short} onChange={setShort} hint="يظهر تحت اسم الفئة في التطبيق" />
+      <TextArea label="تعليمات قبل الجلسة وبعدها (سطر لكل تعليمة)" value={ins} onChange={setIns} rows={6} />
+      <div>
+        <div style={{ fontSize: 13, color: C.sub2, marginBottom: 6 }}>الأيقونة</div>
+        <div role="radiogroup" aria-label="الأيقونة" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {CATEGORY_ICONS.map((k) => (
+            <button key={k} type="button" role="radio" aria-checked={icon === k} aria-label={k} onClick={() => setIcon(k)}
+              style={{ width: 42, height: 42, borderRadius: 21, border: `1.5px solid ${icon === k ? C.accentMid : "#EADCF0"}`, background: icon === k ? "#F3E7F7" : C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name={k} size={18} color={C.accent} />
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <Row title="غير مناسبة للحامل" sub="يظهر تنبيه واضح عند الحجز، وتحذير إن كان ملف المراجِعة يذكر الحمل"><Toggle on={preg} onChange={setPreg} label="غير مناسبة للحامل" /></Row>
+        <Row title="مفعّلة" sub="الفئة الموقوفة لا تظهر للمراجعات"><Toggle on={active} onChange={setActive} label="مفعّلة" /></Row>
+      </div>
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-/** P_ConsultBook.dc.html — book an online consultation (day, time). Uses the centre's opening hours. */
+/** P_ConsultBook.dc.html — book an online consultation (day, time). Days and times follow the consultant's «أوقات الدوام» (rpc booking_weekdays / app_slots). */
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
@@ -10,6 +10,7 @@ import { AR_MONTHS } from "@/lib/data";
 import { atDamascus, dayKey, dayName, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { bookConsult, getConsultService, getHours } from "@/lib/db/consult";
+import { appSlots, bookingWeekdays } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, SOFT_PANEL } from "@/lib/tokens";
 
@@ -20,7 +21,6 @@ const sel = (on: boolean): CSSProperties => ({
   boxShadow: on ? "0 10px 22px rgba(150,100,170,0.30)" : "0 4px 12px rgba(123,70,135,0.06)",
 });
 const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
 export default function ConsultBookPage() {
   const { patient, loading: sLoading } = useRequirePatient();
@@ -32,29 +32,27 @@ export default function ConsultBookPage() {
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const { data: wdays } = useQuery(["consult", "weekdays", svc?.key], () => bookingWeekdays(svc!.key, null), { enabled: !!svc });
   const days = useMemo(() => {
-    if (!hours) return [];
+    if (!hours || !wdays) return [];
     const out: Date[] = [];
     for (let i = 0; out.length < 6 && i < 21; i++) {
       const d = new Date(Date.now() + i * 864e5);
       const k = dayKey(d);
       const wd = new Date(`${k}T12:00:00+03:00`).getUTCDay();
-      if (hours.days.includes(wd)) out.push(new Date(`${k}T12:00:00+03:00`));
+      if (wdays.includes(wd)) out.push(new Date(`${k}T12:00:00+03:00`));
     }
     return out;
-  }, [hours]);
+  }, [hours, wdays]);
 
+  // free times from the server: the consultant's working hours, overlaps; every max(minutes, 30) min, at least 1 h ahead
+  const dk = days[day] ? dayKey(days[day]) : null;
+  const { data: free } = useQuery(["consult", "slots", svc?.key, dk], () => appSlots(dk!, svc!.key, null), { enabled: !!svc && !!dk });
   const times = useMemo(() => {
-    if (!hours || !svc || !days[day]) return [];
+    if (!svc || !dk || !free) return [];
     const step = Math.max(svc.minutes, 30);
-    const k = dayKey(days[day]);
-    const out: string[] = [];
-    for (let m = toMin(hours.from); m + svc.minutes <= toMin(hours.to); m += step) {
-      const t = hhmm(m);
-      if (new Date(atDamascus(k, t)).getTime() > Date.now() + 60 * 6e4) out.push(t);
-    }
-    return out;
-  }, [hours, svc, days, day]);
+    return free.filter((t) => toMin(t) % step === 0 && new Date(atDamascus(dk, t)).getTime() > Date.now() + 60 * 6e4);
+  }, [svc, dk, free]);
 
   const book = async () => {
     if (!svc || !slot || !days[day]) return;

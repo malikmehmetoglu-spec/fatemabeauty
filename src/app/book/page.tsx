@@ -11,13 +11,13 @@ import { R } from "@/lib/routes";
 import { appHref, DOMAIN } from "@/lib/hosts";
 import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
 import { clock, dayKey } from "@/lib/format";
-import { priceLabel } from "@/lib/db/catalog";
 import {
   getBookingWeekdays, getPublicInfo, getPublicSlots, icsFile, nextDays, normalisePhone, publicBook, publicError,
-  type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot,
+  pubPrice, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot,
 } from "@/lib/db/publicBooking";
 import { C } from "@/lib/tokens";
 import s from "./book.module.css";
+import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 
 type Kind = "session" | "consult";
 const DAYS_AHEAD = 14;
@@ -85,7 +85,13 @@ export default function PublicBookingPage() {
   const sessionServices = useMemo(() => (info?.services ?? []).filter((x) => !x.is_consultation), [info]);
   const consultServices = useMemo(() => (info?.services ?? []).filter((x) => x.is_consultation), [info]);
   const consultReady = !!info?.consultant && consultServices.length > 0;
-  const kindServices = kind === "consult" ? consultServices : sessionServices;
+  const [pubCat, setPubCat] = useState<string | null>(null);
+  const sessionCats = useMemo(() => (info?.categories ?? []).filter((c) => sessionServices.some((x) => x.category_id === c.key)), [info, sessionServices]);
+  const otherSessions = sessionServices.filter((x) => !sessionCats.some((c) => c.key === x.category_id));
+  const curPubCat = pubCat ?? (service && !service.is_consultation ? (sessionCats.some((c) => c.key === service.category_id) ? service.category_id : "") : null) ?? sessionCats[0]?.key ?? "";
+  const kindServices = kind === "consult" ? consultServices
+    : sessionCats.length ? sessionServices.filter((x) => (curPubCat ? x.category_id === curPubCat : !sessionCats.some((c) => c.key === x.category_id))) : sessionServices;
+  const svcCat = (info?.categories ?? []).find((c) => c.key === service?.category_id) ?? null;
   const people = info?.specialists ?? [];
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
 
@@ -180,7 +186,7 @@ export default function PublicBookingPage() {
     ["user", kind === "consult" ? "الاستشارية" : "الأخصائية", kind === "consult" ? info?.consultant?.name ?? null : service ? (chosenPerson?.name ?? "أي أخصائية متاحة") : null],
     ["cal", "اليوم", day && service ? dayLabel(day) : null],
     ["clock", "الساعة", time ? `${clock(time)} بتوقيت دمشق` : null],
-    ["wallet", "السعر", service ? priceLabel(service) : null],
+    ["wallet", "السعر", service ? pubPrice(service) : null],
   ];
 
   const contact = info?.centre?.whatsapp || info?.centre?.phone || null;
@@ -263,7 +269,7 @@ export default function PublicBookingPage() {
                         {kind === "session" && <span className={s.kindCheck}><Icon name="check" color="#fff" size={16} stroke={2.6} /></span>}
                         <span className={s.kindIcon}><Icon name="sparkle" size={24} color={C.accentMid} /></span>
                         <div>
-                          <div className={s.kindTitle}>جلسة عناية بالبشرة</div>
+                          <div className={s.kindTitle}>جلسة عناية</div>
                           <div className={s.kindText}>{sessionServices.length ? `${sessionServices.length === 1 ? "جلسة واحدة" : sessionServices.length === 2 ? "جلستان" : `${sessionServices.length} ${sessionServices.length < 11 ? "جلسات" : "جلسة"}`} مع أخصائيات المركز` : "غير متاحة حالياً"}</div>
                         </div>
                       </button>
@@ -281,7 +287,20 @@ export default function PublicBookingPage() {
                       </button>
                     </div>
 
-                    {kind && kindServices.length > 1 && (
+                    {kind === "session" && sessionCats.length > 0 && (sessionCats.length + (otherSessions.length ? 1 : 0)) > 1 && (
+                      <>
+                        <div className={s.subHead}>اختاري الفئة</div>
+                        <div className={s.cats} role="radiogroup" aria-label="فئة الجلسة">
+                          {[...sessionCats.map((c) => ({ key: c.key, name: c.name, icon: c.icon })), ...(otherSessions.length ? [{ key: "", name: "جلسات أخرى", icon: "sparkle" }] : [])].map((c) => (
+                            <button key={c.key || "other"} type="button" role="radio" aria-checked={curPubCat === c.key} className={`${s.cat} ${curPubCat === c.key ? s.catOn : ""}`}
+                              onClick={() => { setPubCat(c.key); if (service && service.category_id !== c.key) { setService(null); setTime(null); } }}>
+                              <Icon name={c.icon} size={17} color={curPubCat === c.key ? C.accent : C.accentMid} />{c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {kind && (kindServices.length > 1 || (kind === "session" && sessionCats.length > 1)) && (
                       <>
                         <div className={s.subHead}>{kind === "consult" ? "اختاري نوع الاستشارة" : "اختاري الجلسة"}</div>
                         <div className={s.services}>
@@ -289,13 +308,14 @@ export default function PublicBookingPage() {
                             <button key={x.key} type="button" className={`${s.svc} ${service?.key === x.key ? s.svcOn : ""}`} onClick={() => pickService(x)} aria-pressed={service?.key === x.key}>
                               <span className={s.svcName}>{x.name}</span>
                               {x.description && <span className={s.svcDesc}>{x.description}</span>}
-                              <span className={s.svcMeta}><span>{x.minutes} دقيقة</span><b>{priceLabel(x)}</b></span>
+                              <span className={s.svcMeta}><span>{x.minutes} دقيقة</span><b>{pubPrice(x)}</b></span>
                             </button>
                           ))}
                         </div>
                       </>
                     )}
 
+                    {svcCat?.not_for_pregnant && <PregnancyNotice style={{ marginTop: 14 }} />}
                     {kind === "session" && service && people.length > 0 && (
                       <>
                         <div className={s.subHead}>مع من تفضّلين؟</div>

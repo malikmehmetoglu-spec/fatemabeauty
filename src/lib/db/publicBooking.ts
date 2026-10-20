@@ -7,11 +7,16 @@
 import { supabase } from "@/lib/supabase/client";
 import { clock, dayKey } from "@/lib/format";
 import type { Hours } from "./appointments";
+import { priceLabel } from "./catalog";
 
-export type PubService = { key: string; name: string; short_name: string; description: string; price: number; price_from: boolean; minutes: number; is_consultation: boolean };
+/** `price` is already in SYP (dollar prices converted server-side); null = «السعر عند الاستفسار». */
+export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null };
+export type PubCategory = { key: string; name: string; short_description: string; instructions: string; icon: string; not_for_pregnant: boolean };
+/** Price label for a public service (SYP only). */
+export const pubPrice = (x: PubService) => priceLabel({ price: x.price ?? 0, price_from: x.price_from, price_syp: x.price });
 export type PubPerson = { id: string; name: string; title: string; photo_url: string | null };
 export type PubInfo = {
-  services: PubService[]; specialists: PubPerson[]; consultant: PubPerson | null; hours: Hours;
+  services: PubService[]; categories?: PubCategory[]; specialists: PubPerson[]; consultant: PubPerson | null; hours: Hours;
   centre: { phone: string | null; whatsapp: string | null } | null; horizon_days: number;
 };
 export type PubSlot = { starts_at: string; available: boolean };

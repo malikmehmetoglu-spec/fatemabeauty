@@ -81,7 +81,7 @@ export default function Page() {
   const reset = (w: Who | null, l: CartLine[] = []) => {
     setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
   };
-  const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: a.services?.name ?? "جلسة", unit_price: a.price || a.services?.price || 0 }]);
+  const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: a.services?.name ?? "جلسة", unit_price: a.price || sellables.data?.services.find((x) => x.key === a.service_key)?.price || 0 }]);
 
   // the package covers one session of its service → that line is free
   const pkg = usable.find((p) => p.id === pkgId) ?? null;
@@ -429,7 +429,9 @@ function ItemSearch({ sellables, onAdd, stockOf }: { sellables?: Sellables; onAd
   const [q, setQ] = useState("");
   const s = q.trim();
   const hits: (CartLine & { meta: string; disabled?: boolean })[] = !s || !sellables ? [] : [
-    ...sellables.services.filter((x) => x.name.includes(s)).map((x) => ({ kind: "service" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price, meta: `خدمة · ${x.minutes} دقيقة` })),
+    ...sellables.services.map((x) => ({ x, cat: sellables.categories.find((c) => c.key === x.category_id)?.name ?? "" }))
+      .filter(({ x, cat }) => x.name.includes(s) || cat.includes(s))
+      .map(({ x, cat }) => ({ kind: "service" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price, meta: x.price_unknown ? "السعر غير محدد — حدّدي سعر الصرف من المالية" : `${cat || "خدمة"} · ${x.minutes} دقيقة`, disabled: x.price_unknown })),
     ...sellables.products.filter((x) => x.name.includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price ?? 0, meta: `منتج · المتوفر ${stockOf(x.key)} ${x.unit}`, disabled: stockOf(x.key) <= 0 })),
     ...sellables.packages.filter((x) => x.name.includes(s)).map((x) => ({ kind: "package" as const, ref: x.id, qty: 1, label: x.name, unit_price: x.price, meta: `باقة · ${x.sessions} جلسات` })),
   ].slice(0, 8);

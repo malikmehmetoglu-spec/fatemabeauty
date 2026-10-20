@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { EmptyState, ErrorNote, Loading } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { listServices, priceLabel, serviceIcon } from "@/lib/db/catalog";
+import { listCategories, listServices, priceLabel, serviceIcon } from "@/lib/db/catalog";
 import { createWalkIn, listToday } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { css } from "../css";
@@ -19,15 +19,21 @@ import { KC, StepHeader, kioskError, useKiosk } from "../kiosk";
 export default function Page() {
   const k = useKiosk();
   const router = useRouter();
-  const q = useQuery(["queue", "walk-in"], async () => ({ services: await listServices(), today: await listToday() }), { enabled: !k.gate });
-  const [sel, setSel] = useState(0);
+  const q = useQuery(["queue", "walk-in"], async () => ({ services: await listServices(), today: await listToday(), cats: await listCategories() }), { enabled: !k.gate });
+  const [selKey, setSelKey] = useState<string | null>(null);
+  const [catKey, setCatKey] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (k.gate) return k.gate;
-  const services = q.data?.services ?? [];
+  const allServices = q.data?.services ?? [];
   const today = q.data?.today ?? [];
+  const cats = (q.data?.cats ?? []).filter((c) => allServices.some((s) => s.category_id === c.key));
+  const curCat = (catKey && cats.some((c) => c.key === catKey) ? catKey : null) ?? cats[0]?.key ?? null;
+  const services = curCat ? allServices.filter((s) => s.category_id === curCat) : allServices;
+  const sel = Math.max(0, services.findIndex((s) => s.key === selKey));
+  const setSel = (i: number) => setSelKey(services[i]?.key ?? null);
   const S = services.map((s) => {
     const waiting = today.filter((a) => a.status === "checked_in" && (!s.room_id || a.room_id === s.room_id)).length;
     return { key: s.key, name: s.name, icon: serviceIcon(s.name), price: priceLabel(s), minutes: `${s.minutes} دقيقة`, ok: true, slot: waiting ? `${waiting} في الانتظار` : "متاح الآن" };
@@ -71,6 +77,16 @@ export default function Page() {
           {q.loading && <Loading />}
           {q.error && <ErrorNote>{q.error}</ErrorNote>}
           {!q.loading && !q.error && !S.length && <EmptyState icon="box" title="لا توجد خدمات بعد" text="تظهر هنا الخدمات المفعّلة بعد إضافتها من لوحة الإدارة ← الخدمات." />}
+          {cats.length > 1 && <div role="tablist" aria-label="فئات الخدمات" className={KC.scroll} style={{ display: "flex", gap: 10, overflowX: "auto", flexShrink: 0, paddingBottom: 2 }}>
+            {cats.map((c) => {
+              const on = c.key === curCat;
+              return <button key={c.key} type="button" role="tab" aria-selected={on} onClick={() => { setCatKey(c.key); setSelKey(null); }} style={{
+                flexShrink: 0, height: 48, padding: "0 20px", borderRadius: 24, whiteSpace: "nowrap", fontFamily: "inherit", fontSize: 16, fontWeight: on ? 700 : 600,
+                border: `1px solid ${on ? "#FFFFFF" : "#EEE4F1"}`, background: on ? "linear-gradient(160deg,#F1E3F6,#D9BCE5)" : "#FFFFFF", color: on ? "#7B4687" : C.sub2,
+                boxShadow: on ? "0 8px 18px rgba(150,100,170,0.26)" : "0 4px 12px rgba(123,70,135,0.06)",
+              }}>{c.name}</button>;
+            })}
+          </div>}
           {S.length > 0 && <div className={`${KC.svcGrid} ${KC.scroll}`} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "minmax(190px, 1fr)", gap: 16, flexGrow: 1, minHeight: "0", overflowY: "auto" }}>
             {svcs.map((s) => (
               <button key={s.key} type="button" onClick={s.pick} aria-label={s.name} aria-pressed={s.on} style={s.style}>

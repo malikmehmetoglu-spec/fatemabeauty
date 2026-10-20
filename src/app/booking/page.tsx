@@ -7,7 +7,8 @@ import { deskRound, PhoneScreen } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
-import { listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
+import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
+import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 import { appSlots, bookingWeekdays, getHours, openDays, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_MONTHS, initials } from "@/lib/data";
@@ -30,14 +31,23 @@ export default function BookingPage() {
   const team = useQuery(["catalog", "specialists"], listSpecialists);
   const hours = useQuery(["appointments", "hours"], getHours);
 
+  const catsQ = useQuery(["catalog", "categories"], () => listCategories());
   const bookable = useMemo(() => (services.data ?? []).filter((x) => x.bookable_online), [services.data]);
   const [svcKey, setSvcKey] = useState<string | null>(null);
+  const [catKey, setCatKey] = useState<string | null>(null);
   const [sp, setSp] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
 
   useEffect(() => { if (q && !svcKey) setSvcKey(q.get("service")); }, [q, svcKey]);
-  const svc = bookable.find((x) => x.key === svcKey) ?? bookable[0] ?? null;
+  const cats = (catsQ.data ?? []).filter((c) => bookable.some((x) => x.category_id === c.key));
+  const hasOther = bookable.some((x) => !cats.some((c) => c.key === x.category_id));
+  const picked = bookable.find((x) => x.key === svcKey) ?? null;
+  // category step: the chosen category, else the picked service's, else the first one
+  const curCat = catKey ?? (picked ? (cats.some((c) => c.key === picked.category_id) ? picked.category_id : "") : null) ?? cats[0]?.key ?? "";
+  const inCat = bookable.filter((x) => (curCat ? x.category_id === curCat : !cats.some((c) => c.key === x.category_id)));
+  const svc = (picked && inCat.includes(picked) ? picked : null) ?? inCat[0] ?? null;
+  const cat = cats.find((c) => c.key === svc?.category_id) ?? null;
   // open days = days on which someone who does this service works (or the chosen specialist works)
   const wdays = useQuery(["appointments", "booking_weekdays", svc?.key, sp], () => bookingWeekdays(svc!.key, sp), { enabled: !!svc });
   const days = useMemo(() => (hours.data && wdays.data ? openDays({ ...hours.data, days: wdays.data }, 7) : []), [hours.data, wdays.data]);
@@ -85,10 +95,20 @@ export default function BookingPage() {
           <EmptyState icon="cal" title="لا خدمات متاحة للحجز بعد" text="عند إضافة المركز لخدماته ستظهر هنا وتستطيعين الحجز مباشرة." />
         ) : (
           <>
+            {(cats.length > 1 || (cats.length > 0 && hasOther)) && (
+              <div>
+                <div style={{ fontSize: 13, color: C.sub2, marginBottom: 8 }}>الفئة</div>
+                <div role="radiogroup" aria-label="الفئة" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
+                  {[...cats.map((c) => ({ key: c.key, name: c.name })), ...(hasOther ? [{ key: "", name: "خدمات أخرى" }] : [])].map((c) => (
+                    <button key={c.key || "other"} type="button" role="radio" aria-checked={curCat === c.key} onClick={() => { setCatKey(c.key); setSvcKey(null); }} style={pill(curCat === c.key)}>{c.name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <div style={{ fontSize: 13, color: C.sub2, marginBottom: 8 }}>الخدمة</div>
               <div role="radiogroup" aria-label="الخدمة" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
-                {bookable.map((x) => (
+                {inCat.map((x) => (
                   <button key={x.key} type="button" role="radio" aria-checked={svc?.key === x.key} onClick={() => setSvcKey(x.key)} style={pill(svc?.key === x.key)}>
                     {x.short_name} · <span className="latin">{x.minutes}</span> د
                   </button>
@@ -96,6 +116,7 @@ export default function BookingPage() {
               </div>
             </div>
 
+            {cat?.not_for_pregnant && <PregnancyNotice warn={!!s.patient?.pregnant} />}
             {!!team.data?.length && (
               <div>
                 <div style={{ fontSize: 13, color: C.sub2, marginBottom: 8 }}>الأخصائية</div>

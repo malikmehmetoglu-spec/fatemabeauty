@@ -103,12 +103,20 @@ export async function getPolicies() {
 }
 
 export async function listSellables() {
-  const [services, products, packages] = await Promise.all([
-    supabase.from("services").select("key, name, short_name, price, minutes").eq("active", true).order("sort"),
+  const [services, products, packages, syp, cats] = await Promise.all([
+    supabase.from("services").select("key, name, short_name, price, minutes, category_id").eq("active", true).order("sort"),
     supabase.from("products").select("key, name, size, price, stock, unit").eq("active", true).eq("kind", "retail").not("price", "is", null).order("name"),
     supabase.from("packages").select("id, name, sessions, price, service_key").eq("active", true).order("name"),
+    supabase.rpc("service_prices_syp"),
+    supabase.from("service_categories").select("key, name, sort").eq("active", true).order("sort"),
   ]);
-  return { services: rows(services), products: rows(products), packages: rows(packages) };
+  // the cashier only sees SYP: dollar-priced services are converted with today's rate (null = no rate yet)
+  const m = new Map(rows(syp).map((r) => [r.key, r.price_syp] as const));
+  const order = new Map(rows(cats).map((c) => [c.key, c.sort]));
+  const svc = rows(services)
+    .map((s) => ({ ...s, price: m.get(s.key) ?? 0, price_unknown: m.has(s.key) && m.get(s.key) == null }))
+    .sort((a, b) => (order.get(a.category_id ?? "") ?? 999) - (order.get(b.category_id ?? "") ?? 999));
+  return { services: svc, products: rows(products), packages: rows(packages), categories: rows(cats) };
 }
 
 /** user_id → staff name (invoices store the auth user who issued them). */

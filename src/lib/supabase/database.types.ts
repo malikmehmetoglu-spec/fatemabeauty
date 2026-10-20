@@ -1446,10 +1446,47 @@ export type Database = {
         }
         Relationships: []
       }
+      service_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          icon: string
+          instructions: string
+          key: string
+          name: string
+          not_for_pregnant: boolean
+          short_description: string
+          sort: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          icon?: string
+          instructions?: string
+          key: string
+          name: string
+          not_for_pregnant?: boolean
+          short_description?: string
+          sort?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          icon?: string
+          instructions?: string
+          key?: string
+          name?: string
+          not_for_pregnant?: boolean
+          short_description?: string
+          sort?: number
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           active: boolean
           bookable_online: boolean
+          category_id: string | null
           description: string
           device_id: string | null
           is_consultation: boolean
@@ -1457,6 +1494,7 @@ export type Database = {
           minutes: number
           name: string
           price: number
+          price_currency: string
           price_from: boolean
           room_id: string | null
           short_name: string
@@ -1465,6 +1503,7 @@ export type Database = {
         Insert: {
           active?: boolean
           bookable_online?: boolean
+          category_id?: string | null
           description?: string
           device_id?: string | null
           is_consultation?: boolean
@@ -1472,6 +1511,7 @@ export type Database = {
           minutes: number
           name: string
           price: number
+          price_currency?: string
           price_from?: boolean
           room_id?: string | null
           short_name: string
@@ -1480,6 +1520,7 @@ export type Database = {
         Update: {
           active?: boolean
           bookable_online?: boolean
+          category_id?: string | null
           description?: string
           device_id?: string | null
           is_consultation?: boolean
@@ -1487,12 +1528,20 @@ export type Database = {
           minutes?: number
           name?: string
           price?: number
+          price_currency?: string
           price_from?: boolean
           room_id?: string | null
           short_name?: string
           sort?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "services_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["key"]
+          },
           {
             foreignKeyName: "services_device_id_fkey"
             columns: ["device_id"]
@@ -2499,6 +2548,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      service_price_syp: { Args: { p_key: string }; Returns: number }
+      service_prices_syp: {
+        Args: never
+        Returns: {
+          key: string
+          price_syp: number
+        }[]
+      }
       set_exchange_rate: {
         Args: { p_note?: string; p_rate: number; p_source?: string }
         Returns: {
@@ -2566,6 +2623,11 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      syp_ceil5: { Args: { p_amount: number }; Returns: number }
+      to_syp: {
+        Args: { p_amount: number; p_currency: string }
+        Returns: number
       }
       today_queue: {
         Args: never

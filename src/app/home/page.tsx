@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { DeskHeading, PhoneScreen, phoneOnly } from "@/components/shell";
 import hm from "./home.module.css";
 import { Circ, EmptyState, ErrorNote, Icon, IconButton, Loading, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
-import { listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
+import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { useSession } from "@/lib/supabase/session";
 import { ACTIVE, listMine, STATUS_LABEL } from "@/lib/db/appointments";
 import { listMyNotifications } from "@/lib/db/patients";
@@ -31,7 +32,11 @@ export default function HomePage() {
   const next = (mine ?? []).filter((a) => ACTIVE.includes(a.status) && new Date(a.starts_at).getTime() + a.minutes * 60000 > now)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const spec = team?.[0];
-  const cards = (services ?? []).filter((s) => s.price > 0 || !/استشارة/.test(s.name));
+  const { data: catData } = useQuery(["catalog", "categories"], () => listCategories());
+  const [hcat, setHcat] = useState<string | null>(null);
+  const cats = (catData ?? []).filter((c) => (services ?? []).some((s) => s.category_id === c.key));
+  const curCat = (hcat && cats.some((c) => c.key === hcat) ? hcat : null) ?? cats.find((c) => c.key !== "consult")?.key ?? cats[0]?.key ?? null;
+  const cards = (services ?? []).filter((s) => !curCat || s.category_id === curCat);
   return (
     <PhoneScreen tab="الرئيسية" padding="0" gap={0}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(env(safe-area-inset-top, 0px) + 22px) 22px 16px", position: "relative" }}>
@@ -112,6 +117,22 @@ export default function HomePage() {
         {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الخدمات: {error}</ErrorNote> : cards.length === 0 ? (
           <EmptyState compact icon="sparkle" title="لا خدمات منشورة بعد" text="ستظهر هنا جلسات المركز وأسعارها فور إضافتها من الإدارة." />
         ) : (
+        <>
+        {cats.length > 1 && (
+          <div role="tablist" aria-label="فئات الخدمات" style={{ display: "flex", gap: 8, overflowX: "auto", margin: "-6px -22px 14px", padding: "2px 22px 6px" }}>
+            {cats.map((c) => {
+              const on = c.key === curCat;
+              return (
+                <button key={c.key} type="button" role="tab" aria-selected={on} onClick={() => setHcat(c.key)} style={{
+                  flexShrink: 0, height: 38, padding: "0 14px", borderRadius: 19, whiteSpace: "nowrap", fontSize: 13, fontWeight: on ? 700 : 600,
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  border: `1px solid ${on ? "#FFFFFF" : "#EEE4F1"}`, background: on ? "linear-gradient(160deg,#F1E3F6,#D9BCE5)" : C.white,
+                  color: on ? C.accent : C.sub2, boxShadow: on ? "0 8px 18px rgba(150,100,170,0.24)" : "0 4px 12px rgba(123,70,135,0.06)",
+                }}><Icon name={c.icon} size={15} color={on ? C.accent : C.muted} />{c.name}</button>
+              );
+            })}
+          </div>
+        )}
         <div className={hm.grid} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
           {cards.map((s, i) => {
             const dark = i === cards.length - 1 && cards.length % 2 === 0;
@@ -139,6 +160,7 @@ export default function HomePage() {
             );
           })}
         </div>
+        </>
         )}
       </section>
     </PhoneScreen>
