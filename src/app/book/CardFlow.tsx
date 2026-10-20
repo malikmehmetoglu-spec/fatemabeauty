@@ -75,7 +75,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   const [dir, setDir] = useState<"fwd" | "back">("fwd");
   const [leaving, setLeaving] = useState<{ step: number; dir: "fwd" | "back"; id: number } | null>(null);
   const [drag, setDrag] = useState(0);
-  const dragRef = useRef<{ x: number; y: number; on: boolean } | null>(null);
+  const dragRef = useRef<{ x: number; y: number; on: boolean; dx: number } | null>(null);
   const headRef = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
 
@@ -116,7 +116,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   function onDown(e: React.PointerEvent) {
     if (e.pointerType === "mouse" || step === 0) return;
     if ((e.target as HTMLElement).closest("[data-noswipe],input,textarea")) return;
-    dragRef.current = { x: e.clientX, y: e.clientY, on: false };
+    dragRef.current = { x: e.clientX, y: e.clientY, on: false, dx: 0 };
   }
   function onMove(e: React.PointerEvent) {
     const d = dragRef.current;
@@ -126,13 +126,14 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { dragRef.current = null; return; }
       if (dx > 12) d.on = true; else return;
     }
-    setDrag(Math.max(0, dx));
+    d.dx = Math.max(0, dx);
+    setDrag(d.dx);
   }
   function onUp() {
     const d = dragRef.current;
     dragRef.current = null;
     if (!d?.on) return;
-    if (drag > 90) back(); else setDrag(0);
+    if (d.dx > 90) back(); else setDrag(0);
   }
 
   /* ---------- choosing ---------- */
@@ -388,7 +389,6 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 6: {
         const rows: [string, string, string | null, number][] = [
-          ["sparkle", "نوع الموعد", typeName, 0],
           ["drop", "الخدمة", c.service ? `${c.service.name} · ${c.service.minutes} دقيقة` : null, skipSession ? 0 : 1],
           ["user", c.kind === "consult" ? "الاستشارية" : "الأخصائية", personName, 2],
           ["cal", "اليوم", c.day ? dayLabel(c.day) : null, 3],
@@ -401,6 +401,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             <div className={s.body}>
               <div className={s.receipt}>
                 <div className={s.receiptGlow} aria-hidden />
+                {c.service && <div className={s.rPrice}><span>{typeName}</span><b>{c.service.price == null ? "السعر عند الاستفسار" : pubPrice(c.service)}</b></div>}
                 {rows.map(([icon, label, value, to]) => (
                   <div key={label} className={s.rRow}>
                     <span className={s.rIcon}><Icon name={icon} color="#fff" size={16} /></span>
@@ -408,7 +409,6 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                     <button type="button" className={s.rEdit} onClick={() => go(to)} aria-label={`تعديل ${label}`}>تعديل</button>
                   </div>
                 ))}
-                {c.service && <div className={s.rPrice}><span>السعر</span><b>{c.service.price == null ? "السعر عند الاستفسار" : pubPrice(c.service)}</b></div>}
               </div>
               <p className={s.fine}>بالضغط على «ثبّتي الموعد» يُسجَّل حجزكِ بانتظار تأكيد المركز، وسنتواصل معكِ على رقمكِ.</p>
             </div>
@@ -522,7 +522,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                 );
               })}
             </ol>
-            <div className={s.chips} data-noswipe aria-label="اختياراتكِ">
+            {step < 6 && <div className={s.chips} data-noswipe aria-label="اختياراتكِ">
               {chips.length === 0
                 ? <span className={s.chipHint}>احجزي موعدكِ في دقيقة — الأوقات حقيقية ومحدّثة لحظة بلحظة.</span>
                 : chips.map((ch) => (
@@ -530,7 +530,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                     <Icon name={ch.icon} size={14} color={C.accent} /><span>{ch.text}</span>
                   </button>
                 ))}
-            </div>
+            </div>}
           </>
         )}
       </header>
