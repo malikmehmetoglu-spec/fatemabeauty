@@ -14,7 +14,8 @@ export type PubService = { key: string; name: string; short_name: string; descri
 export type PubCategory = { key: string; name: string; short_description: string; instructions: string; icon: string; not_for_pregnant: boolean };
 /** Price label for a public service (SYP only). */
 export const pubPrice = (x: PubService) => priceLabel({ price: x.price ?? 0, price_from: x.price_from, price_syp: x.price });
-export type PubPerson = { id: string; name: string; title: string; photo_url: string | null };
+/** `services` = keys of the bookable services she provides (server applies the «all services» fallback). */
+export type PubPerson = { id: string; name: string; title: string; photo_url: string | null; services?: string[] };
 export type PubInfo = {
   services: PubService[]; categories?: PubCategory[]; specialists: PubPerson[]; consultant: PubPerson | null; hours: Hours;
   centre: { phone: string | null; whatsapp: string | null } | null; horizon_days: number;
@@ -60,6 +61,7 @@ const CODES: Record<string, string> = {
   bad_phone: "اكتبي رقم موبايل سوري صحيحاً، مثل 0991 234 567.",
   bad_note: "الملاحظة طويلة، اختصريها قليلاً.",
   bad_service: "هذه الخدمة غير متاحة للحجز الآن.",
+  not_provider: "هذه الأخصائية لا تقدّم هذه الخدمة. اختاري أخصائية أخرى أو «أي أخصائية متاحة».",
   bad_specialist: "الأخصائية المختارة غير متاحة. اختاري «أي أخصائية متاحة».",
   past: "هذا الوقت مضى. اختاري وقتاً لاحقاً.",
   too_far: "يمكن الحجز خلال الشهر القادم فقط.",

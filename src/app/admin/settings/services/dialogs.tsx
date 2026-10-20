@@ -7,6 +7,12 @@ import { ErrorNote, Icon, Modal, NumberInput, Segment, Select, SubmitButton, Tex
 import { saveCategory, saveService, savePackage, setPackageActive, sypCeil5, type Category, type Device, type Package, type Room, type Service } from "@/lib/db/catalog";
 import { C } from "@/lib/tokens";
 import { Row } from "@/app/admin/settings/rooms/dialogs";
+import { useQuery } from "@/lib/db/query";
+import { listStaff } from "@/lib/db/staff";
+import { serviceProviders } from "@/lib/db/appointments";
+import { listAssignments, setServiceStaff } from "@/lib/db/staffServices";
+import { StaffAvatar } from "@/app/admin/staff/team-ui";
+import { SELECTED } from "@/lib/tokens";
 
 const err = (e: unknown) => arError(e);
 const blank = (cat = "") => ({ name: "", short: "", desc: "", price: "", cur: "SYP" as "SYP" | "USD", cat, from: false, minutes: "", room: "", device: "", online: true, consult: false, active: true, sort: "" });
@@ -26,6 +32,15 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
       active: service.active, sort: String(service.sort),
     } : blank(defaultCategory ?? categories[0]?.key ?? ""));
   }, [open, service, defaultCategory, categories]);
+  // «من تقدّمها» — same table as «الخدمات التي تقدّمها» in the staff dialog
+  const team = useQuery(["staff", "all"], listStaff);
+  const prov = useQuery(["appointments", "providers"], serviceProviders);
+  const asg = useQuery(["staff_services"], listAssignments);
+  const cands = (team.data ?? []).filter((t) => t.active && (t.role === "specialist" || t.is_consultant || (asg.data ?? []).some((a) => a.staff_id === t.id)));
+  const [who, setWho] = useState<string[] | null>(null);
+  const providedNow = cands.filter((t) => service && (prov.data?.map[t.id] ?? []).includes(service.key)).map((t) => t.id);
+  useEffect(() => { if (open) setWho(null); }, [open, service]);
+  const picked = who ?? (service ? providedNow : cands.filter((t) => (f.consult ? t.is_consultant : t.role === "specialist" && !t.is_consultant) && !(asg.data ?? []).some((a) => a.staff_id === t.id)).map((t) => t.id));
   const set = <K extends keyof ReturnType<typeof blank>>(k: K, v: ReturnType<typeof blank>[K]) => setF((x) => ({ ...x, [k]: v }));
 
   async function submit() {
@@ -36,11 +51,17 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
     if (!(minutes > 0)) { setError("اكتبي مدة الجلسة بالدقائق."); return; }
     setBusy(true);
     try {
-      await saveService({
+      const saved = await saveService({
         key: service?.key, name: f.name.trim(), short_name: f.short.trim() || f.name.trim(), description: f.desc.trim(),
         price: Math.round(price), price_currency: f.cur, category_id: f.cat || null, price_from: f.from, minutes: Math.round(minutes), room_id: f.room || null, device_id: f.device || null,
         bookable_online: f.online, is_consultation: f.consult, active: f.active, sort: Number(f.sort) || 0,
       });
+      // a new service is provided automatically by members without assignments; only explicit changes are written
+      if (saved && who && prov.data && asg.data) {
+        const provided = { ...prov.data.map };
+        if (!service) for (const t of cands) if (!(asg.data.some((a) => a.staff_id === t.id)) && (f.consult ? t.is_consultant : t.role === "specialist" && !t.is_consultant)) provided[t.id] = [...(provided[t.id] ?? []), saved.key];
+        await setServiceStaff(saved.key, who, asg.data, provided, cands.map((t) => t.id));
+      }
       onClose();
     } catch (e) { setError(err(e)); } finally { setBusy(false); }
   }
@@ -79,6 +100,27 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
         <Row title="خدمة استشارة" sub="تُحجز مع الاستشارية في رابط الحجز العام"><Toggle on={f.consult} onChange={(v) => set("consult", v)} label="خدمة استشارة" /></Row>
         <Row title="مفعّلة" sub="الخدمة الموقوفة لا تظهر للمراجعات"><Toggle on={f.active} onChange={(v) => set("active", v)} label="مفعّلة" /></Row>
       </div>
+      {cands.length > 0 && (
+        <div style={{ borderRadius: 20, border: "1px solid #F0E4F3", background: "#FBF6FC", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ lineHeight: 1.45 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: C.ink }}>الأخصائيات اللواتي يقدّمنها</div>
+            <div style={{ fontSize: 12.5, color: C.sub2 }}>عند الحجز تظهر للمراجعة هؤلاء فقط مع هذه الخدمة. يُحفظ في «الخدمات التي تقدّمها» لكل أخصائية.</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {cands.map((t) => {
+              const on = picked.includes(t.id);
+              return (
+                <button key={t.id} type="button" role="checkbox" aria-checked={on} onClick={() => setWho(on ? picked.filter((x) => x !== t.id) : [...picked, t.id])}
+                  style={{ minHeight: 40, padding: "4px 12px 4px 6px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: on ? 700 : 600,
+                    ...(on ? SELECTED : { background: C.white, border: "1px solid #EADCF0", color: C.sub2 }) }}>
+                  <StaffAvatar s={t} size={28} />{t.name}{on && <Icon name="check" size={14} color={C.accent} stroke={2.4} />}
+                </button>
+              );
+            })}
+          </div>
+          {picked.length === 0 && <div style={{ fontSize: 12.5, color: "#8A5A12", fontWeight: 600 }}>لا أخصائية تقدّم هذه الخدمة — لن تظهر لها أوقات في الحجز.</div>}
+        </div>
+      )}
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
   );

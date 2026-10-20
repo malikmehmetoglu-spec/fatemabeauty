@@ -17,6 +17,9 @@ import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
 import { arDate, money } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { RowBtn, StaffAvatar, TeamTabs, errText, useTeam } from "./team-ui";
+import { listAllServices, listCategories, type Service } from "@/lib/db/catalog";
+import { listAssignments, servicesSummary, setStaffServices, type Assignment } from "@/lib/db/staffServices";
+import { ServicePicker } from "./ServicePicker";
 
 export default function StaffPage() {
   const { staff: me } = useSession();
@@ -25,6 +28,8 @@ export default function StaffPage() {
   const [login, setLogin] = useState<Staff | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [msg, setMsg] = useState("");
+  const svcQ = useQuery(["catalog", "services", "all"], listAllServices);
+  const asgQ = useQuery(["staff_services"], listAssignments);
 
   const isOwner = me?.role === "owner";
   const canManage = me?.role === "owner" || me?.role === "admin";
@@ -62,7 +67,7 @@ export default function StaffPage() {
 
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الفريق: {error}</ErrorNote> : (
         <>
-          {shown.length > 0 && <TeamTable rows={shown} me={me} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onToggle={toggleActive} onDelete={deleteMember} />}
+          {shown.length > 0 && <TeamTable rows={shown} me={me} services={svcQ.data ?? []} assignments={asgQ.data ?? []} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onToggle={toggleActive} onDelete={deleteMember} />}
           {list.length > active.length && (
             <button type="button" onClick={() => setShowInactive((v) => !v)} style={{ alignSelf: "flex-start", border: "none", background: "none", color: C.accent, fontSize: 13.5, fontWeight: 600 }}>
               {showInactive ? "إخفاء الموقوفات" : `إظهار الموقوفات (${list.length - active.length})`}
@@ -82,11 +87,11 @@ export default function StaffPage() {
   );
 }
 
-function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle, onDelete }: {
-  rows: Staff[]; me: Staff | null; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
+function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, onToggle, onDelete }: {
+  rows: Staff[]; me: Staff | null; services: Service[]; assignments: Assignment[]; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
 }) {
   return (
-    <DataTable headers={["الموظفة", "الدور", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 0.9, 1.1, 1.3, 0.7, 3.8]} minWidth={1180} rowHeight={64}
+    <DataTable headers={["الموظفة", "الدور", "الخدمات", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 0.9, 1.2, 1.1, 1.3, 0.7, 3.8]} minWidth={1300} rowHeight={64}
       rows={rows.map((s) => [
         <>
           <StaffAvatar s={s} size={42} />
@@ -96,6 +101,11 @@ function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle, onDelete }: {
           </div>
         </>,
         <Tag key="r" kind={s.role === "owner" ? "plum" : s.role === "admin" ? "lilac" : s.role === "specialist" ? "pink" : "gray"}>{ROLE_LABEL[s.role]}</Tag>,
+        s.role === "specialist" || s.is_consultant || assignments.some((a) => a.staff_id === s.id) ? (() => {
+          const keys = assignments.filter((a) => a.staff_id === s.id).map((a) => a.service_key);
+          return <span key="sv" title={keys.length ? services.filter((x) => keys.includes(x.key)).map((x) => x.short_name || x.name).join("، ") : "إن لم تُحدَّد خدمات تقدّم كل خدمات قسمها"}
+            style={{ fontSize: 12.5, fontWeight: 600, color: keys.length ? C.accent : C.sub2 }}>{keys.length ? servicesSummary(keys, services) : s.is_consultant ? "كل الاستشارات" : "كل الخدمات"}</span>;
+        })() : <span key="sv" style={{ color: C.muted }}>—</span>,
         <span key="p" className="latin" dir="ltr">{s.phone || "—"}</span>,
         s.user_id
           ? <span key="l" className="latin" dir="ltr" style={{ fontSize: 12.5, color: C.sub }}>{s.username || s.email}</span>
@@ -127,6 +137,14 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     setSalary(curSalary?.base_salary ? String(curSalary.base_salary) : ""); setCur((curSalary?.salary_currency as Currency) ?? "SYP");
   }, [open, member, curSalary]);
   const salN = Math.round(Number(salary || 0));
+  // «الخدمات التي تقدّمها»
+  const allSvc = useQuery(["catalog", "services", "all"], listAllServices);
+  const cats = useQuery(["catalog", "categories", "all"], () => listCategories(true));
+  const asg = useQuery(["staff_services"], listAssignments);
+  const [svcKeys, setSvcKeys] = useState<string[]>([]);
+  const curKeys = member ? (asg.data ?? []).filter((a) => a.staff_id === member.id).map((a) => a.service_key).sort().join("|") : "";
+  useEffect(() => { if (open) setSvcKeys(curKeys ? curKeys.split("|") : []); }, [open, curKeys]);
+  const showServices = role === "specialist" || consultant || svcKeys.length > 0;
 
   const roleOpts: { value: Role; label: string }[] = (member?.role === "owner" ? ["owner"] as Role[] : (isOwner ? ["admin", "specialist", "reception", "accountant"] : ["specialist", "reception", "accountant", ...(member?.role === "admin" ? ["admin"] : [])]) as Role[])
     .map((r) => ({ value: r, label: ROLE_LABEL[r] }));
@@ -139,6 +157,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     try {
       const photo_url = file ? await uploadStaffPhoto(file) : member?.photo_url ?? null;
       const row = await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, is_consultant: consultant });
+      if (row && asg.data && svcKeys.slice().sort().join("|") !== curKeys) await setStaffServices(row.id, svcKeys, asg.data);
       if (row && (salN !== (curSalary?.base_salary ?? 0) || cur !== (curSalary?.salary_currency ?? "SYP"))) await saveSalary(row.id, salN, cur);
       onClose();
     } catch (e) { setError(errText(e)); } finally { setBusy(false); }
@@ -168,6 +187,9 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
         <div style={{ marginTop: 25 }}><Segment label="عملة الراتب" value={cur} onChange={setCur} options={[{ value: "SYP", label: "ل.س" }, { value: "USD", label: "$" }]} /></div>
       </div>
       <Row title="استشارية" sub="تظهر في «استشارة» برابط الحجز العام بدل جلسات العناية"><Toggle on={consultant} onChange={setConsultant} label="استشارية" /></Row>
+      {showServices && (allSvc.data && cats.data
+        ? <ServicePicker services={allSvc.data} categories={cats.data} value={svcKeys} onChange={setSvcKeys} consultant={consultant} />
+        : <Loading label="نحمّل الخدمات…" style={{ padding: 8 }} />)}
       {!isOwner && <div style={{ fontSize: 12.5, color: C.sub2 }}>دور «الإدارة» يمنحه المدير العام فقط.</div>}
       {!member && <div style={{ fontSize: 12.5, color: C.sub2 }}>بعد الإضافة أنشئي حساب الدخول من زر «إنشاء حساب».</div>}
       {error && <ErrorNote>{error}</ErrorNote>}

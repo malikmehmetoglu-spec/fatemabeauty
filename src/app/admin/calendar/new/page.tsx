@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import {
-  book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, useSearch, type PatientHit,
+  book, bookingError, busyRanges, createPatient, freeSlots, getHours, provides, searchPatients, serviceProviders, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
 import { getPatient } from "@/lib/db/patients";
 import { dayWindows, listStaffHours, rangesOn, worksAt } from "@/lib/db/staff";
@@ -39,6 +39,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
   const hours = useQuery(["appointments", "hours"], getHours);
   const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
+  const prov = useQuery(["appointments", "providers"], serviceProviders);
 
   const [mode, setMode] = useState<Mode>("existing");
   const [q, setQ] = useState("");
@@ -81,17 +82,22 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const slots = useMemo(() => {
     if (!svc || !hours.data || !busyQ.data || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return [];
     const rows = staffHours.data ?? [], wd = weekday(day);
-    const ids = [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
+    // without a chosen specialist: the hours of those who provide this service (fallback: everyone)
+    const doers = prov.data ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
+    const ids = doers.length ? doers : [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
     const wins = sp ? rangesOn(rows, sp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
     const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, svc.minutes, busyQ.data!, room || null, sp || null));
     return [...new Set(all)].sort();
-  }, [svc, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data]);
+  }, [svc, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data, prov.data]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
     worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + svc.minutes, hours.data);
   const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);
   const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
+  // the chosen specialist does not provide this service («الخدمات التي تقدّمها») — warn, do not block
+  const notProvider = !!sp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
+  const teamSorted = [...(team.data ?? [])].sort((a, b) => Number(!provides(prov.data, a.id, svc?.key)) - Number(!provides(prov.data, b.id, svc?.key)));
 
   async function submit() {
     setError("");
@@ -101,6 +107,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
     if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
     if (mode === "existing" && !patient) { setError("ابحثي عن المراجِعة واختاريها."); return; }
     if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
+    if (notProvider && !confirm(`${spName} لا تقدّم خدمة «${svc.short_name}» حسب «الخدمات التي تقدّمها». الحجز رغم ذلك؟`)) return;
     if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
     setBusy(true);
     try {
@@ -166,7 +173,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
 
           <div className={css.grid3}>
             <Select label="الخدمة" value={svc?.key ?? ""} onChange={(v) => setSvcKey(v)} options={(services.data ?? []).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
-            <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...(team.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
+            <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...teamSorted.map((t) => ({ value: t.id, label: provides(prov.data, t.id, svc?.key) ? t.name : `${t.name} — لا تقدّم هذه الخدمة` }))]} />
             <Select label="الغرفة" value={room} onChange={setRoom} options={[{ value: "", label: "بدون غرفة" }, ...(rooms.data ?? []).map((r) => ({ value: r.id, label: r.name }))]} />
           </div>
 
@@ -194,6 +201,11 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
           )}
           {sp && slots.some((t) => !onDuty(t, day)) && mode !== "walkin" && (
             <div style={{ fontSize: 12.5, color: C.sub2 }}>الأوقات المنقّطة باللون الذهبي خارج دوام {spName}.</div>
+          )}
+          {notProvider && (
+            <div role="alert" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>
+              <Icon name="alert" size={16} color="#8A5A12" />{spName} لا تقدّم هذه الخدمة حسب «الخدمات التي تقدّمها». يمكنكِ الحجز رغم ذلك بعد التأكيد.
+            </div>
           )}
           {offDuty && (
             <div role="alert" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>

@@ -10,7 +10,7 @@ import { initials } from "@/lib/data";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/queue";
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
-import { DEFAULT_HOURS, getHours, weekday } from "@/lib/db/appointments";
+import { DEFAULT_HOURS, getHours, provides, serviceProviders, weekday } from "@/lib/db/appointments";
 import { useQuery } from "@/lib/db/query";
 import { clock, dayKey } from "@/lib/format";
 import { css } from "../css";
@@ -39,8 +39,8 @@ export default function Page() {
   const k = useKiosk();
   const router = useRouter();
   const q = useQuery(["queue", "quick-book"], async () => {
-    const [services, specialists, rooms, today, hours, clinic] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday(), listStaffHours().catch(() => []), getHours().catch(() => DEFAULT_HOURS)]);
-    return { services, specialists, rooms, today, hours, clinic };
+    const [services, specialists, rooms, today, hours, clinic, prov] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday(), listStaffHours().catch(() => []), getHours().catch(() => DEFAULT_HOURS), serviceProviders().catch(() => null)]);
+    return { services, specialists, rooms, today, hours, clinic, prov };
   }, { enabled: !k.gate });
   const [st, setSt] = useState<{ svc: number; sp: number; slot: number | null }>({ svc: 0, sp: -1, slot: null });
   const [term, setTerm] = useState("");
@@ -51,7 +51,9 @@ export default function Page() {
   const [err, setErr] = useState<string | null>(null);
   if (k.gate) return k.gate;
   const SV = q.data?.services ?? [];
-  const SP = q.data?.specialists ?? [];
+  const SV0 = q.data?.services ?? [];
+  // only the specialists who provide the chosen service («الخدمات التي تقدّمها»)
+  const SP = (q.data?.specialists ?? []).filter((x) => provides(q.data?.prov, x.id, SV0[st.svc]?.key));
   const rooms = q.data?.rooms ?? [];
   const today = q.data?.today ?? [];
   const NOW_HM = clock();
@@ -87,7 +89,7 @@ export default function Page() {
     else style += "background:transparent;border:1.5px dashed #E0D2E3;color:#AF9EB3";
     return { label: fmt(c.t), style: css(style), aria: fmt(c.t) + (c.fits ? (c.off ? " — خارج دوام الأخصائية" : "") : " — غير متاح"), pick: () => { if (c.fits) setSt({ ...st, slot: c.t }); } };
   });
-  const svcs = SV.map((x, i) => ({ name: x.name, pick: () => setSt({ ...st, svc: i, slot: null }),
+  const svcs = SV.map((x, i) => ({ name: x.name, pick: () => setSt({ ...st, svc: i, sp: -1, slot: null }),
     style: css("height:56px;padding:0 20px;border-radius:28px;font-size:16px;font-weight:600;font-family:inherit;display:flex;align-items:center;white-space:nowrap;" +
       (i === st.svc ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 3px 10px rgba(123,70,135,0.05)")) }));
   const sps = SP.map((x, i) => { const on = i === st.sp;
@@ -206,7 +208,7 @@ export default function Page() {
                   </span>
                 </button>
                 ))}
-                {!q.loading && !SP.length && <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6 }}>لا توجد أخصائيات مسجّلات بعد. يُحجز الموعد دون تحديد أخصائية.</div>}
+                {!q.loading && !SP.length && <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6 }}>{q.data?.specialists.length ? "لا أخصائية تقدّم هذه الخدمة حسب «الخدمات التي تقدّمها». يُحجز الموعد دون تحديد أخصائية." : "لا توجد أخصائيات مسجّلات بعد. يُحجز الموعد دون تحديد أخصائية."}</div>}
               </div>
             </div>
           </div>

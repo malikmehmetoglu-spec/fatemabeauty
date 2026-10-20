@@ -51,6 +51,7 @@ export function bookingError(e: unknown) {
   if (/bad status change/.test(m)) return "لا يمكن نقل الموعد إلى هذه الحالة من حالته الحالية.";
   if (/only waiting patients can be called/.test(m)) return "يمكن النداء فقط على من سجّلت وصولها.";
   if (/service not found/.test(m)) return "هذه الخدمة غير متاحة الآن.";
+  if (/not_provider/.test(m)) return "هذه الأخصائية لا تقدّم هذه الخدمة.";
   if (/specialist off duty/.test(m)) return "الأخصائية لا تداوم في هذا الوقت. اختاري وقتاً آخر.";
   if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
   if (/failed to fetch|network|load failed/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
@@ -65,6 +66,20 @@ function mustOk<T>(res: { data: T; error: { message: string } | null }) {
   if (res.error) throw new Error(bookingError(new Error(res.error.message)));
   return res.data;
 }
+
+/* ---------- who provides which service («الخدمات التي تقدّمها») ---------- */
+
+/** staff id → service keys she provides (server applies the fallback: no assignments = all services of her kind). rpc service_providers. */
+export type Providers = { map: Record<string, string[]>; explicit: Record<string, boolean> };
+export async function serviceProviders(): Promise<Providers> {
+  const rows = must(await supabase.rpc("service_providers")) ?? [];
+  const map: Record<string, string[]> = {}, explicit: Record<string, boolean> = {};
+  for (const r of rows) { (map[r.staff_id] ??= []).push(r.service_key); explicit[r.staff_id] = r.explicit; }
+  return { map, explicit };
+}
+/** Does this member provide this service? Unknown while loading (no data) → true, so nothing is hidden by mistake. */
+export const provides = (p: Providers | null | undefined, staffId: string | null | undefined, service: string | null | undefined) =>
+  !p || !staffId || !service || (p.map[staffId] ?? []).includes(service);
 
 /* ---------- opening hours ---------- */
 

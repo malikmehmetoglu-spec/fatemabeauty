@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listCategories, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
-import { appSlots, bookingWeekdays, getHours, openDays, useSearch } from "@/lib/db/appointments";
+import { appSlots, bookingWeekdays, getHours, openDays, provides, serviceProviders, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_MONTHS, initials } from "@/lib/data";
 import { dayName } from "@/lib/format";
@@ -30,6 +30,7 @@ export default function BookingPage() {
   const services = useQuery(["catalog", "services"], listServices);
   const team = useQuery(["catalog", "specialists"], listSpecialists);
   const hours = useQuery(["appointments", "hours"], getHours);
+  const prov = useQuery(["appointments", "providers"], serviceProviders);
 
   const catsQ = useQuery(["catalog", "categories"], () => listCategories());
   const bookable = useMemo(() => (services.data ?? []).filter((x) => x.bookable_online), [services.data]);
@@ -52,7 +53,10 @@ export default function BookingPage() {
   const wdays = useQuery(["appointments", "booking_weekdays", svc?.key, sp], () => bookingWeekdays(svc!.key, sp), { enabled: !!svc });
   const days = useMemo(() => (hours.data && wdays.data ? openDays({ ...hours.data, days: wdays.data }, 7) : []), [hours.data, wdays.data]);
   const curDay = (day && days.includes(day) ? day : null) ?? days[0] ?? null;
-  const specialist = (team.data ?? []).find((t) => t.id === sp) ?? null;
+  // only the specialists who provide the chosen service
+  const provTeam = (team.data ?? []).filter((t) => provides(prov.data, t.id, svc?.key));
+  useEffect(() => { if (sp && prov.data && svc && !provides(prov.data, sp, svc.key)) setSp(null); }, [sp, prov.data, svc]);
+  const specialist = provTeam.find((t) => t.id === sp) ?? null;
 
   // free times come from the server (rpc app_slots): opening hours, overlaps and each specialist's working hours
   const busy = useQuery(["appointments", "app_slots", svc?.key, curDay, sp], () => appSlots(curDay!, svc!.key, sp), { enabled: !!svc && !!curDay && !!s.patient });
@@ -117,12 +121,15 @@ export default function BookingPage() {
             </div>
 
             {cat?.not_for_pregnant && <PregnancyNotice warn={!!s.patient?.pregnant} />}
-            {!!team.data?.length && (
+            {!!team.data?.length && !provTeam.length && prov.data && (
+              <div style={{ ...CARD, borderRadius: 20, padding: "14px 16px", fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>لا تتوفّر أخصائية لهذه الجلسة حالياً. اختاري جلسة أخرى أو تواصلي مع المركز.</div>
+            )}
+            {!!provTeam.length && (
               <div>
                 <div style={{ fontSize: 13, color: C.sub2, marginBottom: 8 }}>الأخصائية</div>
                 <div role="radiogroup" aria-label="الأخصائية" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
                   <button type="button" role="radio" aria-checked={!sp} onClick={() => setSp(null)} style={pill(!sp)}>أي أخصائية متاحة</button>
-                  {team.data.map((t) => (
+                  {provTeam.map((t) => (
                     <button key={t.id} type="button" role="radio" aria-checked={sp === t.id} onClick={() => setSp(t.id)} style={pill(sp === t.id)}>{t.name}</button>
                   ))}
                 </div>

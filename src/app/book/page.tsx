@@ -99,7 +99,9 @@ export default function PublicBookingPage() {
     ...(otherSessions.length || !sessionCats.length ? [{ kind: "session" as const, key: "", name: sessionCats.length ? "جلسات أخرى" : "جلسة عناية", sub: "", icon: "sparkle", count: sessionCats.length ? otherSessions.length : sessionServices.length, ready: sessionServices.length > 0 }] : []),
   ];
   const svcCat = (info?.categories ?? []).find((c) => c.key === (service?.category_id ?? (kind === "session" ? curPubCat : null))) ?? null;
-  const people = info?.specialists ?? [];
+  // only the specialists who provide the chosen service (from «الخدمات التي تقدّمها» in admin; empty there = all)
+  const people = (info?.specialists ?? []).filter((p) => !service || !p.services || p.services.includes(service.key));
+  const noProvider = kind === "session" && !!service && (info?.specialists.length ?? 0) > 0 && people.length === 0;
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
 
   const days = useMemo(() => (now ? nextDays(DAYS_AHEAD) : []), [now?.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -148,8 +150,10 @@ export default function PublicBookingPage() {
   }
   function pickService(x: PubService) {
     setService(x); setTime(null); setErr("");
+    const sp = info?.specialists.find((p) => p.id === specialist);
+    if (sp?.services && !sp.services.includes(x.key)) setSpecialist(null);
     if (!day) setDay(days.find(isOpen) ?? null);
-    if (kind === "consult" || people.length === 0) goTo(refs[2]);
+    if (kind === "consult" || !(info?.specialists ?? []).some((p) => !p.services || p.services.includes(x.key))) goTo(refs[2]);
   }
   function pickSpecialist(id: string | null) { setSpecialist(id); setTime(null); goTo(refs[2]); }
   function pickDay(k: string) { setDay(k); setTime(null); setErr(""); goTo(refs[3]); }
@@ -325,6 +329,11 @@ export default function PublicBookingPage() {
                         </div>
                       </>
                     )}
+                    {noProvider && (
+                      <div className={s.note} style={{ marginTop: 18 }}>
+                        لا تتوفّر أخصائية لهذه الجلسة حالياً. اختاري جلسة أخرى{contact ? " أو تواصلي معنا لنرتّب موعدكِ" : ""}.
+                      </div>
+                    )}
                     {kind === "consult" && info.consultant && service && (
                       <div className={s.fixed} style={{ marginTop: 18 }}>
                         <Ava p={info.consultant} size={44} />
@@ -334,7 +343,7 @@ export default function PublicBookingPage() {
                   </section>
 
                   {/* 2 — day */}
-                  {service && (
+                  {service && !noProvider && (
                     <section className={s.step} ref={refs[2]}>
                       <StepHead n={2} title="اختاري اليوم" sub="خلال الأسبوعين القادمين" done={!!day && !!time} />
                       <div className={s.days}>
@@ -354,7 +363,7 @@ export default function PublicBookingPage() {
                   )}
 
                   {/* 3 — time */}
-                  {service && day && (
+                  {service && !noProvider && day && (
                     <section className={s.step} ref={refs[3]}>
                       <StepHead n={3} title="اختاري الساعة" sub={`${dayLabel(day)} · مدة الجلسة ${service.minutes} دقيقة`} done={!!time} />
                       <div className={s.legend}><span><i className={s.lgFree} />متاح</span><span><i className={s.lgBusy} />محجوز</span></div>
@@ -380,7 +389,7 @@ export default function PublicBookingPage() {
                   )}
 
                   {/* 4 — details */}
-                  {service && day && time && (
+                  {service && !noProvider && day && time && (
                     <section className={s.step} ref={refs[4]}>
                       <StepHead n={4} title="بياناتكِ" sub="نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ" />
                       <div className={s.mobileSummary}>

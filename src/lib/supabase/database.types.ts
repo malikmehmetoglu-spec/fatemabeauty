@@ -1775,6 +1775,39 @@ export type Database = {
           },
         ]
       }
+      staff_services: {
+        Row: {
+          created_at: string
+          service_key: string
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          service_key: string
+          staff_id: string
+        }
+        Update: {
+          created_at?: string
+          service_key?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_services_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "staff_services_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_shifts: {
         Row: {
           created_at: string
@@ -2554,6 +2587,14 @@ export type Database = {
         Returns: {
           key: string
           price_syp: number
+        }[]
+      }
+      service_providers: {
+        Args: never
+        Returns: {
+          explicit: boolean
+          service_key: string
+          staff_id: string
         }[]
       }
       set_exchange_rate: {

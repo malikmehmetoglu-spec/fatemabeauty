@@ -15,6 +15,8 @@ import {
 import { money } from "@/lib/format";
 import { C, CARD, ICON_FILL } from "@/lib/tokens";
 import { CategoryDialog, PackageDialog, ServiceDialog } from "./dialogs";
+import { serviceProviders } from "@/lib/db/appointments";
+import { useTeam, StaffAvatar } from "@/app/admin/staff/team-ui";
 
 /** Admin price: dollars stay visible here only, with today's SYP equivalent. */
 function AdminPrice({ s }: { s: Service }) {
@@ -36,6 +38,10 @@ export default function ServicesPage() {
   const { data: devices } = useQuery(["catalog", "devices"], listDevices);
   const { data: cats } = useQuery(["catalog", "categories", "all"], () => listCategories(true));
   const { data: rate } = useQuery(["catalog", "fx"], usdRate);
+  const { data: prov } = useQuery(["appointments", "providers"], serviceProviders);
+  const team = useTeam();
+  /** Who provides a service (assignments, else the «all services of her kind» fallback). */
+  const doers = (key: string) => team.active.filter((t) => (prov?.map[t.id] ?? []).includes(key));
   const [edit, setEdit] = useState<Service | "new" | null>(null);
   const [newIn, setNewIn] = useState<string | undefined>();
   const [editCat, setEditCat] = useState<Category | "new" | null>(null);
@@ -81,9 +87,9 @@ export default function ServicesPage() {
                 <GhostButton icon="plus" onClick={() => { setNewIn(cat.key); setEdit("new"); }}>خدمة</GhostButton>
               </div>}
             </div>
-            {list.length > 0 && <DataTable minWidth={700}
-              headers={["الخدمة", "المدة", "السعر", "الغرفة الأساسية", "الجهاز", "الحجز أونلاين", "مفعّلة", ""]}
-              widths={[2.4, 0.8, 1.1, 1, 1.2, 0.9, 0.7, 0.5]}
+            {list.length > 0 && <DataTable minWidth={960}
+              headers={["الخدمة", "المدة", "السعر", "من تقدّمها", "الغرفة الأساسية", "الجهاز", "الحجز أونلاين", "مفعّلة", ""]}
+              widths={[2.4, 0.8, 1.1, 1.4, 1, 1.1, 0.9, 0.7, 0.5]}
               rowHeight={62}
               rows={list.map((s) => [
                 <>
@@ -97,6 +103,7 @@ export default function ServicesPage() {
                 </>,
                 `${s.minutes} دقيقة`,
                 <AdminPrice key="p" s={s} />,
+                <Providers key="w" people={doers(s.key)} active={s.active && !!prov} />,
                 roomName(s.room_id) ? <Tag key="r" kind="gray">{roomName(s.room_id)}</Tag> : <span style={{ color: C.muted }}>أي غرفة</span>,
                 deviceName(s.device_id) ?? <span style={{ color: C.muted }}>—</span>,
                 s.bookable_online ? <Tag key="o" kind="green">نعم</Tag> : <Tag key="o" kind="gray">من الاستقبال</Tag>,
@@ -147,5 +154,22 @@ export default function ServicesPage() {
       <CategoryDialog open={!!editCat} category={editCat === "new" ? null : editCat} nextSort={(C2.at(-1)?.sort ?? 0) + 1} onClose={() => setEditCat(null)} />
       <PackageDialog open={!!editPkg} pkg={editPkg === "new" ? null : editPkg} services={S} onClose={() => setEditPkg(null)} />
     </AdminShell>
+  );
+}
+
+/** Stacked avatars of the specialists who provide a service (+N), or a warning when nobody does. */
+function Providers({ people, active }: { people: { id: string; name: string; photo_url: string | null }[]; active: boolean }) {
+  if (!active) return <span style={{ color: C.muted }}>—</span>;
+  if (!people.length) return <Tag kind="amber">لا أحد</Tag>;
+  const shown = people.slice(0, 3);
+  return (
+    <span title={people.map((p) => p.name).join("، ")} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <span style={{ display: "flex" }}>
+        {shown.map((p, i) => <span key={p.id} style={{ marginInlineStart: i ? -10 : 0, borderRadius: 16, border: "2px solid #fff", display: "flex" }}><StaffAvatar s={p} size={28} /></span>)}
+      </span>
+      <span style={{ fontSize: 12.5, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {people.length === 1 ? people[0].name : people.length > 3 ? `+${people.length - 3}` : `${people.length} أخصائيات`}
+      </span>
+    </span>
   );
 }
