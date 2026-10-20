@@ -88,7 +88,7 @@ export default function ServicesPage() {
               rows={list.map((s) => [
                 <>
                   <span style={{ width: 40, height: 40, borderRadius: 20, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name={serviceIcon(s.name)} size={19} color="#A877B6" />
+                    <Icon name={cat?.icon ?? serviceIcon(s.name)} size={19} color="#A877B6" />
                   </span>
                   <div style={{ lineHeight: 1.35, minWidth: 0 }}>
                     <button type="button" onClick={() => setEdit(s)} style={{ border: "none", background: "none", padding: 0, fontSize: 14.5, fontWeight: 700, color: C.ink, textAlign: "right" }}>{s.name}</button>

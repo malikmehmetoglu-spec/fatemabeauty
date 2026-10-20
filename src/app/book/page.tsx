@@ -98,7 +98,7 @@ export default function PublicBookingPage() {
     ...sessionCats.map((c) => ({ kind: "session" as const, key: c.key, name: c.name, sub: c.short_description, icon: c.icon, count: sessionServices.filter((x) => x.category_id === c.key).length, ready: true })),
     ...(otherSessions.length || !sessionCats.length ? [{ kind: "session" as const, key: "", name: sessionCats.length ? "جلسات أخرى" : "جلسة عناية", sub: "", icon: "sparkle", count: sessionCats.length ? otherSessions.length : sessionServices.length, ready: sessionServices.length > 0 }] : []),
   ];
-  const svcCat = (info?.categories ?? []).find((c) => c.key === service?.category_id) ?? null;
+  const svcCat = (info?.categories ?? []).find((c) => c.key === (service?.category_id ?? (kind === "session" ? curPubCat : null))) ?? null;
   const people = info?.specialists ?? [];
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
 
