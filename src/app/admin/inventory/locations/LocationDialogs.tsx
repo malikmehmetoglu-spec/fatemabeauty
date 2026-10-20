@@ -136,7 +136,7 @@ export function BulkTransferDialog({ from, onClose, onDone }: { from: StockLocat
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const others = L.active.filter((l) => l.id !== from?.id);
-  const dst = to && others.some((l) => l.id === to) ? to : others[0]?.id ?? "";
+  const dst = to && others.some((l) => l.id === to) ? to : (others.find((l) => l.is_default_center) ?? others[0])?.id ?? "";
   const dstLoc = others.find((l) => l.id === dst);
   useEffect(() => { if (from) { setTo(""); setScope("all"); setPick({}); setQ(""); setError(""); } }, [from]);
 

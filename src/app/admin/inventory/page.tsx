@@ -5,9 +5,8 @@
  * Retail items appear in the store automatically; each can be hidden from the store.
  * Consumables (used in sessions) never appear in the store.
  */
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { R } from "@/lib/routes";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLiveRefresh } from "@/lib/db/orders";
 import { AdminShell } from "@/components/shell";
 import { Chip, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Toggle, Tag } from "@/components/ui";
@@ -42,11 +41,15 @@ export default function InventoryPage() {
   const [locSel, setLocSel] = useState<string | null>(null);
   const L = useLocations();
   // Store orders, cashier sales and other devices change stock: re-read on open, on focus and every 30 s.
-  useLiveRefresh(() => { void inv.refresh(); void exp.refresh(); void L.refresh(); });
+  const refreshAll = () => { void inv.refresh(); void exp.refresh(); void L.refresh(); };
+  useLiveRefresh(refreshAll);
+  const refreshRef = useRef(refreshAll);
+  refreshRef.current = refreshAll;
   useEffect(() => {
-    const t = setInterval(() => { if (document.visibilityState === "visible") { void inv.refresh(); void L.refresh(); } }, 30000);
+    const t = setInterval(() => { if (document.visibilityState === "visible") refreshRef.current(); }, 30000);
     return () => clearInterval(t);
-  });
+  }, []);
+  const router = useRouter();
   const loc = locSel && L.all.some((l) => l.id === locSel) ? locSel : null;
   const qty = (p: Product) => qtyAt(L.map, p, loc);
   /** "المستودع 12 · المركز 3" — only the locations that hold the item. */
@@ -86,7 +89,7 @@ export default function InventoryPage() {
   return (
     <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={L.multi ? "الكميات في كل المواقع: المستودع والمحل والمركز — منتجات البيع تظهر في المتجر من المواقع التي تغذّيه" : "كل ما في المركز: منتجات البيع تظهر في المتجر تلقائياً، ومواد الجلسات لا تظهر"}
       actions={<>
-        {L.multi && <Link href={R.W_Locations} style={{ textDecoration: "none" }}><GhostButton icon="refresh">نقل بين المواقع</GhostButton></Link>}
+        {L.multi && <GhostButton icon="refresh" onClick={() => router.push("/admin/inventory/locations/")}>نقل بين المواقع</GhostButton>}
         <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>
       </>}>
       <div className="adm-row">

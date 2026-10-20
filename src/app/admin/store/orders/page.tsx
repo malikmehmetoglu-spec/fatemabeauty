@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
 import { useQuery } from "@/lib/db/query";
-import { listOrders, nextStatus, orderError, setOrderStatus, STATUS_LABEL, type OrderFull, type OrderStatus } from "@/lib/db/orders";
+import { listOrders, nextStatus, useLiveRefresh, orderError, setOrderStatus, STATUS_LABEL, type OrderFull, type OrderStatus } from "@/lib/db/orders";
 
 type F = "all" | "d" | "p" | "cancelled";
 const COLS: { title: string; has: OrderStatus[]; icon: string }[] = [
@@ -23,7 +23,9 @@ const NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
 };
 
 export default function Page() {
-  const { data, loading, error } = useQuery(["orders", "all"], listOrders);
+  const { data, loading, error, refresh } = useQuery(["orders", "all"], listOrders);
+  // New store orders arrive from patients' phones: re-read on open and whenever the window regains focus.
+  useLiveRefresh(refresh);
   const [f, setF] = useState<F>("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
