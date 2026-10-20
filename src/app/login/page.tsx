@@ -7,6 +7,10 @@ import { normalizePhone, sendCode } from "@/lib/supabase/phoneAuth";
 import { DeskHeading, PhoneScreen, phoneOnly } from "@/components/shell";
 import { Icon, Logo, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
+import { supabase } from "@/lib/supabase/client";
+
+const DEMO_EMAIL = "zaera@fatema.beauty";
+const DEMO_PASSWORD = "Zaera-Demo-2026";
 import { C, SH } from "@/lib/tokens";
 
 /** Login.dc.html — phone-number login. */
@@ -22,12 +26,20 @@ export default function LoginPage() {
     const n = new URLSearchParams(window.location.search).get("next");
     router.replace(n && n.startsWith("/") && !n.startsWith("//") ? n : patient.name ? R.Main : R.P_Profile);
   }, [patient, router]);
-  /** «المتابعة كزائرة»: browse the app without an account (no data access, actions ask to sign in). */
-  function asGuest() {
-    setGuest(true);
+  /**
+   * «المتابعة كزائرة» — TEMPORARY demo for the owner: signs in to a real client account «زائرة»
+   * (zaera@fatema.beauty, patient file 1027) so every feature works (booking, orders, chat…).
+   * Remove this button and that account before launch.
+   */
+  async function asGuest() {
+    setError(""); setBusy(true);
+    setGuest(false);
+    const { error: e } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+    setBusy(false);
+    if (e) { setError("تعذّر الدخول كزائرة. حاولي مرة أخرى."); return; }
     const n = new URLSearchParams(window.location.search).get("next");
     const ok = n && n.startsWith("/") && !n.startsWith("//") && !n.startsWith("/admin") && !n.startsWith("/login");
-    router.push(ok ? n : R.Main);
+    window.location.href = ok ? n : R.Main;
   }
   async function next() {
     setError("");
