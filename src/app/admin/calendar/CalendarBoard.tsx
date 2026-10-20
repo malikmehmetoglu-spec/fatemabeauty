@@ -1,6 +1,7 @@
 "use client";
 
 /** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new. */
+import { listStaffHours, rangesOn } from "@/lib/db/staff";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Chip, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Segment, SubmitButton, Tag, TextInput } from "@/components/ui";
@@ -52,6 +53,7 @@ export function CalendarBody() {
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
   const hours = useQuery(["appointments", "hours"], getHours);
+  const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
 
   const list = (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled");
   const cols: Col[] = useMemo(() => {
@@ -71,6 +73,20 @@ export function CalendarBody() {
   const loading = appts.loading || rooms.loading || hours.loading;
   const err = appts.error || rooms.error || hours.error;
   const isAdmin = staff?.role === "admin" || staff?.role === "owner";
+  /** Working ranges (minutes) of a specialist column on this day: her «أوقات الدوام» clipped to the clinic hours; null = not a specialist column. */
+  const workOf = (id: string | null) => {
+    if (by !== "specialist" || !id || !h) return null;
+    if (!h.days.includes(weekday(day))) return [];
+    const cf = toMin(h.from), ct = toMin(h.to);
+    const r = rangesOn(staffHours.data ?? [], id, weekday(day)) ?? [{ from: cf, to: ct }];
+    return r.map((x) => ({ from: Math.max(cf, x.from), to: Math.min(ct, x.to) })).filter((x) => x.to > x.from).sort((a, b) => a.from - b.from);
+  };
+  const offBands = (work: { from: number; to: number }[]) => {
+    const out: { from: number; to: number }[] = []; let t = first;
+    for (const w of work) { if (w.from > t) out.push({ from: t, to: w.from }); t = Math.max(t, w.to); }
+    if (t < last) out.push({ from: t, to: last });
+    return out;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
@@ -110,7 +126,9 @@ export function CalendarBody() {
               const n = list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id && a.status !== "cancelled").length;
               return (
                 <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, padding: "0 8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14.5, fontWeight: 700 }}>{c.name}</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>{c.name}
+                    {(() => { const w = workOf(c.id); return w && <span style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: C.sub2 }}>{w.length ? <span className="latin" dir="ltr">{w.map((x) => `${hm(x.from)}–${hm(x.to)}`).join(" · ")}</span> : "لا دوام اليوم"}</span>; })()}
+                  </span>
                   <Tag kind="lilac">{apptCount(n)}</Tag>
                 </div>
               );
@@ -127,6 +145,10 @@ export function CalendarBody() {
                 {Array.from({ length: (last - first) / 60 }, (_, i) => (
                   <div key={i} style={{ position: "absolute", top: i * HOUR, left: 0, right: 0, height: HOUR, borderTop: "1px dashed #EFE5F2" }} />
                 ))}
+                {(() => { const w = workOf(c.id); return w && offBands(w).map((b) => (
+                  <div key={b.from} title="خارج دوام الأخصائية" style={{ position: "absolute", top: yOf(b.from), height: yOf(b.to) - yOf(b.from), left: 0, right: 0,
+                    background: "repeating-linear-gradient(135deg, #F4F1F5 0 6px, #ECE7EE 6px 12px)", opacity: 0.85 }} />
+                )); })()}
                 {list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id).map((a) => {
                   const s = toMin(timeOf(a));
                   const short = a.minutes < 30;

@@ -21,7 +21,7 @@ export function useTeam() {
 export function TeamTabs() {
   const path = usePathname();
   const tabs: [string, string, string][] = [
-    ["users", "الفريق", R.W_Staff], ["clock", "الورديات", R.W_Shifts], ["check", "الحضور والإجازات", R.W_Attendance],
+    ["users", "الفريق", R.W_Staff], ["clock", "أوقات الدوام", R.W_Shifts], ["check", "الحضور والإجازات", R.W_Attendance],
     ["wallet", "الرواتب", R.W_Payroll], ["chart", "العمولات", R.W_Commissions], ["shield", "الأدوار والصلاحيات", R.W_Roles],
   ];
   return (

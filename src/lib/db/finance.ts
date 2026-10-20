@@ -292,11 +292,28 @@ export async function deleteExpense(id: string) {
  * (payment rows by paid_at, whatever the invoice date; voided invoices excluded) and expenses. Computed on the page.
  */
 export async function financeData(r: { from: string; to: string; fromDay: string; toDay: string }) {
-  const [invs, exps, pays] = await Promise.all([
+  const [invs, exps, pays, payroll] = await Promise.all([
     listInvoices(r.from, r.to), listExpenses(r.fromDay, r.toDay),
     supabase.from("invoice_payments").select("amount, method, paid_at, invoices!inner(void)").eq("invoices.void", false).gte("paid_at", r.from).lt("paid_at", r.to),
+    supabase.from("payroll_entries").select("id, period, paid_at, amount_syp, currency, amount_original, fx_rate, base_salary, commission, staff(name)").not("paid_at", "is", null).gte("paid_at", r.from).lt("paid_at", r.to),
   ]);
-  return { invoices: invs.filter((i) => !i.void), expenses: exps, payments: rows(pays).map(({ amount, method, paid_at }) => ({ amount, method, paid_at })) };
+  return { invoices: invs.filter((i) => !i.void), expenses: [...exps, ...rows(payroll).map(payrollExpense)].sort((a, b) => b.spent_on.localeCompare(a.spent_on)), payments: rows(pays).map(({ amount, method, paid_at }) => ({ amount, method, paid_at })) };
+}
+
+/** Prefix of the synthetic expense rows made from paid payroll entries (read-only; edited from the payroll page). */
+export const PAYROLL_EXPENSE = "payroll:";
+/**
+ * A paid payroll entry as an expense «رواتب» on its payment day, valued at its frozen SYP amount (`amount_syp`),
+ * so reports stay correct when the exchange rate changes later.
+ */
+function payrollExpense(p: { id: string; period: string; paid_at: string | null; amount_syp: number | null; currency: string; amount_original: number | null; fx_rate: number | null; base_salary: number; commission: number; staff: { name: string } | null }): Expense {
+  const fx = p.currency === "USD" && p.fx_rate ? `\u2066${(p.amount_original ?? 0).toLocaleString("en-US")}$ × ${p.fx_rate.toLocaleString("en-US")} = ${p.base_salary.toLocaleString("en-US")}\u2069 ل.س` : "";
+  const com = p.commission > 0 ? `عمولة ${p.commission.toLocaleString("en-US")} ل.س` : "";
+  return {
+    id: PAYROLL_EXPENSE + p.id, category: "رواتب", label: `راتب ${p.staff?.name ?? ""} — \u2066${p.period}\u2069`, amount: Math.max(0, p.amount_syp ?? 0),
+    spent_on: dayKey(new Date(p.paid_at as string)), created_at: p.paid_at as string, created_by: null, from_cash_box: false, shift_id: null,
+    note: ["من مسير الرواتب", fx, com].filter(Boolean).join(" · "),
+  };
 }
 export type ReceivedRow = { amount: number; method: PayMethod; paid_at: string };
 export function receivedByMethod(p: ReceivedRow[]) {

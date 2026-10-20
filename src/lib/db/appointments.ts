@@ -51,6 +51,7 @@ export function bookingError(e: unknown) {
   if (/bad status change/.test(m)) return "لا يمكن نقل الموعد إلى هذه الحالة من حالته الحالية.";
   if (/only waiting patients can be called/.test(m)) return "يمكن النداء فقط على من سجّلت وصولها.";
   if (/service not found/.test(m)) return "هذه الخدمة غير متاحة الآن.";
+  if (/specialist off duty/.test(m)) return "الأخصائية لا تداوم في هذا الوقت. اختاري وقتاً آخر.";
   if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
   if (/failed to fetch|network|load failed/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
   if (/row-level security|permission denied|not allowed/i.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
@@ -118,6 +119,15 @@ export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], 
     if (!clash) out.push(toHHMM(t));
   }
   return out;
+}
+
+/**
+ * Patient app: free start times ("HH:MM") computed by the server (rpc app_slots) — same rules as the public link and
+ * book_appointment: opening hours, slot grid, room/specialist overlaps and the specialist's working hours («أوقات الدوام»).
+ */
+export async function appSlots(day: string, service: string, specialist: string | null): Promise<string[]> {
+  const rows = must(await supabase.rpc("app_slots", { p_day: day, p_service: service, p_specialist: specialist ?? undefined })) ?? [];
+  return rows.filter((r) => r.available).map((r) => clock(r.starts_at));
 }
 
 /* ---------- booking ---------- */

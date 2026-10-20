@@ -8,7 +8,7 @@ import { EmptyState, ErrorNote, Icon, Loading, PrimaryButton } from "@/component
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
-import { busyRanges, freeSlots, getHours, openDays, useSearch } from "@/lib/db/appointments";
+import { appSlots, getHours, openDays, useSearch } from "@/lib/db/appointments";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { AR_MONTHS, initials } from "@/lib/data";
 import { dayName } from "@/lib/format";
@@ -42,9 +42,9 @@ export default function BookingPage() {
   const curDay = day ?? days[0] ?? null;
   const specialist = (team.data ?? []).find((t) => t.id === sp) ?? null;
 
-  const busy = useQuery(["appointments", "busy", days[0], days[days.length - 1]], () => busyRanges(days[0], days[days.length - 1]), { enabled: days.length > 0 && !!s.patient });
-  const slots = useMemo(() => (svc && curDay && hours.data && busy.data ? freeSlots(hours.data, curDay, svc.minutes, busy.data, svc.room_id, sp) : []),
-    [svc, curDay, hours.data, busy.data, sp]);
+  // free times come from the server (rpc app_slots): opening hours, overlaps and each specialist's working hours
+  const busy = useQuery(["appointments", "app_slots", svc?.key, curDay, sp], () => appSlots(curDay!, svc!.key, sp), { enabled: !!svc && !!curDay && !!s.patient });
+  const slots = busy.data ?? [];
   useEffect(() => { setTime(null); }, [svcKey, sp, day]);
 
   if (s.loading || !s.patient) return <PhoneScreen><Loading /></PhoneScreen>;

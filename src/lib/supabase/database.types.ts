@@ -391,6 +391,33 @@ export type Database = {
           },
         ]
       }
+      exchange_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          note: string
+          usd_to_syp: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          note?: string
+          usd_to_syp: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          note?: string
+          usd_to_syp?: number
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -1185,11 +1212,15 @@ export type Database = {
       }
       payroll_entries: {
         Row: {
+          amount_original: number | null
+          amount_syp: number | null
           base_salary: number
           bonus: number
           commission: number
           created_at: string
+          currency: string
           deductions: number
+          fx_rate: number | null
           id: string
           note: string
           paid_at: string | null
@@ -1197,11 +1228,15 @@ export type Database = {
           staff_id: string
         }
         Insert: {
+          amount_original?: number | null
+          amount_syp?: number | null
           base_salary?: number
           bonus?: number
           commission?: number
           created_at?: string
+          currency?: string
           deductions?: number
+          fx_rate?: number | null
           id?: string
           note?: string
           paid_at?: string | null
@@ -1209,11 +1244,15 @@ export type Database = {
           staff_id: string
         }
         Update: {
+          amount_original?: number | null
+          amount_syp?: number | null
           base_salary?: number
           bonus?: number
           commission?: number
           created_at?: string
+          currency?: string
           deductions?: number
+          fx_rate?: number | null
           id?: string
           note?: string
           paid_at?: string | null
@@ -1615,6 +1654,70 @@ export type Database = {
             foreignKeyName: "staff_attendance_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_hours: {
+        Row: {
+          created_at: string
+          ends: string
+          id: string
+          staff_id: string
+          starts: string
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          ends: string
+          id?: string
+          staff_id: string
+          starts: string
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          ends?: string
+          id?: string
+          staff_id?: string
+          starts?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_hours_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_salaries: {
+        Row: {
+          base_salary: number
+          salary_currency: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_salary?: number
+          salary_currency?: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_salary?: number
+          salary_currency?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_salaries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
@@ -2030,6 +2133,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      app_slots: {
+        Args: { p_day: string; p_service: string; p_specialist?: string }
+        Returns: {
+          available: boolean
+          starts_at: string
+        }[]
+      }
       attendance_punch: {
         Args: { p_kind: string }
         Returns: {
@@ -2378,6 +2488,23 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "stock_locations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_usd_rate: {
+        Args: { p_note?: string; p_rate: number }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          note: string
+          usd_to_syp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "exchange_rates"
           isOneToOne: true
           isSetofReturn: false
         }

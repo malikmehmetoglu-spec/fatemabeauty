@@ -28,7 +28,7 @@ const MATRIX: [string, Record<Role, Level>][] = [
   ["الأجهزة", rule(["admin", "specialist"])],
   ["الخدمات والباقات والغرف والإعدادات", rule(["admin"])],
   ["فريق العمل", rule(["admin"])],
-  ["الورديات", rule(["admin"])],
+  ["أوقات الدوام", rule(["admin"])],
   ["الحضور", rule(["admin"], ["accountant"], true)],
   ["الإجازات", rule(["admin"], ["accountant"], true)],
   ["الرواتب والعمولات", rule(["admin", "accountant"], ["admin", "accountant"], true)],
