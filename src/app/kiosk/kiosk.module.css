@@ -86,11 +86,6 @@
 :global([data-stage="fluid"]) .rcol { order: 3; }
 :global([data-stage="fluid"]) .opts { order: 4; }
 :global([data-stage="fluid"]) .issue { order: 5; margin-top: 0 !important; }
-.receipt { display: none; }
-@media print {
-  :global(body) > :global(*):not(.receipt) { display: none !important; }
-  .receipt { display: block; position: absolute; top: 0; left: 0; width: 72mm; padding: 4mm; font-size: 13px; color: #000; background: #fff; font-family: var(--font-messiri), serif; }
-}
 
 /* ---------- photos ---------- */
 :global([data-stage="fluid"]) .camView { order: -1; min-height: 560px; }
