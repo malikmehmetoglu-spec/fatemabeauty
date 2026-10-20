@@ -68,14 +68,6 @@
 .kindDark .kindCheck { background: #fff; }
 .soonTag { align-self: flex-start; margin-top: auto; font-size: 12.5px; padding: 4px 12px; border-radius: 14px; background: rgba(255,255,255,0.18); border: 1px dashed rgba(255,255,255,0.5); }
 
-/* service categories */
-.cats { display: flex; gap: 8px; flex-wrap: wrap; }
-.cat { font: inherit; font-family: var(--font-messiri), serif; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 16px; border-radius: 21px;
-  background: #fff; border: 1.5px solid #F0E6F3; color: var(--sub); font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 4px 12px rgba(123,70,135,0.05); }
-.cat:hover { border-color: #D9BCE5; }
-.catOn { border-color: var(--accent); color: var(--accent); font-weight: 700; background: linear-gradient(170deg, #FFFFFF, #F6ECF8); }
-@media (max-width: 600px) { .cats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .cat { flex-shrink: 0; } }
-
 /* services */
 .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .svc { text-align: start; font: inherit; color: var(--ink); cursor: pointer; border-radius: 24px; padding: 16px 16px 14px; background: #fff; border: 1.5px solid #F0E6F3;

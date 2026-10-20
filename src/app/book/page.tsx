@@ -91,6 +91,13 @@ export default function PublicBookingPage() {
   const curPubCat = pubCat ?? (service && !service.is_consultation ? (sessionCats.some((c) => c.key === service.category_id) ? service.category_id : "") : null) ?? sessionCats[0]?.key ?? "";
   const kindServices = kind === "consult" ? consultServices
     : sessionCats.length ? sessionServices.filter((x) => (curPubCat ? x.category_id === curPubCat : !sessionCats.some((c) => c.key === x.category_id))) : sessionServices;
+  // step-1 cards: the consultation category (consultant flow) + each other category (specialists flow)
+  const consultCat = (info?.categories ?? []).find((c) => consultServices.some((x) => x.category_id === c.key)) ?? null;
+  const cards: { kind: Kind; key: string; name: string; sub: string; icon: string; count: number; ready: boolean }[] = [
+    ...(consultServices.length || info?.consultant ? [{ kind: "consult" as const, key: consultCat?.key ?? "", name: consultCat?.name ?? "استشارة", sub: consultCat?.short_description ?? "", icon: consultCat?.icon ?? "face", count: consultServices.length, ready: consultReady }] : []),
+    ...sessionCats.map((c) => ({ kind: "session" as const, key: c.key, name: c.name, sub: c.short_description, icon: c.icon, count: sessionServices.filter((x) => x.category_id === c.key).length, ready: true })),
+    ...(otherSessions.length || !sessionCats.length ? [{ kind: "session" as const, key: "", name: sessionCats.length ? "جلسات أخرى" : "جلسة عناية", sub: "", icon: "sparkle", count: sessionCats.length ? otherSessions.length : sessionServices.length, ready: sessionServices.length > 0 }] : []),
+  ];
   const svcCat = (info?.categories ?? []).find((c) => c.key === service?.category_id) ?? null;
   const people = info?.specialists ?? [];
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
@@ -130,9 +137,10 @@ export default function PublicBookingPage() {
     { label: "مساءً", list: visibleSlots.filter((x) => hourOf(x.starts_at) >= 17) },
   ].filter((p) => p.list.length);
 
-  function pickKind(k: Kind) {
+  function pickCard(k: Kind, cat: string) {
     setKind(k); setTime(null); setErr("");
-    const list = k === "consult" ? consultServices : sessionServices;
+    if (k === "session") setPubCat(cat);
+    const list = k === "consult" ? consultServices : sessionCats.length ? sessionServices.filter((x) => (cat ? x.category_id === cat : !sessionCats.some((c) => c.key === x.category_id))) : sessionServices;
     const only = list.length === 1 ? list[0] : null;
     setService(only); setSpecialist(null);
     if (only) { if (!day) setDay(days.find(isOpen) ?? null); goTo(k === "consult" ? refs[2] : refs[1]); }
@@ -181,7 +189,7 @@ export default function PublicBookingPage() {
 
   const step1Done = !!service;
   const summary: [string, string, string | null][] = [
-    ["sparkle", "نوع الموعد", kind ? (kind === "consult" ? "استشارة" : "جلسة عناية بالبشرة") : null],
+    ["sparkle", "نوع الموعد", kind ? (kind === "consult" ? consultCat?.name ?? "استشارة" : sessionCats.find((c) => c.key === curPubCat)?.name ?? "جلسة عناية") : null],
     ["drop", "الخدمة", service ? `${service.name} · ${service.minutes} دقيقة` : null],
     ["user", kind === "consult" ? "الاستشارية" : "الأخصائية", kind === "consult" ? info?.consultant?.name ?? null : service ? (chosenPerson?.name ?? "أي أخصائية متاحة") : null],
     ["cal", "اليوم", day && service ? dayLabel(day) : null],
@@ -263,44 +271,30 @@ export default function PublicBookingPage() {
                 <div className={s.main}>
                   {/* 1 — kind, service, specialist */}
                   <section className={s.step} ref={refs[1]}>
-                    <StepHead n={1} title="اختاري نوع الموعد" sub="جلسة عناية مع أخصائيات المركز، أو استشارة لتحديد ما يناسب بشرتكِ" done={step1Done} />
+                    <StepHead n={1} title="اختاري نوع الموعد" sub="استشارة لتحديد ما يناسبكِ، أو جلسة من فئات العناية مع أخصائيات المركز" done={step1Done} />
                     <div className={s.kinds}>
-                      <button type="button" className={`${s.kind} ${kind === "session" ? s.kindOn : ""}`} onClick={() => pickKind("session")} disabled={sessionServices.length === 0} aria-pressed={kind === "session"}>
-                        {kind === "session" && <span className={s.kindCheck}><Icon name="check" color="#fff" size={16} stroke={2.6} /></span>}
-                        <span className={s.kindIcon}><Icon name="sparkle" size={24} color={C.accentMid} /></span>
-                        <div>
-                          <div className={s.kindTitle}>جلسة عناية</div>
-                          <div className={s.kindText}>{sessionServices.length ? `${sessionServices.length === 1 ? "جلسة واحدة" : sessionServices.length === 2 ? "جلستان" : `${sessionServices.length} ${sessionServices.length < 11 ? "جلسات" : "جلسة"}`} مع أخصائيات المركز` : "غير متاحة حالياً"}</div>
-                        </div>
-                      </button>
-                      <button type="button" className={`${s.kind} ${s.kindDark} ${kind === "consult" ? s.kindOn : ""}`} onClick={() => pickKind("consult")} disabled={!consultReady} aria-pressed={kind === "consult"}>
-                        {kind === "consult" && <span className={s.kindCheck}><Icon name="check" color={C.accent} size={16} stroke={2.6} /></span>}
-                        <span className={s.kindIcon}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          {info.consultant?.photo_url ? <img src={info.consultant.photo_url} alt="" /> : <Icon name="face" size={24} color="#fff" />}
-                        </span>
-                        <div>
-                          <div className={s.kindTitle}>{info.consultant ? `استشارة مع ${info.consultant.name}` : "استشارة بشرة"}</div>
-                          <div className={s.kindText}>{consultReady ? "جلسة تقييم لبشرتكِ وخطة عناية تناسبكِ" : "غير متاحة حالياً"}</div>
-                        </div>
-                        {!consultReady && <span className={s.soonTag}>قريباً</span>}
-                      </button>
+                      {cards.map((c) => {
+                        const on = kind === c.kind && (c.kind === "consult" || curPubCat === c.key);
+                        const dark = c.kind === "consult";
+                        const n = c.count;
+                        return (
+                          <button key={c.kind + c.key} type="button" className={`${s.kind} ${dark ? s.kindDark : ""} ${on ? s.kindOn : ""}`} onClick={() => pickCard(c.kind, c.key)} disabled={!c.ready} aria-pressed={on}>
+                            {on && <span className={s.kindCheck}><Icon name="check" color={dark ? C.accent : "#fff"} size={16} stroke={2.6} /></span>}
+                            <span className={s.kindIcon}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              {dark && info.consultant?.photo_url ? <img src={info.consultant.photo_url} alt="" /> : <Icon name={c.icon} size={24} color={dark ? "#fff" : C.accentMid} />}
+                            </span>
+                            <div>
+                              <div className={s.kindTitle}>{c.name}</div>
+                              <div className={s.kindText}>{!c.ready ? "غير متاحة حالياً" : dark && info.consultant ? `مع ${info.consultant.name}${c.sub ? ` — ${c.sub}` : ""}` : c.sub || `${n === 1 ? "خدمة واحدة" : n === 2 ? "خدمتان" : `${n} ${n < 11 ? "خدمات" : "خدمة"}`} مع أخصائيات المركز`}</div>
+                            </div>
+                            {!c.ready && <span className={s.soonTag}>قريباً</span>}
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    {kind === "session" && sessionCats.length > 0 && (sessionCats.length + (otherSessions.length ? 1 : 0)) > 1 && (
-                      <>
-                        <div className={s.subHead}>اختاري الفئة</div>
-                        <div className={s.cats} role="radiogroup" aria-label="فئة الجلسة">
-                          {[...sessionCats.map((c) => ({ key: c.key, name: c.name, icon: c.icon })), ...(otherSessions.length ? [{ key: "", name: "جلسات أخرى", icon: "sparkle" }] : [])].map((c) => (
-                            <button key={c.key || "other"} type="button" role="radio" aria-checked={curPubCat === c.key} className={`${s.cat} ${curPubCat === c.key ? s.catOn : ""}`}
-                              onClick={() => { setPubCat(c.key); if (service && service.category_id !== c.key) { setService(null); setTime(null); } }}>
-                              <Icon name={c.icon} size={17} color={curPubCat === c.key ? C.accent : C.accentMid} />{c.name}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    {kind && (kindServices.length > 1 || (kind === "session" && sessionCats.length > 1)) && (
+                    {kind && kindServices.length > 1 && (
                       <>
                         <div className={s.subHead}>{kind === "consult" ? "اختاري نوع الاستشارة" : "اختاري الجلسة"}</div>
                         <div className={s.services}>
