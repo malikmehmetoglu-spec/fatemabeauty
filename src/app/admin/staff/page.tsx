@@ -77,7 +77,7 @@ function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle }: {
   rows: Staff[]; me: Staff | null; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void;
 }) {
   return (
-    <DataTable headers={["الموظفة", "الدور", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2.4, 1.1, 1.2, 1.6, 0.8, 2.2]} rowHeight={64}
+    <DataTable headers={["الموظفة", "الدور", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2.1, 1, 1.1, 1.4, 0.8, 3]} minWidth={1100} rowHeight={64}
       rows={rows.map((s) => [
         <>
           <StaffAvatar s={s} size={42} />
@@ -93,7 +93,7 @@ function TeamTable({ rows, me, canEdit, onEdit, onLogin, onToggle }: {
           : <span key="l" style={{ fontSize: 12.5, color: C.muted }}>لا يوجد حساب</span>,
         <Tag key="a" kind={s.active ? "green" : "gray"}>{s.active ? "نشطة" : "موقوفة"}</Tag>,
         canEdit(s) ? (
-          <span key="b" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span key="b" style={{ display: "flex", gap: 8, flexWrap: "nowrap", justifyContent: "flex-end", width: "100%" }}>
             <RowBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} />
             <RowBtn icon="lock" label={s.user_id ? "كلمة المرور" : "إنشاء حساب"} onClick={() => onLogin(s)} />
             {s.id !== me?.id && s.role !== "owner" && <RowBtn icon={s.active ? "pause" : "refresh"} label={s.active ? "إيقاف" : "تفعيل"} color={s.active ? C.danger : C.okDeep} onClick={() => onToggle(s)} />}
