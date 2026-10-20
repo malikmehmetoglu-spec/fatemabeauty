@@ -11,8 +11,9 @@ import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Segment, SubmitButton, Tag, TextArea, TextInput, Toggle } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, ICON_FILL } from "@/lib/tokens";
-import { deleteLocation, KIND_ICON, KIND_LABEL, saveLocation, stockError, type LocationKind, type StockLocation } from "@/lib/db/products";
+import { KIND_ICON, KIND_LABEL, saveLocation, stockError, type LocationKind, type StockLocation } from "@/lib/db/products";
 import { useLocations } from "../dialogs";
+import { BulkTransferDialog, DeleteLocationDialog } from "./LocationDialogs";
 
 const KINDS: { value: LocationKind; label: string }[] = [
   { value: "warehouse", label: "مستودع" }, { value: "shop", label: "محل" }, { value: "center", label: "مركز" },
@@ -28,6 +29,9 @@ export default function Page() {
   const [editing, setEditing] = useState<StockLocation | "new" | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<StockLocation | null>(null);
+  const [moving, setMoving] = useState<StockLocation | null>(null);
+  const [msg, setMsg] = useState("");
 
   const statsOf = (id: string) => {
     let items = 0, units = 0;
@@ -41,13 +45,6 @@ export default function Page() {
     try { await saveLocation({ ...l, kind: l.kind as LocationKind, active: !l.active }); }
     catch (e) { setErr("تعذّر الحفظ: " + stockError(e)); } finally { setBusy(null); }
   }
-  async function remove(l: StockLocation) {
-    if (!confirm(`حذف الموقع «${l.name}» نهائياً؟ يُسمح بالحذف فقط إن لم تُسجَّل فيه أي حركة.`)) return;
-    setErr(""); setBusy(l.id);
-    try { await deleteLocation(l.id); }
-    catch (e) { setErr("تعذّر الحذف: " + stockError(e)); } finally { setBusy(null); }
-  }
-
   return (
     <AdminShell active="المخزون والأجهزة" title="المواقع" subtitle="أين توجد البضاعة: المستودع، المحل، المركز — لكل دفعة موقعها، ويمكن النقل بينها"
       actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة موقع</GhostButton>}>
@@ -58,6 +55,12 @@ export default function Page() {
       </div>
 
       {err && <ErrorNote>{err}</ErrorNote>}
+      {msg && (
+        <div role="status" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, fontWeight: 600, color: C.okDeep, background: "#E8F5EC", borderRadius: 14, padding: "10px 14px" }}>
+          <Icon name="check" size={16} color={C.okDeep} /><span style={{ flex: 1 }}>{msg}</span>
+          <button type="button" aria-label="إخفاء" onClick={() => setMsg("")} style={{ border: "none", background: "none", padding: 4 }}><Icon name="x" size={14} color={C.okDeep} /></button>
+        </div>
+      )}
 
       {L.loading ? <Loading /> : !L.all.length ? (
         <EmptyState icon="map" title="لا مواقع بعد" text="أضيفي موقعاً: مستودع أو محل أو مركز."
@@ -93,10 +96,14 @@ export default function Page() {
                     <Btn icon={l.active ? "pause" : "check"} disabled={busy === l.id || (l.active && st.units > 0)} title={l.active && st.units > 0 ? "في الموقع كمية — انقليها أولاً" : undefined}
                       onClick={() => toggleActive(l)}>{l.active ? "إيقاف" : "تفعيل"}</Btn>
                   )}
-                  {!l.is_default_center && !l.active && <Btn icon="trash" danger disabled={busy === l.id} onClick={() => remove(l)}>حذف</Btn>}
+                  {st.units > 0 && L.active.some((o) => o.id !== l.id) && <Btn icon="refresh" onClick={() => { setMsg(""); setMoving(l); }}>نقل المخزون</Btn>}
+                  {!l.is_default_center && L.active.some((o) => o.id !== l.id) && <Btn icon="trash" danger disabled={busy === l.id} onClick={() => { setMsg(""); setErr(""); setDeleting(l); }}>حذف الموقع</Btn>}
                 </div>
                 {l.active && st.units > 0 && !l.is_default_center && (
-                  <div style={{ fontSize: 11.5, color: C.sub2 }}>لإيقافه انقلي كمياته أولاً من <Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link> («نقل»).</div>
+                  <div style={{ fontSize: 11.5, color: C.sub2 }}>لإيقافه انقلي كمياته أولاً بـ«نقل المخزون»، أو صنفاً صنفاً من <Link href={R.W_Inventory} style={{ color: C.accent, fontWeight: 700 }}>المخزون</Link> («نقل»).</div>
+                )}
+                {l.is_default_center && L.active.length > 1 && (
+                  <div style={{ fontSize: 11.5, color: C.sub2 }}>لحذفه اجعلي موقعاً آخر هو الافتراضي أولاً (من «تعديل»).</div>
                 )}
               </article>
             );
@@ -110,6 +117,8 @@ export default function Page() {
         والنقل بين المواقع لا يغيّر المجموع الكلي ويحافظ على تواريخ الانتهاء.
       </div>
 
+      <DeleteLocationDialog loc={deleting} stats={deleting ? statsOf(deleting.id) : { items: 0, units: 0 }} onClose={() => setDeleting(null)} onDone={setMsg} />
+      <BulkTransferDialog from={moving} onClose={() => setMoving(null)} onDone={setMsg} />
       <LocationDialog open={!!editing} loc={editing === "new" ? null : editing} count={L.all.length} onClose={() => setEditing(null)} />
     </AdminShell>
   );

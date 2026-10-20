@@ -22,9 +22,9 @@ export const MOVE_LABEL: Record<string, string> = {
 export const KIND_LABEL: Record<LocationKind, string> = { warehouse: "مستودع", shop: "محل", center: "مركز" };
 export const KIND_ICON: Record<LocationKind, string> = { warehouse: "layers", shop: "bag", center: "home" };
 
-/** Every stock location (active first, then by order). */
+/** Every stock location (active first, then by order). Deleted (archived) locations are hidden. */
 export async function listLocations() {
-  return must(await supabase.from("stock_locations").select("*").order("active", { ascending: false }).order("sort").order("created_at")) as StockLocation[];
+  return must(await supabase.from("stock_locations").select("*").is("deleted_at", null).order("active", { ascending: false }).order("sort").order("created_at")) as StockLocation[];
 }
 
 /** Quantities in stock per product and location: { productKey: { locationId: qty } }. */
@@ -51,10 +51,22 @@ export async function saveLocation(l: { id?: string | null; name: string; kind: 
   return row;
 }
 
-/** Deletes a location that never held stock (otherwise the database refuses; deactivate it instead). */
-export async function deleteLocation(id: string) {
-  must(await supabase.from("stock_locations").delete().eq("id", id));
+export type DeleteLocationResult = { deleted: boolean; archived: boolean; products: number; units: number };
+/**
+ * Deletes a location. What it holds is first moved to `target` (mode "transfer") or written off as waste (mode "waste").
+ * A location with history is archived instead (hidden, name kept for the history views).
+ */
+export async function deleteLocation(id: string, mode: "transfer" | "waste" | null, target?: string | null) {
+  const res = must(await supabase.rpc("delete_stock_location", { p_location: id, p_mode: mode ?? undefined, p_target: target ?? undefined }));
   invalidate("products");
+  return res as unknown as DeleteLocationResult;
+}
+
+/** Moves several products (or, with `items` null, everything) from one location to another in one step. */
+export async function transferLocationStock(from: string, to: string, items: { product_key: string; qty: number }[] | null, note?: string) {
+  const res = must(await supabase.rpc("transfer_location_stock", { p_from: from, p_to: to, p_items: items ?? undefined, p_note: note || undefined }));
+  invalidate("products");
+  return res as unknown as { products: number; units: number };
 }
 
 /** Moves a quantity between two locations (earliest-expiring batches first; expiry and cost travel with them). */
@@ -140,6 +152,11 @@ export async function saveProductWithImage(input: ProductInput, file: File | nul
 /** Readable Arabic message for errors raised by the stock functions / guards. */
 export function stockError(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);
+  if (/cannot delete default location/.test(m)) return "هذا هو الموقع الافتراضي — اجعلي موقعاً آخر هو الافتراضي أولاً (من «تعديل»).";
+  if (/cannot delete only location/.test(m)) return "لا يمكن حذف الموقع الوحيد — أضيفي موقعاً آخر أولاً.";
+  if (/choose what to do with the stock/.test(m)) return "في الموقع كمية — اختاري نقلها إلى موقع آخر أو حذفها.";
+  if (/nothing to transfer/.test(m)) return "لا كمية للنقل — اختاري منتجاً واحداً على الأقل.";
+  if (/bad items/.test(m)) return "قائمة المنتجات غير صحيحة.";
   if (/out of stock at location/.test(m)) return "الكمية في هذا الموقع لا تكفي.";
   if (/out of stock/.test(m)) return "الكمية في المخزون لا تكفي.";
   if (/same location/.test(m)) return "اختاري موقعين مختلفين للنقل.";

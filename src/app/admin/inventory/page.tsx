@@ -5,7 +5,10 @@
  * Retail items appear in the store automatically; each can be hidden from the store.
  * Consumables (used in sessions) never appear in the store.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { R } from "@/lib/routes";
+import { useLiveRefresh } from "@/lib/db/orders";
 import { AdminShell } from "@/components/shell";
 import { Chip, DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Toggle, Tag } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
@@ -23,8 +26,10 @@ const expName = (b: unknown) => (b as ExpRow).products?.name ?? "—";
 const expUnit = (b: unknown) => (b as ExpRow).products?.unit ?? "";
 
 export default function InventoryPage() {
-  const { data: items, loading, error } = useQuery(["products", "inventory"], listInventory);
-  const { data: expiring } = useQuery(["products", "expiring"], () => listExpiring(60));
+  const inv = useQuery(["products", "inventory"], listInventory);
+  const { data: items, loading, error } = inv;
+  const exp = useQuery(["products", "expiring"], () => listExpiring(60));
+  const expiring = exp.data;
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -36,6 +41,12 @@ export default function InventoryPage() {
   const [moving, setMoving] = useState<Product | null>(null);
   const [locSel, setLocSel] = useState<string | null>(null);
   const L = useLocations();
+  // Store orders, cashier sales and other devices change stock: re-read on open, on focus and every 30 s.
+  useLiveRefresh(() => { void inv.refresh(); void exp.refresh(); void L.refresh(); });
+  useEffect(() => {
+    const t = setInterval(() => { if (document.visibilityState === "visible") { void inv.refresh(); void L.refresh(); } }, 30000);
+    return () => clearInterval(t);
+  });
   const loc = locSel && L.all.some((l) => l.id === locSel) ? locSel : null;
   const qty = (p: Product) => qtyAt(L.map, p, loc);
   /** "المستودع 12 · المركز 3" — only the locations that hold the item. */
@@ -74,7 +85,10 @@ export default function InventoryPage() {
 
   return (
     <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={L.multi ? "الكميات في كل المواقع: المستودع والمحل والمركز — منتجات البيع تظهر في المتجر من المواقع التي تغذّيه" : "كل ما في المركز: منتجات البيع تظهر في المتجر تلقائياً، ومواد الجلسات لا تظهر"}
-      actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>}>
+      actions={<>
+        {L.multi && <Link href={R.W_Locations} style={{ textDecoration: "none" }}><GhostButton icon="refresh">نقل بين المواقع</GhostButton></Link>}
+        <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>
+      </>}>
       <div className="adm-row">
         <Kpi dark label="الأصناف" value={stats.total} sub={`${stats.retail} للبيع · ${stats.total - stats.retail} للجلسات`} icon="box" />
         <Kpi label="ظاهرة في المتجر" value={stats.inStore} sub={`من ${stats.retail} منتج بيع`} icon="bag" />

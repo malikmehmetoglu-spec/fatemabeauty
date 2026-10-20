@@ -1950,6 +1950,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          deleted_at: string | null
           id: string
           is_default_center: boolean
           kind: string
@@ -1961,6 +1962,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_default_center?: boolean
           kind?: string
@@ -1972,6 +1974,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_default_center?: boolean
           kind?: string
@@ -2373,6 +2376,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_stock_location: {
+        Args: { p_location: string; p_mode?: string; p_target?: string }
+        Returns: Json
+      }
       ensure_patient: {
         Args: never
         Returns: {
@@ -2566,6 +2573,7 @@ export type Database = {
         Returns: {
           active: boolean
           created_at: string
+          deleted_at: string | null
           id: string
           is_default_center: boolean
           kind: string
@@ -2683,6 +2691,10 @@ export type Database = {
       track_app_open: {
         Args: { p_channel: string; p_device_id: string; p_platform: string }
         Returns: undefined
+      }
+      transfer_location_stock: {
+        Args: { p_from: string; p_items?: Json; p_note?: string; p_to: string }
+        Returns: Json
       }
       transfer_stock: {
         Args: {

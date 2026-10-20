@@ -23,7 +23,9 @@ export function useLocations() {
   const all = locs.data ?? [];
   const active = all.filter((l) => l.active);
   const def = active.find((l) => l.is_default_center) ?? active[0] ?? null;
-  return { all, active, def, map: map.data ?? null, multi: active.length > 1, loading: locs.loading };
+  return { all, active, def, map: map.data ?? null, multi: active.length > 1, loading: locs.loading,
+    /** Background re-fetch (keeps the current data on screen). */
+    refresh: () => Promise.all([locs.refresh(), map.refresh()]) };
 }
 export const locLabel = (l: Pick<StockLocation, "name" | "kind">) => `${l.name} (${KIND_LABEL[l.kind as LocationKind] ?? ""})`;
 
