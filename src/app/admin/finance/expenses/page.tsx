@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { financeData, monthRange, sumBy, type Expense } from "@/lib/db/finance";
+import { financeData, monthRange, PAYROLL_EXPENSE, sumBy, type Expense } from "@/lib/db/finance";
 import { ExpenseDialog } from "./ExpenseDialog";
 import css from "../finance.module.css";
 import { arDate, dayKey, money } from "@/lib/format";
@@ -60,7 +60,8 @@ export default function Page() {
                 <div style={{ flex: 1.4, color: C.sub }}>{arDate(new Date(`${e.spent_on}T12:00:00`))}</div>
                 <div style={{ flex: 1.1 }}><Amount n={e.amount} /></div>
                 <div className={css.tight} style={{ flex: 0.7 }}>
-                  <button type="button" aria-label="تعديل" onClick={() => setEditing(e)} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="edit" color={C.accent} size={15} /></button>
+                  {e.id.startsWith(PAYROLL_EXPENSE) ? <span title="يُعدَّل من صفحة الرواتب" style={{ width: 32, height: 32, borderRadius: 16, background: C.tint, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="lock" color={C.sub2} size={14} /></span> :
+                  <button type="button" aria-label="تعديل" onClick={() => setEditing(e)} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="edit" color={C.accent} size={15} /></button>}
                 </div>
               </div>
             ))}

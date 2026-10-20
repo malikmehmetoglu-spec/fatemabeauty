@@ -7,11 +7,14 @@
 import { arError } from "@/lib/arError";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, Select, SubmitButton, Tag, TextInput, Toggle } from "@/components/ui";
+import { DataTable, EmptyState, ErrorNote, GhostButton, Icon, Kpi, Loading, Modal, NumberInput, Segment, Select, SubmitButton, Tag, TextInput, Toggle } from "@/components/ui";
+import { useQuery } from "@/lib/db/query";
+import { listSalaries, saveSalary, type Currency } from "@/lib/db/fx";
+import { useUsdRate } from "@/app/admin/finance/FxCard";
 import { Row } from "@/app/admin/settings/rooms/dialogs";
 import { saveStaff, setStaffActive, staffAdmin, staffPhoto, uploadStaffPhoto, type Role, type Staff } from "@/lib/db/staff";
 import { useSession, ROLE_LABEL } from "@/lib/supabase/session";
-import { arDate } from "@/lib/format";
+import { arDate, money } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { RowBtn, StaffAvatar, TeamTabs, errText, useTeam } from "./team-ui";
 
@@ -114,10 +117,16 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
   const [name, setName] = useState(""); const [title, setTitle] = useState(""); const [role, setRole] = useState<Role>("specialist"); const [phone, setPhone] = useState(""); const [consultant, setConsultant] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const salaries = useQuery(["salaries"], listSalaries);
+  const { rate } = useUsdRate();
+  const [salary, setSalary] = useState(""); const [cur, setCur] = useState<Currency>("SYP");
+  const curSalary = member ? (salaries.data ?? []).find((x) => x.staff_id === member.id) : undefined;
   useEffect(() => {
     if (!open) return;
     setName(member?.name ?? ""); setTitle(member?.title ?? ""); setRole(member?.role ?? "specialist"); setPhone(member?.phone ?? ""); setConsultant(member?.is_consultant ?? false); setFile(null); setError("");
-  }, [open, member]);
+    setSalary(curSalary?.base_salary ? String(curSalary.base_salary) : ""); setCur((curSalary?.salary_currency as Currency) ?? "SYP");
+  }, [open, member, curSalary]);
+  const salN = Math.round(Number(salary || 0));
 
   const roleOpts: { value: Role; label: string }[] = (member?.role === "owner" ? ["owner"] as Role[] : (isOwner ? ["admin", "specialist", "reception", "accountant"] : ["specialist", "reception", "accountant", ...(member?.role === "admin" ? ["admin"] : [])]) as Role[])
     .map((r) => ({ value: r, label: ROLE_LABEL[r] }));
@@ -129,7 +138,8 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     setBusy(true);
     try {
       const photo_url = file ? await uploadStaffPhoto(file) : member?.photo_url ?? null;
-      await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, is_consultant: consultant });
+      const row = await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, is_consultant: consultant });
+      if (row && (salN !== (curSalary?.base_salary ?? 0) || cur !== (curSalary?.salary_currency ?? "SYP"))) await saveSalary(row.id, salN, cur);
       onClose();
     } catch (e) { setError(errText(e)); } finally { setBusy(false); }
   }
@@ -151,6 +161,11 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Select label="الدور (يحدد الصلاحيات)" value={role} onChange={setRole} options={roleOpts} />
         <TextInput label="رقم الهاتف" dir="ltr" value={phone} onChange={setPhone} placeholder="09xx xxx xxx" />
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <NumberInput label="الراتب الشهري الأساسي" value={salary} onChange={(v) => setSalary(v.replace(/\./g, ""))} suffix={cur === "USD" ? "$" : "ل.س"} style={{ flex: "1 1 220px" }}
+          hint={cur === "USD" && salN > 0 ? (rate ? <>≈ <span dir="ltr" className="latin">{money(salN * rate.usd_to_syp, false)}</span> ل.س بسعر اليوم (<span dir="ltr" className="latin">{money(rate.usd_to_syp, false)}</span>)</> : "لم يُحدَّد سعر الصرف بعد — حدّديه من المالية") : "يُستخدم عند توليد مسير الرواتب"} />
+        <div style={{ marginTop: 25 }}><Segment label="عملة الراتب" value={cur} onChange={setCur} options={[{ value: "SYP", label: "ل.س" }, { value: "USD", label: "$" }]} /></div>
       </div>
       <Row title="استشارية" sub="تظهر في «استشارة» برابط الحجز العام بدل جلسات العناية"><Toggle on={consultant} onChange={setConsultant} label="استشارية" /></Row>
       {!isOwner && <div style={{ fontSize: 12.5, color: C.sub2 }}>دور «الإدارة» يمنحه المدير العام فقط.</div>}

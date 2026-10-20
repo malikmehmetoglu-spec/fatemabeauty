@@ -9,6 +9,8 @@ import { dayOf, financeData, monthRange, PAY_LABEL, receivedByMethod, shiftDay, 
 import css from "../finance.module.css";
 import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
+import { FxCard, useUsdRate } from "../FxCard";
+import { usd } from "@/lib/db/fx";
 import { PrintStyles, Bars, Big, DeepBtn, LATIN, LightBtn, MonthPicker, PANEL, PanelTitle, ShareList, StatCard, downloadCsv, monthLabel } from "../parts";
 
 const KIND_AR: Record<string, string> = { service: "خدمات", product: "منتجات", package: "باقات", custom: "أخرى" };
@@ -27,6 +29,8 @@ export default function Page() {
   const expenses = exps.reduce((s, e) => s + e.amount, 0);
   const profit = revenue - expenses;
   const sessions = invs.filter((i) => i.appointment_id).length;
+  const { rate } = useUsdRate();
+  const inUsd = (n: number) => (rate ? usd(Math.round(n / rate.usd_to_syp)) : "");
 
   // net value per line: share of the invoice discount spread over its lines
   const lines = invs.flatMap((i) => (i.invoice_items ?? []).map((x) => ({ ...x, net: i.subtotal ? (x.qty * x.unit_price * i.total) / i.subtotal : 0, spec: i.appointments?.staff?.name })));
@@ -59,6 +63,7 @@ export default function Page() {
       <DeepBtn icon="download" onClick={exportCsv} disabled={!invs.length && !exps.length}>Excel</DeepBtn>
     </>}>
       <PrintStyles />
+      <FxCard compact />
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل التقرير: {error}</ErrorNote> : (<>
         <div className={css.stats}>
           <StatCard dark label={`إيرادات ${monthLabel(month)}`} value={<Big n={revenue} />} sub={`${invs.length} فاتورة · ${sessions} جلسة · ${activeDays} يوم عمل`} icon="wallet" />
@@ -95,6 +100,12 @@ export default function Page() {
             {!byCat.length && <SnapRow label="المصاريف" n={0} />}
             <SnapRow label="صافي الربح" n={profit} strong accent />
           </div>
+          {rate && (revenue > 0 || expenses > 0) && (
+            <div style={{ marginTop: 10, fontSize: 12, color: C.sub2, lineHeight: 1.7 }}>
+              بالدولار بسعر اليوم (<span dir="ltr" style={LATIN}>{money(rate.usd_to_syp, false)}</span> ل.س): الإيرادات <span dir="ltr" style={LATIN}>{inUsd(revenue)}</span> · المصاريف <span dir="ltr" style={LATIN}>{inUsd(expenses)}</span> · صافي الربح <span dir="ltr" style={LATIN}>{profit < 0 ? "−" : ""}{inUsd(Math.abs(profit))}</span>.
+              الرواتب محسوبة بالليرة بسعر يوم دفعها.
+            </div>
+          )}
         </div>
       </>)}
     </AdminShell>

@@ -12,6 +12,8 @@ import {
   book, bookingError, busyRanges, createPatient, freeSlots, getHours, searchPatients, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
 import { getPatient } from "@/lib/db/patients";
+import { listStaffHours, worksAt } from "@/lib/db/staff";
+import { weekday } from "@/lib/db/appointments";
 import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
@@ -35,6 +37,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
   const hours = useQuery(["appointments", "hours"], getHours);
+  const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
 
   const [mode, setMode] = useState<Mode>("existing");
   const [q, setQ] = useState("");
@@ -75,6 +78,12 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
   const slots = useMemo(() => (svc && hours.data && busyQ.data ? freeSlots({ ...hours.data, days: [0, 1, 2, 3, 4, 5, 6] }, day, svc.minutes, busyQ.data, room || null, sp || null) : []),
     [svc, hours.data, busyQ.data, day, room, sp]);
+  const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
+  /** Does the chosen specialist work (her «أوقات الدوام», clipped to the clinic hours) for the whole visit at time t? */
+  const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
+    worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + svc.minutes, hours.data);
+  const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);
+  const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
 
   async function submit() {
     setError("");
@@ -84,6 +93,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
     if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
     if (mode === "existing" && !patient) { setError("ابحثي عن المراجِعة واختاريها."); return; }
     if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
+    if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
     setBusy(true);
     try {
       let pid = patient?.id ?? null;
@@ -166,9 +176,20 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
               {busyQ.loading ? <Loading label="نحسب الأوقات المتاحة…" style={{ padding: 8 }} /> : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 132, overflowY: "auto" }}>
                   {slots.length === 0 ? <span style={{ fontSize: 13, color: C.sub2 }}>لا أوقات فارغة ضمن ساعات الدوام لهذا اليوم.</span>
-                    : slots.map((t) => <Chip key={t} height={34} selected={time === t} onClick={() => setTime(t)}><span className="latin">{t}</span></Chip>)}
+                    : slots.map((t) => {
+                      const off = !onDuty(t, day);
+                      return <Chip key={t} height={34} selected={time === t} onClick={() => setTime(t)} style={off && time !== t ? { background: "#FFF9EF", border: "1.5px dashed #E8B86A", color: "#9A6A1E" } : undefined}><span className="latin" title={off ? "خارج دوام الأخصائية" : undefined}>{t}</span></Chip>;
+                    })}
                 </div>
               )}
+            </div>
+          )}
+          {sp && slots.some((t) => !onDuty(t, day)) && mode !== "walkin" && (
+            <div style={{ fontSize: 12.5, color: C.sub2 }}>الأوقات المنقّطة باللون الذهبي خارج دوام {spName}.</div>
+          )}
+          {offDuty && (
+            <div role="alert" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>
+              <Icon name="clock" size={16} color="#8A5A12" />خارج دوام الأخصائية — {spName} لا تداوم في هذا الوقت. يمكنكِ الحجز رغم ذلك بعد التأكيد.
             </div>
           )}
           {error && <ErrorNote>{error}</ErrorNote>}

@@ -1,120 +1,222 @@
 "use client";
 
-/** W_Shifts.dc.html — الورديات (live, Supabase `staff_shifts`). Weekly grid: team × day. */
-import { Fragment, useEffect, useMemo, useState } from "react";
+/**
+ * أوقات الدوام — fixed weekly working hours per staff member (Supabase `staff_hours`).
+ * Replaces the old dated «الورديات» grid (table staff_shifts is kept but no longer shown).
+ * Bookings follow these hours (database: private.staff_available). A member with no hours follows the clinic opening hours.
+ */
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AdminShell } from "@/components/shell";
-import { Card, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Select, SubmitButton, TextInput } from "@/components/ui";
+import { Card, EmptyState, ErrorNote, Icon, Loading, Tag, Toggle } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
-import { listRooms, listShifts, removeShift, saveShift, type Shift } from "@/lib/db/staff";
-import { useSession } from "@/lib/supabase/session";
+import { getHours, type Hours } from "@/lib/db/appointments";
+import { listStaffHours, saveStaffHours, type HourRange, type Staff, type StaffHour } from "@/lib/db/staff";
+import { ROLE_LABEL, useSession } from "@/lib/supabase/session";
 import { AR_DAYS } from "@/lib/data";
-import { arDate, dayKey } from "@/lib/format";
-import { C } from "@/lib/tokens";
-import { StaffCell, TeamTabs, errText, useTeam } from "../team-ui";
+import { C, SHB } from "@/lib/tokens";
+import { StaffAvatar, TeamTabs, errText, useTeam } from "../team-ui";
+import css from "./hours.module.css";
 
-const keyDate = (k: string) => new Date(`${k}T12:00:00+03:00`);
-const shiftKey = (k: string, n: number) => dayKey(new Date(keyDate(k).getTime() + n * 864e5));
-/** Saturday that starts the week containing `k` (Damascus). */
-function weekStart(k: string) { const d = keyDate(k).getUTCDay(); return shiftKey(k, -((d + 1) % 7)); }
+/** Syrian week: Saturday first. */
+const WEEK = [6, 0, 1, 2, 3, 4, 5];
+const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+const hhmm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 const hm = (t: string) => t.slice(0, 5);
 
-export default function ShiftsPage() {
+type Range = { from: string; to: string };
+type Week = Record<number, Range[]>; // weekday → ranges (empty = day off)
+
+const emptyWeek = (): Week => Object.fromEntries(WEEK.map((d) => [d, []])) as unknown as Week;
+
+function weekOf(rows: StaffHour[], staffId: string): Week | null {
+  const mine = rows.filter((r) => r.staff_id === staffId);
+  if (!mine.length) return null;
+  const w = emptyWeek();
+  for (const r of mine) w[r.weekday].push({ from: hm(r.starts), to: hm(r.ends) });
+  for (const d of WEEK) w[d].sort((a, b) => a.from.localeCompare(b.from));
+  return w;
+}
+
+const sameRanges = (a: Range[], b: Range[]) => a.length === b.length && a.every((r, i) => r.from === b[i].from && r.to === b[i].to);
+
+/** «السبت–الخميس 10:00–13:00 · الجمعة 16:00–18:00» */
+function summary(w: Week | null): ReactNode {
+  if (!w) return "يتبع دوام المركز (لم يُحدَّد جدول بعد)";
+  const parts: { days: string; times: string }[] = [];
+  let i = 0;
+  while (i < WEEK.length) {
+    const r = w[WEEK[i]];
+    if (!r.length) { i++; continue; }
+    let j = i;
+    while (j + 1 < WEEK.length && w[WEEK[j + 1]].length && sameRanges(w[WEEK[j + 1]], r)) j++;
+    const days = i === j ? AR_DAYS[WEEK[i]] : `${AR_DAYS[WEEK[i]]}–${AR_DAYS[WEEK[j]]}`;
+    parts.push({ days, times: r.map((x) => `${x.from}–${x.to}`).join(" , ") });
+    i = j + 1;
+  }
+  if (!parts.length) return "لا أيام عمل محدّدة";
+  return parts.map((x, i) => (
+    <span key={i}>{i > 0 && " · "}{x.days} <span className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{x.times}</span></span>
+  ));
+}
+
+const ORDER = (s: Staff) => (s.is_consultant ? 0 : s.role === "specialist" ? 1 : s.role === "owner" || s.role === "admin" ? 2 : 3);
+
+export default function WorkingHoursPage() {
   const { staff: me } = useSession();
   const canManage = me?.role === "owner" || me?.role === "admin";
   const team = useTeam();
-  const [start, setStart] = useState(() => weekStart(dayKey()));
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => shiftKey(start, i)), [start]);
-  const { data: shifts, loading, error } = useQuery(["shifts", start], () => listShifts(days[0], days[6]));
-  const { data: rooms } = useQuery(["rooms", "list"], listRooms);
-  const [editing, setEditing] = useState<Partial<Shift> | null>(null);
-  const today = dayKey();
-  const roomName = (id: string | null) => rooms?.find((r) => r.id === id)?.name;
+  const hours = useQuery(["appointments", "hours"], getHours);
+  const rows = useQuery(["staff_hours", "all"], listStaffHours);
+  const members = useMemo(() => [...team.active].sort((a, b) => ORDER(a) - ORDER(b)), [team.active]);
 
+  const loading = team.loading || hours.loading || rows.loading;
+  const error = team.error || hours.error || rows.error;
   return (
-    <AdminShell active="فريق العمل" title="الورديات" subtitle={`أسبوع ${arDate(keyDate(days[0]), { day: false })} — ${arDate(keyDate(days[6]), { day: false, year: true })}`}
-      actions={<>
-        <GhostButton icon="fwd" onClick={() => setStart(shiftKey(start, -7))}>الأسبوع السابق</GhostButton>
-        <GhostButton onClick={() => setStart(weekStart(today))}>هذا الأسبوع</GhostButton>
-        <GhostButton icon="back" onClick={() => setStart(shiftKey(start, 7))}>التالي</GhostButton>
-      </>}>
+    <AdminShell active="فريق العمل" title="أوقات الدوام" subtitle="جدول أسبوعي ثابت لكل موظفة — الحجوزات تتبعه تلقائياً">
       <TeamTabs />
-      {team.loading || loading ? <Loading /> : error || team.error ? <ErrorNote>تعذّر تحميل الورديات: {error || team.error}</ErrorNote> : team.active.length === 0 ? (
-        <EmptyState icon="users" title="لا يوجد فريق بعد" text="أضيفي الموظفات من صفحة الفريق أولاً، ثم وزّعي الورديات هنا." />
+      <div className={css.hint}>
+        <Icon name="clock" size={20} color={C.accent} />
+        <div>
+          <b>الحجوزات تتبع هذه الأوقات.</b> لا تظهر للمراجِعات (في التطبيق ورابط الحجز) إلا الأوقات التي تداوم فيها الأخصائية، ومواعيد الاستشارة تتبع دوام المستشارة.
+          الموظفة التي لم يُحدَّد لها جدول تتبع ساعات دوام المركز. يمكن للاستقبال الحجز خارج الدوام عند الحاجة مع تنبيه.
+        </div>
+      </div>
+      {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل أوقات الدوام: {error}</ErrorNote> : members.length === 0 ? (
+        <EmptyState icon="users" title="لا يوجد فريق بعد" text="أضيفي الموظفات من صفحة الفريق أولاً، ثم حدّدي أوقات دوام كل واحدة هنا." />
       ) : (
-        <Card padding="10px 16px" style={{ overflowX: "auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: `200px repeat(7, minmax(110px, 1fr))`, gap: 0 }}>
-            <div />
-            {days.map((d) => (
-              <div key={d} style={{ padding: "8px 6px", textAlign: "center", fontSize: 12.5, fontWeight: 700, color: d === today ? C.accent : C.sub2 }}>
-                {AR_DAYS[keyDate(d).getUTCDay()]}<div className="latin" style={{ fontWeight: 600, fontSize: 12 }}>{Number(d.slice(8))}</div>
-              </div>
-            ))}
-            {team.active.map((s) => (
-              <Fragment key={s.id}>
-                <div style={{ padding: "10px 4px", borderTop: `1px solid ${C.line}` }}><StaffCell s={s} sub={s.title} /></div>
-                {days.map((d) => {
-                  const mine = (shifts ?? []).filter((x) => x.staff_id === s.id && x.day === d);
-                  return (
-                    <div key={d} style={{ borderTop: `1px solid ${C.line}`, padding: 6, display: "flex", flexDirection: "column", gap: 4, background: d === today ? "rgba(123,70,135,0.04)" : undefined }}>
-                      {mine.map((x) => (
-                        <button key={x.id} type="button" disabled={!canManage} onClick={() => setEditing(x)} style={{ border: "none", borderRadius: 12, padding: "6px 8px", background: "#F3E8F6", color: C.accent, fontSize: 12, fontWeight: 700, textAlign: "center", lineHeight: 1.4 }}>
-                          <span className="latin">{hm(x.starts)}–{hm(x.ends)}</span>
-                          {roomName(x.room_id) && <div style={{ fontSize: 11, fontWeight: 600, color: C.sub2 }}>{roomName(x.room_id)}</div>}
-                        </button>
-                      ))}
-                      {canManage && (
-                        <button type="button" aria-label={`إضافة وردية ${s.name}`} onClick={() => setEditing({ staff_id: s.id, day: d })} style={{ border: "1px dashed #E2D0EA", borderRadius: 12, background: "transparent", height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Icon name="plus" size={14} color={C.muted} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </div>
-          {(shifts ?? []).length === 0 && <div style={{ textAlign: "center", fontSize: 13, color: C.sub2, padding: "12px 0 4px" }}>لا ورديات مسجّلة لهذا الأسبوع{canManage ? " — اضغطي + في أي خانة لإضافة وردية." : "."}</div>}
-        </Card>
+        <div className={css.list}>
+          {members.map((s) => (
+            <MemberCard key={s.id} s={s} clinic={hours.data!} saved={weekOf(rows.data ?? [], s.id)} canManage={canManage} />
+          ))}
+        </div>
       )}
-      <ShiftDialog shift={editing} rooms={rooms ?? []} names={new Map(team.list.map((s) => [s.id, s.name]))} onClose={() => setEditing(null)} />
     </AdminShell>
   );
 }
 
+function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; saved: Week | null; canManage: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [week, setWeek] = useState<Week>(() => saved ?? emptyWeek());
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const savedKey = JSON.stringify(saved);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setWeek(saved ?? emptyWeek()); }, [savedKey]);
 
-function ShiftDialog({ shift, rooms, names, onClose }: { shift: Partial<Shift> | null; rooms: { id: string; name: string }[]; names: Map<string, string>; onClose: () => void }) {
-  const [starts, setStarts] = useState(""); const [ends, setEnds] = useState(""); const [room, setRoom] = useState(""); const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
-  useEffect(() => {
-    setStarts(shift?.starts ? hm(shift.starts) : ""); setEnds(shift?.ends ? hm(shift.ends) : ""); setRoom(shift?.room_id ?? ""); setNote(shift?.note ?? ""); setError("");
-  }, [shift]);
-  async function submit() {
-    if (!shift?.staff_id || !shift.day) return;
-    if (!starts || !ends) { setError("حدّدي وقت البداية والنهاية."); return; }
-    if (ends <= starts) { setError("وقت النهاية يجب أن يكون بعد البداية."); return; }
-    setBusy(true);
-    try { await saveShift({ id: shift.id, staff_id: shift.staff_id, day: shift.day, starts, ends, room_id: room || null, note: note.trim() }); onClose(); }
-    catch (e) { setError(errText(e)); } finally { setBusy(false); }
+  const step = Math.max(5, clinic.slot || 15);
+  const times = useMemo(() => {
+    const out: string[] = [];
+    for (let t = toMin(clinic.from); t <= toMin(clinic.to); t += step) out.push(hhmm(t));
+    return out;
+  }, [clinic.from, clinic.to, step]);
+  const clinicRange: Range = { from: hhmm(toMin(clinic.from)), to: hhmm(toMin(clinic.to)) };
+  const isOpen = (d: number) => clinic.days.includes(d);
+  const dirty = JSON.stringify(week) !== JSON.stringify(saved ?? emptyWeek());
+
+  const setDay = (d: number, r: Range[]) => { setWeek((w) => ({ ...w, [d]: r })); setMsg(null); };
+  const firstWorking = WEEK.find((d) => week[d].length);
+
+  function validate(): string | null {
+    for (const d of WEEK) {
+      const r = week[d];
+      for (const x of r) if (x.to <= x.from) return `${AR_DAYS[d]}: وقت النهاية يجب أن يكون بعد البداية.`;
+      if (r.length === 2 && r[1].from < r[0].to) return `${AR_DAYS[d]}: الفترتان متداخلتان.`;
+    }
+    return null;
   }
-  async function remove() {
-    if (!shift?.id || !confirm("حذف هذه الوردية؟")) return;
-    setBusy(true);
-    try { await removeShift(shift.id); onClose(); } catch (e) { setError(errText(e)); } finally { setBusy(false); }
+
+  async function save(w: Week) {
+    const err = validate();
+    if (err) { setMsg({ ok: false, text: err }); return; }
+    const ranges: HourRange[] = WEEK.flatMap((d) => w[d].map((x) => ({ weekday: d, starts: x.from, ends: x.to })));
+    if (!ranges.length && saved && !confirm(`لا أيام عمل في الجدول — ستتبع ${s.name} ساعات دوام المركز. متابعة؟`)) return;
+    setBusy(true); setMsg(null);
+    try {
+      await saveStaffHours(s.id, ranges);
+      setMsg({ ok: true, text: ranges.length ? "حُفظت أوقات الدوام." : "أُلغي الجدول — تتبع الآن دوام المركز." });
+    } catch (e) { setMsg({ ok: false, text: errText(e) }); } finally { setBusy(false); }
   }
+
+  const roleTag = s.is_consultant ? <Tag kind="plum">مستشارة</Tag> : <Tag kind={s.role === "specialist" ? "pink" : s.role === "owner" || s.role === "admin" ? "lilac" : "gray"}>{ROLE_LABEL[s.role]}</Tag>;
+  const shown: Week | null = open ? week : saved;
+
   return (
-    <Modal open={!!shift} onClose={onClose} title={`${shift?.id ? "تعديل" : "إضافة"} وردية — ${names.get(shift?.staff_id ?? "") ?? ""}`} width={500}
-      footer={<>
-        <SubmitButton onClick={submit} busy={busy}>حفظ</SubmitButton>
-        {shift?.id && <button type="button" onClick={remove} style={{ border: "none", background: "none", color: C.danger, fontSize: 14, fontWeight: 600, marginInlineStart: "auto" }}>حذف الوردية</button>}
-      </>}>
-      <div style={{ fontSize: 13.5, color: C.sub }}>{shift?.day ? arDate(keyDate(shift.day), { year: true }) : ""}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <TextInput label="من" type="time" dir="ltr" required value={starts} onChange={setStarts} />
-        <TextInput label="إلى" type="time" dir="ltr" required value={ends} onChange={setEnds} />
+    <Card padding={0} style={{ overflow: "hidden" }}>
+      <div className={css.head}>
+        <StaffAvatar s={s} size={46} />
+        <div className={css.who}>
+          <div className={css.name}><b>{s.name}</b>{roleTag}{!saved && <Tag kind="silver">دوام المركز</Tag>}</div>
+          <div className={css.sum}>{summary(saved)}</div>
+        </div>
+        <button type="button" className={css.toggleBtn} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          <Icon name={canManage ? "edit" : "eye"} size={15} color={C.accent} />{open ? "إغلاق" : canManage ? "تعديل الدوام" : "عرض"}
+        </button>
       </div>
-      <Select label="الغرفة (اختياري)" value={room} onChange={setRoom} options={[{ value: "", label: "بلا غرفة محددة" }, ...rooms.map((r) => ({ value: r.id, label: r.name }))]} />
-      <TextInput label="ملاحظة" value={note} onChange={setNote} />
-      {error && <ErrorNote>{error}</ErrorNote>}
-    </Modal>
+
+      {open && (
+        <div className={css.body}>
+          {canManage && (
+            <div className={css.quick}>
+              <button type="button" className={css.chip} onClick={() => setWeek(Object.fromEntries(WEEK.map((d) => [d, isOpen(d) ? [{ ...clinicRange }] : []])) as unknown as Week)}>مثل دوام المركز</button>
+              <button type="button" className={css.chip} disabled={firstWorking === undefined}
+                onClick={() => firstWorking !== undefined && setWeek(Object.fromEntries(WEEK.map((d) => [d, isOpen(d) ? week[firstWorking].map((x) => ({ ...x })) : []])) as unknown as Week)}>
+                نسخ {firstWorking !== undefined ? `دوام ${AR_DAYS[firstWorking]}` : ""} إلى كل الأيام
+              </button>
+              {saved && <button type="button" className={css.chip} onClick={() => { if (!confirm(`إلغاء جدول ${s.name}؟ ستتبع ساعات دوام المركز.`)) return; setWeek(emptyWeek()); void saveStaffHours(s.id, []).then(() => setMsg({ ok: true, text: "أُلغي الجدول — تتبع الآن دوام المركز." })).catch((e) => setMsg({ ok: false, text: errText(e) })); }}>إلغاء الجدول (اتباع دوام المركز)</button>}
+            </div>
+          )}
+          <div className={css.days}>
+            {WEEK.map((d) => {
+              const r = (shown ?? emptyWeek())[d];
+              const closed = !isOpen(d);
+              const on = r.length > 0;
+              return (
+                <div key={d} className={css.day} data-off={!on || closed ? "1" : undefined}>
+                  <div className={css.dayName}>{AR_DAYS[d]}</div>
+                  {closed ? <div className={css.closed}>المركز مغلق</div> : (
+                    <>
+                      <label className={css.work}>
+                        <Toggle on={on} label={`يوم عمل — ${AR_DAYS[d]}`} onChange={canManage ? (v) => setDay(d, v ? [{ ...clinicRange }] : []) : undefined} />
+                        <span>{on ? "يوم عمل" : "عطلة"}</span>
+                      </label>
+                      <div className={css.ranges}>
+                        {r.map((x, i) => (
+                          <div key={i} className={css.range}>
+                            <TimeSel label="من" value={x.from} times={times.slice(0, -1)} disabled={!canManage} onChange={(v) => setDay(d, r.map((y, k) => (k === i ? { ...y, from: v } : y)))} />
+                            <span className={css.dash}>—</span>
+                            <TimeSel label="إلى" value={x.to} times={times.slice(1)} disabled={!canManage} onChange={(v) => setDay(d, r.map((y, k) => (k === i ? { ...y, to: v } : y)))} />
+                            {canManage && i === 1 && <button type="button" className={css.x} aria-label="حذف الفترة الثانية" onClick={() => setDay(d, r.slice(0, 1))}><Icon name="x" size={14} color={C.sub2} /></button>}
+                          </div>
+                        ))}
+                        {canManage && r.length === 1 && (
+                          <button type="button" className={css.add} onClick={() => setDay(d, [...r, { from: r[0].to < clinicRange.to ? r[0].to : clinicRange.from, to: clinicRange.to }])}>
+                            <Icon name="plus" size={13} color={C.accent} /> فترة ثانية
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {canManage && (
+            <div className={css.foot}>
+              {msg && <span style={{ color: msg.ok ? C.okDeep : C.danger, fontSize: 13.5, fontWeight: 600 }}>{msg.text}</span>}
+              <button type="button" className={css.save} disabled={busy || !dirty} onClick={() => save(week)}>{busy ? "جارٍ الحفظ…" : "حفظ الدوام"}</button>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function TimeSel({ label, value, times, onChange, disabled }: { label: string; value: string; times: string[]; onChange: (v: string) => void; disabled?: boolean }) {
+  const opts = times.includes(value) ? times : [value, ...times];
+  return (
+    <select aria-label={label} className={`${css.time} latin`} dir="ltr" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={{ boxShadow: SHB }}>
+      {opts.map((t) => <option key={t} value={t}>{t}</option>)}
+    </select>
   );
 }

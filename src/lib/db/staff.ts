@@ -98,6 +98,45 @@ export async function listRooms() {
   return must(await supabase.from("rooms").select("id, name").order("name"));
 }
 
+/* ---------- fixed weekly working hours («أوقات الدوام», table staff_hours) ---------- */
+
+export type StaffHour = Tables<"staff_hours">;
+/** One working range on a weekday (0 = Sunday … 6 = Saturday), "HH:MM". */
+export type HourRange = { weekday: number; starts: string; ends: string };
+
+export async function listStaffHours() {
+  return must(await supabase.from("staff_hours").select("*").order("weekday").order("starts"));
+}
+
+/** Replaces a member's whole week. An empty list = "not set" (she follows the clinic opening hours). */
+export async function saveStaffHours(staffId: string, ranges: HourRange[]) {
+  must(await supabase.from("staff_hours").delete().eq("staff_id", staffId));
+  if (ranges.length) must(await supabase.from("staff_hours").insert(ranges.map((r) => ({ staff_id: staffId, ...r }))));
+  invalidate("staff_hours");
+}
+
+const mins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+
+/**
+ * Same rule as the database's private.staff_available (without the leave check):
+ * no rows for her → follows the clinic opening hours; otherwise only inside her ranges (days without a range = off).
+ * `clinic` (opening hours) always clips. `startMin`/`endMin` are minutes from midnight, Damascus time.
+ */
+export function worksAt(rows: Pick<StaffHour, "staff_id" | "weekday" | "starts" | "ends">[], staffId: string, weekday: number, startMin: number, endMin: number,
+  clinic?: { days: number[]; from: string; to: string }) {
+  if (clinic && (!clinic.days.includes(weekday) || startMin < mins(clinic.from) || endMin > mins(clinic.to))) return false;
+  const mine = rows.filter((r) => r.staff_id === staffId);
+  if (!mine.length) return true;
+  return mine.some((r) => r.weekday === weekday && mins(r.starts) <= startMin && mins(r.ends) >= endMin);
+}
+
+/** Her ranges on a weekday, or null when she has no hours set at all (= clinic hours). */
+export function rangesOn(rows: Pick<StaffHour, "staff_id" | "weekday" | "starts" | "ends">[], staffId: string, weekday: number) {
+  const mine = rows.filter((r) => r.staff_id === staffId);
+  if (!mine.length) return null;
+  return mine.filter((r) => r.weekday === weekday).map((r) => ({ from: mins(r.starts), to: mins(r.ends) }));
+}
+
 /* ---------- attendance & leave ---------- */
 
 export async function listAttendance(from: string, to: string) {
@@ -130,15 +169,15 @@ export async function decideLeave(id: string, status: "approved" | "rejected", b
 export async function listPayroll(period: string) {
   return must(await supabase.from("payroll_entries").select("*").eq("period", period));
 }
-export async function savePayroll(input: { id?: string; staff_id: string; period: string; base_salary: number; commission: number; bonus: number; deductions: number; note: string }) {
+export async function savePayroll(input: { id?: string; staff_id: string; period: string; base_salary: number; commission: number; bonus: number; deductions: number; note: string; currency?: "SYP" | "USD"; amount_original?: number }) {
   const { id, ...rest } = input;
   if (id) must(await supabase.from("payroll_entries").update(rest).eq("id", id));
   else must(await supabase.from("payroll_entries").insert(rest));
-  invalidate("payroll");
+  invalidate("payroll"); invalidate("finance");
 }
 export async function markPaid(id: string, paid: boolean) {
   must(await supabase.from("payroll_entries").update({ paid_at: paid ? new Date().toISOString() : null }).eq("id", id));
-  invalidate("payroll");
+  invalidate("payroll"); invalidate("finance");
 }
 export const netPay = (p: Payroll) => p.base_salary + p.commission + p.bonus - p.deductions;
 
