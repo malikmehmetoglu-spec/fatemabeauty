@@ -38,7 +38,7 @@ export function GuestPill({ compact = false }: { compact?: boolean }) {
       <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.accent }}>
         <Icon name="user" color={C.accent} size={15} stroke={1.9} />وضع الزائرة
       </span>
-      <span style={{ display: "flex", gap: 12, marginInlineStart: compact ? 0 : "auto" }}>
+      <span style={{ display: "flex", flexDirection: compact ? "column" : "row", alignItems: compact ? "flex-start" : "center", gap: compact ? 0 : 12, marginInlineStart: compact ? 0 : "auto", whiteSpace: "nowrap" }}>
         <button type="button" onClick={goLogin} style={{ ...btn, color: C.accent }}>تسجيل الدخول</button>
         <button type="button" onClick={() => { setGuest(false); window.location.assign(R.Login); }} style={{ ...btn, color: C.sub2 }}>الخروج من وضع الزائرة</button>
       </span>
