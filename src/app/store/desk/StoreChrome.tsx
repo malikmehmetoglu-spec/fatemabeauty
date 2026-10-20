@@ -16,6 +16,7 @@ import { cartCount, cartLines, cartStore, getProductsByKeys, itemsLabel, useCart
 import { getPublicInfo } from "@/lib/db/publicBooking";
 import { useSession } from "@/lib/supabase/session";
 import { ProductPic } from "../c1ui";
+import { StoreInstallButton } from "@/components/pwa/InstallPrompt";
 import d from "./desk.module.css";
 
 export const BOOK = "/book/";
@@ -82,6 +83,7 @@ export function StoreChrome({ children, active = "store", search, onSearch }: {
               <input id="store-q" type="search" value={value} placeholder="ابحثي عن غسول، سيروم، واقي شمس"
                 onChange={(e) => (onSearch ? onSearch(e.target.value) : setLocal(e.target.value))} />
             </form>
+            <StoreInstallButton className={d.installBtn} />
             <Link href={session.patient ? R.P_OrderTrack : `${R.Login}?next=${encodeURIComponent(R.P_Store)}`} className={d.acctBtn}
               aria-label={session.patient ? "حسابي — طلباتي" : "تسجيل الدخول"}>
               <Icon name="user" color={C.accent} size={19} />{session.patient ? "حسابي" : "دخول"}

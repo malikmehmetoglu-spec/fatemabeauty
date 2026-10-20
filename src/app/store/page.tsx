@@ -15,6 +15,7 @@ import { ProductPic } from "./c1ui";
 import css from "./store.module.css";
 import { Blank, useDesktop } from "./desk/StoreChrome";
 import { DeskHome } from "./desk/DeskHome";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 const chip = (on: boolean): CSSProperties => ({
   height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex",
@@ -78,6 +79,7 @@ function PhoneStore() {
         </Link>
         </div>
       </header>
+      <InstallPrompt app="store" />
 
       <div className={css.search} style={{ position: "relative", display: "flex", alignItems: "center", height: 46, borderRadius: 23, background: C.white, border: `1px solid ${C.borderSoft}`, boxShadow: SH_SOFT, padding: "0 16px", gap: 8 }}>
         <Icon name="search" color={C.muted} size={18} />

@@ -17,6 +17,7 @@ export type Database = {
     Tables: {
       app_installs: {
         Row: {
+          app: string
           channel: string
           device_id: string
           installed_at: string
@@ -26,6 +27,7 @@ export type Database = {
           platform: string
         }
         Insert: {
+          app?: string
           channel: string
           device_id: string
           installed_at?: string
@@ -35,6 +37,7 @@ export type Database = {
           platform: string
         }
         Update: {
+          app?: string
           channel?: string
           device_id?: string
           installed_at?: string
@@ -2707,7 +2710,7 @@ export type Database = {
         }[]
       }
       track_app_open: {
-        Args: { p_channel: string; p_device_id: string; p_platform: string }
+        Args: { p_app?: string; p_channel: string; p_device_id: string; p_platform: string }
         Returns: undefined
       }
       transfer_location_stock: {

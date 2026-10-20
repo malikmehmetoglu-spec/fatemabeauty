@@ -14,11 +14,12 @@ import { arDate } from "@/lib/format";
 import { initials } from "@/lib/data";
 
 type Row = {
-  device_id: string; platform: string; channel: string; installed_at: string; last_open_at: string; opens: number;
+  device_id: string; app?: string; platform: string; channel: string; installed_at: string; last_open_at: string; opens: number;
   patients: { name: string; file_no: number; phone: string | null } | null;
 };
 
 const CHANNEL: Record<string, string> = { web: "من المتصفح", play_store: "Google Play", app_store: "App Store" };
+const APP: Record<string, string> = { patient: "العميلات", store: "المتجر" };
 const PLATFORM: Record<string, string> = { android: "أندرويد", ios: "آيفون", desktop: "حاسوب", other: "جهاز آخر" };
 const DAY = 864e5;
 
@@ -35,11 +36,12 @@ export default function InstallsPage() {
   const [patientsCount, setPatientsCount] = useState(0);
   const [filter, setFilter] = useState<"all" | "linked" | "inactive">("all");
   const [error, setError] = useState("");
+  const [appF, setAppF] = useState<"all" | "patient" | "store">("all");
 
   useEffect(() => {
     (async () => {
       const [{ data, error: e }, { count }] = await Promise.all([
-        supabase.from("app_installs").select("device_id,platform,channel,installed_at,last_open_at,opens,patients(name,file_no,phone)").order("installed_at", { ascending: false }),
+        supabase.from("app_installs").select("*,patients(name,file_no,phone)").order("installed_at", { ascending: false }),
         supabase.from("patients").select("id", { count: "exact", head: true }),
       ]);
       if (e) setError("تعذّر تحميل البيانات.");
@@ -48,8 +50,10 @@ export default function InstallsPage() {
     })();
   }, []);
 
+  const appOf = (r: Row) => r.app ?? "patient";
+  const appCount = (a: string) => (rows ?? []).filter((r) => appOf(r) === a).length;
   const stats = useMemo(() => {
-    const list = rows ?? [];
+    const list = (rows ?? []).filter((r) => appF === "all" || (r.app ?? "patient") === appF);
     const now = Date.now();
     const linked = list.filter((r) => r.patients);
     const active7 = list.filter((r) => now - new Date(r.last_open_at).getTime() < 7 * DAY);
@@ -62,15 +66,15 @@ export default function InstallsPage() {
       return { d: start, n: list.filter((r) => { const t = new Date(r.installed_at).getTime(); return t >= start.getTime() && t < end; }).length };
     });
     return { total: list.length, linked: linked.length, active7: active7.length, week: week.length, byChannel, byPlatform, days };
-  }, [rows]);
+  }, [rows, appF]);
 
-  const shown = (rows ?? []).filter((r) =>
+  const shown = (rows ?? []).filter((r) => appF === "all" || appOf(r) === appF).filter((r) =>
     filter === "all" ? true : filter === "linked" ? !!r.patients : Date.now() - new Date(r.last_open_at).getTime() > 30 * DAY);
   const pct = patientsCount ? Math.round((stats.linked / patientsCount) * 100) : 0;
   const maxDay = Math.max(1, ...stats.days.map((d) => d.n));
 
   return (
-    <AdminShell active="تثبيت التطبيق" title="تثبيت التطبيق" subtitle="من ثبّتت تطبيق المراجِعة، ومن أين، ومتى فتحته آخر مرة">
+    <AdminShell active="تثبيت التطبيق" title="تثبيت التطبيق" subtitle="من ثبّتت تطبيق العميلات أو تطبيق المتجر، ومن أين، ومتى فتحته آخر مرة">
       <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="إجمالي التثبيتات" value={stats.total} sub={`${stats.week} هذا الأسبوع`} icon="download" />
         <Kpi label="مراجِعات ثبّتن التطبيق" value={`${pct}%`} sub={`${stats.linked} من ${patientsCount} مراجِعة`} icon="users" />
@@ -104,6 +108,13 @@ export default function InstallsPage() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, color: C.sub2, fontWeight: 600 }}>التطبيق:</span>
+        <Chip selected={appF === "all"} onClick={() => setAppF("all")}>الكل · {(rows ?? []).length}</Chip>
+        <Chip selected={appF === "patient"} onClick={() => setAppF("patient")}>العميلات · {appCount("patient")}</Chip>
+        <Chip selected={appF === "store"} onClick={() => setAppF("store")}>المتجر · {appCount("store")}</Chip>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <Chip selected={filter === "all"} onClick={() => setFilter("all")}>الكل · {stats.total}</Chip>
         <Chip selected={filter === "linked"} onClick={() => setFilter("linked")}>مراجِعات معروفات · {stats.linked}</Chip>
         <Chip selected={filter === "inactive"} onClick={() => setFilter("inactive")}>لم يفتحن منذ 30 يوماً</Chip>
@@ -121,12 +132,13 @@ export default function InstallsPage() {
         </div>
       ) : (
         <DataTable
-          headers={["المراجِعة", "الجهاز", "المصدر", "تاريخ التثبيت", "آخر فتح", "مرات الفتح"]}
-          widths={[2.2, 1, 1.1, 1.2, 1, 0.8]} minWidth={760}
+          headers={["المراجِعة", "التطبيق", "الجهاز", "المصدر", "تاريخ التثبيت", "آخر فتح", "مرات الفتح"]}
+          widths={[2.2, 0.9, 1, 1.1, 1.2, 1, 0.8]} minWidth={860}
           rows={shown.map((r) => [
             r.patients
               ? <><Avatar initials={initials(r.patients.name || "؟")} size={34} /><div style={{ lineHeight: 1.3 }}><div style={{ fontWeight: 700 }}>{r.patients.name || "دون اسم"}</div><div style={{ fontSize: 12, color: C.sub2 }}>ملف {r.patients.file_no}</div></div></>
               : <><Avatar initials="؟" size={34} /><span style={{ color: C.sub2 }}>لم تسجّل دخولها بعد</span></>,
+            <Tag key="a" kind={appOf(r) === "store" ? "green" : "lilac"}>{APP[appOf(r)] ?? appOf(r)}</Tag>,
             PLATFORM[r.platform] ?? r.platform,
             <Tag key="c" kind={r.channel === "web" ? "lilac" : "green"}>{CHANNEL[r.channel] ?? r.channel}</Tag>,
             arDate(new Date(r.installed_at), { day: false }),

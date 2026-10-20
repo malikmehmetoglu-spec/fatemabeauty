@@ -37,6 +37,16 @@
         }
       ],
       "destination": "/admin.webmanifest"
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "has": [
+        {
+          "type": "host",
+          "value": "store.fatema.beauty"
+        }
+      ],
+      "destination": "/store-host.webmanifest"
     }
   ]
 }
