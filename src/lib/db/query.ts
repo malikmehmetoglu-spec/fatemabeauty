@@ -34,7 +34,9 @@ export function useQuery<T>(key: unknown[], fetcher: () => Promise<T>, opts: { e
     entry.promise = (async () => {
       try { entry.data = await fetcherRef.current(); entry.error = undefined; }
       catch (e) { console.warn("[query]", id, e); entry.error = arLoadError(e); }
-      entry.at = Date.now(); entry.promise = undefined; cache.set(id, entry);
+      entry.at = Date.now(); entry.promise = undefined;
+      // An invalidate() during this fetch dropped the entry: don't resurrect stale data, fetch again.
+      if (cache.get(id) !== entry) { if (listeners.get(id)?.size) void run(); return; }
       listeners.get(id)?.forEach((f) => f());
     })();
     cache.set(id, entry);

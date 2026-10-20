@@ -20,7 +20,7 @@ import { RowBtn, StaffAvatar, TeamTabs, errText, useTeam } from "./team-ui";
 
 export default function StaffPage() {
   const { staff: me } = useSession();
-  const { list, loading, error } = useTeam();
+  const { list, loading, error, refresh } = useTeam();
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
   const [login, setLogin] = useState<Staff | null>(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -44,7 +44,7 @@ export default function StaffPage() {
   async function deleteMember(s: Staff) {
     if (!confirm(`حذف «${s.name}» نهائياً مع حساب دخولها؟ لا يمكن التراجع عن الحذف.`)) return;
     setMsg("");
-    try { await staffAdmin({ action: "delete", staff_id: s.id }); } catch (e) { setMsg(errText(e)); }
+    try { await staffAdmin({ action: "delete", staff_id: s.id }); await refresh(); } catch (e) { setMsg(errText(e)); }
   }
 
   return (
