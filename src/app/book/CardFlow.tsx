@@ -56,6 +56,7 @@ const STEPS = ["النوع", "الجلسة", "الأخصائية", "اليوم",
 const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
 const dayLabel = (k: string) => { const d = dateOf(k); return `${AR_DAYS[weekday(k)]} ${d.getUTCDate()} ${AR_MONTHS[d.getUTCMonth()]}`; };
+const k2 = (k: string, now: Date | null) => (k === dayKey(now ?? new Date()) ? "اليوم" : AR_DAYS[weekday(k)]);
 const count = (n: number) => (n === 1 ? "خدمة واحدة" : n === 2 ? "خدمتان" : `${n} ${n < 11 ? "خدمات" : "خدمة"}`);
 const EXIT_MS = 420;
 
@@ -298,6 +299,26 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                 );
               })}
             </div>
+            {c.day && c.isOpen(c.day) && (
+              <div className={s.peek} key={c.day}>
+                <div className={s.peekHead}>
+                  <span className={s.peekTitle}>أقرب الأوقات · {k2(c.day, c.now)}</span>
+                  {c.slots && <span className={s.peekCount}>{c.freeCount ? <><span className="latin">{c.freeCount}</span> وقتاً متاحاً</> : "مكتمل"}</span>}
+                </div>
+                {!c.slots && !c.slotErr && <div className={s.peekRow}>{[0, 1, 2].map((i) => <span key={i} className={`${s.skSlot} ${s.sk}`} style={{ height: 50 }} />)}</div>}
+                {c.slots && c.freeCount > 0 && (
+                  <div className={s.peekRow}>
+                    {c.visibleSlots.filter((x) => x.available).slice(0, 3).map((x) => (
+                      <button key={x.starts_at} type="button" className={s.slot} onClick={() => chooseTime(x.starts_at)} aria-label={`الساعة ${clock(x.starts_at)}`}>
+                        <span className="latin">{clock(x.starts_at)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {c.slots && c.freeCount === 0 && <div className={s.personTitle} style={{ marginTop: 8 }}>لا أوقات متاحة في هذا اليوم، اختاري يوماً آخر.</div>}
+                {c.slots && c.freeCount > 3 && <button type="button" className={s.peekMore} onClick={() => go(4)}>كل أوقات اليوم<Icon name="chev" size={16} color={C.accent} /></button>}
+              </div>
+            )}
             <div className={s.dayHint}>
               <Icon name="info" size={16} color={C.accentMid} />
               <span>نعرض الأيام التي تداوم فيها {c.kind === "consult" ? "الاستشارية" : c.chosenPerson ? "الأخصائية المختارة" : "أخصائيات هذه الجلسة"}. الأوقات بتوقيت دمشق.</span>
