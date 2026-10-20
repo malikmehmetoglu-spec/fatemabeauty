@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "@/lib/supabase/session";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Loading, Modal, SubmitButton, GhostButton, Tag, TextArea, TextInput, Select } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -12,6 +14,8 @@ import { createPatient, listPatients, maskPhone, SKIN_TYPES, type PatientRow } f
 import { C, SH } from "@/lib/tokens";
 import t from "../adminPages.module.css";
 import { WaIconLink } from "../calendar/whatsapp";
+import { EditPatient } from "./EditPatient";
+import css from "./patients.module.css";
 import { arErr, Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
 
 const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً", "من رابط الحجز"];
@@ -40,6 +44,11 @@ function Patients() {
   useEffect(() => { setQ(urlQ); setPage(0); }, [urlQ]);
   const [page, setPage] = useState(0);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<PatientRow | null>(null);
+  const router = useRouter();
+  const { staff } = useSession();
+  // same rule as the rest of the admin: specialists and the accountant only read
+  const canEdit = !!staff && (staff.role === "owner" || staff.role === "admin" || staff.role === "reception");
 
   const rows = useMemo(() => {
     const s = q.trim().replace(/\s+/g, " ");
@@ -56,6 +65,17 @@ function Patients() {
     const blob = new Blob(["﻿" + lines.map((l) => l.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `patients-${today}.csv`; a.click();
   }
+
+  const lastVisit = (p: PatientRow) => !p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false });
+  /** The whole row/card opens the file: click, or Enter/Space when it has focus. */
+  const openProps = (p: PatientRow) => {
+    const href = fileHref(R.W_Record, "id", p.id);
+    return {
+      role: "link", tabIndex: 0, "aria-label": `فتح ملف ${displayName(p.name)} — ${p.file_no}`,
+      onClick: () => router.push(href),
+      onKeyDown: (e: React.KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); router.push(href); } },
+    };
+  };
 
   const head = (t: string, flex: number) => <div style={{ flex, minWidth: 0, fontSize: 12, color: C.sub2, fontWeight: 600 }}>{t}</div>;
   const cell = { minWidth: 0, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 } as const;
@@ -82,31 +102,24 @@ function Patients() {
             action={<SubmitButton onClick={() => setAdding(true)}>فتح ملف جديد</SubmitButton>} />
         ) : (
           <>
-            <div className={t.scroll} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
-             <div className={t.inner} style={{ minWidth: 880 }}>
+            <div className={`${t.scroll} ${css.table}`} style={{ borderRadius: 26, padding: "8px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+             <div className={t.inner} style={{ minWidth: 960 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, height: 40 }}>
-                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", 0.6)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
+                {head("رقم الملف", 0.55)}{head("المراجعة", 1.45)}{head("إجراءات", canEdit ? 1.05 : 0.8)}{head("الهاتف", 1.05)}{head("آخر زيارة", 0.7)}{head("الباقة", 1.15)}{head("الرصيد", 0.95)}{head("وسوم", 1.55)}
               </div>
               {!shown.length && <div style={{ borderTop: "1px solid #EDE2F1", padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
               {shown.map((p) => {
                 const pkg = p.packages.find((x) => x.sessions_used < x.sessions_total) ?? p.packages[0];
-                const allergies = p.conditions.filter((c) => c.kind === "allergy");
-                const href = fileHref(R.W_Record, "id", p.id);
                 return (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: "1px solid #EDE2F1" }}>
-                    <div style={{ ...cell, flex: 0.55 }}><Link href={href} className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</Link></div>
+                  <div key={p.id} {...openProps(p)} className={css.row} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: "1px solid #EDE2F1" }}>
+                    <div style={{ ...cell, flex: 0.55 }}><span className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</span></div>
                     <div style={{ ...cell, flex: 1.45 }}>
-                      <Link href={href} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                        <Initials name={p.name} />
-                        <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
-                      </Link>
+                      <Initials name={p.name} />
+                      <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                     </div>
-                    <div style={{ ...cell, flex: 0.6, gap: 6 }}>
-                      <WaIconLink phone={p.phone} name={p.name} />
-                      <Link href={href} aria-label="فتح الملف" title="فتح الملف" style={{ width: 36, height: 36, borderRadius: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #EADCF0", background: C.white }}><Icon name="file" size={17} color={C.accent} /></Link>
-                    </div>
+                    <div style={{ ...cell, flex: canEdit ? 1.05 : 0.8, gap: 6 }}><RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} /></div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
-                    <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{!p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false })}</span></div>
+                    <div style={{ ...cell, flex: 0.7 }}><span style={{ color: C.sub }}>{lastVisit(p)}</span></div>
                     <div style={{ ...cell, flex: 1.15 }}>
                       {pkg ? (
                         <div style={{ width: "100%", lineHeight: 1.3 }}>
@@ -116,18 +129,35 @@ function Patients() {
                       ) : <span style={{ color: C.muted }}>—</span>}
                     </div>
                     <div style={{ ...cell, flex: 0.95 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div>
-                    <div style={{ ...cell, flex: 1.55, flexWrap: "wrap" }}>
-                      {allergies.map((c) => <Tag key={c.name} kind="pink">حساسية: {c.name}</Tag>)}
-                      {p.pregnant && <Tag kind="amber">حامل</Tag>}
-                      {p.breastfeeding && <Tag kind="amber">مرضع</Tag>}
-                      {p.skin_type && <Tag kind="gray">{p.skin_type}</Tag>}
-                      {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
-                      {!allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && p.source !== "public" && <span style={{ color: C.muted }}>—</span>}
-                    </div>
+                    <div style={{ ...cell, flex: 1.55, flexWrap: "wrap" }}><Tags p={p} /></div>
                   </div>
                 );
               })}
              </div>
+            </div>
+            <div className={css.cards}>
+              {!shown.length && <div style={{ padding: "26px 0", textAlign: "center", color: C.sub2, fontSize: 13.5 }}>لا نتائج مطابقة للبحث أو الفلتر.</div>}
+              {shown.map((p) => {
+                const pkg = p.packages.find((x) => x.sessions_used < x.sessions_total) ?? p.packages[0];
+                return (
+                  <div key={p.id} {...openProps(p)} className={css.card}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <Initials name={p.name} size={40} />
+                      <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</div>
+                        <div style={{ fontSize: 12, color: C.sub2 }}>ملف <span className="latin" style={{ color: C.accent, fontWeight: 700 }}>{p.file_no}</span> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
+                      </div>
+                      <RowActions p={p} canEdit={canEdit} onEdit={() => setEditing(p)} compact />
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontSize: 12, color: C.sub }}>
+                      <span>آخر زيارة: {lastVisit(p)}</span>
+                      {pkg && <span>· {pkg.packages?.name ?? "باقة"} <span className="latin">{pkg.sessions_used}/{pkg.sessions_total}</span></span>}
+                      {p.due > 0 && <Tag kind="amber">مستحق {money(p.due)}</Tag>}
+                      <Tags p={p} hideEmpty />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, fontSize: 13, color: C.sub2 }}>
               <span>عرض {shown.length} من {rows.length} · مرتّبة حسب آخر زيارة</span>
@@ -143,6 +173,7 @@ function Patients() {
         )}
       </div>
       <AddPatient open={adding} onClose={() => setAdding(false)} />
+      {editing && <EditPatient p={editing} onClose={() => setEditing(null)} />}
     </AdminShell>
   );
 }
@@ -182,5 +213,58 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
       <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
       {err && <ErrorNote>{err}</ErrorNote>}
     </Modal>
+  );
+}
+
+function Tags({ p, hideEmpty }: { p: PatientRow; hideEmpty?: boolean }) {
+  const allergies = p.conditions.filter((c) => c.kind === "allergy");
+  const none = !allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && p.source !== "public";
+  return (
+    <>
+      {allergies.map((c) => <Tag key={c.name} kind="pink">حساسية: {c.name}</Tag>)}
+      {p.pregnant && <Tag kind="amber">حامل</Tag>}
+      {p.breastfeeding && <Tag kind="amber">مرضع</Tag>}
+      {p.skin_type && <Tag kind="gray">{p.skin_type}</Tag>}
+      {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
+      {none && !hideEmpty && <span style={{ color: C.muted }}>—</span>}
+    </>
+  );
+}
+
+const MORE = "M5 12h.01M12 12h.01M19 12h.01";
+
+/** WhatsApp + quick actions. Clicks/keys never reach the row (which opens the file). `compact` = WhatsApp + «⋯» menu (phones). */
+function RowActions({ p, canEdit, onEdit, compact }: { p: PatientRow; canEdit: boolean; onEdit: () => void; compact?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => { if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close); document.addEventListener("keydown", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
+  }, [open]);
+  const appt = fileHref(R.W_BookingModal, "patient", p.id);
+  const bill = fileHref(R.W_Cashier, "patient", p.id);
+  const stop = { onClick: (e: React.MouseEvent) => e.stopPropagation(), onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation() };
+  if (compact) return (
+    <div ref={ref} {...stop} style={{ display: "flex", gap: 6, alignItems: "center", position: "relative", flexShrink: 0 }}>
+      <WaIconLink phone={p.phone} name={p.name} size={34} />
+      <button type="button" className={css.iconBtn} aria-label="إجراءات أخرى" title="إجراءات أخرى" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}><Icon name={MORE} size={20} color={C.accent} stroke={2.6} /></button>
+      {open && (
+        <div role="menu" className={css.menu}>
+          {canEdit && <button type="button" role="menuitem" className={css.menuItem} onClick={() => { setOpen(false); onEdit(); }}><Icon name="edit" size={17} color={C.accent} />تعديل البيانات</button>}
+          <Link role="menuitem" href={appt} className={css.menuItem}><Icon name="calcheck" size={17} color={C.accent} />موعد جديد</Link>
+          <Link role="menuitem" href={bill} className={css.menuItem}><Icon name="receipt" size={17} color={C.accent} />فاتورة</Link>
+        </div>
+      )}
+    </div>
+  );
+  return (
+    <div {...stop} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <WaIconLink phone={p.phone} name={p.name} size={34} />
+      {canEdit && <button type="button" className={css.iconBtn} aria-label="تعديل البيانات" title="تعديل البيانات" onClick={onEdit}><Icon name="edit" size={16} color={C.accent} /></button>}
+      <Link href={appt} className={css.iconBtn} aria-label="موعد جديد" title="موعد جديد"><Icon name="calcheck" size={16} color={C.accent} /></Link>
+      <Link href={bill} className={css.iconBtn} aria-label="فاتورة" title="فاتورة"><Icon name="receipt" size={16} color={C.accent} /></Link>
+    </div>
   );
 }

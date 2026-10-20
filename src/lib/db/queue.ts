@@ -139,7 +139,7 @@ export async function ensurePatient(name: string, phoneRaw: string) {
       return found.id;
     }
   }
-  const row = need(await supabase.from("patients").insert({ name: name.trim(), phone: phone || null }).select("id").single());
+  const row = need(await supabase.from("patients").insert({ name: name.trim(), phone: phone || null, source: "kiosk" }).select("id").single());
   invalidate("patients");
   return row.id;
 }

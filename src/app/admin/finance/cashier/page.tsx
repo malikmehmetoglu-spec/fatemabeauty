@@ -23,6 +23,7 @@ import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
 import { Amount, LATIN, OFF, PANEL, Receipt } from "../parts";
 import { locLabel, useLocations } from "../../inventory/dialogs";
 import { qtyAt } from "@/lib/db/products";
+import { getPatient } from "@/lib/db/patients";
 import css from "../finance.module.css";
 
 type Who =
@@ -81,6 +82,14 @@ export default function Page() {
   const reset = (w: Who | null, l: CartLine[] = []) => {
     setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
   };
+  // ?patient=<id> (from the patients list «فاتورة») → that file is preselected once
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get("patient");
+    if (!pid) return;
+    let live = true;
+    getPatient(pid).then((p) => { if (live && p) setWho((w) => w ?? { type: "patient", id: p.id, name: p.name || "بدون اسم", file_no: p.file_no, phone: p.phone }); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: a.services?.name ?? "جلسة", unit_price: a.price || sellables.data?.services.find((x) => x.key === a.service_key)?.price || 0 }]);
 
   // the package covers one session of its service → that line is free
