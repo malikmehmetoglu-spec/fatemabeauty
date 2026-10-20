@@ -8,7 +8,6 @@ import { R } from "@/lib/routes";
 import { arDate, clock } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getConsultService, myConsults } from "@/lib/db/consult";
-import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, SH } from "@/lib/tokens";
 

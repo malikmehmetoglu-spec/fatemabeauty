@@ -75,7 +75,7 @@
 .sheet { display: none; }
 @media print {
   :global(body) > :global(*):not(.sheet) { display: none !important; }
-  :global(body) { background: #fff !important; }
+  :global(body):has(.sheet) { background: #fff !important; }
   .sheet { display: block; width: 76mm; margin: 0 auto; padding: 4mm 3mm; color: #000; background: #fff; font-family: var(--font-messiri), serif; font-size: 10.5pt; line-height: 1.5; }
 }
 .sheet .num { font-family: var(--font-rubik), sans-serif; text-align: end; white-space: nowrap; }

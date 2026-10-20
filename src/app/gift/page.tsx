@@ -9,7 +9,7 @@ import { money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { listServices } from "@/lib/db/catalog";
 import { submitGift } from "@/lib/db/marketing";
-import { askLogin, GuestCard } from "@/components/guest";
+import { askLogin } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, CARD, DARK } from "@/lib/tokens";
 import { fieldStyle, toggleChip } from "../consult/ui";
