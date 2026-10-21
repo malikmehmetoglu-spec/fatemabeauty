@@ -49,3 +49,12 @@ honest empty state. The database is currently empty except for the owner account
   or with UI flows only if you can remove what you created (DELETE is blocked for you — so prefer SQL rollback tests).
 - Screenshot empty states with `tools/shot.py` and check they look intentional and on-brand.
 - Finally grep your files for leftovers: sample names, `مثال`, fixed prices like 1,500 / 2,000 / 3,500, `13 تشرين`, `فاطمة`, `1024`, `12:30`.
+
+## New tables need explicit grants (Supabase change, from 2026-10-30)
+Supabase no longer auto-grants Data API access to NEW tables in `public`. Every migration that creates a table must also grant access (RLS still decides which rows), e.g.:
+```sql
+grant select on public.<table> to anon;                         -- only if visitors may read it (RLS still applies)
+grant select, insert, update, delete on public.<table> to authenticated;
+grant select, insert, update, delete on public.<table> to service_role;
+```
+Existing tables keep their grants.
