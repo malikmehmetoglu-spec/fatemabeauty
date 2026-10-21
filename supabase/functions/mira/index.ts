@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
     const asPatient = createClient(URL_, ANON, { global: { headers: { authorization: auth } }, auth: { persistSession: false } });
     const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 
-    const { data: u } = await asPatient.auth.getUser();
+    const jwt = auth.replace(/^Bearer\s+/i, "");
+    const { data: u } = await admin.auth.getUser(jwt);
     if (!u?.user) return json({ error: "unauthorized" }, 401);
     const { data: me } = await admin.from("patients").select("id").eq("user_id", u.user.id).maybeSingle();
     const patientId = me?.id;
