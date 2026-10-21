@@ -27,6 +27,15 @@ export async function myThread(patientId: string): Promise<MiraThread | null> {
   return must(await db.from("mira_threads").select("*").eq("patient_id", patientId).maybeSingle());
 }
 
+/** Patient app: live hand-off status of my own conversation (RLS: own row only). */
+export function subscribeMyThread(patientId: string, onChange: (t: MiraThread | null) => void) {
+  const ch = supabase.channel(`mira:thread:${patientId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "mira_threads", filter: `patient_id=eq.${patientId}` },
+      (p) => onChange((p.new as MiraThread) ?? null))
+    .subscribe();
+  return () => { supabase.removeChannel(ch); };
+}
+
 export async function getMiraConfig(): Promise<MiraConfig> {
   const row = must(await supabase.from("settings").select("value").eq("key", "mira").maybeSingle()) as { value: Partial<MiraConfig> } | null;
   return { ...DEFAULT, ...(row?.value ?? {}) };

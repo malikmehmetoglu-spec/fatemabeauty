@@ -9,7 +9,7 @@ import { listMessages, sendMessage, subscribeMessages, type Message } from "@/li
 import { askLogin, GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, GLASS, ICON_FILL } from "@/lib/tokens";
-import { askMira, myThread } from "@/lib/db/mira";
+import { askMira, myThread, subscribeMyThread } from "@/lib/db/mira";
 
 type Msg = { me: boolean; time: string; text: string; day: string; who: "patient" | "staff" | "mira" };
 const QUICK = ["بدي احجز موعد", "شو أسعار تنظيف البشرة؟", "متى أستطيع وضع المكياج؟"];
@@ -42,7 +42,9 @@ export default function ChatPage() {
       if (!m.from_patient) setTyping(false);
       setRows((cur) => (cur && !cur.some((x) => x.id === m.id) ? [...cur, m] : cur));
     });
-    return () => { alive = false; off(); };
+    // Fatema can hand the chat back to Mira (or take it) while this screen is open: follow it live.
+    const offThread = subscribeMyThread(patient.id, (t) => setWithFatema(t?.status === "fatema"));
+    return () => { alive = false; off(); offThread(); };
   }, [patient]);
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }); }, [rows]);
 
@@ -52,14 +54,14 @@ export default function ChatPage() {
     setBusy(true); setErr(null);
     try {
       await sendMessage(patient.id, text); setDraft(""); setRows(await listMessages(patient.id));
-      if (!withFatema) {
-        setTyping(true);
-        askMira().then((r) => {
-          if (r.handed) setWithFatema(true);
-          // Draft mode / no reply now: stop the dots; the reply still arrives live later.
-          setTimeout(() => setTyping(false), r.error || r.skipped || (r.mode === "draft" && !r.handed) ? 0 : 1500);
-        }).catch(() => setTyping(false));
-      }
+      // Always ask: the server knows whether the chat is with Mira or Fatema right now (never trust a stale screen).
+      setTyping(!withFatema);
+      askMira().then((r) => {
+        if (r.handed || r.skipped === "with fatema") setWithFatema(true);
+        else if (!r.error) setWithFatema(false);
+        // Draft mode / no reply now: stop the dots; the reply still arrives live later.
+        setTimeout(() => setTyping(false), r.error || r.skipped || (r.mode === "draft" && !r.handed) ? 0 : 1500);
+      }).catch(() => setTyping(false));
     }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
