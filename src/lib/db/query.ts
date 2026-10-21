@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type Entry = { data?: unknown; error?: string; at: number; promise?: Promise<void> };
 const cache = new Map<string, Entry>();
 const listeners = new Map<string, Set<() => void>>();
+const runners = new Map<string, () => Promise<void>>();
 
 const k = (key: unknown[]) => JSON.stringify(key);
 
@@ -19,6 +20,19 @@ export function invalidate(prefix: string) {
     if (JSON.parse(key)[0] === prefix) cache.delete(key);
   }
   for (const [key, set] of listeners) if (JSON.parse(key)[0] === prefix) set.forEach((f) => f());
+}
+
+/**
+ * Like invalidate(), but keeps the current data on screen while the fresh copy loads (no loading flash, no lost
+ * input). Use it for live updates (Realtime), where the page should change smoothly.
+ */
+export function revalidate(prefix: string) {
+  for (const [key, run] of runners) {
+    if (JSON.parse(key)[0] === prefix && listeners.get(key)?.size) {
+      const e = cache.get(key);
+      if (e && e.data !== undefined) { e.at = 0; void run(); } else { cache.delete(key); listeners.get(key)?.forEach((f) => f()); }
+    }
+  }
 }
 
 export function useQuery<T>(key: unknown[], fetcher: () => Promise<T>, opts: { enabled?: boolean } = {}) {
@@ -45,6 +59,7 @@ export function useQuery<T>(key: unknown[], fetcher: () => Promise<T>, opts: { e
 
   useEffect(() => {
     if (!enabled) return;
+    runners.set(id, run);
     const set = listeners.get(id) ?? new Set();
     const rerender = () => { if (!cache.has(id)) run(); force((n) => n + 1); };
     set.add(rerender); listeners.set(id, set);

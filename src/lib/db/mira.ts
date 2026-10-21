@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { invalidate } from "./query";
+import { revalidate } from "./query";
 
 /* «ميرا» — the clinic's AI assistant. Tables: mira_threads, mira_drafts, mira_kb; settings key «mira». */
 
@@ -42,7 +42,7 @@ export async function getMiraConfig(): Promise<MiraConfig> {
 }
 export async function saveMiraConfig(c: MiraConfig) {
   must(await supabase.from("settings").upsert({ key: "mira", value: c, updated_at: new Date().toISOString() }));
-  invalidate("mira");
+  revalidate("mira");
 }
 
 export async function listThreads(): Promise<MiraThread[]> {
@@ -59,23 +59,23 @@ export async function sendDraft(d: MiraDraft, body: string, staffId: string | nu
   must(await db.from("mira_drafts").update({ status: "sent", body: text, decided_by: staffId, decided_at: new Date().toISOString() }).eq("id", d.id).eq("status", "pending"));
   // Staff are allowed to insert non-patient rows; the author column marks it as Mira's voice.
   must(await supabase.from("messages").insert({ patient_id: d.patient_id, from_patient: false, staff_id: staffId, body: text, author: "mira" } as never));
-  invalidate("mira"); invalidate("inbox");
+  revalidate("mira"); revalidate("inbox");
 }
 export async function discardDraft(id: string, staffId: string | null) {
   must(await db.from("mira_drafts").update({ status: "discarded", decided_by: staffId, decided_at: new Date().toISOString() }).eq("id", id));
-  invalidate("mira");
+  revalidate("mira");
 }
 
 /** Fatema finished with a handed-over conversation: Mira takes it back. */
 export async function returnToMira(patientId: string) {
   must(await db.from("mira_threads").update({ status: "mira", urgent: false, escalated: false, notify_count: 0, notified_at: null, resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("patient_id", patientId));
-  invalidate("mira");
+  revalidate("mira");
 }
 /** Fatema takes a conversation over herself (Mira stops answering it). */
 export async function takeOver(patientId: string) {
   const now = new Date().toISOString();
   must(await db.from("mira_threads").update({ status: "fatema", handoff_at: now, reason: "تولّته أ. فاطمة", updated_at: now }).eq("patient_id", patientId));
-  invalidate("mira");
+  revalidate("mira");
 }
 
 export async function listKb(): Promise<MiraKb[]> {
@@ -85,11 +85,11 @@ export async function saveKb(k: Partial<MiraKb> & { question: string; answer: st
   const row = { question: k.question.trim(), answer: k.answer.trim(), active: k.active ?? true, sort: k.sort ?? 0, updated_at: new Date().toISOString() };
   if (!row.question || !row.answer) throw new Error("اكتبي السؤال والجواب.");
   must(k.id ? await db.from("mira_kb").update(row).eq("id", k.id) : await db.from("mira_kb").insert(row));
-  invalidate("mira");
+  revalidate("mira");
 }
 export async function deleteKb(id: string) {
   must(await db.from("mira_kb").delete().eq("id", id));
-  invalidate("mira");
+  revalidate("mira");
 }
 
 /** Conversations needing a human: handed to Fatema + drafts waiting for approval (sidebar badge). */

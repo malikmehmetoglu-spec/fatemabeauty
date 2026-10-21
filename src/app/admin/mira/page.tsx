@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, EmptyState, ErrorNote, Icon, Loading, SubmitButton, Tag } from "@/components/ui";
 import { arDate, clock } from "@/lib/format";
-import { invalidate, useQuery } from "@/lib/db/query";
+import { revalidate, useQuery } from "@/lib/db/query";
 import { listInbox, markRead, staffReply, subscribeInbox, type InboxMsg } from "@/lib/db/consult";
 import {
   alertsOnThisDevice, alertsSupported, disableAlerts, enableAlerts, listStaffBasic, sendTestAlert,
@@ -47,8 +47,8 @@ function Chats() {
   const inbox = useQuery(["inbox", "all"], listInbox);
   const threads = useQuery(["mira", "threads"], listThreads);
   const drafts = useQuery(["mira", "drafts"], listPendingDrafts);
-  useEffect(() => subscribeInbox(() => invalidate("inbox")), []);
-  useEffect(() => subscribeMira(() => invalidate("mira")), []);
+  useEffect(() => subscribeInbox(() => revalidate("inbox")), []);
+  useEffect(() => subscribeMira(() => revalidate("mira")), []);
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState<"need" | "all">("need");
 
@@ -97,7 +97,7 @@ function Chats() {
             <EmptyState compact icon="sparkle" title={filter === "need" ? "لا شيء ينتظركِ" : "لا توجد محادثات"}
               text={filter === "need" ? "ميرا تتولى المحادثات الآن. ستظهر هنا أي حالة تحتاجكِ أو أي رد ينتظر موافقتكِ." : "عندما تراسل مراجعة المركز من التطبيق تظهر محادثتها هنا."} />
           ) : shown.map((c) => (
-            <button key={c.pid} type="button" onClick={() => { setOpen(c.pid); if (c.unread) markRead(c.pid).then(() => invalidate("inbox")).catch(() => {}); }}
+            <button key={c.pid} type="button" onClick={() => { setOpen(c.pid); if (c.unread) markRead(c.pid).then(() => revalidate("inbox")).catch(() => {}); }}
               style={{ textAlign: "right", border: rank(c) === 0 ? "1.5px solid #E7A3C0" : "1px solid #F0E6F3", background: rank(c) === 0 ? "#FFF6FA" : C.white, borderRadius: 20, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <div style={{ flex: 1, minWidth: 0, lineHeight: 1.45 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

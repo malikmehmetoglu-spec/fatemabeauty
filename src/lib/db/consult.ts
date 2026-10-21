@@ -2,7 +2,7 @@
 
 /** Online consultation + patient/centre chat (live, Supabase). Video calls are not connected yet. */
 import { supabase, type Tables } from "@/lib/supabase/client";
-import { invalidate, must } from "./query";
+import { invalidate, must, revalidate } from "./query";
 
 export type Message = Tables<"messages">;
 export type Service = Tables<"services">;
@@ -92,7 +92,7 @@ export async function listInbox() {
 
 export async function staffReply(patientId: string, staffId: string, body: string) {
   must(await supabase.from("messages").insert({ patient_id: patientId, from_patient: false, staff_id: staffId, body: body.trim() }));
-  invalidate("inbox");
+  revalidate("inbox");
 }
 
 export async function markRead(patientId: string) {

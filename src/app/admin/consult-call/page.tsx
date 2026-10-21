@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/shell";
 import { Card, DataTable, EmptyState, ErrorNote, Icon, Loading, SubmitButton, Tag } from "@/components/ui";
 import { arDate, clock } from "@/lib/format";
-import { invalidate, useQuery } from "@/lib/db/query";
+import { revalidate, useQuery } from "@/lib/db/query";
 import { getConsultService, listConsults, listInbox, markRead, staffReply, subscribeInbox } from "@/lib/db/consult";
 import { useSession } from "@/lib/supabase/session";
 import { C } from "@/lib/tokens";
@@ -21,7 +21,7 @@ export default function ConsultCallPage() {
   const { data: svc, loading: l1, error: e1 } = useQuery(["consult", "service"], getConsultService);
   const { data: consults, loading: l2, error: e2 } = useQuery(["consult", "staff", svc?.key], () => listConsults(svc!.key), { enabled: !!svc });
   const { data: inbox, loading: l3, error: e3 } = useQuery(["inbox", "all"], listInbox);
-  useEffect(() => subscribeInbox(() => invalidate("inbox")), []);
+  useEffect(() => subscribeInbox(() => revalidate("inbox")), []);
 
   const threads = useMemo(() => {
     const m = new Map<string, NonNullable<typeof inbox>>();
@@ -69,7 +69,7 @@ export default function ConsultCallPage() {
           ) : thread ? (
             <Thread key={thread.pid} t={thread} staffId={staff?.id ?? null} onBack={() => setOpen(null)} />
           ) : threads.map((t) => (
-            <button key={t.pid} type="button" onClick={() => { setOpen(t.pid); if (t.unread) markRead(t.pid).then(() => invalidate("inbox")).catch(() => {}); }}
+            <button key={t.pid} type="button" onClick={() => { setOpen(t.pid); if (t.unread) markRead(t.pid).then(() => revalidate("inbox")).catch(() => {}); }}
               style={{ textAlign: "right", border: "1px solid #F0E6F3", background: C.white, borderRadius: 20, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{t.last.patients?.name || "مراجعة"} <span className="latin" style={{ fontSize: 11.5, color: C.muted }}>{t.last.patients?.file_no}</span></div>
