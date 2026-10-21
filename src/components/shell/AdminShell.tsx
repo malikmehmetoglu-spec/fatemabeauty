@@ -11,13 +11,14 @@ import { Icon, Logo } from "@/components/ui";
 import { staffPhoto } from "@/lib/db/staff";
 import { useQuery } from "@/lib/db/query";
 import { pendingCount } from "@/lib/db/bookingRequests";
+import { miraAttention } from "@/lib/db/mira";
 import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
 import { AdminInstall } from "@/components/pwa/AdminInstall";
 
 export type AdminSection =
-  | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "جدولي" | "المالية" | "المخزون والأجهزة"
+  | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "ميرا" | "جدولي" | "المالية" | "المخزون والأجهزة"
   | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
@@ -25,6 +26,7 @@ const NAV: [string, AdminSection, string][] = [
   ["cal", "المواعيد", R.W_Calendar],
   ["tv", "الأدوار", R.W_Queue],
   ["users", "المراجعات", R.W_Patients],
+  ["msg", "ميرا", R.W_Mira],
   ["sparkle", "جدولي", R.W_MyDay],
   ["wallet", "المالية", R.W_Cashier],
   ["box", "المخزون والأجهزة", R.W_Inventory],
@@ -50,6 +52,8 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const [q, setQ] = useState("");
   const pend = useQuery(["booking-requests", "count"], pendingCount, { enabled: !!staff });
   const pending = pend.data ?? 0;
+  const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff });
+  const miraCount = mira.data ?? 0;
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   if (loading || !staff) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
@@ -75,11 +79,11 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           {NAV.map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
-                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}
+                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}
               </Link>
             ) : (
               <Link key={label} href={href} style={{ height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: C.navText }}>
-                <Icon name={icon} color={C.navIcon} size={19} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}
+                <Icon name={icon} color={C.navIcon} size={19} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}
               </Link>
             ),
           )}

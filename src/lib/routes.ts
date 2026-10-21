@@ -107,6 +107,7 @@ export const R = {
   W_Products: "/admin/store/products/",
   W_Orders: "/admin/store/orders/",
   W_ConsultCall: "/admin/consult-call/",
+  W_Mira: "/admin/mira/",
   W_Services: "/admin/settings/services/",
   W_Rooms: "/admin/settings/rooms/",
   W_Roles: "/admin/settings/roles/",
