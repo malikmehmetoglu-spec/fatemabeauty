@@ -77,3 +77,9 @@ on conflict do nothing;
 
 alter publication supabase_realtime add table public.mira_threads;
 alter publication supabase_realtime add table public.mira_drafts;
+
+-- New tables need explicit grants (docs/DATA.md). Applied as «mira_grants».
+grant select, update on public.mira_threads to authenticated;
+grant select, update on public.mira_drafts to authenticated;
+grant select, insert, update, delete on public.mira_kb to authenticated;
+grant all on public.mira_threads, public.mira_drafts, public.mira_kb to service_role;
