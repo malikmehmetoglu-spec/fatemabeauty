@@ -70,7 +70,7 @@ export default function LoginPage() {
             style={{ flexGrow: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: 17, padding: "0 12px", color: C.ink, letterSpacing: 1 }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 13, color: C.sub }}>
-          <Icon name="msg" color={C.ok} size={17} stroke={1.9} />سنرسل لكِ رمز التحقق على واتساب
+          <Icon name="msg" color={C.ok} size={17} stroke={1.9} />سنرسل لكِ رمز التحقق برسالة SMS
         </div>
       </div>
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>

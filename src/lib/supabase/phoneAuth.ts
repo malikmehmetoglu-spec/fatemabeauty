@@ -20,11 +20,13 @@ export function maskPhone(p: string) {
 
 export const savedPhone = () => { try { return sessionStorage.getItem(KEY) || ""; } catch { return ""; } };
 
-/** Sends the 6-digit code (WhatsApp, falling back to SMS). Returns an Arabic error message or null. */
-export async function sendCode(phone: string, channel: "whatsapp" | "sms" = "whatsapp"): Promise<string | null> {
+/**
+ * Sends the 6-digit code by SMS. Supabase Auth creates the code and hands it to the «send-sms» hook,
+ * which delivers it from the clinic's Android gateway phone. Returns an Arabic error message or null.
+ */
+export async function sendCode(phone: string): Promise<string | null> {
   try { sessionStorage.setItem(KEY, phone); } catch {}
-  let { error } = await supabase.auth.signInWithOtp({ phone, options: { channel } });
-  if (error && channel === "whatsapp") ({ error } = await supabase.auth.signInWithOtp({ phone }));
+  const { error } = await supabase.auth.signInWithOtp({ phone, options: { channel: "sms" } });
   if (!error) return null;
   if (/provider|disabled|not enabled|unsupported/i.test(error.message)) return "خدمة إرسال الرموز غير مفعّلة بعد. تواصلي مع المركز.";
   if (/rate|too many|seconds/i.test(error.message)) return "طلبتِ رمزاً قبل قليل. انتظري دقيقة ثم أعيدي المحاولة.";

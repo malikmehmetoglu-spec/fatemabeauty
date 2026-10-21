@@ -9,7 +9,7 @@ import { Icon, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { C, GLASS, ICON_FILL, SH, SHB, SOFT_PANEL } from "@/lib/tokens";
 
-/** P_OTP.dc.html — WhatsApp verification code. */
+/** P_OTP.dc.html — SMS verification code (sent from the clinic gateway phone). */
 export default function OtpPage() {
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [focus, setFocus] = useState(0);
@@ -34,11 +34,11 @@ export default function OtpPage() {
     router.replace(done ? (next && next.startsWith("/") && !next.startsWith("//") ? next : R.Main) : R.P_Profile);
   }
   const [info, setInfo] = useState("");
-  async function resend(channel: "whatsapp" | "sms" = "whatsapp") {
+  async function resend() {
     if (sec > 0 || !phone) return;
     setError(""); setInfo(""); setSec(59);
-    const e = await sendCode(phone, channel);
-    if (e) setError(e); else setInfo(channel === "sms" ? "أرسلنا رمزاً جديداً برسالة SMS." : "أرسلنا رمزاً جديداً عبر واتساب.");
+    const e = await sendCode(phone);
+    if (e) setError(e); else setInfo("أرسلنا رمزاً جديداً برسالة SMS.");
   }
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -89,7 +89,7 @@ export default function OtpPage() {
           </span>
         </div>
         <h1 style={{ margin: "22px 0 0", fontSize: 26, fontWeight: 700, color: C.ink }}>أدخلي رمز التحقق</h1>
-        <p style={{ margin: "8px 0 0", fontSize: 14.5, color: C.sub, lineHeight: 1.7 }}>أرسلنا رمزاً من 6 أرقام عبر واتساب إلى</p>
+        <p style={{ margin: "8px 0 0", fontSize: 14.5, color: C.sub, lineHeight: 1.7 }}>أرسلنا رمزاً من 6 أرقام برسالة SMS إلى</p>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
           <span dir="ltr" className="latin" style={{ fontSize: 17, fontWeight: 500, color: C.accent, letterSpacing: 0.5 }}>{phone ? maskPhone(phone) : ""}</span>
           <Link href={R.Login} style={{ fontSize: 13, fontWeight: 600, color: C.accentMid, textDecoration: "underline", textUnderlineOffset: 4 }}>تغيير الرقم</Link>
@@ -120,8 +120,8 @@ export default function OtpPage() {
       </div>
 
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, color: C.sub2 }}>
-          لم يصلكِ الرمز؟<button type="button" onClick={() => resend("sms")} disabled={sec > 0} style={{ border: "none", background: "none", padding: 0, fontSize: 13, fontWeight: 700, color: sec > 0 ? C.muted : C.accentMid }}>{sec > 0 ? "أرسليه برسالة SMS بعد انتهاء العدّاد" : "أرسليه برسالة SMS"}</button>
+        <div style={{ textAlign: "center", fontSize: 13, color: C.sub2, lineHeight: 1.7 }}>
+          قد يستغرق وصول الرسالة دقيقة. إن لم تصلكِ، تأكدي من الرقم ثم اطلبي رمزاً جديداً.
         </div>
         {info && !error && <div role="status" style={{ fontSize: 13.5, fontWeight: 600, color: C.ok, textAlign: "center" }}>{info}</div>}
         {error && <div role="alert" style={{ fontSize: 13.5, fontWeight: 600, color: C.danger, background: "#FBEAF1", borderRadius: 14, padding: "10px 14px", textAlign: "center" }}>{error}</div>}
