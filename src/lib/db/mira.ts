@@ -8,12 +8,12 @@ import { invalidate } from "./query";
 const db = supabase as any;
 const must = <T,>(r: { data: T; error: { message: string } | null }) => { if (r.error) throw new Error(r.error.message); return r.data; };
 
-export type MiraConfig = { enabled: boolean; mode: "draft" | "auto"; model: string; address: string };
+export type MiraConfig = { enabled: boolean; mode: "draft" | "auto"; model: string; address: string; alert_staff: string[]; escalate_staff: string[] };
 export type MiraThread = { patient_id: string; status: "mira" | "fatema"; urgent: boolean; reason: string | null; summary: string | null; handoff_at: string | null; resolved_at: string | null; updated_at: string };
 export type MiraDraft = { id: string; patient_id: string; body: string; status: "pending" | "sent" | "discarded"; created_at: string };
 export type MiraKb = { id: string; question: string; answer: string; active: boolean; sort: number };
 
-const DEFAULT: MiraConfig = { enabled: true, mode: "draft", model: "claude-haiku-5-5", address: "" };
+const DEFAULT: MiraConfig = { enabled: true, mode: "draft", model: "claude-haiku-5-5", address: "", alert_staff: [], escalate_staff: [] };
 
 /** Patient app: ask Mira to answer the latest message. Fire-and-forget; her reply arrives through Realtime. */
 export async function askMira(): Promise<{ handed?: boolean; skipped?: string; error?: string; mode?: string }> {
@@ -59,7 +59,7 @@ export async function discardDraft(id: string, staffId: string | null) {
 
 /** Fatema finished with a handed-over conversation: Mira takes it back. */
 export async function returnToMira(patientId: string) {
-  must(await db.from("mira_threads").update({ status: "mira", urgent: false, resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("patient_id", patientId));
+  must(await db.from("mira_threads").update({ status: "mira", urgent: false, escalated: false, notify_count: 0, notified_at: null, resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("patient_id", patientId));
   invalidate("mira");
 }
 /** Fatema takes a conversation over herself (Mira stops answering it). */
@@ -98,4 +98,58 @@ export function subscribeMira(onChange: () => void) {
     .on("postgres_changes", { event: "*", schema: "public", table: "mira_drafts" }, () => onChange())
     .subscribe();
   return () => { supabase.removeChannel(ch); };
+}
+
+/* ---------- staff phone alerts (admin app only) ---------- */
+
+const b64ToBytes = (s: string) => {
+  const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
+};
+export const alertsSupported = () =>
+  typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+/** Is this browser already subscribed for staff alerts? */
+export async function alertsOnThisDevice(): Promise<boolean> {
+  if (!alertsSupported()) return false;
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return false;
+  const rows = must(await db.from("staff_push_subs").select("id").eq("endpoint", sub.endpoint).limit(1)) as { id: string }[] | null;
+  return !!rows?.length;
+}
+
+/** Ask permission, subscribe this browser and register it for the signed-in staff member. */
+export async function enableAlerts(staffId: string) {
+  if (!alertsSupported()) throw new Error("هذا الجهاز أو المتصفح لا يدعم التنبيهات. على الآيفون ثبّتي تطبيق الإدارة على الشاشة الرئيسية أولاً.");
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") throw new Error("لم يُسمح بالتنبيهات. فعّليها من إعدادات المتصفح أو الهاتف لهذا الموقع.");
+  const reg = (await navigator.serviceWorker.getRegistration("/")) ?? (await navigator.serviceWorker.register("/sw.js", { scope: "/" }));
+  await navigator.serviceWorker.ready;
+  const { data, error } = await supabase.functions.invoke("staff-push", { body: { action: "vapid" } });
+  if (error || !data?.public_key) throw new Error("تعذّر تجهيز التنبيهات. حاولي مرة أخرى.");
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(data.public_key) });
+  const json = sub.toJSON();
+  must(await db.from("staff_push_subs").upsert({ staff_id: staffId, endpoint: sub.endpoint, sub: json, device: navigator.userAgent.slice(0, 200) }, { onConflict: "endpoint" }));
+}
+
+/** Stop alerts on this browser (also called on sign-out). */
+export async function disableAlerts() {
+  if (!alertsSupported()) return;
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return;
+  await db.from("staff_push_subs").delete().eq("endpoint", sub.endpoint);
+  await sub.unsubscribe().catch(() => {});
+}
+
+export async function sendTestAlert(): Promise<{ sent: number; devices: number }> {
+  const { data, error } = await supabase.functions.invoke("staff-push", { body: { action: "test" } });
+  if (error) throw new Error("تعذّر إرسال التنبيه التجريبي.");
+  return data;
+}
+
+export async function listStaffBasic(): Promise<{ id: string; name: string; role: string }[]> {
+  return must(await supabase.from("staff").select("id, name, role").eq("active", true).order("name")) ?? [];
 }

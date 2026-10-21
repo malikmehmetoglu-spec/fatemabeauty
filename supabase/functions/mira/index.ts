@@ -188,6 +188,11 @@ ${(kb ?? []).map((k) => `س: ${k.question}\nج: ${k.answer}`).join("\n\n") || "�
           handoff_at: new Date().toISOString(), resolved_at: null, updated_at: new Date().toISOString(),
         });
         await admin.from("audit_log").insert({ actor: null, action: "mira.handoff", target: patientId, details: input }).then(() => {}, () => {});
+        // Alert the chosen staff phones (admin app only). Never blocks the reply.
+        await fetch(`${URL_}/functions/v1/staff-push`, {
+          method: "POST", headers: { authorization: `Bearer ${SERVICE}`, "content-type": "application/json" },
+          body: JSON.stringify({ action: "notify", patient_id: patientId, urgent: !!input.urgent, reason: input.reason, summary: input.summary }),
+        }).catch(() => {});
         return "تم تحويل المحادثة إلى أ. فاطمة. أخبري الزبونة بذلك بلطف.";
       }
       return "أداة غير متاحة.";

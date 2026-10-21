@@ -11,7 +11,7 @@ import { Icon, Logo } from "@/components/ui";
 import { staffPhoto } from "@/lib/db/staff";
 import { useQuery } from "@/lib/db/query";
 import { pendingCount } from "@/lib/db/bookingRequests";
-import { miraAttention } from "@/lib/db/mira";
+import { disableAlerts, miraAttention } from "@/lib/db/mira";
 import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
@@ -58,7 +58,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   if (loading || !staff) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
   }
-  const signOut = async () => { await supabase.auth.signOut(); router.replace(R.W_Login); };
+  const signOut = async () => { await disableAlerts().catch(() => {}); await supabase.auth.signOut(); router.replace(R.W_Login); };
   const search = () => { const t = q.trim(); if (t) router.push(`${R.W_Patients}?q=${encodeURIComponent(t)}`); };
   return (
     <div dir="rtl" className={s.root} style={{ background: BG_WIDE }}>

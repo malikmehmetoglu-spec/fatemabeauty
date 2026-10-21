@@ -8,6 +8,7 @@ import { arDate, clock } from "@/lib/format";
 import { invalidate, useQuery } from "@/lib/db/query";
 import { listInbox, markRead, staffReply, subscribeInbox, type InboxMsg } from "@/lib/db/consult";
 import {
+  alertsOnThisDevice, alertsSupported, disableAlerts, enableAlerts, listStaffBasic, sendTestAlert,
   deleteKb, discardDraft, getMiraConfig, listKb, listPendingDrafts, listThreads, returnToMira, saveKb, saveMiraConfig, sendDraft,
   subscribeMira, takeOver, type MiraConfig, type MiraDraft, type MiraKb, type MiraThread,
 } from "@/lib/db/mira";
@@ -31,7 +32,7 @@ export default function MiraPage() {
       <div role="tablist" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {TABS.map(([k, t]) => <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={pill(tab === k)}>{t}</button>)}
       </div>
-      {tab === "chats" ? <Chats /> : tab === "kb" ? <Kb /> : <Settings />}
+      {tab === "chats" ? <Chats /> : tab === "kb" ? <Kb /> : <><Alerts /><Settings /></>}
     </AdminShell>
   );
 }
@@ -285,6 +286,7 @@ function Settings() {
         </div>
         <div style={{ fontSize: 12.5, color: C.sub2, marginTop: 6 }}>في الحالتين: الأسئلة العلاجية والحالات العاجلة تُحوَّل إليكِ فوراً.</div>
       </div>
+      <Recipients cfg={cfg} setCfg={setCfg} />
       <label style={{ fontSize: 13.5, fontWeight: 700 }}>عنوان المركز (تذكره ميرا عند السؤال)
         <input value={cfg.address} onChange={(e) => setCfg({ ...cfg, address: e.target.value })} placeholder="مثال: حمص، شارع الحضارة، بناء …" style={{ ...input, marginTop: 6, fontWeight: 400 }} />
       </label>
@@ -298,5 +300,74 @@ function Settings() {
       {msg && <div style={{ fontSize: 13.5, color: C.okDeep, fontWeight: 600 }}>{msg}</div>}
       <SubmitButton onClick={save} busy={busy}>حفظ الإعدادات</SubmitButton>
     </Card>
+  );
+}
+
+/* ---------- phone alerts ---------- */
+
+function Alerts() {
+  const { staff } = useSession();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { alertsOnThisDevice().then(setOn).catch(() => setOn(false)); }, []);
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true); setErr(null); setMsg(null);
+    try { await fn(); } catch (e) { setErr(arErr(e, "تعذّر تنفيذ الطلب.")); } finally { setBusy(false); }
+  };
+  const supported = alertsSupported();
+  return (
+    <Card radius={24} padding={18} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 760 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Icon name="bell" size={20} color={C.accent} />
+        <div style={{ lineHeight: 1.45 }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>تنبيهات هذا الهاتف</div>
+          <div style={{ fontSize: 12.5, color: C.sub2 }}>تصل فقط إلى الأجهزة التي فعّلتها الموظفات المختارات من تطبيق الإدارة، ولا تصل لأي زبونة إطلاقاً.</div>
+        </div>
+      </div>
+      {!supported ? (
+        <div style={{ fontSize: 13.5, color: "#8A5A12", background: "#FCF1DE", borderRadius: 14, padding: "10px 14px", lineHeight: 1.6 }}>
+          هذا المتصفح لا يدعم التنبيهات. على الآيفون: افتحي لوحة الإدارة من Safari، ثم «مشاركة» ← «إضافة إلى الشاشة الرئيسية»، وافتحيها من الأيقونة ثم عودي إلى هنا.
+        </div>
+      ) : on === null ? <Loading /> : (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {on ? <Tag kind="green">مفعّلة على هذا الجهاز</Tag> : <Tag kind="gray">غير مفعّلة على هذا الجهاز</Tag>}
+          {!on && <SubmitButton busy={busy} disabled={!staff} onClick={() => run(async () => { await enableAlerts(staff!.id); setOn(true); setMsg("تم التفعيل. أرسلي تنبيهاً تجريبياً للتأكد."); })}>تفعيل التنبيهات على هذا الهاتف</SubmitButton>}
+          {on && <SubmitButton busy={busy} onClick={() => run(async () => { const r = await sendTestAlert(); setMsg(r.sent ? "أُرسل تنبيه تجريبي، يجب أن يظهر خلال ثوانٍ." : "لم يُرسل التنبيه. أعيدي التفعيل على هذا الجهاز."); })}>إرسال تنبيه تجريبي</SubmitButton>}
+          {on && <button type="button" disabled={busy} onClick={() => run(async () => { await disableAlerts(); setOn(false); setMsg("أُوقفت التنبيهات على هذا الجهاز."); })}
+            style={{ height: 44, padding: "0 18px", borderRadius: 22, border: "1px solid #EADCF0", background: C.white, color: C.sub2, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>إيقاف على هذا الجهاز</button>}
+        </div>
+      )}
+      {err && <ErrorNote>{err}</ErrorNote>}
+      {msg && <div style={{ fontSize: 13.5, color: C.okDeep, fontWeight: 600 }}>{msg}</div>}
+    </Card>
+  );
+}
+
+function Recipients({ cfg, setCfg }: { cfg: MiraConfig; setCfg: (c: MiraConfig) => void }) {
+  const { data: team } = useQuery(["mira", "staff"], listStaffBasic);
+  const toggle = (key: "alert_staff" | "escalate_staff", id: string) => {
+    const cur = new Set(cfg[key] ?? []);
+    if (cur.has(id)) cur.delete(id); else cur.add(id);
+    setCfg({ ...cfg, [key]: [...cur] });
+  };
+  const box = (key: "alert_staff" | "escalate_staff", title: string, hint: string) => (
+    <div>
+      <div style={{ fontSize: 13.5, fontWeight: 700 }}>{title}</div>
+      <div style={{ fontSize: 12.5, color: C.sub2, marginBottom: 6 }}>{hint}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {(team ?? []).map((t) => {
+          const on = (cfg[key] ?? []).includes(t.id);
+          return <button key={t.id} type="button" aria-pressed={on} onClick={() => toggle(key, t.id)} style={{ ...pill(on), height: 34, fontSize: 13 }}>{t.name}</button>;
+        })}
+      </div>
+    </div>
+  );
+  return (
+    <>
+      {box("alert_staff", "من يستلم التنبيهات الفورية", "المحادثات المحوّلة والحالات العاجلة، مع تذكير كل 15 دقيقة للعاجل دون رد.")}
+      {box("escalate_staff", "من يُضاف بعد ساعة دون رد", "اختياري: مثلاً السكرتيرة، لتتابع إن لم تتمكني من الرد.")}
+    </>
   );
 }
