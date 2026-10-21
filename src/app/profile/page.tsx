@@ -21,12 +21,18 @@ const field: CSSProperties = { display: "flex", alignItems: "center", gap: 8, he
 const inputStyle: CSSProperties = { flexGrow: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: 14, color: C.ink, textAlign: "right" };
 const smallInput: CSSProperties = { width: "100%", boxSizing: "border-box", height: 40, borderRadius: 20, background: "#FAF7FB", border: `1px solid ${C.border}`, padding: "0 14px", fontSize: 13.5, outline: "none", color: C.ink };
 const label: CSSProperties = { display: "block", fontSize: 12.5, fontWeight: 700, color: C.ink, marginBottom: 5 };
+const MONTHS = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
+const THIS_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: THIS_YEAR - 1920 + 1 }, (_, i) => THIS_YEAR - i);
+const selectStyle: CSSProperties = { ...{ height: 44, borderRadius: 22, background: "#FAF7FB", border: `1px solid ${C.border}`, padding: "0 12px", fontSize: 14, outline: "none", appearance: "none", WebkitAppearance: "none", textAlign: "center", textAlignLast: "center" }, minWidth: 0, color: C.ink, cursor: "pointer", fontFamily: "inherit" };
 const chipBase: CSSProperties = { height: 32, padding: "0 12px", borderRadius: 19, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 };
 
 export default function ProfilePage() {
   const [concerns, setConcerns] = useState<Record<number, boolean>>({});
   const [name, setName] = useState("");
-  const [dob, setDob] = useState("");
+  const [dobD, setDobD] = useState("");
+  const [dobM, setDobM] = useState("");
+  const [dobY, setDobY] = useState("");
   const [allergy, setAllergy] = useState("");
   const [meds, setMeds] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +46,7 @@ export default function ProfilePage() {
     if (!patient || filled.current) return;
     filled.current = true;
     setName(patient.name ?? "");
-    if (patient.birth_date) { const [y, mo, d] = patient.birth_date.split("-"); setDob(`${Number(d)} / ${Number(mo)} / ${y}`); }
+    if (patient.birth_date) { const [y, mo, d] = patient.birth_date.split("-"); setDobD(String(Number(d))); setDobM(String(Number(mo))); setDobY(y); }
     setAnswers({ preg: patient.pregnant || patient.breastfeeding ? "yes" : "no", iso: (patient.notes ?? "").includes(ISO_NOTE) ? "yes" : "no" });
     supabase.from("patient_conditions").select("kind,name").eq("patient_id", patient.id).then(({ data }) => {
       const rows = data ?? [];
@@ -53,13 +59,12 @@ export default function ProfilePage() {
     if (!name.trim()) { setError("اكتبي اسمكِ أولاً."); return; }
     if (!patient) return;
     let birth: string | null = null;
-    if (dob.trim()) {
-      const m = dob.replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660)).match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{4})$/);
-      const d = m ? new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}T12:00:00Z`) : null;
-      if (!m || !d || isNaN(d.getTime()) || d.getUTCDate() !== Number(m[1]) || d > new Date() || Number(m[3]) < 1920) {
-        setError("اكتبي تاريخ الميلاد بالشكل: اليوم / الشهر / السنة، مثل 15 / 4 / 1995"); return;
-      }
-      birth = `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    const picked = [dobD, dobM, dobY].filter(Boolean).length;
+    if (picked > 0 && picked < 3) { setError("اختاري اليوم والشهر والسنة لتاريخ الميلاد."); return; }
+    if (picked === 3) {
+      const d = new Date(Date.UTC(Number(dobY), Number(dobM) - 1, Number(dobD), 12));
+      if (d.getUTCDate() !== Number(dobD) || d > new Date()) { setError("هذا التاريخ غير صحيح، تأكدي من اليوم والشهر."); return; }
+      birth = `${dobY}-${dobM.padStart(2, "0")}-${dobD.padStart(2, "0")}`;
     }
     const otherNotes = (patient.notes ?? "").replace(ISO_NOTE, "").trim();
     const notes = [answers.iso === "yes" ? ISO_NOTE : "", otherNotes].filter(Boolean).join("\n") || null;
@@ -99,8 +104,21 @@ export default function ProfilePage() {
           <div style={field}><Icon name="user" color={C.accentMid} size={17} /><input id="pname" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="اكتبي اسمكِ كما تحبين أن نناديكِ" style={inputStyle} /></div>
         </div>
         <div>
-          <label htmlFor="pdob" style={label}>تاريخ الميلاد</label>
-          <div style={field}><Icon name="cal" color={C.accentMid} size={17} /><input id="pdob" type="text" inputMode="numeric" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="اليوم / الشهر / السنة" style={inputStyle} /></div>
+          <label htmlFor="pdob-d" style={label}>تاريخ الميلاد</label>
+          <div role="group" aria-label="تاريخ الميلاد" style={{ display: "grid", gridTemplateColumns: "1fr 1.7fr 1.25fr", gap: 6 }}>
+            <select id="pdob-d" aria-label="اليوم" value={dobD} onChange={(e) => setDobD(e.target.value)} style={{ ...selectStyle, color: dobD ? C.ink : C.muted }}>
+              <option value="">اليوم</option>
+              {Array.from({ length: 31 }, (_, i) => <option key={i} value={String(i + 1)}>{i + 1}</option>)}
+            </select>
+            <select aria-label="الشهر" value={dobM} onChange={(e) => setDobM(e.target.value)} style={{ ...selectStyle, color: dobM ? C.ink : C.muted }}>
+              <option value="">الشهر</option>
+              {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+            </select>
+            <select aria-label="السنة" value={dobY} onChange={(e) => setDobY(e.target.value)} style={{ ...selectStyle, color: dobY ? C.ink : C.muted }}>
+              <option value="">السنة</option>
+              {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
