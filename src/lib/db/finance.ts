@@ -6,7 +6,7 @@
  * discount rule from settings.policies, payments). Reusable by the kiosk cashier (T_Cashier).
  */
 import { supabase, type Tables } from "@/lib/supabase/client";
-import { dayKey, dayRange } from "@/lib/format";
+import { dayKey, dayRange, money } from "@/lib/format";
 import { invalidate, must } from "./query";
 
 /** Like must(), for list queries: never null. */
@@ -66,6 +66,12 @@ export function financeError(e: unknown) {
     ["difference needs a reason", "يوجد فرق بين المعدود والمتوقع — اكتبي السبب قبل الإغلاق."],
     ["shift closed", "هذا المصروف مقفل ولا يمكن تعديله أو حذفه (المالكة فقط)."],
     ["cash_shifts_one_open", "هناك وردية مفتوحة بالفعل."],
+    ["offer code not found", "كود الخصم غير موجود."],
+    ["offer code expired", "كود الخصم منتهٍ."],
+    ["offer code not started", "كود الخصم لم يبدأ بعد."],
+    ["offer code used up", "كود الخصم مكتمل الاستخدام."],
+    ["offer code inactive", "كود الخصم متوقف."],
+    ["offer code not applicable", "كود الخصم لا ينطبق على هذه الخدمات."],
     ["Failed to fetch", "تعذّر الاتصال بالخادم — تحققي من الإنترنت وأعيدي المحاولة."],
   ];
   for (const [k, v] of map) if (m.includes(k)) return v.endsWith(": ") ? v + m.split(": ").slice(1).join(": ") : v;
@@ -163,22 +169,54 @@ export type InvoiceArgs = {
   patientPackageId?: string | null; note?: string; dueOn?: string | null;
   /** stock location the products are taken from (default: the centre's default location) */
   location?: string | null;
+  /** an applied offer code: the server validates it and recomputes the discount (`discount` is then ignored) */
+  offerCode?: string | null;
 };
+
+/* ---------- offer codes ---------- */
+
+export type AppliedOffer = { id: string; code: string; title: string; kind: "percent" | "amount"; value: number; service_key: string | null };
+export const OFFER_REASON: Record<string, string> = {
+  "not found": "غير موجود", expired: "منتهٍ", "not started": "لم يبدأ بعد", "used up": "مكتمل الاستخدام",
+  inactive: "متوقف", "not applicable": "لا ينطبق على هذه الخدمات",
+};
+
+/** Preview check of a code against the current cart (the invoice rpc re-validates and recomputes). */
+export async function checkOfferCode(code: string, lines: CartLine[]): Promise<{ ok: true; offer: AppliedOffer } | { ok: false; reason: string }> {
+  const sub = lines.reduce((s, l) => s + l.qty * l.unit_price, 0);
+  const r = must(await supabase.rpc("check_offer_code", {
+    p_code: code, p_subtotal: sub, p_items: lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, unit_price: l.unit_price })),
+  })) as Record<string, unknown>;
+  if (!r.ok) return { ok: false, reason: `كود الخصم ${OFFER_REASON[String(r.reason)] ?? "غير صالح"}` };
+  return { ok: true, offer: { id: String(r.id), code: String(r.code), title: String(r.title ?? ""), kind: r.kind === "amount" ? "amount" : "percent", value: Number(r.value), service_key: (r.service_key as string | null) ?? null } };
+}
+
+/** Same rule as the server: % or fixed amount of the eligible lines (all lines, or only the offer's service), never above them. */
+export function offerDiscount(o: AppliedOffer, lines: CartLine[]) {
+  const elig = lines.filter((l) => !o.service_key || (l.kind === "service" && l.ref === o.service_key)).reduce((s, l) => s + l.qty * l.unit_price, 0);
+  const d = o.kind === "percent" ? Math.round((elig * Math.min(o.value, 100)) / 100) : o.value;
+  return Math.max(0, Math.min(elig, d));
+}
+export const offerLabel = (o: Pick<AppliedOffer, "kind" | "value">) => (o.kind === "percent" ? `خصم ${o.value}%` : `خصم ${money(o.value)}`);
 
 /** One atomic call: invoice + items + stock 'sale' movements + package session + payments. */
 export async function createInvoice(a: InvoiceArgs) {
-  const inv = must(await supabase.rpc("create_invoice", {
+  const common = {
     p_patient: (a.patientId ?? null) as string,
     p_appointment: (a.appointmentId ?? null) as string,
     // prices come from the DB; only a custom line (admin) carries its own price
     p_items: a.lines.map((l) => ({ kind: l.kind, ref: l.ref ?? null, qty: l.qty, label: l.label, ...(l.kind === "custom" ? { unit_price: l.unit_price } : {}), ...(l.kind === "product" && a.location ? { location: a.location } : {}) })),
-    p_discount: Math.max(0, Math.round(a.discount)),
     p_payments: a.payments.filter((p) => p.amount > 0 || p.method === "package"),
     p_patient_package: a.patientPackageId ?? undefined,
     p_note: a.note || undefined,
     p_due_on: a.dueOn ?? undefined,
     p_walk_in_name: a.walkInName ?? undefined,
-  }));
+  };
+  // with a code: a separate rpc validates it and recomputes the discount server-side (no manual discount then)
+  const inv = a.offerCode
+    ? must(await supabase.rpc("create_invoice_with_code", { ...common, p_offer_code: a.offerCode }))
+    : must(await supabase.rpc("create_invoice", { ...common, p_discount: Math.max(0, Math.round(a.discount)) }));
+  if (a.offerCode) invalidate("offers");
   ["invoices", "finance", "queue", "products", "patients", "appointments", "commissions"].forEach(invalidate);
   return inv;
 }

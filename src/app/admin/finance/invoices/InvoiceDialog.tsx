@@ -42,7 +42,7 @@ export function InvoiceDialog({ inv, names, onClose }: { inv: InvoiceRow | null;
             </div>
           ))}
           <Line label="المجموع" n={inv.subtotal} />
-          {inv.discount > 0 && <Line label={`الخصم${inv.discount_approved_by ? " (بموافقة الإدارة)" : ""}`} n={-inv.discount} />}
+          {inv.discount > 0 && <Line label={inv.offer_code ? `خصم (كود ${inv.offer_code})` : `الخصم${inv.discount_approved_by ? " (بموافقة الإدارة)" : ""}`} n={-inv.discount} />}
           <Line label="الصافي" n={inv.total} bold />
         </div>
         <div>

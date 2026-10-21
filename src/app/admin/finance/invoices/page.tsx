@@ -39,8 +39,8 @@ export default function Page() {
     .filter((i) => !q || customerName(i).includes(q) || i.no.includes(q) || String(i.patients?.file_no ?? "").includes(q));
   const isToday = day === dayKey();
 
-  const exportCsv = () => downloadCsv(`invoices-${day}.csv`, ["رقم", "الوقت", "المراجعة", "البنود", "الدفع", "المجموع", "الخصم", "الصافي", "المقبوض", "الحالة"],
-    list.map((i) => [i.no, clock(i.created_at), customerName(i), (i.invoice_items ?? []).map((x) => `${x.label}×${x.qty}`).join(" + "), (i.invoice_payments ?? []).filter((p) => p.amount > 0).length > 1 ? (i.invoice_payments ?? []).filter((p) => p.amount > 0).map((p) => `${PAY_LABEL[p.method]} ${p.amount}`).join(" + ") : PAY_LABEL[i.method], i.subtotal, i.discount, i.total, collected(i), i.void ? "ملغاة" : i.paid ? "مدفوعة" : "غير مكتملة"]));
+  const exportCsv = () => downloadCsv(`invoices-${day}.csv`, ["رقم", "الوقت", "المراجعة", "البنود", "الدفع", "المجموع", "الخصم", "كود الخصم", "الصافي", "المقبوض", "الحالة"],
+    list.map((i) => [i.no, clock(i.created_at), customerName(i), (i.invoice_items ?? []).map((x) => `${x.label}×${x.qty}`).join(" + "), (i.invoice_payments ?? []).filter((p) => p.amount > 0).length > 1 ? (i.invoice_payments ?? []).filter((p) => p.amount > 0).map((p) => `${PAY_LABEL[p.method]} ${p.amount}`).join(" + ") : PAY_LABEL[i.method], i.subtotal, i.discount, i.offer_code ?? "", i.total, collected(i), i.void ? "ملغاة" : i.paid ? "مدفوعة" : "غير مكتملة"]));
 
   return (
     <AdminShell active="المالية" title="الفواتير" subtitle={`${arDate(new Date(`${day}T12:00:00`))}${isToday ? ` · آخر تحديث ${clock()}` : ""}`} actions={
@@ -92,7 +92,7 @@ export default function Page() {
                   <div style={{ flex: 1.7, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>البنود</span>{invoiceTitle(i)}</div>
                   <div style={{ flex: 1.1, minWidth: 0, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={css.cellLabel}>الأخصائية</span>{i.appointments?.staff?.name ?? "—"}</div>
                   <div style={{ flex: 0.9, minWidth: 0 }}><Tag kind={METHOD_TAG[i.method]}>{new Set((i.invoice_payments ?? []).map((p) => p.method)).size > 1 ? "مقسّم" : PAY_LABEL[i.method]}</Tag></div>
-                  <div style={{ flex: 1.1, minWidth: 0 }}><Amount n={i.total} /></div>
+                  <div style={{ flex: 1.1, minWidth: 0, lineHeight: 1.35 }}><Amount n={i.total} />{i.offer_code && <div dir="ltr" title="كود الخصم" style={{ ...LATIN, fontSize: 11, fontWeight: 600, color: C.okDeep, textAlign: "right" }}>{i.offer_code}</div>}</div>
                   <div style={{ flex: 1, minWidth: 0 }}><Status i={i} /></div>
                   <div className={css.tight} style={{ flex: 1.1, minWidth: 0, display: "flex", gap: 6, justifyContent: "flex-end" }}>
                     <InvoiceActions compact inv={i} onPrint={receipt.print} extras={{ staff: i.created_by ? names.data?.[i.created_by] : null }} />

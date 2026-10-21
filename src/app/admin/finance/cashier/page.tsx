@@ -14,7 +14,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import {
   createInvoice, financeError, getInvoice, getPolicies, listCashierQueue, listInvoices, listPatientPackages, listSellables, searchPatients,
-  collected, customerName, outstanding, type CartLine, type CashierAppt, type InvoiceRow, type PayMethod,
+  collected, customerName, offerDiscount, outstanding, type AppliedOffer, type CartLine, type CashierAppt, type InvoiceRow, type PayMethod,
 } from "@/lib/db/finance";
 import { initials } from "@/lib/data";
 import { arDate, clock, dayRange, money } from "@/lib/format";
@@ -22,6 +22,7 @@ import { useSession } from "@/lib/supabase/session";
 import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
 import { Amount, LATIN, OFF, PANEL } from "../parts";
 import { InvoiceActions, useInvoicePrint } from "../InvoicePrint";
+import { OfferCodeField } from "../OfferCode";
 import { locLabel, useLocations } from "../../inventory/dialogs";
 import { qtyAt } from "@/lib/db/products";
 import { getPatient } from "@/lib/db/patients";
@@ -56,6 +57,7 @@ export default function Page() {
   const [pct, setPct] = useState(0);
   const [discMode, setDiscMode] = useState<"pct" | "amt">("pct");
   const [discAmt, setDiscAmt] = useState("");
+  const [offer, setOffer] = useState<AppliedOffer | null>(null);
   const [mode, setMode] = useState<Mode>("cash");
   const [splitCash, setSplitCash] = useState("");
   const [paidNow, setPaidNow] = useState("");
@@ -80,7 +82,7 @@ export default function Page() {
     return L.multi && saleLoc ? qtyAt(L.map, p, saleLoc) : Number(p.stock);
   };
   const reset = (w: Who | null, l: CartLine[] = []) => {
-    setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
+    setWho(w); setLines(l); setPct(0); setDiscMode("pct"); setDiscAmt(""); setOffer(null); setMode("cash"); setSplitCash(""); setPaidNow(""); setDueOn(""); setPkgId(null); setNote(""); setErr(null); setIssued(null);
   };
   // ?patient=<id> (from the patients list «فاتورة») → that file is preselected once
   useEffect(() => {
@@ -98,11 +100,12 @@ export default function Page() {
   const priced = lines.map((l, i) => (i === coveredIdx ? { ...l, unit_price: 0, qty: 1 } : l));
   const sub = priced.reduce((s, l) => s + l.qty * l.unit_price, 0);
   // discount: a % button or a fixed amount; the server allows up to round(subtotal × policy %) without approval
-  const dAmt = discMode === "pct" ? Math.round((sub * pct) / 100) : Math.min(sub, Math.max(0, Math.round(Number(discAmt) || 0)));
+  // an applied code replaces the manual discount (pre-approved by whoever created the offer)
+  const dAmt = offer ? offerDiscount(offer, priced) : discMode === "pct" ? Math.round((sub * pct) / 100) : Math.min(sub, Math.max(0, Math.round(Number(discAmt) || 0)));
   const dPct = sub ? Math.round((dAmt / sub) * 1000) / 10 : 0;
   const total = sub - dAmt;
   const maxPct = policies.data?.maxDiscount ?? 0;
-  const needApproval = dAmt > Math.round((sub * maxPct) / 100);
+  const needApproval = !offer && dAmt > Math.round((sub * maxPct) / 100);
   const blockedByApproval = needApproval && !isAdmin;
 
   const payments = useMemo((): { method: PayMethod; amount: number }[] => {
@@ -121,7 +124,8 @@ export default function Page() {
   if (mode === "deferred" && !patientId) problems.push("الدفع الآجل يحتاج ملف مراجعة");
   if (lines.some((l) => l.kind === "package") && !patientId) problems.push("بيع باقة يحتاج ملف مراجعة");
   if (blockedByApproval) problems.push("الخصم يحتاج موافقة الإدارة");
-  if (discMode === "amt" && Number(discAmt) > sub) problems.push("الخصم أكبر من المجموع");
+  if (offer && dAmt <= 0) problems.push("كود الخصم لا ينطبق على بنود الفاتورة");
+  if (!offer && discMode === "amt" && Number(discAmt) > sub) problems.push("الخصم أكبر من المجموع");
   if (mode === "split" && (Number(splitCash) || 0) > total) problems.push("المبلغ النقدي أكبر من المطلوب");
   if (mode === "deferred" && (Number(paidNow) || 0) > total) problems.push("المدفوع أكبر من المطلوب");
 
@@ -131,7 +135,7 @@ export default function Page() {
     try {
       const inv = await createInvoice({
         patientId, appointmentId: who.type === "appt" ? who.appt.id : null, walkInName: who.type === "walkin" ? who.name : null,
-        lines: priced, discount: dAmt, payments, patientPackageId: mode === "package" ? pkgId : null, note, dueOn: mode === "deferred" && dueOn ? dueOn : null,
+        lines: priced, discount: dAmt, offerCode: offer?.code ?? null, payments, patientPackageId: mode === "package" ? pkgId : null, note, dueOn: mode === "deferred" && dueOn ? dueOn : null,
         location: L.multi && saleLoc ? saleLoc : null,
       });
       // the invoice exists now: never let a failed re-read look like a failed issue (it could be issued twice)
@@ -245,8 +249,10 @@ export default function Page() {
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>الخصم</div>
-                <span style={{ fontSize: 12, color: C.sub2 }}>بدون موافقة حتى {maxPct}%</span>
+                <span style={{ fontSize: 12, color: C.sub2 }}>{offer ? "مطبَّق بكود خصم" : `بدون موافقة حتى ${maxPct}%`}</span>
               </div>
+              <div style={{ marginTop: 10 }}><OfferCodeField lines={priced} offer={offer} onChange={setOffer} /></div>
+              {!offer && <>
               <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                 {PCTS.map((p) => <button key={p} type="button" onClick={() => { setDiscMode("pct"); setPct(p); }} style={{ height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(discMode === "pct" && pct === p ? SELECTED : OFF) }}>{p === 0 ? "بدون خصم" : `${p}%`}</button>)}
                 <button type="button" onClick={() => setDiscMode("amt")} style={{ height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13, fontWeight: 600, ...(discMode === "amt" ? SELECTED : OFF) }}>مبلغ محدد</button>
@@ -262,6 +268,7 @@ export default function Page() {
                   <Icon name="info" color={C.accentMid} size={17} /><span>حتى {maxPct}% يُطبَّق مباشرة. الحد يُضبط من إعدادات السياسات.</span>
                 </div>
               )}
+              </>}
             </div>
             <div style={{ height: 1, background: C.line }} />
 
@@ -314,7 +321,7 @@ export default function Page() {
           <div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
             <Row dark label="المجموع الفرعي" value={`${money(sub, false)} ل.س`} />
-            <Row dark label={`الخصم (${dPct}%)`} value={`− ${money(dAmt, false)} ل.س`} />
+            <Row dark label={offer ? `خصم (كود ${offer.code})` : `الخصم (${dPct}%)`} value={`− ${money(dAmt, false)} ل.س`} />
             {mode === "deferred" && <Row dark label="يبقى ذمة" value={`${money(Math.max(0, total - (Number(paidNow) || 0)), false)} ل.س`} />}
             <div style={{ position: "relative", height: 1, background: "rgba(255,255,255,0.18)", margin: "12px 0" }} />
             <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>المطلوب</div>
@@ -330,7 +337,7 @@ export default function Page() {
             <SumRow label="البنود" value={priced.length ? `${priced.reduce((s, l) => s + l.qty, 0)} بند` : "—"} />
             {who?.type === "appt" && <SumRow label="الأخصائية" value={who.appt.staff?.name ?? "—"} />}
             <SumRow label="طريقة الدفع" value={MODES.find((m) => m.k === mode)?.label} />
-            <SumRow label="الخصم" value={dAmt ? `${money(dAmt)} (${dPct}%)` : "—"} />
+            <SumRow label={offer ? `خصم (كود ${offer.code})` : "الخصم"} value={dAmt ? `${money(dAmt)} (${dPct}%)` : "—"} />
           </div>
 
           {prev && (

@@ -6,8 +6,9 @@ import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
 import { ErrorNote, Loading, Toggle } from "@/components/ui";
 import { initials } from "@/lib/data";
-import { createInvoice, customerName, financeError, getInvoice, listCashierQueue, listPatientPackages, type CashierAppt, type InvoiceRow } from "@/lib/db/finance";
+import { createInvoice, customerName, financeError, offerDiscount, type AppliedOffer, type CartLine, getInvoice, listCashierQueue, listPatientPackages, type CashierAppt, type InvoiceRow } from "@/lib/db/finance";
 import { useInvoicePrint, waHref, type PrintExtras } from "../../admin/finance/InvoicePrint";
+import { OfferCodeField } from "../../admin/finance/OfferCode";
 import { useQuery } from "@/lib/db/query";
 import { clock, money } from "@/lib/format";
 import { css } from "../css";
@@ -30,6 +31,7 @@ export default function Page() {
   const [selId, setSelId] = useState<string | null>(null);
   const [st, setSt] = useState({ m: 0, recv: "" });
   const [print, setPrint] = useState(false);
+  const [offer, setOffer] = useState<AppliedOffer | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
@@ -40,7 +42,11 @@ export default function Page() {
   if (k.gate) return k.gate;
   const doneCount = (q.data ?? []).filter((a) => a.status === "done").length;
   const pkg0 = (pk.data ?? []).find((p) => p.sessions_used < p.sessions_total && p.packages?.service_key === A?.service_key);
-  const TOTAL = A?.price || A?.services?.price || 0; // same rule as the server (booked price, else the service price)
+  const PRICE = A?.price || A?.services?.price || 0; // same rule as the server (booked price, else the service price)
+  const line: CartLine[] = A ? [{ kind: "service", ref: A.service_key, qty: 1, label: A.services?.name ?? A.service_key, unit_price: PRICE }] : [];
+  const code = st.m !== 2 ? offer : null; // a package session is free → no code on it
+  const DISC = code ? offerDiscount(code, line) : 0;
+  const TOTAL = PRICE - DISC;
   const methods = [0, 1, 2].map((i) => ({ pick: () => { if (i !== 2 || pkg0) setSt({ ...st, m: i }); },
     style: css("flex:1;height:72px;border-radius:24px;font-family:inherit;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" + (i === 2 && !pkg0 ? "opacity:0.45;" : "") +
       (st.m === i ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D;box-shadow:0 4px 12px rgba(123,70,135,0.06)")) }));
@@ -57,8 +63,8 @@ export default function Page() {
   const cash = st.m === 0, card = st.m === 1, pkg = st.m === 2;
   const recv = n(r), changeLabel = diff >= 0 ? "الباقي للمراجعة" : "المبلغ ناقص", change = n(Math.abs(diff)) + " ل.س";
   const changeStyle = css("font-size:30px;font-weight:700;font-family:var(--font-rubik),sans-serif;line-height:1.3;color:" + (diff >= 0 ? "#2E7D50" : "#B03D6A"));
-  const dueTxt = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : "بدون خصم";
-  const canIssue = !!A && !busy && (cash ? r >= TOTAL : card ? true : !!pkg0);
+  const dueTxt = st.m === 2 ? "0" : n(TOTAL), dueNote = st.m === 2 ? "تُخصم من الباقة" : code ? `كود ${code.code}` : "بدون خصم";
+  const canIssue = !!A && !busy && !(code && DISC <= 0) && (cash ? r >= TOTAL : card ? true : !!pkg0);
   const issue = async () => {
     if (!A) return;
     setBusy(true); setErr(null);
@@ -66,8 +72,9 @@ export default function Page() {
       const inv = await createInvoice({
         patientId: A.patient_id, appointmentId: A.id, walkInName: A.patient_id ? null : A.walk_in_name,
         // the price comes from the appointment on the server; with a package the server makes this line 0
-        lines: [{ kind: "service", ref: A.service_key, qty: 1, label: A.services?.name ?? A.service_key, unit_price: TOTAL }],
+        lines: line,
         discount: 0,
+        offerCode: code?.code ?? null,
         payments: pkg ? [{ method: "package", amount: 0 }] : [{ method: cash ? "cash" : "card", amount: TOTAL }],
         patientPackageId: pkg ? pkg0?.id : null,
       });
@@ -76,7 +83,7 @@ export default function Page() {
       const full: InvoiceRow = (await getInvoice(inv.id).catch(() => null)) ?? ({ ...inv, patients: A.patients ? { name: A.patients.name, file_no: A.patients.file_no, phone: A.patients.phone } : null, invoice_items: [], invoice_payments: [], appointments: null } as unknown as InvoiceRow);
       const d: Done = { inv: full, extras: { staff: k.staff?.name ?? null, received: cash ? r : null, change: cash ? Math.max(0, diff) : null } };
       setDone(d);
-      setSelId(null); setSt({ m: 0, recv: "" });
+      setSelId(null); setSt({ m: 0, recv: "" }); setOffer(null);
       if (print) receipt.print(d.inv, d.extras);
     } catch (e) { setErr(financeError(e)); }
     setBusy(false);
@@ -98,7 +105,7 @@ export default function Page() {
         {due.length > 1 && (
           <div className={KC.wrap} style={{ display: "flex", gap: 8, overflowX: "auto", flexShrink: 0 }}>
             {due.map((a) => (
-              <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDone(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
+              <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDone(null); setOffer(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
                 {nameOf(a)} · {clock(a.starts_at)}
               </button>
             ))}
@@ -155,21 +162,22 @@ export default function Page() {
                   <div style={{ fontSize: 13, color: C.sub2 }}>{[A.staff?.name, A.rooms?.name, `${A.minutes} دقيقة`].filter(Boolean).join(" · ")}
                   </div>
                 </div>
-                <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>{money(TOTAL)}
+                <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap" }}>{money(PRICE)}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderTop: "1px solid #EDE2F1", fontSize: 16 }}>
                 <span style={{ color: C.sub }}>المجموع
                 </span>
-                <span style={{ fontWeight: 700 }}>{money(TOTAL)}
+                <span style={{ fontWeight: 700 }}>{money(PRICE)}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderTop: "1px solid #EDE2F1", fontSize: 16 }}>
-                <span style={{ color: C.sub }}>الخصم
+                <span style={{ color: C.sub }}>{code ? `خصم (كود ${code.code})` : "الخصم"}
                 </span>
-                <span style={{ fontWeight: 700 }}>{pkg ? "رصيد باقة" : "لا يوجد"}
+                <span style={{ fontWeight: 700, color: code ? "#2E7D50" : undefined }}>{pkg ? "رصيد باقة" : code ? `− ${money(DISC)}` : "لا يوجد"}
                 </span>
               </div>
+              {!pkg && <div style={{ padding: "4px 0 14px" }}><OfferCodeField big lines={line} offer={offer} onChange={setOffer} /></div>}
             </div>
             <div style={{ backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", borderRadius: 30, padding: "20px 26px", color: C.white, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />

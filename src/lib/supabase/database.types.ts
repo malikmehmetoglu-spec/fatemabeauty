@@ -621,6 +621,8 @@ export type Database = {
           method: Database["public"]["Enums"]["pay_method"]
           no: string
           note: string | null
+          offer_code: string | null
+          offer_id: string | null
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
@@ -646,6 +648,8 @@ export type Database = {
           method?: Database["public"]["Enums"]["pay_method"]
           no?: string
           note?: string | null
+          offer_code?: string | null
+          offer_id?: string | null
           paid?: boolean
           patient_id?: string | null
           patient_package_id?: string | null
@@ -671,6 +675,8 @@ export type Database = {
           method?: Database["public"]["Enums"]["pay_method"]
           no?: string
           note?: string | null
+          offer_code?: string | null
+          offer_id?: string | null
           paid?: boolean
           patient_id?: string | null
           patient_package_id?: string | null
@@ -690,6 +696,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
           {
@@ -2326,6 +2339,10 @@ export type Database = {
       }
       cancel_order: { Args: { p_order: string }; Returns: undefined }
       cash_shift_expected: { Args: { p_shift: string }; Returns: number }
+      check_offer_code: {
+        Args: { p_code: string; p_items: Json; p_subtotal: number }
+        Returns: Json
+      }
       close_cash_shift: {
         Args: { p_counted: number; p_note?: string }
         Returns: {
@@ -2370,6 +2387,54 @@ export type Database = {
           method: Database["public"]["Enums"]["pay_method"]
           no: string
           note: string | null
+          offer_code: string | null
+          offer_id: string | null
+          paid: boolean
+          patient_id: string | null
+          patient_package_id: string | null
+          refund_cash: number
+          refund_shift_id: string | null
+          shift_id: string | null
+          subtotal: number
+          total: number
+          void: boolean
+          void_at: string | null
+          void_by: string | null
+          walk_in_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_invoice_with_code: {
+        Args: {
+          p_appointment: string
+          p_due_on?: string
+          p_items: Json
+          p_note?: string
+          p_offer_code: string
+          p_patient: string
+          p_patient_package?: string
+          p_payments: Json
+          p_walk_in_name?: string
+        }
+        Returns: {
+          amount_paid: number
+          appointment_id: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          discount_approved_by: string | null
+          due_on: string | null
+          id: string
+          method: Database["public"]["Enums"]["pay_method"]
+          no: string
+          note: string | null
+          offer_code: string | null
+          offer_id: string | null
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
@@ -2496,6 +2561,8 @@ export type Database = {
           method: Database["public"]["Enums"]["pay_method"]
           no: string
           note: string | null
+          offer_code: string | null
+          offer_id: string | null
           paid: boolean
           patient_id: string | null
           patient_package_id: string | null
@@ -2709,10 +2776,20 @@ export type Database = {
           status: Database["public"]["Enums"]["appointment_status"]
         }[]
       }
-      track_app_open: {
-        Args: { p_app?: string; p_channel: string; p_device_id: string; p_platform: string }
-        Returns: undefined
-      }
+      track_app_open:
+        | {
+            Args: { p_channel: string; p_device_id: string; p_platform: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_app: string
+              p_channel: string
+              p_device_id: string
+              p_platform: string
+            }
+            Returns: undefined
+          }
       transfer_location_stock: {
         Args: { p_from: string; p_items?: Json; p_note?: string; p_to: string }
         Returns: Json

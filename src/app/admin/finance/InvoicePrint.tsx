@@ -20,6 +20,7 @@ const methodsOf = (inv: InvoiceRow) => {
   const ms = [...new Set((inv.invoice_payments ?? []).filter((p) => p.amount > 0 || p.method === "package").map((p) => PAY_LABEL[p.method]))];
   return ms.length ? ms.join(" + ") : inv.paid ? PAY_LABEL[inv.method] : "آجل";
 };
+const discLabel = (inv: InvoiceRow) => (inv.offer_code ? `خصم (كود ${inv.offer_code})` : "الخصم");
 const paidOf = (inv: InvoiceRow) => (inv.invoice_payments ?? []).reduce((s, p) => s + p.amount, 0) || inv.amount_paid || 0;
 
 /** International number for wa.me (digits only, Syrian 09… → 9639…). Null when there is no usable number. */
@@ -42,7 +43,7 @@ export function waText(inv: InvoiceRow, extras: PrintExtras = {}) {
     "",
     ...(inv.invoice_items ?? []).map((x) => `- ${x.label}${x.qty > 1 ? ` × ${x.qty}` : ""}: ${money(x.qty * x.unit_price)}`),
     "",
-    ...(inv.discount > 0 ? [`الخصم: ${money(inv.discount)}`] : []),
+    ...(inv.discount > 0 ? [`${discLabel(inv)}: ${money(inv.discount)}`] : []),
     `الإجمالي: ${money(inv.total)}`,
     `المدفوع: ${money(paidOf(inv))} (${methodsOf(inv)})`,
     ...(left > 0 ? [`المتبقي: ${money(left)}${inv.due_on ? ` · يستحق ${inv.due_on}` : ""}`] : []),
@@ -81,7 +82,7 @@ export function ReceiptSheet({ inv, extras = {} }: { inv: InvoiceRow; extras?: P
       {(inv.invoice_items ?? []).map((x) => row(<>{x.label}{x.qty > 1 ? <span dir="ltr"> × {x.qty}</span> : null}</>, money(x.qty * x.unit_price, false)))}
       <div className={css.dash} />
       {row("المجموع", money(inv.subtotal, false))}
-      {inv.discount > 0 && row("الخصم", `− ${money(inv.discount, false)}`)}
+      {inv.discount > 0 && row(discLabel(inv), `− ${money(inv.discount, false)}`)}
       {row("الإجمالي", money(inv.total), true)}
       {row("المدفوع", money(paidOf(inv)))}
       {row("طريقة الدفع", methodsOf(inv))}
