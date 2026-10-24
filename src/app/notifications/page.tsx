@@ -12,7 +12,7 @@ import { Wait } from "../account/Wait";
 
 type Kind = "appt" | "offer" | "care";
 type Note = { id: string; icon: string; title: string; time: string; body: string; kind: string; highlight?: boolean; link?: string | null };
-const ICON: Record<string, string> = { appt: "cal", offer: "gift", care: "drop", queue: "clock", waitlist: "refresh", order: "bag", written_consult: "msg", session_note: "clip", intake: "clip" };
+const ICON: Record<string, string> = { appt: "cal", offer: "gift", care: "drop", queue: "clock", waitlist: "refresh", order: "bag", written_consult: "msg", package_request: "gift", package_activated: "gift", session_note: "clip", intake: "clip" };
 
 function toNote(n: Notification): Note {
   const mins = Math.round((Date.now() - new Date(n.created_at).getTime()) / 60000);

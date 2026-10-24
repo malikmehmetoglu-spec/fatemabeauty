@@ -5,11 +5,13 @@
  * Live data: the package and its service from Supabase.
  */
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
 import { Circ, DarkCard, EmptyState, ErrorNote, Icon, Loading, PrimaryButton } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
+import { useSession } from "@/lib/supabase/session";
+import { cancelPackageRequest, myPendingPackageRequests, prError, submitPackageRequest } from "@/lib/db/packageRequests";
 import { getPackage, getService, packageSaving, serviceIcon } from "@/lib/db/catalog";
 import { money } from "@/lib/format";
 import { C, CARD } from "@/lib/tokens";
@@ -22,6 +24,21 @@ function Detail() {
   const id = useSearchParams().get("id") ?? "";
   const { data: pkg, loading, error } = useQuery(["catalog", "package", id], () => getPackage(id), { enabled: !!id });
   const { data: svc } = useQuery(["catalog", "service", pkg?.service_key], () => getService(pkg!.service_key), { enabled: !!pkg });
+  const { patient } = useSession();
+  const pendQ = useQuery(["pkgreq", "mine", patient?.id], myPendingPackageRequests, { enabled: !!patient });
+  const pending = pendQ.data?.find((r) => r.package_id === id);
+  const [sheet, setSheet] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function submit() {
+    setBusy(true); setErr("");
+    try { await submitPackageRequest(id); setSheet(false); } catch (e) { setErr(prError(e)); } finally { setBusy(false); }
+  }
+  async function cancel() {
+    if (!pending) return;
+    setBusy(true); setErr("");
+    try { await cancelPackageRequest(pending.id); } catch (e) { setErr(prError(e)); } finally { setBusy(false); }
+  }
 
   if (!id || (!loading && !error && !pkg)) return (
     <PhoneScreen gap={12}>
@@ -107,7 +124,46 @@ function Detail() {
         </div>
       </div>
 
-      <PrimaryButton href={R.Payments} style={{ marginTop: "auto", flexShrink: 0 }}>اشتري الباقة</PrimaryButton>
+      {err && !sheet && <ErrorNote>{err}</ErrorNote>}
+      {pending ? (
+        <div role="status" style={{ ...CARD, marginTop: "auto", flexShrink: 0, borderRadius: 24, padding: "14px 16px", background: "#FFF6E8", border: "1px solid #F3DFB8", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Circ icon="clock" size={40} iconSize={18} color="#B7862F" />
+            <div style={{ lineHeight: 1.45 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}>طلبكِ قيد الانتظار</div>
+              <div style={{ fontSize: 12.5, color: C.sub }}>ادفعي في المركز لتفعيل الباقة، وتصلكِ رسالة فور تفعيلها.</div>
+            </div>
+          </div>
+          <button type="button" onClick={cancel} disabled={busy} style={{ alignSelf: "flex-start", height: 36, padding: "0 16px", borderRadius: 18, border: "1px solid #E8D3C0", background: C.white, color: C.sub, fontSize: 13, fontWeight: 600 }}>
+            {busy ? "لحظة…" : "إلغاء الطلب"}
+          </button>
+        </div>
+      ) : patient ? (
+        <PrimaryButton onClick={() => { setErr(""); setSheet(true); }} disabled={pendQ.loading} style={{ marginTop: "auto", flexShrink: 0 }}>طلب اشتراك</PrimaryButton>
+      ) : (
+        <PrimaryButton href={R.Login} style={{ marginTop: "auto", flexShrink: 0 }}>سجّلي الدخول لطلب الباقة</PrimaryButton>
+      )}
+
+      {sheet && (
+        <div role="dialog" aria-modal="true" aria-label="تأكيد طلب الاشتراك" onClick={() => !busy && setSheet(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(40,20,50,0.38)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, background: C.white, borderRadius: "28px 28px 0 0", padding: "18px 20px calc(20px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>
+            <span aria-hidden style={{ alignSelf: "center", width: 44, height: 5, borderRadius: 3, background: "#E6D8EB" }} />
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>طلب اشتراك في الباقة</h2>
+            <div style={{ borderRadius: 20, background: "#F8F2FA", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, fontSize: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ color: C.sub2 }}>الباقة</span><b>{pkg.name}</b></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ color: C.sub2 }}>عدد الجلسات</span><b>{pkg.sessions} جلسات</b></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ color: C.sub2 }}>السعر</span><b><span className="latin">{money(pkg.price, false)}</span> ل.س</b></div>
+            </div>
+            <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6, display: "flex", gap: 6 }}>
+              <Icon name="info" color={C.accentMid} size={16} />لا يُدفع شيء الآن. ادفعي في المركز، وتُفعَّل الباقة في حسابكِ فوراً بعد الدفع.
+            </div>
+            {err && <ErrorNote>{err}</ErrorNote>}
+            <PrimaryButton onClick={submit} disabled={busy}>{busy ? "جارٍ الإرسال…" : "تأكيد الطلب"}</PrimaryButton>
+            <button type="button" onClick={() => setSheet(false)} disabled={busy} style={{ height: 44, border: "none", background: "transparent", color: C.sub, fontSize: 14, fontWeight: 600 }}>تراجع</button>
+          </div>
+        </div>
+      )}
     </PhoneScreen>
   );
 }

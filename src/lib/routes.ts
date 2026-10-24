@@ -111,6 +111,7 @@ export const R = {
   W_Mira: "/admin/mira/",
   W_WrittenConsults: "/admin/written-consults/",
   W_WcPayments: "/admin/finance/written-consults/",
+  W_PkgRequests: "/admin/finance/package-requests/",
   W_FatemaDay: "/admin/fatema-day/",
   W_Services: "/admin/settings/services/",
   W_Rooms: "/admin/settings/rooms/",

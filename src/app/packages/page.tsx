@@ -11,6 +11,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listMyPackages, listPackages, listServices, serviceIcon } from "@/lib/db/catalog";
 import { useSession } from "@/lib/supabase/session";
+import { myPendingPackageRequests } from "@/lib/db/packageRequests";
 import { money } from "@/lib/format";
 import { C, CARD, DARK, SOFT_PANEL } from "@/lib/tokens";
 
@@ -19,6 +20,8 @@ export default function PackagesPage() {
   const { data: offers, loading, error } = useQuery(["catalog", "packages"], () => listPackages());
   const { data: services } = useQuery(["catalog", "services"], listServices);
   const { data: mine } = useQuery(["catalog", "my-packages", patient?.id], () => listMyPackages(patient!.id), { enabled: !!patient });
+  const { data: pend } = useQuery(["pkgreq", "mine", patient?.id], myPendingPackageRequests, { enabled: !!patient });
+  const isPending = (id: string) => !!pend?.some((r) => r.package_id === id);
   const current = mine?.find((p) => p.sessions_used < p.sessions_total);
   const svcOf = (key: string) => services?.find((x) => x.key === key);
   const suggested = (offers ?? []).filter((p) => p.id !== current?.package_id);
@@ -65,6 +68,7 @@ export default function PackagesPage() {
             <div style={{ flexGrow: 1, lineHeight: 1.35 }}>
               <div style={{ fontSize: 14.5, fontWeight: 700 }}>{p.name}</div>
               <div style={{ fontSize: 12, color: C.sub2 }}>{p.sessions} جلسات</div>
+              {isPending(p.id) && <Tag kind="amber" style={{ marginTop: 4, height: 24, fontSize: 11.5 }}>طلبكِ قيد الانتظار</Tag>}
             </div>
             <div style={{ textAlign: "left", lineHeight: 1.3 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: C.accent }}>{money(p.price, false)}</div>

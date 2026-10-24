@@ -13,6 +13,7 @@ import { useQuery } from "@/lib/db/query";
 import { pendingCount } from "@/lib/db/bookingRequests";
 import { disableAlerts, miraAttention } from "@/lib/db/mira";
 import { dueCount } from "@/lib/db/writtenConsult";
+import { pendingPackageCount } from "@/lib/db/packageRequests";
 import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
@@ -70,6 +71,7 @@ const SUB_ROLES: [string, Role[]][] = [
   [R.W_Expenses, ["accountant"]],
   [R.W_FinanceReports, ["accountant"]],
   [R.W_WcPayments, []],
+  [R.W_PkgRequests, []],
   ["/admin/finance/commissions/", ["accountant"]],
   [R.W_Products, []],
   ["/admin/store/storefront/", []],
@@ -117,6 +119,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const cons = !!staff?.is_consultant;
   const allowed = !role || (canSee(role, active, cons) && pathOk(role, path));
   const wcDue = useQuery(["wc", "due"], dueCount, { enabled: !!role && canSee(role, "الاستشارات المكتوبة", cons) });
+  const pkgPend = useQuery(["pkgreq", "count"], pendingPackageCount, { enabled: !!role && full(role) });
   useEffect(() => { if (role && active === "لوحة القيادة" && !canSee(role, active)) router.replace(homeFor(role)); }, [role, active, router]);
   if (loading || !staff || !role) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
@@ -142,11 +145,11 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
           {NAV.filter(([, sec]) => canSee(role, sec, cons)).map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
-                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}{label === "الاستشارات المكتوبة" && (wcDue.data ?? 0) > 0 && <span title="استشارات بانتظار الرد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{wcDue.data}</span>}
+                <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}{label === "الاستشارات المكتوبة" && (wcDue.data ?? 0) > 0 && <span title="استشارات بانتظار الرد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{wcDue.data}</span>}{label === "المالية" && (pkgPend.data ?? 0) > 0 && <span title="طلبات باقات بانتظار الدفع" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pkgPend.data}</span>}
               </Link>
             ) : (
               <Link key={label} href={href} style={{ height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: C.navText }}>
-                <Icon name={icon} color={C.navIcon} size={19} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}{label === "الاستشارات المكتوبة" && (wcDue.data ?? 0) > 0 && <span title="استشارات بانتظار الرد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{wcDue.data}</span>}
+                <Icon name={icon} color={C.navIcon} size={19} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}{label === "الاستشارات المكتوبة" && (wcDue.data ?? 0) > 0 && <span title="استشارات بانتظار الرد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{wcDue.data}</span>}{label === "المالية" && (pkgPend.data ?? 0) > 0 && <span title="طلبات باقات بانتظار الدفع" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pkgPend.data}</span>}
               </Link>
             ),
           )}
@@ -200,7 +203,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
 
 const SUB: Partial<Record<AdminSection, [string, string][]>> = {
   "المواعيد": [["التقويم", R.W_Calendar], ["طلبات الحجز", R.W_BookingRequests]],
-  "المالية": [["الكاشير", R.W_Cashier], ["الفواتير", R.W_Invoices], ["الاستشارات المكتوبة", R.W_WcPayments], ["الذمم والأقساط", R.W_Receivables], ["المصاريف", R.W_Expenses], ["التقارير المالية", R.W_FinanceReports]],
+  "المالية": [["الكاشير", R.W_Cashier], ["الفواتير", R.W_Invoices], ["الاستشارات المكتوبة", R.W_WcPayments], ["طلبات الباقات", R.W_PkgRequests], ["الذمم والأقساط", R.W_Receivables], ["المصاريف", R.W_Expenses], ["التقارير المالية", R.W_FinanceReports]],
   "المتجر": [["المنتجات", R.W_Products], ["الطلبات والتوصيل", R.W_Orders], ["واجهة المتجر", "/admin/store/storefront/"]],
   "المخزون والأجهزة": [["المخزون", R.W_Inventory], ["المشتريات", R.W_Purchases], ["الجرد", R.W_Stocktake], ["المواقع", "/admin/inventory/locations/"], ["الأجهزة", R.W_Devices]],
   "الإعدادات": [["الخدمات", R.W_Services], ["الغرف والأجهزة", R.W_Rooms], ["الأدوار والصلاحيات", R.W_Roles], ["السياسات", R.W_Policies], ["النداء", R.W_CallSettings], ["سجل العمليات", R.W_Audit]],
