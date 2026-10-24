@@ -1,0 +1,17 @@
+# Used by the CLI when deploying Edge Functions (see .github/workflows/deploy-functions.yml).
+project_id = "btcyrzvaexmgffeamlmg"
+
+[functions.fx-sync]
+verify_jwt = false
+[functions.send-sms]
+verify_jwt = false
+[functions.staff-push]
+verify_jwt = false
+[functions.mira]
+verify_jwt = true
+[functions.maraiti]
+verify_jwt = true
+[functions.staff-admin]
+verify_jwt = true
+[functions.staff-sms]
+verify_jwt = true

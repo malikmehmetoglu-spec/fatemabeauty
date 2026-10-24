@@ -1,0 +1,36 @@
+# Deploys changed Supabase Edge Functions on every push to main.
+# Needs the repository secret SUPABASE_ACCESS_TOKEN.
+name: Deploy Supabase functions
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/functions/**"]
+  workflow_dispatch:
+    inputs:
+      all:
+        description: "Deploy every function"
+        type: boolean
+        default: false
+concurrency: deploy-functions
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT: btcyrzvaexmgffeamlmg
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - name: Deploy
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.all }}" = "true" ]; then
+            fns=$(ls supabase/functions)
+          else
+            fns=$(git diff --name-only ${{ github.event.before }} HEAD -- supabase/functions | cut -d/ -f3 | sort -u)
+          fi
+          for f in $fns; do
+            [ -d "supabase/functions/$f" ] || continue
+            echo "::group::$f"; supabase functions deploy "$f" --project-ref "$PROJECT" --use-api; echo "::endgroup::"
+          done
