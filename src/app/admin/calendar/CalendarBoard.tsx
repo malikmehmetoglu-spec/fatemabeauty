@@ -83,8 +83,8 @@ function StatusChip({ s }: { s: Status }) {
 }
 
 /** The one appointment card used everywhere (grid, week, phone agenda). */
-function ApptCard({ a, by, mode, style, compact, narrow, onOpen }: {
-  a: Appointment; by: "room" | "specialist" | "both"; mode: "grid" | "week" | "agenda"; style?: CSSProperties; compact?: boolean; narrow?: boolean; onOpen: (a: Appointment) => void;
+function ApptCard({ a, by, mode, style, compact, narrow, px = 999, onOpen }: {
+  a: Appointment; by: "room" | "specialist" | "both"; mode: "grid" | "week" | "agenda"; style?: CSSProperties; compact?: boolean; narrow?: boolean; px?: number; onOpen: (a: Appointment) => void;
 }) {
   const vip = isVip(a);
   const range = `${timeOf(a)}–${clock(endsAt(a))}`;
@@ -123,9 +123,9 @@ function ApptCard({ a, by, mode, style, compact, narrow, onOpen }: {
     <button type="button" className={cls} style={{ ...cardVars(a), ...style }} onClick={() => onOpen(a)} title={title}>
       {nameLine}
       <div className={S.meta}><span className={S.time}>{range}</span>{ext && <span style={{ color: GOLD_DEEP, fontWeight: 600 }}>{ext}</span>}</div>
-      {svc && <div className={S.meta} style={{ color: C.ink }}>{svc}</div>}
-      {where && <div className={S.meta}>{where}</div>}
-      {!narrow && (
+      {svc && px >= 62 && <div className={S.meta} style={{ color: C.ink }}>{svc}</div>}
+      {where && px >= 82 && <div className={S.meta}>{where}</div>}
+      {!narrow && px >= (where ? 104 : 84) && (
         <div className={S.chips}>
           <StatusChip s={a.status} />
           {pay && <span className={S.pay}><span className={S.dot} style={{ background: pay.paid ? "#3FA46A" : "#E0A23A" }} />{pay.paid ? "مدفوع" : "غير مدفوع"}</span>}
@@ -283,7 +283,7 @@ export function CalendarBody() {
       ) : (
         <>
           <div className={S.board} ref={boardRef}>
-            <div className={S.grid} style={{ gridTemplateColumns: `60px ${placedByCol.map((p) => `minmax(${Math.max(cols.length > 4 ? 170 : 200, Math.max(1, ...p.map((x) => x.lanes)) * 128)}px, ${Math.max(1, ...p.map((x) => x.lanes))}fr)`).join(" ")}` }}>
+            <div className={S.grid} style={{ gridTemplateColumns: `60px ${placedByCol.map((p) => `minmax(${Math.max(cols.length > 3 ? 160 : 190, Math.max(1, ...p.map((x) => x.lanes)) * 112)}px, ${Math.min(2, Math.max(1, ...p.map((x) => x.lanes)))}fr)`).join(" ")}` }}>
               <div className={S.corner} />
               {cols.map((c) => {
                 const n = list.filter((a) => inCol(c, a) && a.status !== "cancelled").length;
@@ -293,7 +293,7 @@ export function CalendarBody() {
                   <div key={c.id ?? "none"} className={cx(S.head, c.secondary && S.headSecondary)}>
                     <div className={S.headName} title={c.name}>{c.name}</div>
                     <div className={S.headMeta}>
-                      <span className={S.headCount}>{n > 0 ? apptCount(n) : "—"}</span>
+                      {n > 0 ? <span className={S.headCount}>{apptCount(n)}</span> : <span style={{ color: "#C9BCCE" }}>—</span>}
                       {w && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span>{w.length ? <span className="latin" dir="ltr">{w.map((x) => `${hm(x.from)}–${hm(x.to)}`).join(" · ")}</span> : <span>لا دوام اليوم</span>}</>}
                       {c.secondary && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span><span>مواعيد قديمة بلا {by === "room" ? "غرفة" : "أخصائية"}</span></>}
                     </div>
@@ -328,7 +328,7 @@ export function CalendarBody() {
                       const top = yOf(p.s) + 1, height = Math.max(MIN_H, ((p.e - p.s) * HOUR) / 60 - 2);
                       const gap = 3, pct = 100 / p.lanes;
                       return (
-                        <ApptCard key={p.a.id} a={p.a} by={by} mode="grid" onOpen={setOpen} compact={p.e - p.s <= 30} narrow={p.lanes >= 3}
+                        <ApptCard key={p.a.id} a={p.a} by={by} mode="grid" onOpen={setOpen} compact={p.e - p.s <= 30} narrow={p.lanes >= 3} px={height}
                           style={{ top, height, insetInlineStart: `calc(${p.lane * pct}% + ${gap}px)`, width: `calc(${pct}% - ${gap * 2}px)` }} />
                       );
                     })}

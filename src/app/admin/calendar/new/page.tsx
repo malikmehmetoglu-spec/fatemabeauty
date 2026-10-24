@@ -14,7 +14,8 @@ import {
 import { getPatient } from "@/lib/db/patients";
 import { dayWindows, listStaffHours, rangesOn, worksAt } from "@/lib/db/staff";
 import { weekday } from "@/lib/db/appointments";
-import { clock, dayKey } from "@/lib/format";
+import { atDamascus, clock, dayKey } from "@/lib/format";
+import { consultWarnings } from "@/lib/db/consultTime";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
 import { GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
@@ -125,6 +126,9 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
     if (notProvider && !confirm(`${spName} لا تقدّم خدمة «${svc.short_name}» حسب «الخدمات التي تقدّمها». الحجز رغم ذلك؟`)) return;
     if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
+    // consultations: «قالب الاستشارات», rest between consultations and the daily cap — warnings only for staff
+    const cw = svc.is_consultation && sp ? await consultWarnings(svc.key, atDamascus(walk ? dayKey() : day, t), sp, lvMin) : [];
+    if (cw.length && !confirm(`${cw.join("\n")}\n\nالحجز رغم ذلك؟`)) return;
     setBusy(true);
     try {
       let pid = patient?.id ?? null;

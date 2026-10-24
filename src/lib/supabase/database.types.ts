@@ -393,6 +393,129 @@ export type Database = {
           },
         ]
       }
+      consult_blocks: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends: string
+          id: string
+          kind: string
+          note: string | null
+          staff_id: string
+          starts: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends: string
+          id?: string
+          kind: string
+          note?: string | null
+          staff_id: string
+          starts: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          staff_id?: string
+          starts?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consult_blocks_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consult_intake: {
+        Row: {
+          allergies: string | null
+          appointment_id: string
+          concern: string | null
+          created_at: string
+          extra: Json
+          goals: string | null
+          id: string
+          medications: string | null
+          patient_id: string
+          pregnant: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          since: string | null
+          submitted_at: string
+          tried: string | null
+        }
+        Insert: {
+          allergies?: string | null
+          appointment_id: string
+          concern?: string | null
+          created_at?: string
+          extra?: Json
+          goals?: string | null
+          id?: string
+          medications?: string | null
+          patient_id: string
+          pregnant?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          since?: string | null
+          submitted_at?: string
+          tried?: string | null
+        }
+        Update: {
+          allergies?: string | null
+          appointment_id?: string
+          concern?: string | null
+          created_at?: string
+          extra?: Json
+          goals?: string | null
+          id?: string
+          medications?: string | null
+          patient_id?: string
+          pregnant?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          since?: string | null
+          submitted_at?: string
+          tried?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consult_intake_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consult_intake_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consult_intake_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           id: string
@@ -1767,6 +1890,7 @@ export type Database = {
           description: string
           device_id: string | null
           is_consultation: boolean
+          is_online: boolean
           key: string
           minutes: number
           name: string
@@ -1784,6 +1908,7 @@ export type Database = {
           description?: string
           device_id?: string | null
           is_consultation?: boolean
+          is_online?: boolean
           key: string
           minutes: number
           name: string
@@ -1801,6 +1926,7 @@ export type Database = {
           description?: string
           device_id?: string | null
           is_consultation?: boolean
+          is_online?: boolean
           key?: string
           minutes?: number
           name?: string
@@ -2974,6 +3100,42 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      consult_intake_review: {
+        Args: { p_appointment: string; p_reviewed?: boolean }
+        Returns: {
+          allergies: string | null
+          appointment_id: string
+          concern: string | null
+          created_at: string
+          extra: Json
+          goals: string | null
+          id: string
+          medications: string | null
+          patient_id: string
+          pregnant: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          since: string | null
+          submitted_at: string
+          tried: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "consult_intake"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      consult_warnings: {
+        Args: {
+          p_ignore?: string
+          p_minutes?: number
+          p_service: string
+          p_specialist: string
+          p_starts: string
+        }
+        Returns: string[]
       }
       create_invoice: {
         Args: {

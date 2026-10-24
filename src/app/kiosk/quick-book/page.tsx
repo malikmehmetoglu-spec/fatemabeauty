@@ -12,7 +12,8 @@ import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
 import { DEFAULT_HOURS, getHours, provides, serviceProviders, weekday } from "@/lib/db/appointments";
 import { useQuery } from "@/lib/db/query";
-import { clock, dayKey } from "@/lib/format";
+import { atDamascus, clock, dayKey } from "@/lib/format";
+import { consultWarnings } from "@/lib/db/consultTime";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
@@ -126,6 +127,8 @@ export default function Page() {
   const book = async () => {
     if (!s || slot === null) return;
     if (slotOff && !confirm(p ? `خارج دوام الأخصائية: ${p.name} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟` : "خارج أوقات الدوام: لا أحد من الفريق يداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟")) return;
+    const cw = s.is_consultation && p ? await consultWarnings(s.key, atDamascus(dayKey(), fmt(slot)), p.id, DUR) : [];
+    if (cw.length && !confirm(`${cw.join("\n")}\n\nتأكيد الحجز رغم ذلك؟`)) return;
     setBusy(true); setErr(null);
     try {
       await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null, level: lvl?.id ?? null });

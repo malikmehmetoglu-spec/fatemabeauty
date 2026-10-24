@@ -54,7 +54,7 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
       const saved = await saveService({
         key: service?.key, name: f.name.trim(), short_name: f.short.trim() || f.name.trim(), description: f.desc.trim(),
         price: Math.round(price), price_currency: f.cur, category_id: f.cat || null, price_from: f.from, minutes: Math.round(minutes), room_id: f.room || null, device_id: f.device || null,
-        bookable_online: f.online, is_consultation: f.consult, active: f.active, sort: Number(f.sort) || 0,
+        bookable_online: f.online, is_consultation: f.consult, is_online: service?.is_online ?? false, active: f.active, sort: Number(f.sort) || 0,
       });
       // a new service is provided automatically by members without assignments; only explicit changes are written
       if (saved && who && prov.data && asg.data) {

@@ -18,6 +18,7 @@ import { AR_DAYS } from "@/lib/data";
 import { C, SHB } from "@/lib/tokens";
 import { StaffAvatar, TeamTabs, errText, useTeam } from "../team-ui";
 import css from "./hours.module.css";
+import { ConsultTemplate } from "./ConsultTemplate";
 import { getReserveSettings, saveReserveSettings, GOLD, GOLD_DEEP, type ReserveSettings } from "@/lib/db/vip";
 
 /** Syrian week: Saturday first. */
@@ -211,6 +212,11 @@ function MemberCard({ s, clinic, saved, canManage }: { s: Staff; clinic: Hours; 
               <button type="button" className={css.save} disabled={busy || !dirty} onClick={() => save(week)}>{busy ? "جارٍ الحفظ…" : "حفظ الدوام"}</button>
             </div>
           )}
+        </div>
+      )}
+      {s.is_consultant && (
+        <div className={css.body}>
+          <ConsultTemplate staffId={s.id} name={s.name} canManage={canManage} />
         </div>
       )}
     </Card>
