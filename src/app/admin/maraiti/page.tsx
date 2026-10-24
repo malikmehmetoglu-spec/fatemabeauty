@@ -136,6 +136,7 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
   const acts = useQuery(["maraiti", "actions"], maraitiActions);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState("");
   const [offline, setOffline] = useState(false);
   const [err, setErr] = useState("");
   const [listening, setListening] = useState(false);
@@ -158,7 +159,7 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
   }, [msgs.data, acts.data]);
   const unseen = (msgs.data ?? []).some((m) => m.role === "assistant" && !m.seen_at);
   useEffect(() => { if (unseen) void maraitiSeen(); }, [unseen]);
-  useEffect(() => { const b = box.current; if (b) b.scrollTop = b.scrollHeight; }, [items.length, sending]);
+  useEffect(() => { const b = box.current; if (b) b.scrollTop = b.scrollHeight; }, [items.length, sending, pending]);
 
   const recent = (acts.data ?? []).filter((a) => a.status !== "pending").slice(0, 3);
   const cards = (msgs.data ?? []).filter((m) => m.kind);
@@ -184,11 +185,14 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
     const t = text.trim();
     if (!t || sending) return;
     sr.current?.stop();
-    setSending(true); setErr("");
-    const r = await askMaraiti(t, { replyTo: replyTo ? { kind: replyTo.kind, payload: replyTo.payload } : null, context: cards.slice(-4) });
-    setSending(false);
+    // the message leaves the box at once and shows as her bubble while Maraiti answers
+    const rt = replyTo;
+    setSending(true); setErr(""); setPending(t); setText(""); setReplyTo(null);
+    const r = await askMaraiti(t, { replyTo: rt ? { kind: rt.kind, payload: rt.payload } : null, context: cards.slice(-4) });
+    setSending(false); setPending("");
+    if (r === "offline" || r === "error") { setText(t); setReplyTo(rt); }
     if (r === "offline") setOffline(true);
-    else { setOffline(false); setText(""); setReplyTo(null); if (r === "error") setErr("ما قدرت جاوبكِ هلّق. جرّبي بعد شوي."); }
+    else { setOffline(false); if (r === "error") setErr("ما قدرت جاوبكِ هلّق. جرّبي بعد شوي."); }
   }
 
   function startReply(m: MaraitiMessage) {
@@ -206,7 +210,8 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
         ) : items.map((it) => it.a ? <DraftCard key={it.a.id} a={it.a} />
           : it.m!.kind ? <ProactiveCard key={it.m!.id} m={it.m!} onReply={startReply} active={replyTo?.payload === it.m!.payload} />
           : <Bubble key={it.m!.id} m={it.m!} />)}
-        {sending && <div style={{ alignSelf: "flex-end", fontSize: 13, color: C.sub2, padding: "6px 10px" }}>مرايتي عم تفكّر…</div>}
+        {pending && <div style={{ alignSelf: "flex-start", maxWidth: "80%", padding: "10px 14px", borderRadius: 20, fontSize: 14.5, lineHeight: 1.85, whiteSpace: "pre-wrap", ...SELECTED }}>{pending}</div>}
+        {sending && <div style={{ alignSelf: "flex-end", fontSize: 13, color: C.sub2, padding: "6px 10px" }}>مرايتي عم تكتب…</div>}
       </div>
 
       {recent.length > 0 && (
@@ -240,7 +245,7 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
             style={{ width: 50, height: 50, borderRadius: 25, border: listening ? "none" : "1px solid #EADCF0", background: listening ? "#B03D6A" : C.white, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <Icon name="mic" size={20} color={listening ? "#fff" : C.accent} />
           </button>
-          <SubmitButton onClick={send} busy={sending} disabled={!text.trim()}>{replyTo ? "جهّزي الرد" : "أرسلي"}</SubmitButton>
+          <SubmitButton onClick={send} disabled={sending || !text.trim()}>{replyTo ? "جهّزي الرد" : "أرسلي"}</SubmitButton>
         </div>
       </div>
     </section>
