@@ -43,9 +43,9 @@ export default function BeforeAfterPage() {
 
   return (
     <PhoneScreen>
-      <TopBar title="صور قبل وبعد" back={R.Journey} />
+      <TopBar title="صور الوجه" back={R.Journey} />
       {!me ? <Wait loading={loading} error={error} /> : lp ? <Wait loading /> : list.length < 1 ? (
-        <EmptyState icon="camera" title="لا صور بعد" text="تلتقط الأخصائية صوراً لبشرتكِ قبل الجلسات وبعدها، وتظهر هنا لتقارني تقدّمكِ." />
+        <EmptyState icon="camera" title="لا صور في ملفكِ" text="تظهر هنا صور وجهكِ من الاستشارات إن وافقتِ على التصوير." />
       ) : (<>
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
         {angles.map((k) => <Chip key={k} selected={angle === k} onClick={() => { setAngle(k); setAfter(-1); }}>{angleLabel(k)}</Chip>)}
@@ -103,7 +103,7 @@ export default function BeforeAfterPage() {
         <Circ icon="lock" size={38} iconSize={17} />
         <div style={{ lineHeight: 1.4 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>صوركِ خاصة بكِ</div>
-          <div style={{ fontSize: 12, color: C.sub2 }}>لا يراها إلا أنتِ وفريق المركز المعالج</div>
+          <div style={{ fontSize: 12, color: C.sub2 }}>صور الوجه فقط · لا يراها إلا أنتِ وفريق المركز · يمكنكِ طلب حذفها</div>
         </div>
       </div>
     </PhoneScreen>

@@ -99,7 +99,7 @@ export async function pendingConsentsToday() {
   const appts = must(await supabase.from("appointments").select("id, starts_at, patient_id, service_key, services(name), patients(name, file_no)")
     .gte("starts_at", from).lt("starts_at", to).in("status", ["pending", "confirmed", "checked_in"]).not("patient_id", "is", null).order("starts_at")) as unknown as PendingConsent[];
   if (!appts.length) return [];
-  const signed = must(await supabase.from("consents").select("patient_id, service_key, appointment_id").in("patient_id", appts.map((a) => a.patient_id))) ?? [];
+  const signed = must(await supabase.from("consents").select("patient_id, service_key, appointment_id").eq("kind", "treatment").in("patient_id", appts.map((a) => a.patient_id))) ?? [];
   return appts.filter((a) => !signed.some((s) => s.appointment_id === a.id || (s.patient_id === a.patient_id && s.service_key === a.service_key)));
 }
 
@@ -117,19 +117,39 @@ export const angleLabel = (k: string) => ANGLES.find((a) => a.key === k)?.label 
 export const STAGE_LABEL: Record<string, string> = { before: "قبل", after: "بعد", progress: "متابعة" };
 export type PhotoRow = Photo & { url: string | null };
 
+/**
+ * Privacy policy: only consultation face photos are shown (taken with a photo consent). Rows from any other visit
+ * (legacy, before the policy) stay in storage but are never displayed.
+ */
 export async function listPhotos(patientId: string): Promise<PhotoRow[]> {
-  const rows = must(await supabase.from("patient_photos").select("*").eq("patient_id", patientId).order("created_at")) ?? [];
+  const raw = must(await supabase.from("patient_photos").select("*, appointments(services(is_consultation))").eq("patient_id", patientId).order("created_at")) ?? [];
+  const rows = (raw as unknown as (Photo & { appointments: { services: { is_consultation: boolean } | null } | null })[])
+    .filter((r) => !!r.appointments?.services?.is_consultation)
+    .map(({ appointments: _a, ...r }) => r as Photo); // eslint-disable-line @typescript-eslint/no-unused-vars
   if (!rows.length) return [];
   const { data } = await supabase.storage.from("photos").createSignedUrls(rows.map((r) => r.path), 3600);
   return rows.map((r) => ({ ...r, url: data?.find((d) => d.path === r.path)?.signedUrl ?? null }));
 }
 
-export async function uploadPhoto(patientId: string, file: File, angle: string, stage: "before" | "after" | "progress", appointmentId: string | null) {
+/** Latest face-photo consent decision of a patient: signed («photo») or declined, with its date; null when never asked. */
+export async function photoConsentOf(patientId: string): Promise<{ signed: boolean; at: string } | null> {
+  const r = must(await supabase.from("consents").select("kind, signed_at").eq("patient_id", patientId).in("kind", ["photo", "photo_declined"]).order("signed_at", { ascending: false }).limit(1).maybeSingle());
+  return r ? { signed: r.kind === "photo", at: r.signed_at } : null;
+}
+
+/** The patient's consultation visits (the only visits photos may be attached to), newest first. */
+export async function consultVisits(patientId: string) {
+  const rows = must(await supabase.from("appointments").select("id, starts_at, status, services!inner(name, is_consultation)").eq("patient_id", patientId).eq("services.is_consultation", true).neq("status", "cancelled").order("starts_at", { ascending: false }).limit(30)) ?? [];
+  return rows as unknown as { id: string; starts_at: string; status: string; services: { name: string } }[];
+}
+
+export async function uploadPhoto(patientId: string, file: File, angle: string, stage: "before" | "after" | "progress", appointmentId: string) {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${patientId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("photos").upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(error.message);
-  must(await supabase.from("patient_photos").insert({ patient_id: patientId, path, angle, stage, appointment_id: appointmentId }));
+  const ins = await supabase.from("patient_photos").insert({ patient_id: patientId, path, angle, stage, appointment_id: appointmentId });
+  if (ins.error) { await supabase.storage.from("photos").remove([path]); throw new Error(ins.error.message); }
   invalidate("clinical");
 }
 

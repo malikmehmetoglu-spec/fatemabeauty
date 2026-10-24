@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { EmptyState, ErrorNote, Loading } from "@/components/ui";
 import { useRequireStaff } from "@/lib/supabase/session";
-import { getAppointment, listToday, personName, prepFor, serviceName, STATUS_AR, useNow, type Prep, type QueueAppt } from "@/lib/db/queue";
+import { getAppointment, isConsult, listToday, personName, prepFor, serviceName, STATUS_AR, useNow, type Prep, type QueueAppt } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { R } from "@/lib/routes";
 import { arDate, clock } from "@/lib/format";
@@ -78,7 +78,7 @@ export function KioskNav({ active }: { active: string }) {
 }
 
 /** Back button + title/subtitle + date pill: the header of the full-screen reception steps. */
-export function StepHeader({ back, title, sub, flow }: { back: string; title: ReactNode; sub?: ReactNode; flow?: { step: number; skip?: string } }) {
+export function StepHeader({ back, title, sub, flow }: { back: string; title: ReactNode; sub?: ReactNode; flow?: FlowProps }) {
   return (
     <div className={K.hdr} style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
       <Link href={back} aria-label="رجوع" style={{ width: 56, height: 56, borderRadius: 28, background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -93,15 +93,18 @@ export function StepHeader({ back, title, sub, flow }: { back: string; title: Re
   );
 }
 
-const FLOW_STEPS = ["الأهلية", "الموافقة", "الصور"];
+/** Prep steps: care sessions = eligibility + consent; consultations add the face-photo consent and face photos. */
+export const flowSteps = (consult: boolean) => (consult ? ["الأهلية", "الموافقة", "موافقة التصوير", "صور الوجه"] : ["الأهلية", "الموافقة"]);
+type FlowProps = { step: number; consult?: boolean; skip?: string };
 const ghostBtn = { height: 52, padding: "0 18px", borderRadius: 26, background: C.white, boxShadow: SHB, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, whiteSpace: "nowrap" as const, flexShrink: 0 };
 
 /** Session-prep header actions: step indicator, «تخطّي» (to the next step) and «العودة إلى الاستقبال». */
-function FlowActions({ step, skip }: { step: number; skip?: string }) {
+function FlowActions({ step, consult = false, skip }: FlowProps) {
+  const steps = flowSteps(consult);
   return (
     <div className={K.flowAct} style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
       {step > 0 && <span className={K.flowStep} style={{ fontSize: 14, color: C.sub2, fontWeight: 600, whiteSpace: "nowrap" }}>
-        الخطوة <b className="latin" style={{ color: C.accent }}>{step}</b> من 3 · {FLOW_STEPS[step - 1]}
+        الخطوة <b className="latin" style={{ color: C.accent }}>{step}</b> من <span className="latin">{steps.length}</span> · {steps[step - 1]}
       </span>}
       {skip && <Link href={skip} style={{ ...ghostBtn, color: C.sub }}>تخطّي
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
@@ -114,9 +117,15 @@ function FlowActions({ step, skip }: { step: number; skip?: string }) {
   );
 }
 
-/* ---------- session preparation (eligibility → consent → before photos; after photos) ---------- */
+/* ---------- session preparation ----------
+ * Care sessions: eligibility → treatment consent (no photos at all — privacy policy).
+ * Consultations: eligibility → consent → face-photo consent → face photos «قبل»; «صور بعد» only with a signed photo consent.
+ */
 
-/** Prep progress (eligibility / consent / photos) for a list of today's appointments. */
+/** Route of the face-photo consent step (consultations only). */
+export const T_PHOTO_CONSENT = "/kiosk/photo-consent/";
+
+/** Prep progress for a list of today's appointments. */
 export function usePrep(appts: QueueAppt[], enabled = true) {
   const ids = appts.map((a) => `${a.id}:${a.eligibility_at ? 1 : 0}`).join(",");
   const q = useQuery(["queue", "prep", ids], () => prepFor(appts), { enabled: enabled && appts.length > 0 });
@@ -126,27 +135,41 @@ export function usePrep(appts: QueueAppt[], enabled = true) {
 /** Where «تجهيز الجلسة» should open: the first missing step (eligibility if everything is already done). */
 export function prepHref(id: string, p?: Prep) {
   if (p?.elig && !p.consent) return `${R.T_Consent}?id=${id}`;
-  if (p?.elig && p.consent && !p.before) return `${R.T_Photos}?id=${id}`;
+  if (p?.consult && p.elig && p.consent && !p.photo) return `${T_PHOTO_CONSENT}?id=${id}`;
+  if (p?.consult && p.elig && p.consent && p.photo === "yes" && !p.before) return `${R.T_Photos}?id=${id}`;
   return `${R.T_Eligibility}?id=${id}`;
 }
-export const prepDone = (p?: Prep) => !!p && p.elig && p.consent && p.before;
+/** Next step after the treatment consent: photo consent for consultations, back to the desk for care sessions. */
+export const afterConsentHref = (a: QueueAppt) => (isConsult(a) ? `${T_PHOTO_CONSENT}?id=${a.id}` : R.T_Desk);
+export const prepDone = (p?: Prep) => !!p && p.elig && p.consent && (!p.consult || p.photo === "no" || (p.photo === "yes" && p.before));
+/** «صور بعد» is offered only for consultations whose client signed the photo consent. */
+export const canAfter = (p?: Prep) => !!p && p.consult && p.photo === "yes";
 export const afterHref = (id: string) => `${R.T_Photos}?id=${id}&kind=after`;
 
-/** «الأهلية ✓ · الموافقة ✓ · الصور ✓» — green when done, grey when missing. */
+/** Care: «الأهلية · الموافقة». Consultation: «الأهلية · الموافقة · موافقة التصوير · الصور» (or «رفضت التصوير»). */
 export function PrepMarks({ p, after }: { p?: Prep; after?: boolean }) {
-  const items: [string, boolean][] = [["الأهلية", !!p?.elig], ["الموافقة", !!p?.consent], ["الصور", !!p?.before]];
-  if (after) items.push(["صور بعد", !!p?.after]);
+  const items: [string, boolean][] = [["الأهلية", !!p?.elig], ["الموافقة", !!p?.consent]];
+  if (p?.consult) {
+    if (p.photo === "no") items.push(["رفضت التصوير", true]);
+    else {
+      items.push(["موافقة التصوير", p.photo === "yes"], ["الصور", p.before]);
+      if (after) items.push(["صور بعد", p.after]);
+    }
+  }
   return (
     <span aria-label="تقدّم تجهيز الجلسة" style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: "2px 6px", fontSize: 13, fontWeight: 600, lineHeight: 1.6 }}>
-      {items.map(([t, ok], i) => (
-        <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: ok ? C.okDeep : C.muted, whiteSpace: "nowrap" }}>
-          {i > 0 && <span style={{ color: "#CDB9D3", marginInlineEnd: 3 }}>·</span>}
-          {t}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={ok ? 2.6 : 2} strokeLinecap="round" strokeLinejoin="round" aria-label={ok ? "تم" : "لم يتم"}>
-            {ok ? <path d="M5 12l5 5L20 7" /> : <path d="M8 12h8" />}
-          </svg>
-        </span>
-      ))}
+      {items.map(([t, ok], i) => {
+        const declined = t === "رفضت التصوير";
+        return (
+          <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: declined ? C.sub2 : ok ? C.okDeep : C.muted, whiteSpace: "nowrap" }}>
+            {i > 0 && <span style={{ color: "#CDB9D3", marginInlineEnd: 3 }}>·</span>}
+            {t}
+            {!declined && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={ok ? 2.6 : 2} strokeLinecap="round" strokeLinejoin="round" aria-label={ok ? "تم" : "لم يتم"}>
+              {ok ? <path d="M5 12l5 5L20 7" /> : <path d="M8 12h8" />}
+            </svg>}
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -219,6 +242,7 @@ export function useApptParam(enabled: boolean) {
  */
 export function ApptPicker({ title, today, loading, error, path }: { title: string; today: QueueAppt[]; loading: boolean; error?: string; path: string }) {
   const list = today.filter((a) => a.status === "checked_in" || a.status === "in_session" || a.status === "done")
+    .filter((a) => (path === R.T_Photos || path === T_PHOTO_CONSENT ? isConsult(a) : true))
     .sort((x, y) => { const r = (a: QueueAppt) => (a.status === "in_session" ? 0 : a.status === "checked_in" ? 1 : 2); return r(x) - r(y) || (x.queue_no ?? 999) - (y.queue_no ?? 999); });
   const prep = usePrep(list, !loading);
   const generic = path === R.T_Eligibility;
@@ -229,14 +253,16 @@ export function ApptPicker({ title, today, loading, error, path }: { title: stri
         <div className={K.hdr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <div style={{ lineHeight: 1.3, minWidth: 0 }}>
             <div className={K.title} style={{ fontSize: 30, fontWeight: 700, color: C.ink }}>{generic ? "تجهيز الجلسة" : title}</div>
-            <div style={{ fontSize: 15, color: C.sub2 }}>الأهلية ← الموافقة ← صور قبل · لمن وصلن اليوم</div>
+            <div style={{ fontSize: 15, color: C.sub2 }}>الأهلية ← الموافقة · وللاستشارات: موافقة التصوير ← صور الوجه</div>
           </div>
           <DatePill />
         </div>
         <div className={K.scroll} style={{ flexGrow: 1, minHeight: 0, overflowY: "auto", borderRadius: 32, padding: "8px 22px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
           {loading && <Loading />}
           {error && <ErrorNote>{error}</ErrorNote>}
-          {!loading && !error && list.length === 0 && <EmptyState title="لا مراجِعات في الصالة بعد" text="تظهر هنا من سجّلت وصولها اليوم لتجهيز جلستها قبل الدخول." />}
+          {!loading && !error && list.length === 0 && (path === R.T_Photos || path === T_PHOTO_CONSENT
+            ? <EmptyState title="لا استشارات في الصالة الآن" text="التصوير للاستشارات فقط وبعد موافقة التصوير — جلسات العناية بلا صور." />
+            : <EmptyState title="لا مراجِعات في الصالة بعد" text="تظهر هنا من سجّلت وصولها اليوم لتجهيز جلستها قبل الدخول." />)}
           {list.map((a, i) => {
             const p = prep[a.id], post = a.status === "in_session" || a.status === "done";
             const go = generic ? prepHref(a.id, p) : `${path}?id=${a.id}`;
@@ -249,8 +275,8 @@ export function ApptPicker({ title, today, loading, error, path }: { title: stri
                   <PrepMarks p={p} after={post} />
                 </div>
                 <div className={K.pact} style={{ display: "flex", gap: 8, flexShrink: 0, justifyContent: "flex-end" }}>
-                  {a.status !== "done" && <PrepLink href={go} primary={!prepDone(p)}>{prepDone(p) ? "مراجعة التجهيز" : p && (p.elig || p.consent || p.before) ? "متابعة التجهيز" : "تجهيز الجلسة"}</PrepLink>}
-                  {post && <PrepLink href={afterHref(a.id)} primary={prepDone(p) && !p?.after}>صور بعد</PrepLink>}
+                  {a.status !== "done" && <PrepLink href={go} primary={!prepDone(p)}>{prepDone(p) ? "مراجعة التجهيز" : p && (p.elig || p.consent || p.photo) ? "متابعة التجهيز" : "تجهيز الجلسة"}</PrepLink>}
+                  {post && canAfter(p) && <PrepLink href={afterHref(a.id)} primary={prepDone(p) && !p?.after}>صور بعد</PrepLink>}
                 </div>
               </div>
             );

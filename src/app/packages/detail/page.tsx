@@ -41,7 +41,7 @@ function Detail() {
   const saving = packageSaving(pkg, svc);
   const includes = [
     { icon, t: `${pkg.sessions} جلسات ${svc?.name ?? ""}`.trim(), d: svc ? `${svc.minutes} دقيقة لكل جلسة` : "" },
-    { icon: "sparkle", t: "متابعة بعد كل جلسة", d: "صور قبل وبعد ونصائح العناية في رحلتي" },
+    { icon: "sparkle", t: "متابعة بعد كل جلسة", d: "نصائح العناية وتقدّمكِ في رحلتي" },
   ];
   const how = [
     { icon: "cal", t: "احجزي كالمعتاد" },

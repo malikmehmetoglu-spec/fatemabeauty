@@ -12,7 +12,7 @@ import { R } from "@/lib/routes";
 import { arDate, clock, money } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { addCondition, getPatient, getTiers, listConditions, removeCondition, tierFor, type ConditionKind, type Patient } from "@/lib/db/patients";
-import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
+import { angleLabel, listConsents, photoConsentOf, listNotes, listPatientPackages, listPhotos, listPrescriptions, listVisits, rxItems, STAGE_LABEL, STATUS_LABEL, WHEN_LABEL, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
 import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
@@ -234,9 +234,17 @@ function Consents({ id }: { id: string }) {
 
 function Photos({ id }: { id: string }) {
   const { data, loading } = useQuery(["clinical", "photos", id], () => listPhotos(id));
+  const { data: pc } = useQuery(["clinical", "photo-consent", id], () => photoConsentOf(id));
   if (loading) return <Loading />;
-  if (!data?.length) return <EmptyState compact icon="camera" title="لا صور بعد" text="تُلتقط الصور قبل الجلسة وبعدها من جهاز الاستقبال أو من شاشة الصور." action={<Link href={fileHref(R.W_Photos, "patient", id)} style={outlineBtn(40)}>شاشة الصور</Link>} />;
-  return (
+  const note = (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "#F8F2FA", fontSize: 12.5, color: C.sub, lineHeight: 1.6, marginBottom: 12 }}>
+      <Icon name="lock" size={16} color={C.accentMid} />
+      <span style={{ flex: "1 1 240px", minWidth: 0 }}>صور الوجه فقط بحسب سياسة المركز — تُلتقط في الاستشارات وبموافقة تصوير موقّعة.</span>
+      <span style={{ whiteSpace: "nowrap", fontWeight: 700, color: pc?.signed ? C.okDeep : C.sub2 }}>{pc == null ? "لا موافقة تصوير" : `${pc.signed ? "موافقة التصوير" : "رفضت التصوير"} · ${arDate(new Date(pc.at), { day: false })}`}</span>
+    </div>
+  );
+  if (!data?.length) return <>{note}<EmptyState compact icon="camera" title="لا صور وجه بعد" text="تُلتقط صور الوجه في الاستشارات فقط بعد موافقة التصوير." action={<Link href={fileHref(R.W_Photos, "patient", id)} style={outlineBtn(40)}>شاشة الصور</Link>} /></>;
+  return (<>{note}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
       {data.map((x) => (
         <Link key={x.id} href={fileHref(R.W_Photos, "patient", id)} style={{ borderRadius: 16, overflow: "hidden", background: "#F3EAF6", aspectRatio: "3/4", position: "relative", display: "block" }}>
@@ -245,5 +253,5 @@ function Photos({ id }: { id: string }) {
         </Link>
       ))}
     </div>
-  );
+  </>);
 }

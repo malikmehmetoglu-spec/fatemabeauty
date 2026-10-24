@@ -3,14 +3,15 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Stage } from "@/components/shell";
-import { ErrorNote } from "@/components/ui";
+import { EmptyState, ErrorNote, Loading } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { initials } from "@/lib/data";
-import { personName, savePhoto, serviceName } from "@/lib/db/queue";
+import { isConsult, personName, savePhoto, serviceName } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SH_SOFT } from "@/lib/tokens";
-import { ApptPicker, KC, StepHeader, kioskError, setFlash, useApptParam, useKiosk } from "../kiosk";
+import { ApptPicker, KC, StepHeader, T_PHOTO_CONSENT, kioskError, setFlash, useApptParam, useKiosk, usePrep } from "../kiosk";
 
 /** T_Photos.dc.html */
 const NAMES = ["أمامي", "جانبي 45°", "جانبي 90°"];
@@ -18,7 +19,7 @@ const KEYS = ["front", "side45", "side90"];
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 type Shot = { blob: Blob; url: string } | null;
 
-/** Reception tablet: standardised before-session (or ?kind=after: after-session) photos (three angles) → private "photos" bucket. */
+/** Reception tablet — consultations only, after a signed photo consent: face photos «قبل» (or ?kind=after: «بعد»), three face angles → private "photos" bucket. */
 export default function Page() {
   return <Suspense><Inner /></Suspense>;
 }
@@ -35,7 +36,10 @@ function Inner() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hasAppt = !!f.appt;
+  const prepMap = usePrep(f.appt ? [f.appt] : [], !k.gate && !!f.appt);
+  const prep = f.appt ? prepMap[f.appt.id] : undefined;
+  const allowed = !!f.appt && isConsult(f.appt) && prep?.photo === "yes";
+  const hasAppt = allowed;
   useEffect(() => {
     if (!hasAppt || !navigator.mediaDevices?.getUserMedia) { if (hasAppt) setCam("denied"); return; }
     let stream: MediaStream | null = null, stop = false;
@@ -51,7 +55,22 @@ function Inner() {
 
   if (k.gate) return k.gate;
   const A = f.appt;
-  if (!A) return <ApptPicker title={`تصوير ${word} الجلسة`} today={f.today} loading={f.loading} error={f.error} path={R.T_Photos} />;
+  if (!A) return <ApptPicker title={`صور الوجه «${word}»`} today={f.today} loading={f.loading} error={f.error} path={R.T_Photos} />;
+  if (!allowed) {
+    const consult = isConsult(A);
+    return (
+      <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
+        <StepHeader back={R.T_Desk} title="صور الوجه" sub={personName(A)} />
+        <div style={{ margin: "auto", maxWidth: 560 }}>
+          {consult && !prep ? <Loading /> : !consult
+            ? <EmptyState icon="camera" title="لا تصوير في جلسات العناية" text="سياسة المركز: صور الوجه تُلتقط في الاستشارات فقط وبموافقة تصوير موقّعة." />
+            : prep?.photo === "no"
+              ? <EmptyState icon="camera" title="رفضت التصوير" text="سُجّل رفضها لموافقة التصوير — تستمر الاستشارة بدون صور." />
+              : <EmptyState icon="camera" title="موافقة التصوير مطلوبة أولاً" text="لا تُلتقط صور الوجه قبل توقيع موافقة التصوير." action={<Link href={`${T_PHOTO_CONSENT}?id=${A.id}`} style={{ color: C.accent, fontWeight: 700 }}>فتح موافقة التصوير</Link>} />}
+        </div>
+      </Stage>
+    );
+  }
 
   const angs = NAMES.map((_, i) => ({ pick: () => setSt({ ...st, ang: i }),
     style: css("flex:1;height:58px;border-radius:29px;font-family:inherit;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" +
@@ -85,14 +104,14 @@ function Inner() {
     setBusy(true); setErr(null);
     try {
       for (let i = 0; i < 3; i++) { const sh = st.shots[i]; if (sh) await savePhoto(A, sh.blob, KEYS[i], stage); }
-      setFlash(after ? `حُفظت صور ما بعد الجلسة — ${personName(A)}` : `اكتمل تجهيز جلسة ${personName(A)}`);
+      setFlash(after ? `حُفظت صور الوجه «بعد» — ${personName(A)}` : `اكتمل تجهيز جلسة ${personName(A)}`);
       router.push(R.T_Desk);
     } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={after ? R.T_Desk : `${R.T_Consent}?id=${A.id}`} title={`تصوير ${word} الجلسة`} sub={`${personName(A)} · الصور محفوظة في ملف المراجعة فقط${A.staff ? ` · مع ${A.staff.name}` : ""}`} flow={{ step: after ? 0 : 3 }} />
+      <StepHeader back={after ? R.T_Desk : `${T_PHOTO_CONSENT}?id=${A.id}`} title={`صور الوجه «${word}»`} sub={`${personName(A)} · الوجه فقط · محفوظة في ملفها الخاص${A.staff ? ` · مع ${A.staff.name}` : ""}`} flow={{ step: after ? 0 : 4, consult: true }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", alignItems: "center", gap: 12 }}>
@@ -107,7 +126,7 @@ function Inner() {
           </div>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>الزاوية
+              <div style={{ fontSize: 18, fontWeight: 700 }}>زاوية الوجه
               </div>
               <div style={{ fontSize: 13, color: C.sub2 }}>نفس الزوايا في كل جلسة للمقارنة
               </div>
@@ -123,7 +142,7 @@ function Inner() {
           </div>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>صور {word} الجلسة
+              <div style={{ fontSize: 18, fontWeight: 700 }}>صور الوجه «{word}»
               </div>
               <div style={{ fontSize: 14, color: C.sub2 }}>{count}
               </div>
@@ -202,6 +221,11 @@ function Inner() {
                 <path d="M4 4l16 16M9 5h6l1 4H8zM8 9v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V9" />
               </svg>بشرة نظيفة بلا مكياج، والشعر مرفوع
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A877B6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0" />
+              </svg>الوجه فقط داخل الإطار — من الجبين حتى الذقن
+            </div>
           </div>
           {err && <ErrorNote>{err}</ErrorNote>}
           <button type="button" className={KC.issue} onClick={save} disabled={busy || n === 0} style={{ opacity: busy || n === 0 ? 0.55 : 1, marginTop: "auto", height: 64, borderRadius: 32, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 19, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
@@ -270,6 +294,7 @@ function Inner() {
               <span style={{ width: 9, height: 9, borderRadius: 5, background: C.ok }} />{shotState}
             </div>
           </div>
+          {grid && <div style={{ position: "absolute", bottom: 124, left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 40px)", padding: "8px 16px", borderRadius: 18, background: "rgba(53,33,61,0.45)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: C.white, fontSize: 14, fontWeight: 600, textAlign: "center", lineHeight: 1.5 }}>ضعي الوجه داخل الإطار المنقّط — العينان على الخط الأفقي</div>}
           <div style={{ position: "absolute", bottom: 20, left: "0", right: "0", display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
             <button type="button" aria-label="شبكة المحاذاة" aria-pressed={grid} onClick={() => setGrid(!grid)} style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

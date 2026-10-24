@@ -23,14 +23,14 @@ import type { TagKind } from "@/components/ui";
 export type Status = Tables<"appointments">["status"];
 export type QueueAppt = Tables<"appointments"> & {
   patients: Pick<Tables<"patients">, "id" | "name" | "phone" | "file_no" | "pregnant" | "breastfeeding" | "vip"> | null;
-  services: Pick<Tables<"services">, "key" | "name" | "short_name" | "price" | "minutes"> | null;
+  services: Pick<Tables<"services">, "key" | "name" | "short_name" | "price" | "minutes" | "is_consultation"> | null;
   rooms: Pick<Tables<"rooms">, "id" | "name"> | null;
   staff: Pick<Tables<"staff">, "id" | "name"> | null;
   invoices?: { id: string; paid: boolean; void: boolean }[] | null;
 };
 export type TvRow = { queue_no: number; room: string | null; status: Status; called_at: string | null; starts_at: string };
 
-const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding,vip), services(key,name,short_name,price,minutes), rooms(id,name), staff:specialist_id(id,name), invoices(id,paid,void)";
+const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding,vip), services(key,name,short_name,price,minutes,is_consultation), rooms(id,name), staff:specialist_id(id,name), invoices(id,paid,void)";
 
 export const STATUS_AR: Record<Status, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكَّد", checked_in: "في الانتظار", in_session: "في الجلسة",
@@ -43,6 +43,8 @@ export const STATUS_KIND: Record<Status, TagKind> = {
 /** Display name of the person on an appointment (patient file or walk-in). */
 export const personName = (a: Pick<QueueAppt, "patients" | "walk_in_name">) => a.patients?.name || a.walk_in_name || "مراجِعة";
 export const serviceName = (a: Pick<QueueAppt, "services">) => a.services?.name ?? "";
+/** Privacy policy: photos (face only, with a photo consent) are taken in consultations only — never in care sessions. */
+export const isConsult = (a: Pick<QueueAppt, "services">) => !!a.services?.is_consultation;
 export const endTime = (a: Pick<QueueAppt, "starts_at" | "started_at" | "minutes"> & { extension_minutes?: number | null }) =>
   clock(new Date(new Date(a.started_at ?? a.starts_at).getTime() + (a.minutes + (a.extension_minutes ?? 0)) * 60000));
 
@@ -118,7 +120,7 @@ export async function checkIn(id: string) {
 
 /** Calls a waiting patient to the TV screen (sets called_at). */
 export async function callPatient(id: string) {
-  need(await supabase.from("appointments").update({ called_at: new Date().toISOString() }).eq("id", id));
+  need2(await supabase.from("appointments").update({ called_at: new Date().toISOString() }).eq("id", id));
   invalidate("queue"); invalidate("appointments");
 }
 
@@ -126,7 +128,7 @@ export async function setStatus(id: string, status: Status) {
   const patch: Partial<Tables<"appointments">> = { status };
   if (status === "in_session") patch.started_at = new Date().toISOString();
   if (status === "done") patch.finished_at = new Date().toISOString();
-  need(await supabase.from("appointments").update(patch).eq("id", id));
+  need2(await supabase.from("appointments").update(patch).eq("id", id));
   invalidate("queue"); invalidate("appointments");
 }
 
@@ -203,19 +205,31 @@ async function upload(bucket: "consents" | "photos", patientId: string, blob: Bl
 export async function saveConsent(a: QueueAppt, signature: Blob, answers: Record<string, Json>) {
   if (!a.patient_id) throw new Error("لا يوجد ملف مراجِعة لهذا الموعد");
   const path = await upload("consents", a.patient_id, signature, "png");
-  need(await supabase.from("consents").insert({ patient_id: a.patient_id, appointment_id: a.id, service_key: a.service_key, answers, signature_path: path }));
+  need2(await supabase.from("consents").insert({ patient_id: a.patient_id, appointment_id: a.id, service_key: a.service_key, answers, signature_path: path, kind: "treatment" }));
   invalidate("consents"); invalidate("queue");
 }
 
+/** Face-photo consent of a consultation: signed (kind 'photo') or declined (kind 'photo_declined', no signature). */
+export async function savePhotoConsent(a: QueueAppt, signature: Blob | null, answers: Record<string, Json>) {
+  if (!a.patient_id) throw new Error("لا يوجد ملف مراجِعة لهذا الموعد");
+  if (!isConsult(a)) throw new Error("التصوير مسموح في الاستشارات فقط");
+  const path = signature ? await upload("consents", a.patient_id, signature, "png") : null;
+  need2(await supabase.from("consents").insert({ patient_id: a.patient_id, appointment_id: a.id, service_key: a.service_key, answers, signature_path: path, kind: signature ? "photo" : "photo_declined" }));
+  invalidate("consents"); invalidate("queue"); invalidate("clinical");
+}
+
 export async function hasConsent(appointmentId: string) {
-  const r = need(await supabase.from("consents").select("id").eq("appointment_id", appointmentId).limit(1));
+  const r = need(await supabase.from("consents").select("id").eq("appointment_id", appointmentId).eq("kind", "treatment").limit(1));
   return r.length > 0;
 }
 
 export async function savePhoto(a: QueueAppt, image: Blob, angle: string, stage: "before" | "after" | "progress") {
   if (!a.patient_id) throw new Error("لا يوجد ملف مراجِعة لهذا الموعد");
+  if (!isConsult(a)) throw new Error("التصوير مسموح في الاستشارات فقط — جلسات العناية بلا صور");
   const path = await upload("photos", a.patient_id, image, "jpg");
-  const row = need(await supabase.from("patient_photos").insert({ patient_id: a.patient_id, appointment_id: a.id, path, angle, stage }).select().single());
+  const ins = await supabase.from("patient_photos").insert({ patient_id: a.patient_id, appointment_id: a.id, path, angle, stage }).select().single();
+  if (ins.error) await supabase.storage.from("photos").remove([path]); // refused by the privacy rule: no orphan file
+  const row = need(ins);
   invalidate("photos"); invalidate("queue");
   return row;
 }
@@ -227,30 +241,37 @@ export async function listPhotos(appointmentId: string) {
 }
 
 export async function saveEligibility(id: string, answers: Record<string, Json>) {
-  need(await supabase.from("appointments").update({ eligibility: answers, eligibility_at: new Date().toISOString() }).eq("id", id));
+  need2(await supabase.from("appointments").update({ eligibility: answers, eligibility_at: new Date().toISOString() }).eq("id", id));
   invalidate("queue"); invalidate("appointments");
 }
 
-/** Session-preparation progress of an appointment: eligibility checked, consent signed, before/after photos taken. */
-export type Prep = { elig: boolean; consent: boolean; before: boolean; after: boolean };
+/**
+ * Session-preparation progress. Care sessions: eligibility + treatment consent only. Consultations add the face-photo
+ * consent (`photo`: "yes" signed / "no" declined / null not asked yet) and, when signed, before/after face photos.
+ */
+export type Prep = { consult: boolean; elig: boolean; consent: boolean; photo: "yes" | "no" | null; before: boolean; after: boolean };
 
-/** Prep progress for many appointments at once (2 queries): consent = row for this appointment, or same patient + service. */
+/** Prep progress for many appointments at once (2 queries). Treatment consent = row for this appointment, or same patient + service. */
 export async function prepFor(appts: QueueAppt[]): Promise<Record<string, Prep>> {
   const ids = appts.map((a) => a.id);
   const pids = [...new Set(appts.map((a) => a.patient_id).filter((x): x is string => !!x))];
   if (!ids.length) return {};
   const [cr, pr] = await Promise.all([
-    supabase.from("consents").select("appointment_id,patient_id,service_key").in("patient_id", pids.length ? pids : ["00000000-0000-0000-0000-000000000000"]),
+    supabase.from("consents").select("appointment_id,patient_id,service_key,kind,signed_at").in("patient_id", pids.length ? pids : ["00000000-0000-0000-0000-000000000000"]).order("signed_at", { ascending: false }),
     supabase.from("patient_photos").select("appointment_id,stage").in("appointment_id", ids),
   ]);
   const cons = need(cr), photos = need(pr);
   const out: Record<string, Prep> = {};
   for (const a of appts) {
+    const consult = isConsult(a);
+    const ph = consult && a.patient_id ? cons.find((c) => c.patient_id === a.patient_id && (c.kind === "photo" || c.kind === "photo_declined")) : undefined;
     out[a.id] = {
+      consult,
       elig: !!a.eligibility_at,
-      consent: cons.some((c) => c.appointment_id === a.id || (!!a.patient_id && c.patient_id === a.patient_id && !!a.service_key && c.service_key === a.service_key)),
-      before: photos.some((p) => p.appointment_id === a.id && p.stage === "before"),
-      after: photos.some((p) => p.appointment_id === a.id && p.stage === "after"),
+      consent: cons.some((c) => c.kind === "treatment" && (c.appointment_id === a.id || (!!a.patient_id && c.patient_id === a.patient_id && !!a.service_key && c.service_key === a.service_key))),
+      photo: ph ? (ph.kind === "photo" ? "yes" : "no") : null,
+      before: consult && photos.some((p) => p.appointment_id === a.id && p.stage === "before"),
+      after: consult && photos.some((p) => p.appointment_id === a.id && p.stage === "after"),
     };
   }
   return out;
@@ -270,7 +291,7 @@ export async function getSetting<T>(key: string, fallback: T): Promise<T> {
 }
 
 export async function saveSetting(key: string, value: unknown) {
-  need(await supabase.from("settings").upsert({ key, value: value as Json, updated_at: new Date().toISOString() }));
+  need2(await supabase.from("settings").upsert({ key, value: value as Json, updated_at: new Date().toISOString() }));
   invalidate("settings");
 }
 

@@ -12,7 +12,7 @@ import { ROLE_LABEL } from "@/lib/supabase/session";
 import { clock } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
-import { afterHref, DatePill, FlashToast, KC, KioskNav, kioskError, prepDone, prepHref, PrepLink, PrepMarks, usePrep, useKiosk } from "../kiosk";
+import { afterHref, canAfter, DatePill, FlashToast, KC, KioskNav, kioskError, prepDone, prepHref, PrepLink, PrepMarks, usePrep, useKiosk } from "../kiosk";
 import { isPaid } from "@/lib/db/levels";
 import { isVip, VipBookingDialog, VipButton, VipStar } from "../../admin/calendar/vip";
 
@@ -238,7 +238,7 @@ export default function Page() {
                   <div className={KC.dprep} style={{ display: "flex", alignItems: "center", gap: 10, margin: 0, padding: "4px 12px 12px", marginInlineStart: 122 }}>
                     <span style={{ flex: "1 1 auto", minWidth: 0 }}><PrepMarks p={p} after={inSession} /></span>
                     {!ready && <PrepLink href={prepHref(a.id, p)} primary>تجهيز الجلسة</PrepLink>}
-                    {inSession && <PrepLink href={afterHref(a.id)} primary={ready && !p?.after}>صور بعد</PrepLink>}
+                    {inSession && canAfter(p) && <PrepLink href={afterHref(a.id)} primary={ready && !p?.after}>صور بعد</PrepLink>}
                   </div>
                 )}
                 </div>

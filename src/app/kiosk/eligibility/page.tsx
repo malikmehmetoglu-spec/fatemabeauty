@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { saveEligibility } from "@/lib/db/queue";
+import { isConsult, saveEligibility } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SH_SOFT } from "@/lib/tokens";
 import { ApptPicker, KC, StepHeader, apptLine, kioskError, setFlash, useApptParam, useKiosk } from "../kiosk";
@@ -64,7 +64,7 @@ function Inner() {
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={R.T_Desk} title="قبل الإجراء" sub={`${apptLine(A)}${A.eligibility_at ? " · تم الفحص مسبقاً" : ""}`} flow={{ step: 1, skip: `${R.T_Consent}?id=${A.id}` }} />
+      <StepHeader back={R.T_Desk} title="قبل الإجراء" sub={`${apptLine(A)}${A.eligibility_at ? " · تم الفحص مسبقاً" : ""}`} flow={{ step: 1, consult: isConsult(A), skip: `${R.T_Consent}?id=${A.id}` }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", borderRadius: 32, padding: "14px 24px 8px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0 4px" }}>

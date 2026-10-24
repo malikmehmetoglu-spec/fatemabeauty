@@ -340,6 +340,7 @@ export type Database = {
           answers: Json
           appointment_id: string | null
           id: string
+          kind: string
           patient_id: string
           service_key: string | null
           signature_path: string | null
@@ -349,6 +350,7 @@ export type Database = {
           answers?: Json
           appointment_id?: string | null
           id?: string
+          kind?: string
           patient_id: string
           service_key?: string | null
           signature_path?: string | null
@@ -358,6 +360,7 @@ export type Database = {
           answers?: Json
           appointment_id?: string | null
           id?: string
+          kind?: string
           patient_id?: string
           service_key?: string | null
           signature_path?: string | null

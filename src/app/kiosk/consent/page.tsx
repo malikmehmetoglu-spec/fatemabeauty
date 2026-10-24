@@ -7,10 +7,10 @@ import { Stage } from "@/components/shell";
 import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { initials } from "@/lib/data";
-import { personName, saveConsent } from "@/lib/db/queue";
+import { isConsult, personName, saveConsent } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, ICON_FILL } from "@/lib/tokens";
-import { ApptPicker, KC, NowText, StepHeader, apptLine, kioskError, useApptParam, useKiosk } from "../kiosk";
+import { afterConsentHref, ApptPicker, KC, setFlash, NowText, StepHeader, apptLine, kioskError, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Consent.dc.html */
 const QUESTIONS = ["هل أنتِ حامل أو مرضعة؟", "هل في وجهكِ جرح أو التهاب الآن؟", "هل استخدمتِ ريتينول أو مقشّراً هذا الأسبوع؟"];
@@ -78,7 +78,8 @@ function Inner() {
     try {
       const png = await signaturePng(strokes);
       await saveConsent(A, png, { agreed: true, questions: QUESTIONS.map((q, i) => ({ q, yes: ans[i] })) });
-      router.push(`${R.T_Photos}?id=${A.id}`);
+      if (!isConsult(A)) setFlash(`اكتمل تجهيز جلسة ${personName(A)}`);
+      router.push(afterConsentHref(A));
     } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   const boxStyle = css("width:32px;height:32px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" +
@@ -88,7 +89,7 @@ function Inner() {
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={`${R.T_Eligibility}?id=${A.id}`} title="توقيع الموافقة" sub={apptLine(A)} flow={{ step: 2, skip: `${R.T_Photos}?id=${A.id}` }} />
+      <StepHeader back={`${R.T_Eligibility}?id=${A.id}`} title="توقيع الموافقة" sub={apptLine(A)} flow={{ step: 2, consult: isConsult(A), skip: isConsult(A) ? afterConsentHref(A) : undefined }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderRadius: 32, padding: "22px 26px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -233,7 +234,7 @@ function Inner() {
           <button type="button" onClick={submit} disabled={!ready} style={btnStyle}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" />
-            </svg>{busy ? "جارٍ الحفظ…" : "توقيع والتالي"}
+            </svg>{busy ? "جارٍ الحفظ…" : isConsult(A) ? "توقيع والتالي" : "توقيع وإنهاء التجهيز"}
           </button>
         </div>
       </div>

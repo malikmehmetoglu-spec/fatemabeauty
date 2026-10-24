@@ -120,7 +120,7 @@ export default function JourneyPage() {
       )}
 
       <div style={{ display: "flex", gap: 8, position: "relative" }}>
-        <Link href={R.P_BeforeAfter} style={{ flex: 1, background: C.white, borderRadius: 20, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, boxShadow: SH, fontSize: 13, fontWeight: 600, color: C.accent }}><Icon name="image" size={17} color={C.accentMid} />صوري قبل/بعد</Link>
+        <Link href={R.P_BeforeAfter} style={{ flex: 1, background: C.white, borderRadius: 20, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, boxShadow: SH, fontSize: 13, fontWeight: 600, color: C.accent }}><Icon name="image" size={17} color={C.accentMid} />صور وجهي</Link>
         <Link href={R.Routine} style={{ flex: 1, background: C.white, borderRadius: 20, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, boxShadow: SH, fontSize: 13, fontWeight: 600, color: C.accent }}><Icon name="bottle" size={17} color={C.accentMid} />روتيني</Link>
       </div>
 

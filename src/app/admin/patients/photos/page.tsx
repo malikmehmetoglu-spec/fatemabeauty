@@ -10,7 +10,7 @@ import { R } from "@/lib/routes";
 import { arDate } from "@/lib/format";
 import { useQuery } from "@/lib/db/query";
 import { getPatient } from "@/lib/db/patients";
-import { ANGLES, angleLabel, listPhotos, STAGE_LABEL, uploadPhoto, type PhotoRow } from "@/lib/db/clinical";
+import { ANGLES, angleLabel, consultVisits, listPhotos, photoConsentOf, STAGE_LABEL, uploadPhoto, type PhotoRow } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
 import { arErr, BackLink, chip, displayName, fileHref, outlineBtn, Panel, primaryBtn } from "../kit";
 
@@ -38,15 +38,18 @@ function Photos() {
   const patientId = useSearchParams().get("patient") ?? "";
   const { data: p, loading: lp } = useQuery(["patients", "one", patientId], () => getPatient(patientId), { enabled: !!patientId });
   const { data, loading, error } = useQuery(["clinical", "photos", patientId], () => listPhotos(patientId), { enabled: !!patientId });
+  const { data: pc } = useQuery(["clinical", "photo-consent", patientId], () => photoConsentOf(patientId), { enabled: !!patientId });
+  const { data: visits } = useQuery(["clinical", "consult-visits", patientId], () => consultVisits(patientId), { enabled: !!patientId });
+  const [visitSel, setVisit] = useState("");
   const [angle, setAngle] = useState("front");
   const [pick, setPick] = useState<{ b?: string; a?: string }>({});
-  const [stage, setStage] = useState<"before" | "after" | "progress">("before");
+  const [stage, setStage] = useState<"before" | "after">("before");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const shell = (sub: React.ReactNode, body: React.ReactNode) => (
-    <AdminShell active="المراجعات" title="صور قبل/بعد" subtitle={sub} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">الملف الصحي</BackLink> : undefined}>{body}</AdminShell>
+    <AdminShell active="المراجعات" title="صور الوجه" subtitle={sub} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">الملف الصحي</BackLink> : undefined}>{body}</AdminShell>
   );
   if (!patientId) return shell("صور المراجعات", <EmptyState icon="camera" title="اختاري مراجعة أولاً" text="افتحي الصور من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>المراجعات</Link>} />);
   if (lp || loading) return shell("", <Loading />);
@@ -58,26 +61,28 @@ function Photos() {
   const after = list.find((x) => x.id === pick.a) ?? (list.length > 1 ? list[list.length - 1] : undefined);
   const sessions = new Set(all.map((x) => x.appointment_id ?? x.created_at.slice(0, 10))).size;
 
+  const visitId = visitSel || visits?.[0]?.id || "";
+  const canUpload = !!pc?.signed && !!visitId;
   async function onFile(file?: File) {
-    if (!file) return;
+    if (!file || !canUpload) return;
     setErr("");
     if (!file.type.startsWith("image/")) { setErr("اختاري ملف صورة (JPG أو PNG)."); return; }
     if (file.size > 15 * 1024 * 1024) { setErr("الصورة أكبر من 15 ميغابايت."); return; }
     setBusy(true);
-    try { await uploadPhoto(p!.id, file, angle, stage, null); } catch (e) { setErr(arErr(e, "تعذّر رفع الصورة. حاولي مرة أخرى.")); }
+    try { await uploadPhoto(p!.id, file, angle, stage, visitId); } catch (e) { setErr(arErr(e, "تعذّر رفع الصورة. حاولي مرة أخرى.")); }
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";
   }
 
   return shell(<>ملف <span className="latin">{p.file_no}</span> · {displayName(p.name)} · {sessions} جلسات مصوّرة</>,
     <div className={ac.split} style={{ flexGrow: 1 }}>
-      <Panel title="مقارنة قبل/بعد" className={ac.grow} right={
+      <Panel title="مقارنة صور الوجه" className={ac.grow} right={
         <div role="tablist" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {ANGLES.map((a) => <button key={a.key} type="button" role="tab" aria-selected={angle === a.key} onClick={() => { setAngle(a.key); setPick({}); }} style={{ ...chip(angle === a.key, 34), fontSize: 12.5, padding: "0 12px" }}>{a.label}</button>)}
         </div>}>
         {error && <ErrorNote>{arErr(error, "تعذّر تحميل الصور.")}</ErrorNote>}
         {!list.length ? (
-          <EmptyState compact icon="camera" title={`لا صور بزاوية «${angleLabel(angle)}»`} text="ارفعي صورة من لوحة «إضافة صورة» أو التقطيها من جهاز الاستقبال قبل الجلسة." />
+          <EmptyState compact icon="camera" title={`لا صور وجه بزاوية «${angleLabel(angle)}»`} text="تُلتقط صور الوجه في الاستشارات فقط بعد توقيع موافقة التصوير — من جهاز الاستقبال أو من لوحة «إضافة صورة وجه»." />
         ) : (
           <>
             <div style={{ display: "flex", gap: 14 }}>
@@ -101,15 +106,26 @@ function Photos() {
           </>
         )}
       </Panel>
-      <Panel title="إضافة صورة" className={ac.side} style={{ ["--side" as string]: "280px" }}>
+      <Panel title="إضافة صورة وجه" className={ac.side} style={{ ["--side" as string]: "280px" }}>
+        <div style={{ padding: "10px 12px", borderRadius: 14, background: "#F8F2FA", fontSize: 12.5, color: C.sub, lineHeight: 1.7, marginBottom: 12 }}>
+          سياسة المركز: صور <b style={{ color: C.ink }}>الوجه فقط</b>، في <b style={{ color: C.ink }}>الاستشارات</b> فقط، وبموافقة تصوير موقّعة. جلسات العناية بلا صور.
+          <div style={{ marginTop: 6 }}>موافقة التصوير: {pc == null ? <b style={{ color: C.muted }}>لم تُطلب بعد</b> : pc.signed ? <b style={{ color: C.okDeep }}>موقّعة · {arDate(new Date(pc.at), { day: false })}</b> : <b style={{ color: C.danger }}>رفضت · {arDate(new Date(pc.at), { day: false })}</b>}</div>
+        </div>
+        {pc?.signed && (visits?.length ? (
+          <label style={{ display: "block", fontSize: 12.5, color: C.sub2, marginBottom: 10 }}>زيارة الاستشارة
+            <select value={visitId} onChange={(e) => setVisit(e.target.value)} style={{ display: "block", width: "100%", marginTop: 4, height: 40, borderRadius: 12, border: "1px solid #EADCF0", background: C.white, padding: "0 10px", fontFamily: "inherit", fontSize: 13, color: C.ink }}>
+              {visits.map((v) => <option key={v.id} value={v.id}>{v.services.name} · {arDate(new Date(v.starts_at), { day: false })}</option>)}
+            </select>
+          </label>
+        ) : <div style={{ fontSize: 12.5, color: C.sub2, marginBottom: 10 }}>لا توجد زيارة استشارة في ملفها لربط الصور بها.</div>)}
         <div style={{ fontSize: 12.5, color: C.sub2, marginBottom: 8 }}>الزاوية: <b style={{ color: C.ink }}>{angleLabel(angle)}</b></div>
         <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-          {(["before", "after", "progress"] as const).map((s) => <button key={s} type="button" onClick={() => setStage(s)} style={{ ...chip(stage === s, 34), fontSize: 12.5 }}>{STAGE_LABEL[s]}</button>)}
+          {(["before", "after"] as const).map((s) => <button key={s} type="button" onClick={() => setStage(s)} style={{ ...chip(stage === s, 34), fontSize: 12.5 }}>{STAGE_LABEL[s]}</button>)}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} style={{ ...primaryBtn, width: "100%", opacity: busy ? 0.6 : 1 }}><Icon name="upload" size={18} color={C.white} />{busy ? "جارٍ الرفع…" : "رفع صورة"}</button>
+        <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+        <button type="button" disabled={busy || !canUpload} onClick={() => fileRef.current?.click()} style={{ ...primaryBtn, width: "100%", opacity: busy || !canUpload ? 0.5 : 1 }}><Icon name="upload" size={18} color={C.white} />{busy ? "جارٍ الرفع…" : "رفع صورة وجه"}</button>
         {err && <ErrorNote style={{ marginTop: 10 }}>{err}</ErrorNote>}
-        <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.7 }}>تُحفظ الصور في مساحة خاصة، ولا تراها إلا المراجعة نفسها وفريق المركز.</div>
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.7 }}>تُحفظ الصور في مساحة خاصة، ولا تراها إلا المراجعة نفسها وفريق المركز، ولا تُنشر دون إذن خطّي منفصل.</div>
       </Panel>
     </div>
   );
