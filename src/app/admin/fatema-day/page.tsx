@@ -21,6 +21,7 @@ import { IntakePanel } from "../my-day/IntakePanel";
 import { SessionTimer } from "../queue/session-ui";
 import { useRecorder } from "../written-consults/VoiceRecorder";
 import pg from "../adminPages.module.css";
+import { speechCtor, type SR } from "@/lib/speech";
 
 const DEFAULT_TEMPLATES: { id: string; title: string; text: string }[] = [
   { id: "d1", title: "حب الشباب", text: "الفحص: حبوب التهابية على منطقة الذقن والفك، رؤوس سوداء على الأنف. الخطة: تنظيف عميق كل أسبوعين، روتين لطيف صباحاً ومساءً، واقي شمس يومي." },
@@ -120,14 +121,6 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 /* ---------- dictation → Mira → preview → send ---------- */
-
-type SR = { lang: string; continuous: boolean; interimResults: boolean; start: () => void; stop: () => void;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
-const speechCtor = (): (new () => SR) | null => {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
 
 function Dictation({ appt }: { appt: Appointment }) {
   const [text, setText] = useState("");

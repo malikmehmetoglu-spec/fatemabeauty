@@ -20,10 +20,11 @@ import { ChangePasswordDialog } from "./ChangePassword";
 import { AdminInstall } from "@/components/pwa/AdminInstall";
 
 export type AdminSection =
-  | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
+  | "مرايتي" | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
   | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
+  ["heart", "مرايتي", R.W_Maraiti],
   ["dash", "لوحة القيادة", R.W_Dashboard],
   ["cal", "المواعيد", R.W_Calendar],
   ["tv", "الأدوار", R.W_Queue],
@@ -46,6 +47,8 @@ type Role = "owner" | "admin" | "specialist" | "reception" | "accountant";
 
 /** Which roles see each section (owner and admin always see everything). Mirrors the RLS rules in the database. */
 const SECTION_ROLES: Record<AdminSection, Role[]> = {
+  // «مرايتي»: the consultant herself only — see SELF_ONLY (owner/admin without is_consultant are excluded)
+  "مرايتي": ["owner", "admin", "specialist", "reception", "accountant"],
   "لوحة القيادة": ["accountant"],
   "المواعيد": ["reception", "specialist"],
   "الأدوار": ["specialist"],
@@ -86,7 +89,10 @@ const SUB_ROLES: [string, Role[]][] = [
 const full = (r: Role) => r === "owner" || r === "admin";
 /** Sections for the consultant (staff.is_consultant) and admin only. Mirrors private.is_consult_staff() in the database. */
 const CONSULT_ONLY: AdminSection[] = ["يوم فاطمة", "الاستشارات المكتوبة"];
+/** Personal to the consultant: NOT opened to owner/admin. Mirrors private.is_maraiti_user() (migration 0179). */
+const SELF_ONLY: AdminSection[] = ["مرايتي"];
 export const canSee = (r: Role, sec: AdminSection, consultant = false) =>
+  SELF_ONLY.includes(sec) ? consultant :
   full(r) || (SECTION_ROLES[sec].includes(r) && (!CONSULT_ONLY.includes(sec) || consultant));
 const pathOk = (r: Role, path: string) => {
   if (full(r)) return true;
@@ -120,7 +126,14 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const allowed = !role || (canSee(role, active, cons) && pathOk(role, path));
   const wcDue = useQuery(["wc", "due"], dueCount, { enabled: !!role && canSee(role, "الاستشارات المكتوبة", cons) });
   const pkgPend = useQuery(["pkgreq", "count"], pendingPackageCount, { enabled: !!role && full(role) });
-  useEffect(() => { if (role && active === "لوحة القيادة" && !canSee(role, active)) router.replace(homeFor(role)); }, [role, active, router]);
+  useEffect(() => { if (role && active === "لوحة القيادة" && !canSee(role, active)) router.replace(homeFor(role, cons)); }, [role, active, router, cons]);
+  // The consultant lands on «مرايتي» once per browser session (she can still open the dashboard afterwards).
+  useEffect(() => {
+    if (!role || !cons || active !== "لوحة القيادة") return;
+    let landed = false;
+    try { landed = sessionStorage.getItem("maraiti-landed") === "1"; sessionStorage.setItem("maraiti-landed", "1"); } catch { /* private mode */ }
+    if (!landed) router.replace(R.W_Maraiti);
+  }, [role, cons, active, router]);
   if (loading || !staff || !role) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
   }
@@ -133,12 +146,12 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
         <button type="button" className={s.menuBtn} onClick={() => setMenu(true)} aria-label="القائمة" style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: C.white, boxShadow: SHB, alignItems: "center", justifyContent: "center" }}>
           <Icon name="list" color={C.accent} size={20} />
         </button>
-        <Link href={homeFor(role)}><Logo height={40} /></Link>
+        <Link href={homeFor(role, cons)}><Logo height={40} /></Link>
         <span style={{ width: 44 }} />
       </div>
       {menu && <div className={s.scrim} onClick={() => setMenu(false)} aria-hidden />}
       <aside className={`${s.aside} ${menu ? s.asideOpen : ""}`} onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenu(false); }}>
-        <Link href={homeFor(role)} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
+        <Link href={homeFor(role, cons)} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
           <Logo height={78} />
         </Link>
         <nav aria-label="أقسام لوحة الإدارة" className={s.nav}>
@@ -191,7 +204,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             <Icon name="lock" color={C.accent} size={34} />
             <b style={{ fontSize: 18 }}>هذه الصفحة خارج صلاحيات دوركِ</b>
             <div style={{ fontSize: 13.5, color: C.sub2 }}>دوركِ الحالي: {ROLE_LABEL[role]}. إن احتجتِ الوصول إليها اطلبي ذلك من الإدارة.</div>
-            <Link href={homeFor(role)} style={{ ...SELECTED, height: 42, borderRadius: 21, padding: "0 20px", display: "inline-flex", alignItems: "center", fontWeight: 700 }}>العودة</Link>
+            <Link href={homeFor(role, cons)} style={{ ...SELECTED, height: 42, borderRadius: 21, padding: "0 20px", display: "inline-flex", alignItems: "center", fontWeight: 700 }}>العودة</Link>
           </div>
         )}
       </main>

@@ -113,6 +113,7 @@ export const R = {
   W_WcPayments: "/admin/finance/written-consults/",
   W_PkgRequests: "/admin/finance/package-requests/",
   W_FatemaDay: "/admin/fatema-day/",
+  W_Maraiti: "/admin/maraiti/",
   W_Services: "/admin/settings/services/",
   W_Rooms: "/admin/settings/rooms/",
   W_Roles: "/admin/settings/roles/",
