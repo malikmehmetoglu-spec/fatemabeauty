@@ -33,7 +33,7 @@ export async function maraitiActions(): Promise<MaraitiAction[]> {
 /** Sends her message to Maraiti. Returns "offline" when the assistant is not deployed / configured yet. */
 export async function askMaraiti(text: string): Promise<"ok" | "offline" | "error"> {
   try {
-    const { data, error } = await supabase.functions.invoke("maraiti", { body: { text } });
+    const { data, error } = await supabase.functions.invoke("super-function" /* deployed slug of «maraiti» */, { body: { text } });
     if (error) {
       const status = (error as { context?: { status?: number } }).context?.status;
       return !status || status === 404 || status === 503 ? "offline" : "error";
