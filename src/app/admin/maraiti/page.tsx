@@ -16,8 +16,8 @@ import { useSession } from "@/lib/supabase/session";
 import { C, DARK, SELECTED, SH } from "@/lib/tokens";
 import { speechCtor, type SR } from "@/lib/speech";
 import {
-  askMaraiti, decideAction, friendlyError, maraitiActions, maraitiMessages, maraitiSeen, maraitiTasks, reminderDone,
-  type ActionKind, type MaraitiAction, type MaraitiMessage, type MaraitiTask,
+  askMaraiti, decideAction, friendlyError, maraitiActions, maraitiMessages, maraitiSeen, maraitiTasks, markDraftWhatsApp, reminderDone,
+  sendDraftSms, whatsappLink, type ActionKind, type ActionPayload, type InvoiceLine, type MaraitiAction, type MaraitiMessage, type MaraitiTask,
 } from "@/lib/db/maraiti";
 
 const card = { borderRadius: 26, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH } as const;
@@ -205,7 +205,7 @@ function Chat({ prefill }: { prefill: { text: string; n: number } | null }) {
       <div ref={box} style={{ height: "min(62dvh, 640px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: 2 }}>
         {msgs.loading ? <Loading /> : !items.length ? (
           <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.9 }}>
-            اسأليني عن أي شي: جدولكِ أو جدول أي حدا، ملف عميلة، المالية، المخزون… أو اطلبي حجز، إلغاء، ملاحظة جلسة، رد على عميلة. أنا بجهّز، وإنتِ بتوافقي.
+            اسأليني عن أي شي: جدولكِ أو جدول أي حدا، ملف عميلة، المالية، المخزون… أو اطلبي حجز، إلغاء، فاتورة، قبض دفعة، تثبيت طلب، تأكيد موعد، ملاحظة جلسة، رد على عميلة. أنا بجهّز، وإنتِ بتوافقي.
           </div>
         ) : items.map((it) => it.a ? <DraftCard key={it.a.id} a={it.a} />
           : it.m!.kind ? <ProactiveCard key={it.m!.id} m={it.m!} onReply={startReply} active={replyTo?.payload === it.m!.payload} />
@@ -330,9 +330,22 @@ const KIND_LABEL: Record<ActionKind, string> = {
   book_appointment: "حجز موعد", reschedule: "نقل موعد", cancel_appointment: "إلغاء موعد", send_client_message: "رسالة لعميلة",
   reply_mira_thread: "رد على عميلة", reply_written_consult: "رد استشارة مكتوبة", write_session_note: "ملاحظة جلسة",
   add_patient: "ملف جديد", mark_intake_reviewed: "اطّلاع على نموذج", remind_me: "تذكير لكِ",
+  create_invoice: "فاتورة", record_payment: "قبض دفعة", void_invoice: "إلغاء فاتورة", confirm_written_payment: "دفع استشارة مكتوبة",
+  confirm_package_request: "تفعيل باقة", approve_booking: "تثبيت حجز", reject_booking: "رفض طلب حجز", set_appointment_status: "حالة الموعد",
+  send_confirmation: "تأكيد للعميلة", update_patient: "تعديل ملف", set_service_level: "مستوى الخدمة", adjust_stock: "جرد مخزون",
 };
-const TEXT_KINDS: ActionKind[] = ["send_client_message", "reply_mira_thread", "reply_written_consult", "write_session_note", "remind_me"];
+const TEXT_KINDS: ActionKind[] = ["send_client_message", "reply_mira_thread", "reply_written_consult", "write_session_note", "remind_me", "send_confirmation"];
 const WHEN_KINDS: ActionKind[] = ["book_appointment", "reschedule", "remind_me"];
+const REASON_KINDS: ActionKind[] = ["cancel_appointment", "void_invoice", "reject_booking"];
+const METHOD_KINDS: ActionKind[] = ["create_invoice", "record_payment", "confirm_written_payment", "confirm_package_request"];
+const AMOUNT_KINDS: ActionKind[] = ["create_invoice", "record_payment"];
+const MONEY_KINDS: ActionKind[] = ["create_invoice", "record_payment", "void_invoice", "confirm_written_payment", "confirm_package_request"];
+const METHOD_AR: Record<string, string> = { cash: "نقداً", card: "بطاقة", package: "من الباقة", deferred: "آجل (دين)" };
+const CHANNEL_AR: Record<string, string> = { app: "التطبيق", sms: "رسالة نصية", whatsapp: "واتساب" };
+const FIELD_AR: Record<string, string> = { name: "الاسم", phone: "الهاتف", birth_date: "تاريخ الميلاد", skin_type: "نوع البشرة", pregnant: "حامل", breastfeeding: "مرضعة", vip: "VIP", notes: "ملاحظات الملف" };
+const STATUS_AR: Record<string, string> = { checked_in: "وصلت", in_session: "بدء الجلسة", done: "انتهت الجلسة", no_show: "لم تحضر" };
+const syp = (n: unknown) => `${Math.round(Number(n) || 0).toLocaleString("en-US")} ل.س`;
+const fieldVal = (v: unknown) => (typeof v === "boolean" ? (v ? "نعم" : "لا") : String(v ?? "") || "—");
 
 const toLocal = (iso?: string) => {
   if (!iso) return { day: dayKey(), time: "10:00" };
@@ -340,49 +353,135 @@ const toLocal = (iso?: string) => {
   return { day: dayKey(d), time: clock(d) };
 };
 
-/** Draft waiting for «موافقة». «تعديل» opens the text / time inline; nothing runs before she approves. */
+/** One label/value row inside a draft card (amounts in ل.س). */
+function Row({ k, v, strong }: { k: string; v: React.ReactNode; strong?: boolean }) {
+  return (
+    <div style={{ display: "flex", gap: 8, fontSize: 14, lineHeight: 1.7 }}>
+      <span style={{ color: C.sub2, flexShrink: 0 }}>{k}:</span>
+      <span style={{ fontWeight: strong ? 700 : 500, minWidth: 0 }}>{v}</span>
+    </div>
+  );
+}
+
+/** Read-only details for each kind (what will happen on «موافقة»). */
+function Details({ a }: { a: MaraitiAction }) {
+  const p = a.payload ?? {};
+  switch (a.kind) {
+    case "create_invoice": {
+      const lines = (p.lines ?? []) as InvoiceLine[];
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, background: "#FBF8FC", borderRadius: 14, padding: "8px 12px" }}>
+          {lines.map((l, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, fontSize: 14 }}>
+              <span style={{ flex: 1, minWidth: 0 }}>{l.label}{l.qty > 1 ? ` × ${l.qty}` : ""}</span>
+              <span className="latin" style={{ flexShrink: 0 }}>{syp(l.qty * l.unit_price)}</span>
+            </div>
+          ))}
+          {Number(p.discount_preview ?? p.discount) > 0 && <Row k={p.offer_code ? `خصم (${p.offer_code})` : "خصم"} v={`− ${syp(p.discount_preview ?? p.discount)}`} />}
+          <Row k="الإجمالي" v={syp(p.total)} strong />
+          <Row k="الدفع" v={p.method === "cash" || p.method === "card" ? `${METHOD_AR[p.method]} ${syp(p.amount)}${Number(p.amount) < Number(p.total) ? ` · المتبقي ${syp(Number(p.total) - Number(p.amount))}` : ""}` : METHOD_AR[p.method] ?? p.method} />
+        </div>
+      );
+    }
+    case "record_payment":
+      return <div><Row k="المبلغ" v={`${syp(p.amount)} ${METHOD_AR[p.method] ?? ""}`} strong /><Row k="الفاتورة" v={`${p.invoice_no} · الإجمالي ${syp(p.total)} · المتبقي قبل الدفعة ${syp(p.remaining)}`} /></div>;
+    case "void_invoice":
+      return <div><Row k="الفاتورة" v={`${p.invoice_no} · ${syp(p.total)}`} strong />{p.reason && <Row k="السبب" v={p.reason} />}</div>;
+    case "confirm_written_payment":
+    case "confirm_package_request":
+      return <div><Row k="المبلغ" v={`${syp(p.amount)} ${METHOD_AR[p.method] ?? ""}`} strong />{p.package_name && <Row k="الباقة" v={`${p.package_name} · ${p.sessions} جلسات`} />}</div>;
+    case "reject_booking":
+    case "cancel_appointment":
+      return p.reason ? <Row k="السبب" v={p.reason} /> : null;
+    case "set_appointment_status":
+      return <Row k="الحالة الجديدة" v={STATUS_AR[p.status] ?? p.status} strong />;
+    case "send_confirmation":
+      return <Row k="القناة" v={`${CHANNEL_AR[p.channel] ?? p.channel}${p.channel !== "app" && p.phone ? ` · ${p.phone}` : ""}`} />;
+    case "update_patient":
+      return <div>{Object.entries((p.fields ?? {}) as Record<string, unknown>).map(([k, v]) => <Row key={k} k={FIELD_AR[k] ?? k} v={fieldVal(v)} />)}</div>;
+    case "adjust_stock":
+      return <Row k="الكمية" v={`${p.current} ← ${p.counted}`} strong />;
+    case "add_patient":
+      return <div style={{ fontSize: 14 }}>{p.name}{p.phone ? <span className="latin"> · {p.phone}</span> : null}</div>;
+    default:
+      return null;
+  }
+}
+
+/** Draft waiting for «موافقة». «تعديل» opens the editable fields inline; nothing runs before she approves. */
 function DraftCard({ a }: { a: MaraitiAction }) {
   const p = a.payload ?? {};
+  const isConfirmApp = a.kind === "send_confirmation" && p.channel === "app";
   const hasText = TEXT_KINDS.includes(a.kind);
   const hasWhen = WHEN_KINDS.includes(a.kind);
+  const hasReason = REASON_KINDS.includes(a.kind);
+  const hasMethod = METHOD_KINDS.includes(a.kind);
+  const hasAmount = AMOUNT_KINDS.includes(a.kind);
+  const fieldsInit = (p.fields ?? {}) as Record<string, unknown>;
+  const editable = hasText || hasWhen || hasReason || hasMethod || a.kind === "add_patient" || a.kind === "adjust_stock" || a.kind === "update_patient";
   const init = toLocal(a.kind === "remind_me" ? p.at : p.starts_at);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
   const [edit, setEdit] = useState(false);
-  const [txt, setTxt] = useState(p.text ?? "");
-  const [name, setName] = useState(p.name ?? "");
-  const [phone, setPhone] = useState(p.phone ?? "");
+  const [txt, setTxt] = useState<string>(p.text ?? "");
+  const [name, setName] = useState<string>(p.name ?? "");
+  const [phone, setPhone] = useState<string>(p.phone ?? "");
   const [day, setDay] = useState(init.day);
   const [time, setTime] = useState(init.time);
+  const [reason, setReason] = useState<string>(p.reason ?? "");
+  const [method, setMethod] = useState<string>(p.method ?? "cash");
+  const [amount, setAmount] = useState<string>(p.amount != null ? String(p.amount) : "");
+  const [counted, setCounted] = useState<string>(p.counted != null ? String(p.counted) : "");
+  const [fields, setFields] = useState<Record<string, string>>(Object.fromEntries(Object.entries(fieldsInit).map(([k, v]) => [k, typeof v === "boolean" ? (v ? "true" : "false") : String(v ?? "")])));
+  const needsReason = (a.kind === "void_invoice") && !(edit ? reason : p.reason ?? "").trim();
+  const methods = a.kind === "create_invoice" ? ["cash", "card", "package", "deferred"] : ["cash", "card"];
 
   async function go(decision: "approve" | "dismiss") {
-    setBusy(decision); setErr("");
-    let payload: Record<string, string> | undefined;
+    setBusy(decision); setErr(""); setNote("");
+    let payload: ActionPayload | undefined;
     if (decision === "approve" && edit) {
       payload = { ...p };
       if (hasText) payload.text = txt.trim();
       if (a.kind === "add_patient") { payload.name = name.trim(); payload.phone = phone.trim(); }
       const when = `${day}T${time}:00+03:00`;
       if (a.kind === "remind_me") payload.at = when; else if (hasWhen) payload.starts_at = when;
+      if (hasReason) payload.reason = reason.trim();
+      if (hasMethod) payload.method = method;
+      if (hasAmount) payload.amount = method === "cash" || method === "card" ? Math.max(0, Math.round(Number(amount) || 0)) : 0;
+      if (a.kind === "adjust_stock") payload.counted = Number(counted);
+      if (a.kind === "update_patient") payload.fields = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, typeof fieldsInit[k] === "boolean" ? v === "true" : v]));
     }
     try {
       const r = await decideAction(a.id, decision, payload);
       if (r.status === "failed") setErr(friendlyError(r.result));
-    } catch (e) { setErr(e instanceof Error ? friendlyError(e.message) : "تعذّر التنفيذ."); }
+      else if (decision === "approve" && r.kind === "send_confirmation" && r.payload.client_send) {
+        // SMS / WhatsApp leave the app only after her approval
+        if (r.payload.channel === "sms") { await sendDraftSms(r); setNote("أُرسلت الرسالة النصية ✓"); }
+        else {
+          const link = whatsappLink(r);
+          if (!link) setErr("لا يوجد رقم صالح للواتساب.");
+          else { window.open(link, "_blank", "noopener"); await markDraftWhatsApp(r); }
+        }
+      }
+    } catch (e) { setErr(e instanceof Error ? friendlyError(e.message) || e.message : "تعذّر التنفيذ."); }
     finally { setBusy(""); }
   }
 
   const field = { height: 44, borderRadius: 16, border: "1px solid #EADCF0", padding: "0 12px", fontSize: 14.5, fontFamily: "inherit", background: C.white, color: C.ink, minWidth: 0 } as const;
+  const money = MONEY_KINDS.includes(a.kind);
   return (
-    <div style={{ alignSelf: "stretch", borderRadius: 22, padding: "12px 14px", background: "#FFFFFF", border: "1.5px solid #D9BFE3", display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ alignSelf: "stretch", borderRadius: 22, padding: "12px 14px", background: "#FFFFFF", border: `1.5px solid ${money ? "#C9A3D6" : "#D9BFE3"}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <Tag kind="plum">{KIND_LABEL[a.kind] ?? a.kind}</Tag>
+        <Tag kind={money ? "pink" : "plum"}>{KIND_LABEL[a.kind] ?? a.kind}</Tag>
         <b style={{ fontSize: 14.5, lineHeight: 1.6 }}>{a.title}</b>
         <span style={{ fontSize: 12, color: C.sub2, marginInlineStart: "auto" }}>بانتظار موافقتكِ</span>
       </div>
       {edit ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {a.kind === "create_invoice" && <Details a={a} />}
           {hasText && <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={4} maxLength={4000}
+            placeholder={isConfirmApp ? "اتركيه فارغاً للنص المعتاد" : undefined}
             style={{ ...field, height: "auto", padding: "10px 12px", lineHeight: 1.8, resize: "vertical" }} />}
           {a.kind === "add_patient" && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -396,18 +495,47 @@ function DraftCard({ a }: { a: MaraitiAction }) {
               <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="latin" style={{ ...field, flex: "1 1 110px" }} aria-label="الساعة (دمشق)" />
             </div>
           )}
+          {hasReason && <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="السبب" style={field} />}
+          {hasMethod && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <select value={method} onChange={(e) => setMethod(e.target.value)} style={{ ...field, flex: "1 1 140px" }} aria-label="طريقة الدفع">
+                {methods.map((m) => <option key={m} value={m}>{METHOD_AR[m]}</option>)}
+              </select>
+              {hasAmount && (method === "cash" || method === "card") && (
+                <label style={{ display: "flex", gap: 6, alignItems: "center", flex: "1 1 160px" }}>
+                  <input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} className="latin" style={{ ...field, flex: 1 }} aria-label="المبلغ المقبوض" />
+                  <span style={{ fontSize: 13.5, color: C.sub }}>ل.س</span>
+                </label>
+              )}
+            </div>
+          )}
+          {a.kind === "adjust_stock" && <input type="number" min={0} value={counted} onChange={(e) => setCounted(e.target.value)} className="latin" style={field} aria-label="الكمية المعدودة" />}
+          {a.kind === "update_patient" && Object.keys(fields).map((k) => typeof fieldsInit[k] === "boolean" ? (
+            <label key={k} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+              <span style={{ color: C.sub2, minWidth: 90 }}>{FIELD_AR[k] ?? k}</span>
+              <select value={fields[k]} onChange={(e) => setFields((f) => ({ ...f, [k]: e.target.value }))} style={{ ...field, flex: 1 }}>
+                <option value="true">نعم</option><option value="false">لا</option>
+              </select>
+            </label>
+          ) : (
+            <label key={k} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+              <span style={{ color: C.sub2, minWidth: 90 }}>{FIELD_AR[k] ?? k}</span>
+              <input value={fields[k]} onChange={(e) => setFields((f) => ({ ...f, [k]: e.target.value }))} style={{ ...field, flex: 1 }} />
+            </label>
+          ))}
         </div>
       ) : (
         <>
           {hasText && p.text && <div style={{ fontSize: 14, lineHeight: 1.85, whiteSpace: "pre-wrap", color: C.ink, background: "#FBF8FC", borderRadius: 14, padding: "8px 12px" }}>{p.text}</div>}
-          {a.kind === "add_patient" && <div style={{ fontSize: 14 }}>{p.name}{p.phone ? <span className="latin"> · {p.phone}</span> : null}</div>}
-          {a.kind === "cancel_appointment" && p.reason && <div style={{ fontSize: 13.5, color: C.sub }}>السبب: {p.reason}</div>}
+          <Details a={a} />
         </>
       )}
+      {note && <div style={{ fontSize: 13.5, color: C.sub }}>{note}</div>}
       {err && <ErrorNote>{err}</ErrorNote>}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <SubmitButton onClick={() => go("approve")} busy={busy === "approve"} disabled={!!busy || (edit && hasText && !txt.trim())} style={{ height: 44 }}>{edit ? "حفظ وموافقة" : "موافقة"}</SubmitButton>
-        {(hasText || hasWhen || a.kind === "add_patient") && <GhostButton onClick={() => setEdit((v) => !v)}>{edit ? "إلغاء التعديل" : "تعديل"}</GhostButton>}
+        <SubmitButton onClick={() => go("approve")} busy={busy === "approve"}
+          disabled={!!busy || (edit && hasText && !isConfirmApp && !txt.trim()) || needsReason} style={{ height: 44 }}>{edit ? "حفظ وموافقة" : "موافقة"}</SubmitButton>
+        {editable && <GhostButton onClick={() => setEdit((v) => !v)}>{edit ? "إلغاء التعديل" : needsReason ? "أضيفي السبب" : "تعديل"}</GhostButton>}
         <GhostButton onClick={() => go("dismiss")} color={C.sub}>تجاهل</GhostButton>
       </div>
     </div>
