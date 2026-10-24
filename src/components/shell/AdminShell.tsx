@@ -38,6 +38,53 @@ const NAV: [string, AdminSection, string][] = [
   ["settings", "الإعدادات", R.W_Services],
 ];
 
+type Role = "owner" | "admin" | "specialist" | "reception" | "accountant";
+
+/** Which roles see each section (owner and admin always see everything). Mirrors the RLS rules in the database. */
+const SECTION_ROLES: Record<AdminSection, Role[]> = {
+  "لوحة القيادة": ["accountant"],
+  "المواعيد": ["reception", "specialist"],
+  "الأدوار": ["reception", "specialist"],
+  "المراجعات": ["reception", "specialist"],
+  "ميرا": ["reception"],
+  "جدولي": ["reception", "specialist", "accountant"],
+  "المالية": ["reception", "accountant"],
+  "المخزون والأجهزة": ["specialist"],
+  "فريق العمل": ["accountant"],
+  "التسويق والولاء": [],
+  "تثبيت التطبيق": [],
+  "المتجر": ["reception"],
+  "التقارير": ["accountant"],
+  "الإعدادات": [],
+};
+
+/** Sub-pages limited further than their section (path prefix → roles; owner/admin always pass). */
+const SUB_ROLES: [string, Role[]][] = [
+  [R.W_Receivables, ["accountant"]],
+  [R.W_Expenses, ["accountant"]],
+  [R.W_FinanceReports, ["accountant"]],
+  ["/admin/finance/commissions/", ["accountant"]],
+  [R.W_Products, []],
+  ["/admin/store/storefront/", []],
+  [R.W_Inventory, []],
+  [R.W_Purchases, []],
+  [R.W_Stocktake, []],
+  [R.W_Devices, ["specialist"]],
+  ["/admin/inventory/locations/", []],
+  [R.W_Staff, ["accountant"]],
+];
+
+const full = (r: Role) => r === "owner" || r === "admin";
+export const canSee = (r: Role, sec: AdminSection) => full(r) || SECTION_ROLES[sec].includes(r);
+const pathOk = (r: Role, path: string) => {
+  if (full(r)) return true;
+  const n = (h: string) => h.replace(/\/$/, "") + "/";
+  const hit = SUB_ROLES.filter(([pre]) => n(path).startsWith(n(pre))).sort((a, b) => b[0].length - a[0].length)[0];
+  return !hit || hit[1].includes(r);
+};
+/** First page this role may open — used as its landing page. */
+export const homeFor = (r: Role) => NAV.find(([, sec]) => canSee(r, sec))?.[2] ?? R.W_MyDay;
+
 /**
  * Admin web frame: glass sidebar on the right (RTL), top bar with title + search + bell, fluid content area.
  * Designed at 1440×900; the content area is fluid (min width 1100) and the page scrolls vertically if needed.
@@ -47,6 +94,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
 }) {
   const router = useRouter();
   const { loading, staff } = useSession();
+  const path = usePathname() || "";
   const [pwOpen, setPwOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState("");
@@ -55,7 +103,10 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff });
   const miraCount = mira.data ?? 0;
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
-  if (loading || !staff) {
+  const role = staff?.role as Role | undefined;
+  const allowed = !role || (canSee(role, active) && pathOk(role, path));
+  useEffect(() => { if (role && active === "لوحة القيادة" && !canSee(role, active)) router.replace(homeFor(role)); }, [role, active, router]);
+  if (loading || !staff || !role) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
   }
   const signOut = async () => { await disableAlerts().catch(() => {}); await supabase.auth.signOut(); router.replace(R.W_Login); };
@@ -67,16 +118,16 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
         <button type="button" className={s.menuBtn} onClick={() => setMenu(true)} aria-label="القائمة" style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: C.white, boxShadow: SHB, alignItems: "center", justifyContent: "center" }}>
           <Icon name="list" color={C.accent} size={20} />
         </button>
-        <Link href={R.W_Dashboard}><Logo height={40} /></Link>
+        <Link href={homeFor(role)}><Logo height={40} /></Link>
         <span style={{ width: 44 }} />
       </div>
       {menu && <div className={s.scrim} onClick={() => setMenu(false)} aria-hidden />}
       <aside className={`${s.aside} ${menu ? s.asideOpen : ""}`} onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenu(false); }}>
-        <Link href={R.W_Dashboard} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
+        <Link href={homeFor(role)} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
           <Logo height={78} />
         </Link>
         <nav aria-label="أقسام لوحة الإدارة" className={s.nav}>
-          {NAV.map(([icon, label, href]) =>
+          {NAV.filter(([, sec]) => canSee(role, sec)).map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
                 <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}
@@ -120,8 +171,14 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             </form>
           </div>
         </header>
-        <SubNav section={active} />
-        {children}
+        {allowed ? <><SubNav section={active} role={role} />{children}</> : (
+          <div role="alert" style={{ margin: "40px auto", maxWidth: 440, textAlign: "center", padding: "32px 28px", borderRadius: 28, background: "rgba(255,255,255,0.86)", boxShadow: SHB, display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+            <Icon name="lock" color={C.accent} size={34} />
+            <b style={{ fontSize: 18 }}>هذه الصفحة خارج صلاحيات دوركِ</b>
+            <div style={{ fontSize: 13.5, color: C.sub2 }}>دوركِ الحالي: {ROLE_LABEL[role]}. إن احتجتِ الوصول إليها اطلبي ذلك من الإدارة.</div>
+            <Link href={homeFor(role)} style={{ ...SELECTED, height: 42, borderRadius: 21, padding: "0 20px", display: "inline-flex", alignItems: "center", fontWeight: 700 }}>العودة</Link>
+          </div>
+        )}
       </main>
       {overlay}
       <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
@@ -138,10 +195,10 @@ const SUB: Partial<Record<AdminSection, [string, string][]>> = {
 };
 
 /** Sub-section tabs for sections that have several pages. */
-function SubNav({ section }: { section?: AdminSection }) {
+function SubNav({ section, role }: { section?: AdminSection; role: Role }) {
   const path = usePathname() || "";
-  const items = section ? SUB[section] : undefined;
-  if (!items) return null;
+  const items = section ? SUB[section]?.filter(([, href]) => pathOk(role, href)) : undefined;
+  if (!items || items.length < 2) return null;
   const norm = (h: string) => h.replace(/\/$/, "");
   return (
     <nav aria-label="أقسام فرعية" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
