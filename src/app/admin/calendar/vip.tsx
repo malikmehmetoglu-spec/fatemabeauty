@@ -393,7 +393,7 @@ export function VipBookingDialog({ open, onClose, initialClient }: { open: boole
                 return (
                   <button key={s.starts_at} type="button" aria-pressed={on} onClick={() => setSlotPick(s.starts_at)} style={{ ...pill(on), display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "8px 12px", borderRadius: 18, textAlign: "right" }}>
                     <span className="latin" style={{ fontSize: 16, fontWeight: 700, color: on ? GOLD_DEEP : C.ink }} dir="ltr">{clock(s.starts_at)}–{clock(s.ends_at)}</span>
-                    <span style={{ fontSize: 12.5, color: C.sub2, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{s.specialist_name ?? "أي أخصائية"} · {s.room_name ?? "—"}</span>
+                    <span style={{ fontSize: 12.5, color: C.sub2, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{s.specialist_name ?? "أي أخصائية"}</span>
                     {s.in_reserve && <span style={{ fontSize: 11.5, fontWeight: 700, color: GOLD_DEEP }}>من الاحتياطي</span>}
                   </button>
                 );

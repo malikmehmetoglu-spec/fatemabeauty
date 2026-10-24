@@ -241,8 +241,8 @@ export default function Page() {
               {roomNow.length === 0 && <div style={{ fontSize: 14, color: C.sub2, padding: "10px 0 14px", borderTop: "1px solid #EDE2F1" }}>أضيفي الغرف من لوحة الإدارة لتظهر حالتها هنا.</div>}
               {roomNow.map(({ r, cur, next, pct }) => (
               <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 7, padding: "11px 0", borderTop: "1px solid #EDE2F1" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, width: 58, whiteSpace: "nowrap" }}>{r.name}
+                <div style={{ display: "flex", alignItems: "center", gap: "4px 10px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 15.5, fontWeight: 700, flexBasis: "100%", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}
                   </span>
                   <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 22, fontWeight: 700, color: C.accent, width: 30 }}>{cur?.queue_no ?? "—"}
                   </span>

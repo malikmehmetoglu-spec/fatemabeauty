@@ -20,7 +20,7 @@ import { GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
 /** T_Cashier.dc.html */
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 const n = (x: string | number) => Number(x || 0).toLocaleString("en-US");
-const STATUS: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "في الانتظار" };
+const STATUS: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "في الانتظار", confirmed: "مؤكد", pending: "بانتظار التأكيد" };
 const nameOf = (a: CashierAppt) => a.patients?.name || a.walk_in_name || "مراجِعة";
 
 type Done = { inv: InvoiceRow; extras: PrintExtras };
