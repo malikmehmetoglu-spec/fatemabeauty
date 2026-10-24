@@ -81,6 +81,11 @@ Deno.serve(async (req) => {
     const jwt = auth.replace(/^Bearer\s+/i, "");
     const { data: u } = await admin.auth.getUser(jwt);
     if (!u?.user) return json({ error: "unauthorized" }, 401);
+
+    // «يوم فاطمة»: the consultant dictates a session; Mira structures it (staff only, never sent to anyone here).
+    const body = await req.json().catch(() => ({}));
+    if (body?.action === "structure_note") return await structureNote(admin, u.user.id, body);
+
     const { data: me } = await admin.from("patients").select("id").eq("user_id", u.user.id).maybeSingle();
     const patientId = me?.id;
     if (!patientId) return json({ error: "no patient" }, 403);
@@ -230,3 +235,35 @@ ${(kb ?? []).map((k) => `س: ${k.question}\nج: ${k.answer}`).join("\n\n") || "�
     return json({ error: String(e?.message ?? e) }, 500);
   }
 });
+
+/** Staff (consultant/admin) only: dictated Arabic transcript → { findings, plan, levels[], client_message }. */
+async function structureNote(admin, userId: string, body) {
+  const { data: st } = await admin.from("staff").select("id, role, is_consultant, active").eq("user_id", userId).maybeSingle();
+  if (!st?.active || !(st.role === "owner" || st.role === "admin" || st.is_consultant)) return json({ error: "forbidden" }, 403);
+  const transcript = String(body.transcript ?? "").slice(0, 6000).trim();
+  if (!transcript) return json({ error: "empty" }, 400);
+  if (!KEY) return json({ error: "no api key" }, 503);
+  const { data: cfgRow } = await admin.from("settings").select("value").eq("key", "mira").maybeSingle();
+  const model = cfgRow?.value?.model ?? "claude-haiku-5-5";
+  const { data: lv } = await admin.from("service_levels").select("name, service_key").limit(80);
+  const levels = (lv ?? []).map((l) => `${l.service_key}: ${l.name}`).join("\n");
+  const system =
+    "أنتِ ميرا، مساعدة أ. فاطمة طيبة (أخصائية عناية بالبشرة). تُعطَين نص إملاء صوتي بعد جلسة استشارة. " +
+    "رتّبيه دون إضافة أي معلومة غير موجودة في النص. أعيدي JSON فقط بالشكل: " +
+    '{"findings": "...", "plan": "...", "levels": ["..."], "client_message": "..."}. ' +
+    "findings وplan بالعربية للملف الطبي. levels: مستويات الخدمات الموصى بها من القائمة إن ذُكرت. " +
+    "client_message: رسالة قصيرة ودودة للعميلة بلغة بسيطة غير تقنية تلخّص خطتها.\nالمستويات المتاحة:\n" + levels;
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: 900, system, messages: [{ role: "user", content: transcript }] }),
+  });
+  if (!r.ok) return json({ error: `anthropic ${r.status}` }, 502);
+  const out = await r.json();
+  const text = (out.content ?? []).filter((c) => c.type === "text").map((c) => c.text).join("");
+  const m = text.match(/\{[\s\S]*\}/);
+  try {
+    const p = JSON.parse(m ? m[0] : text);
+    return json({ findings: String(p.findings ?? ""), plan: String(p.plan ?? ""), levels: Array.isArray(p.levels) ? p.levels.map(String) : [], client_message: String(p.client_message ?? "") });
+  } catch { return json({ findings: transcript, plan: "", levels: [], client_message: "" }); }
+}

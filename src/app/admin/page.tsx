@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const revenue = useQuery(["appointments", "revenue", today], revenueToday);
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const hours = useQuery(["appointments", "hours"], getHours);
-  const canStock = staff && ["owner", "admin", "reception"].includes(staff.role);
+  const canStock = staff && ["owner", "admin"].includes(staff.role);
   const stock = useQuery(["products", "inventory"], listInventory, { enabled: !!canStock });
   const devices = useQuery(["catalog", "devices"], listDevices);
 

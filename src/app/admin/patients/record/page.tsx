@@ -16,6 +16,7 @@ import { angleLabel, listConsents, photoConsentOf, listNotes, listPatientPackage
 import { C } from "@/lib/tokens";
 import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
+import { useSession } from "@/lib/supabase/session";
 import { PatientLevels } from "../levels";
 import { RecordIntake } from "../../my-day/IntakePanel";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
@@ -33,6 +34,7 @@ function Record() {
   const { data: p, loading, error } = useQuery(["patients", "one", id], () => getPatient(id), { enabled: !!id });
   const { data: tiers } = useQuery(["settings", "tiers"], getTiers);
   const [editing, setEditing] = useState(false);
+  const contactOnly = useSession().staff?.role === "reception";
 
   if (!id) return <Shell><EmptyState icon="users" title="اختاري مراجعة من القائمة" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
   if (error) return <Shell><ErrorNote>{arErr(error, "تعذّر تحميل الملف. أعيدي تحميل الصفحة.")}</ErrorNote></Shell>;
@@ -88,7 +90,7 @@ function Record() {
           <History p={p} />
         </div>
       </div>
-      {editing && <EditPatient p={p} onClose={() => setEditing(false)} />}
+      {editing && <EditPatient p={p} onClose={() => setEditing(false)} contactOnly={contactOnly} />}
     </Shell>
   );
 }

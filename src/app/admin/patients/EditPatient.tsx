@@ -14,7 +14,8 @@ function normPhone(v: string) {
   return v.trim().startsWith("+") && !d.startsWith("963") ? `+${d}` : `+963${d.replace(/^(963|0)/, "")}`;
 }
 
-export function EditPatient({ p, onClose }: { p: Pick<Patient, "id" | "file_no" | "name" | "phone" | "birth_date" | "skin_type" | "notes" | "pregnant" | "breastfeeding">; onClose: () => void }) {
+/** `contactOnly` («خدمة العملاء»): name + phone only — the database refuses medical fields from that role. */
+export function EditPatient({ p, onClose, contactOnly }: { p: Pick<Patient, "id" | "file_no" | "name" | "phone" | "birth_date" | "skin_type" | "notes" | "pregnant" | "breastfeeding">; onClose: () => void; contactOnly?: boolean }) {
   const [name, setName] = useState(p.name);
   const [phone, setPhone] = useState(p.phone ?? "");
   const [dob, setDob] = useState(p.birth_date ?? "");
@@ -30,7 +31,9 @@ export function EditPatient({ p, onClose }: { p: Pick<Patient, "id" | "file_no" 
     if (phone.trim() && phone.replace(/\D/g, "").length < 9) { setErr("رقم الهاتف غير مكتمل."); return; }
     setBusy(true);
     try {
-      await updatePatient(p.id, { name: name.trim(), phone: normPhone(phone), birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
+      await updatePatient(p.id, contactOnly
+        ? { name: name.trim(), phone: normPhone(phone) }
+        : { name: name.trim(), phone: normPhone(phone), birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
       onClose();
     } catch (e) { setErr(arErr(e)); }
     setBusy(false);
@@ -38,6 +41,7 @@ export function EditPatient({ p, onClose }: { p: Pick<Patient, "id" | "file_no" 
   return (
     <Modal open onClose={onClose} title={`تعديل ملف ${p.file_no}`} footer={<><SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
       <TextInput label="الاسم" value={name} onChange={setName} />
+      {contactOnly ? <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" /> : <>
       <div className={t.two}>
         <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" />
         <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
@@ -48,6 +52,7 @@ export function EditPatient({ p, onClose }: { p: Pick<Patient, "id" | "file_no" 
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={bf} onChange={setBf} label="مرضع" />مرضع</label>
       </div>
       <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
+      </>}
       {err && <ErrorNote>{err}</ErrorNote>}
     </Modal>
   );

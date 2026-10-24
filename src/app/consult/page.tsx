@@ -53,6 +53,15 @@ export default function ConsultPage() {
         </div>
       )}
 
+      <Link href={R.P_WrittenConsult} style={{ background: C.white, borderRadius: 26, padding: "14px 16px", boxShadow: SH, display: "flex", alignItems: "center", gap: 12, color: C.ink }}>
+        <span style={{ width: 44, height: 44, borderRadius: 22, background: "#F4EAF7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="msg" size={20} color={C.accent} /></span>
+        <div style={{ flexGrow: 1, minWidth: 0, lineHeight: 1.45 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700 }}>استشارة مكتوبة بلا موعد</div>
+          <div style={{ fontSize: 12.5, color: C.sub2 }}>اكتبي سؤالكِ وأرفقي صوراً، وتصلكِ الإجابة خلال 48 ساعة.</div>
+        </div>
+        <Icon name="back" size={16} color={C.accentMid} />
+      </Link>
+
       {past.length > 0 && (
         <div style={{ background: C.white, borderRadius: 26, padding: "6px 16px", boxShadow: SH }}>
           <div style={{ fontSize: 13, color: C.sub2, paddingTop: 8 }}>استشارات سابقة</div>

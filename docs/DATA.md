@@ -29,6 +29,13 @@ honest empty state. The database is currently empty except for the owner account
   site, splash, login) need no login. Admin pages are already guarded by `AdminShell`. Reception tablet: `useRequireStaff()`.
   TV screens are public and may only use `rpc("today_queue")` (numbers and rooms, never names).
 - Roles: `owner` passes every check; `admin`, `specialist`, `reception`, `accountant` (see `private.has_role` in RLS).
+- `reception` = «خدمة العملاء» (migrations 0176/0177): booking only + patient contact info. Use
+  `private.is_staff_full()` (active staff except reception) for anything outside that scope, `private.is_staff()`
+  only for booking reads/writes (appointments, patients, services/levels/categories, staff, staff_hours/shifts/services,
+  consult_blocks, patient_service_levels, slot/booking RPCs, approve/reject_booking, confirmations). Never add
+  `reception` to finance/store/stock/medical `has_role` arrays. Trigger `guard_reception_patient_update` blocks
+  reception from changing medical/patient-system columns (birth_date, skin_type, pregnant, breastfeeding, notes,
+  points, vip, user_id, file_no). Tablet: `useKiosk({ reception: true })` marks the only screens open to her (quick-book).
 
 ## Schema changes
 - Existing tables: see `supabase/migrations/*.sql` and `src/lib/supabase/database.types.ts`.

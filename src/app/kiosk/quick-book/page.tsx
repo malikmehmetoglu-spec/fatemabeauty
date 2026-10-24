@@ -39,7 +39,7 @@ function slotsFor(b: [number, number][], dur: number, NOW: number, D0: number, E
 
 /** Reception tablet: quick booking (today) for a patient at the desk. */
 export default function Page() {
-  const k = useKiosk();
+  const k = useKiosk({ reception: true });
   const router = useRouter();
   const q = useQuery(["queue", "quick-book"], async () => {
     const [services, specialists, rooms, today, hours, clinic, prov] = await Promise.all([listServices(), listSpecialists(), listRooms(), listToday(), listStaffHours().catch(() => []), getHours().catch(() => DEFAULT_HOURS), serviceProviders().catch(() => null)]);

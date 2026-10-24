@@ -59,7 +59,7 @@ export default function StaffPage() {
       <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="الفريق النشط" value={active.length} sub={list.length > active.length ? `${list.length - active.length} موقوفة` : "كل الحسابات نشطة"} icon="users" />
         <Kpi label="أخصائيات" value={count(["specialist"])} sub="يظهرن في الحجز" icon="sparkle" />
-        <Kpi label="استقبال ومحاسبة" value={count(["reception", "accountant"])} icon="cash" />
+        <Kpi label="خدمة العملاء والمحاسبة" value={count(["reception", "accountant"])} icon="cash" />
         <Kpi label="بلا حساب دخول" value={active.filter((s) => !s.user_id).length} sub="أنشئي لهن حساباً" icon="lock" />
       </div>
 

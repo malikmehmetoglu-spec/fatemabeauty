@@ -18,14 +18,15 @@ const rule = (write: Role[], read: Role[] | "all" = "all", own = false): Record<
 
 /** Mirrors supabase/migrations RLS policies (owner passes every check). */
 const MATRIX: [string, Record<Role, Level>][] = [
-  ["المراجِعات والملفات", rule(ALL)],
-  ["المواعيد والأدوار", rule(ALL)],
+  ["المراجِعات (بيانات التواصل)", rule(ALL)],
+  ["الملف الطبي (البشرة، الحالات، الصور، الموافقات)", rule(["admin", "specialist", "accountant"], ["admin", "specialist", "accountant"])],
+  ["المواعيد والحجز", rule(ALL)],
   ["الملاحظات والوصفات الطبية", rule(["admin", "specialist"], ["admin", "specialist"])],
-  ["الفواتير والصندوق", rule(["admin", "reception", "accountant"])],
+  ["الفواتير والصندوق", rule(["admin", "accountant"], ["admin", "accountant"])],
   ["المصاريف", rule(["admin", "accountant"], ["admin", "accountant"])],
-  ["المخزون والمتجر", rule(["admin", "reception"])],
-  ["طلبات المتجر", rule(ALL)],
-  ["الأجهزة", rule(["admin", "specialist"])],
+  ["المخزون والمتجر", rule(["admin"], ["admin", "specialist", "accountant"])],
+  ["طلبات المتجر", rule(["admin"], ["admin", "specialist", "accountant"])],
+  ["الأجهزة", rule(["admin", "specialist"], ["admin", "specialist", "accountant"])],
   ["الخدمات والباقات والغرف والإعدادات", rule(["admin"])],
   ["فريق العمل", rule(["admin"])],
   ["أوقات الدوام", rule(["admin"])],

@@ -65,7 +65,8 @@ export const PHOTO_TERMS = [
   "يحق لكِ طلب حذف صوركِ في أي وقت.",
 ];
 
-export async function signPhotoConsent(a: ConsultAppt, signature: Blob, signer: string) {
+/** Photo consent; `a.id` null = not tied to an appointment (e.g. a written consultation). */
+export async function signPhotoConsent(a: { patient_id: string | null; id: string | null; service_key: string | null }, signature: Blob, signer: string) {
   if (!a.patient_id) throw new Error("لا يوجد ملف لهذا الموعد");
   const path = `${a.patient_id}/${crypto.randomUUID()}.png`;
   const up = await supabase.storage.from("consents").upload(path, signature, { contentType: "image/png", upsert: false });

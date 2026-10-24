@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { EmptyState, ErrorNote, Loading } from "@/components/ui";
-import { useRequireStaff } from "@/lib/supabase/session";
+import { useRequireStaff, useSession } from "@/lib/supabase/session";
 import { getAppointment, isConsult, listToday, personName, prepFor, serviceName, STATUS_AR, useNow, type Prep, type QueueAppt } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { R } from "@/lib/routes";
@@ -49,6 +49,8 @@ const NAV: { href: string; label: string; icon: string }[] = [
 
 /** Staff-mode side rail (top bar on portrait / phone): desk, quick booking, cashier, back to the patient welcome screen. */
 export function KioskNav({ active }: { active: string }) {
+  const { staff } = useSession();
+  const nav = staff?.role === "reception" ? NAV.filter((n) => RECEPTION_OK.includes(n.href)) : NAV;
   return (
     <nav aria-label="وضع الاستقبال" className={K.nav} style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
       <div className={K.navLogo} style={{ display: "flex" }}>
@@ -56,7 +58,7 @@ export function KioskNav({ active }: { active: string }) {
         <img src={LOGO} alt="Fatema Beauty — Skin Care Center" style={{ height: 44, width: "auto", display: "block" }} />
       </div>
       <div className={K.navSep} style={{ width: 44, height: 1, background: C.line }} />
-      {NAV.map((n) => {
+      {nav.map((n) => {
         const on = n.href === active;
         return (
           <Link key={n.href} href={n.href} aria-current={on ? "page" : undefined} className={K.navItem} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 13, fontWeight: on ? 700 : 600, color: on ? C.accent : C.sub2, whiteSpace: "nowrap" }}>
@@ -208,12 +210,26 @@ export function FlashToast() {
   );
 }
 
-/** Reception tablet guard: staff session required; shows a loader on the tablet canvas meanwhile. */
-export function useKiosk() {
+/** Tablet screens open to «خدمة العملاء» (role reception): booking only — no queue, payments or session prep. */
+const RECEPTION_OK: string[] = [R.T_QuickBook];
+
+/**
+ * Reception tablet guard: staff session required; shows a loader on the tablet canvas meanwhile.
+ * `reception: true` marks a booking screen open to «خدمة العملاء»; every other tablet screen is closed to her.
+ */
+export function useKiosk(opts: { reception?: boolean } = {}) {
   const s = useRequireStaff();
+  const denied = !!s.staff && s.staff.role === "reception" && !opts.reception;
   const gate = s.loading || !s.staff
     ? <Stage fluid width={1194} height={834} background={BG} padding="36px 40px"><Loading style={{ margin: "auto" }} /></Stage>
-    : null;
+    : denied
+      ? <Stage fluid width={1194} height={834} background={BG} padding="36px 40px">
+          <div style={{ margin: "auto", textAlign: "center", display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: C.ink }}>هذه الشاشة غير متاحة لخدمة العملاء</div>
+            <Link href={R.T_QuickBook} style={{ height: 48, padding: "0 22px", borderRadius: 24, background: C.accent, color: C.white, fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}>حجز سريع</Link>
+          </div>
+        </Stage>
+      : null;
   return { ...s, gate };
 }
 

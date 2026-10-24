@@ -52,6 +52,8 @@ function Patients() {
   // same rule as the rest of the admin: specialists and the accountant only read
   const canEdit = !!staff && (staff.role === "owner" || staff.role === "admin" || staff.role === "reception");
   const canDelete = !!staff && (staff.role === "owner" || staff.role === "admin");
+  // «خدمة العملاء»: contact details only (no medical fields, no opening the medical file)
+  const contactOnly = staff?.role === "reception";
 
   const rows = useMemo(() => {
     const s = q.trim().replace(/\s+/g, " ");
@@ -134,7 +136,7 @@ function Patients() {
                     </div>
                     <div style={{ ...cell, flex: 0.8 }}>{p.due ? <Tag kind="amber">مستحق {money(p.due)}</Tag> : <span style={{ color: C.muted }}>0</span>}</div>
                     <div style={{ ...cell, flex: 1.2, flexWrap: "wrap" }}><Tags p={p} /></div>
-                    <div style={{ ...cell, flex: act, justifyContent: "flex-end" }}><RowActions p={p} canEdit={canEdit} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} /></div>
+                    <div style={{ ...cell, flex: act, justifyContent: "flex-end" }}><RowActions p={p} canEdit={canEdit} canBill={!contactOnly} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} /></div>
                   </div>
                 );
               })}
@@ -152,7 +154,7 @@ function Patients() {
                         <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{p.vip && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{displayName(p.name)}</div>
                         <div style={{ fontSize: 12, color: C.sub2 }}>ملف <span className="latin" style={{ color: C.accent, fontWeight: 700 }}>{p.file_no}</span> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                       </div>
-                      <RowActions p={p} canEdit={canEdit} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} compact />
+                      <RowActions p={p} canEdit={canEdit} canBill={!contactOnly} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} compact />
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontSize: 12, color: C.sub }}>
                       <span>آخر زيارة: {lastVisit(p)}</span>
@@ -177,14 +179,14 @@ function Patients() {
           </>
         )}
       </div>
-      <AddPatient open={adding} onClose={() => setAdding(false)} />
-      {editing && <EditPatient p={editing} onClose={() => setEditing(null)} />}
+      <AddPatient open={adding} onClose={() => setAdding(false)} contactOnly={contactOnly} />
+      {editing && <EditPatient p={editing} onClose={() => setEditing(null)} contactOnly={contactOnly} />}
       {removing && <DeletePatient p={removing} onClose={() => setRemoving(null)} />}
     </AdminShell>
   );
 }
 
-function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: () => void; contactOnly?: boolean }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
@@ -201,10 +203,10 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
     try {
       const p = await createPatient({
         name: name.trim(), phone: digits ? `+963${digits.replace(/^(963|0)/, "")}` : null,
-        birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null,
+        ...(contactOnly ? { birth_date: null, skin_type: null, notes: null } : { birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null }),
       });
       onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");
-      if (p) window.location.href = fileHref(R.W_Record, "id", p.id);
+      if (p && !contactOnly) window.location.href = fileHref(R.W_Record, "id", p.id);
     } catch (e) { setErr(arErr(e)); }
     setBusy(false);
   }
@@ -213,10 +215,12 @@ function AddPatient({ open, onClose }: { open: boolean; onClose: () => void }) {
       <TextInput label="الاسم الكامل" value={name} onChange={setName} required />
       <div className={t.two}>
         <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09xx xxx xxx" hint="تربط الملف بحسابها عند تسجيل الدخول بهذا الرقم" />
-        <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />
+        {!contactOnly && <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />}
       </div>
+      {!contactOnly && <>
       <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
       <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
+      </>}
       {err && <ErrorNote>{err}</ErrorNote>}
     </Modal>
   );
@@ -240,7 +244,7 @@ function Tags({ p, hideEmpty }: { p: PatientRow; hideEmpty?: boolean }) {
 const MORE = "M5 12h.01M12 12h.01M19 12h.01";
 
 /** WhatsApp + quick actions. Clicks/keys never reach the row (which opens the file). `compact` = WhatsApp + «⋯» menu (phones). */
-function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: PatientRow; canEdit: boolean; canDelete: boolean; onEdit: () => void; onDelete: () => void; compact?: boolean }) {
+function RowActions({ p, canEdit, canBill, canDelete, onEdit, onDelete, compact }: { p: PatientRow; canEdit: boolean; canBill: boolean; canDelete: boolean; onEdit: () => void; onDelete: () => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -261,7 +265,7 @@ function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: P
         <div role="menu" className={css.menu}>
           {canEdit && <button type="button" role="menuitem" className={css.menuItem} onClick={() => { setOpen(false); onEdit(); }}><Icon name="edit" size={17} color={C.accent} />تعديل البيانات</button>}
           <Link role="menuitem" href={appt} className={css.menuItem}><Icon name="calcheck" size={17} color={C.accent} />موعد جديد</Link>
-          <Link role="menuitem" href={bill} className={css.menuItem}><Icon name="receipt" size={17} color={C.accent} />فاتورة</Link>
+          {canBill && <Link role="menuitem" href={bill} className={css.menuItem}><Icon name="receipt" size={17} color={C.accent} />فاتورة</Link>}
           {canDelete && <button type="button" role="menuitem" className={css.menuItem} style={{ color: C.danger }} onClick={() => { setOpen(false); onDelete(); }}><Icon name="trash" size={17} color={C.danger} />حذف الملف</button>}
         </div>
       )}
@@ -273,7 +277,7 @@ function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: P
       <VipStarButton patient={p} />
       {canEdit && <button type="button" className={css.iconBtn} aria-label="تعديل البيانات" title="تعديل البيانات" onClick={onEdit}><Icon name="edit" size={16} color={C.accent} /></button>}
       <Link href={appt} className={css.iconBtn} aria-label="موعد جديد" title="موعد جديد"><Icon name="calcheck" size={16} color={C.accent} /></Link>
-      <Link href={bill} className={css.iconBtn} aria-label="فاتورة" title="فاتورة"><Icon name="receipt" size={16} color={C.accent} /></Link>
+      {canBill && <Link href={bill} className={css.iconBtn} aria-label="فاتورة" title="فاتورة"><Icon name="receipt" size={16} color={C.accent} /></Link>}
       {canDelete && <button type="button" className={`${css.iconBtn} ${css.danger}`} aria-label="حذف الملف" title="حذف الملف" onClick={onDelete}><Icon name="trash" size={16} color={C.danger} /></button>}
     </div>
   );
