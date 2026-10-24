@@ -11,12 +11,13 @@ import { useQuery } from "@/lib/db/query";
 import { useSession } from "@/lib/supabase/session";
 import { bookingError, dateOfKey, endsAt, personName, type Appointment } from "@/lib/db/appointments";
 import {
-  apologyText, approveBooking, canConfirm, confirmText, getCentre, listPending, listRecentConfirmed, markConfirmSent, rejectBooking, type Centre,
+  apologyText, approveBooking, canConfirm, confirmText, getCentre, listPending, listRecentConfirmed, rejectBooking, sentChannels,
+  smsApologyText, smsConfirmText, type Centre,
 } from "@/lib/db/bookingRequests";
 import { C, SH } from "@/lib/tokens";
 import { arErr } from "../../patients/kit";
 import { NEW_BTN } from "../CalendarBoard";
-import { WaButton } from "../whatsapp";
+import { SendChannels } from "../channels";
 import st from "./requests.module.css";
 
 const SOURCE: Record<string, string> = { public: "رابط الحجز", app: "التطبيق", reception: "الاستقبال", admin: "الإدارة", walk_in: "حضور مباشر" };
@@ -95,12 +96,13 @@ export default function BookingRequestsPage() {
                   <Details a={a} />
                   {justDone[a.id] && <div className={st.ok}><Icon name="check" size={17} color="#2F8A57" stroke={2.2} />تم تأكيد الموعد — أرسلي رسالة التأكيد لها الآن.</div>}
                   {can && (
-                    <div className={st.actions}>
-                      <WaButton phone={phoneOf(a)} text={confirmText(a, c)} onSent={() => markConfirmSent(a.id)}>
-                        {a.confirm_sent_at ? "إعادة إرسال التأكيد" : "إرسال التأكيد على واتساب"}
-                      </WaButton>
-                      <Link href={`${R.W_Calendar}?day=${dayKey(new Date(a.starts_at))}&open=${a.id}`} className={st.link}>فتح في التقويم</Link>
-                    </div>
+                    <>
+                      <SendChannels appt={a} kind="confirm" phone={phoneOf(a)} waText={confirmText(a, c)} smsText={smsConfirmText(a)}
+                        label={Object.keys(sentChannels(a, "confirm")).length ? "إعادة إرسال التأكيد عبر" : "إرسال التأكيد عبر"} />
+                      <div className={st.actions}>
+                        <Link href={`${R.W_Calendar}?day=${dayKey(new Date(a.starts_at))}&open=${a.id}`} className={st.link}>فتح في التقويم</Link>
+                      </div>
+                    </>
                   )}
                 </article>
               ))}
@@ -122,7 +124,7 @@ function Head({ a }: { a: Appointment }) {
       </div>
       <div className={st.tags}>
         {a.status === "pending" ? <Tag kind="amber">بانتظار التأكيد</Tag> : <Tag kind="green">مؤكد</Tag>}
-        {a.confirm_sent_at && <Tag kind="plum">أُرسل التأكيد</Tag>}
+        {Object.keys(sentChannels(a, "confirm")).length > 0 && <Tag kind="plum">أُرسل التأكيد</Tag>}
       </div>
     </div>
   );
@@ -157,15 +159,15 @@ function RejectDialog({ appt, centre, onClose }: { appt: Appointment | null; cen
   }
   return (
     <Modal open onClose={close} title={done ? "تم إلغاء الطلب" : `رفض طلب ${personName(a)}`} width={520}
-      footer={done ? <>
-        <WaButton phone={phoneOf(a)} text={apologyText(a, reason, centre)}>إرسال رسالة اعتذار</WaButton>
-        <GhostButton onClick={close}>إغلاق</GhostButton>
-      </> : <>
+      footer={done ? <GhostButton onClick={close}>إغلاق</GhostButton> : <>
         <SubmitButton busy={busy} onClick={reject} style={{ background: C.danger }}>رفض الطلب</SubmitButton>
         <GhostButton onClick={close}>تراجع</GhostButton>
       </>}>
       {done ? (
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: C.sub }}>أُلغي الموعد وتحرّر الوقت. أرسلي لها رسالة اعتذار على واتساب واقترحي موعداً آخر.</p>
+        <>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: C.sub }}>أُلغي الموعد وتحرّر الوقت. أرسلي لها رسالة اعتذار واقترحي موعداً آخر.</p>
+          <SendChannels appt={{ ...a, status: "cancelled" }} kind="apology" phone={phoneOf(a)} waText={apologyText(a, reason, centre)} smsText={smsApologyText(a)} label="إرسال الاعتذار عبر" />
+        </>
       ) : (
         <>
           <p style={{ margin: 0, fontSize: 14, color: C.sub }}>{a.service?.name} · {arDate(dateOfKey(dayKey(new Date(a.starts_at))))} · <span className="latin">{clock(a.starts_at)}</span></p>

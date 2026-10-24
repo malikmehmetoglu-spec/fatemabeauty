@@ -12,9 +12,9 @@ import {
   bookingError, dateOfKey, endsAt, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
   type Appointment, type Status, useSearch, weekday,
 } from "@/lib/db/appointments";
-import { approveBooking, canConfirm, confirmText, getCentre, markConfirmSent, pendingCount } from "@/lib/db/bookingRequests";
+import { apologyText, approveBooking, canConfirm, confirmText, getCentre, pendingCount, smsApologyText, smsConfirmText } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
-import { WaButton } from "./whatsapp";
+import { SendChannels } from "./channels";
 import { isVip, ReserveChips, VipBookingDialog, VipButton, VipStar } from "./vip";
 import { GOLD, GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
 import { apptCount, arErr } from "../patients/kit";
@@ -305,11 +305,13 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
       </div>
       {a.status === "confirmed" && can && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: confirmedNow ? "#EAF7EF" : "#F8F2FA" }}>
-          {confirmedNow && <b style={{ fontSize: 13.5, color: "#2F6E4A" }}>تم تأكيد الموعد — أرسلي التأكيد لها على واتساب.</b>}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <WaButton phone={phone} text={confirmText(a, centre.data ?? {})} onSent={() => markConfirmSent(a.id)}>{a.confirm_sent_at ? "إعادة إرسال التأكيد" : "إرسال التأكيد على واتساب"}</WaButton>
-            {a.confirm_sent_at && <Tag kind="plum">أُرسل التأكيد</Tag>}
-          </div>
+          {confirmedNow && <b style={{ fontSize: 13.5, color: "#2F6E4A" }}>تم تأكيد الموعد — أرسلي التأكيد لها الآن.</b>}
+          <SendChannels appt={a} kind="confirm" phone={phone} waText={confirmText(a, centre.data ?? {})} smsText={smsConfirmText(a)} label="إرسال التأكيد عبر" />
+        </div>
+      )}
+      {a.status === "cancelled" && can && (a.patient_id || phone) && (
+        <div style={{ borderRadius: 18, padding: "12px 14px", background: "#FBF1F3" }}>
+          <SendChannels appt={a} kind="apology" phone={phone} waText={apologyText(a, a.cancel_reason ?? "", centre.data ?? {})} smsText={smsApologyText(a)} label="إرسال رسالة اعتذار عبر" />
         </div>
       )}
       {a.patient_id && (

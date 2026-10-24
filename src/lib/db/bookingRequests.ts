@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/database.types";
 import { arDate, clock, dayKey } from "@/lib/format";
 import { dateOfKey, type Appointment } from "./appointments";
-import { invalidate, must } from "./query";
+import { invalidate, must, revalidate } from "./query";
 
 const SEL = "*, service:services(name,short_name,minutes), room:rooms(name), specialist:staff(id,name,title,photo_url), patient:patients(id,name,file_no,phone)";
 
@@ -119,3 +119,60 @@ export function apologyText(a: Appointment, reason: string, c: Centre) {
 }
 
 export const greetText = (name?: string | null) => `مرحباً ${firstName(name)}، معكِ مركز Fatema Beauty`.replace("مرحباً ،", "مرحباً،");
+
+/* ---------- SMS & in-app (three confirmation channels) ---------- */
+
+export type ConfirmKind = "confirm" | "apology";
+export type Channel = "whatsapp" | "sms" | "app";
+/** {whatsapp?: iso, sms?: iso, app?: iso} for this kind, from appointments.confirm_channels. */
+export function sentChannels(a: Pick<Appointment, "confirm_channels" | "confirm_sent_at">, kind: ConfirmKind): Partial<Record<Channel, string>> {
+  const all = (a.confirm_channels ?? {}) as Record<string, Partial<Record<Channel, string>>>;
+  const out = { ...(all[kind] ?? {}) };
+  if (kind === "confirm" && a.confirm_sent_at && !out.whatsapp) out.whatsapp = a.confirm_sent_at;
+  return out;
+}
+
+const SMS_MAX = 134; // two Arabic (UCS-2) segments of 67 characters
+const shortWhen = (iso: string) => {
+  const d = new Date(new Date(iso).toLocaleString("en-US", { timeZone: "Asia/Damascus" }));
+  const day = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"][d.getDay()];
+  return `${day} ${d.getDate()}/${d.getMonth() + 1} الساعة ${clock(iso)}`;
+};
+/** Fits a message into 2 SMS segments by shortening the service name first. */
+function fitSms(build: (svc: string) => string, svc: string) {
+  let s = svc;
+  while (build(s).length > SMS_MAX && s.length > 8) s = s.slice(0, -2).trim();
+  const out = build(s === svc ? s : `${s}…`);
+  return out.length > SMS_MAX ? out.slice(0, SMS_MAX) : out;
+}
+export const smsConfirmText = (a: Appointment) =>
+  fitSms((s) => `Fatema Beauty: تم تأكيد موعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو الحضور قبل 10 دقائق.`, a.service?.name ?? "الجلسة");
+export const smsApologyText = (a: Appointment) =>
+  fitSms((s) => `Fatema Beauty: نعتذر، تعذّر تثبيت موعد ${s} يوم ${shortWhen(a.starts_at)}. تواصلي معنا لموعد آخر.`, a.service?.name ?? "الجلسة");
+
+/** Sends an SMS through the «staff-sms» Edge Function (phone is taken from the appointment on the server). */
+export async function sendSms(id: string, kind: ConfirmKind, text: string, dryRun = false) {
+  const { data, error } = await supabase.functions.invoke("staff-sms", { body: { appointment_id: id, kind, text, dry_run: dryRun } });
+  if (error) {
+    let msg = "تعذّر إرسال الرسالة.";
+    try { const ctx = (error as { context?: Response }).context; const j = ctx ? await ctx.json() : null; if (j?.error) msg = j.error; } catch { /* keep message */ }
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
+  revalidate("appointments"); revalidate("booking-requests");
+  return data as { ok: true; dry_run: boolean };
+}
+
+/** «إرسال عبر التطبيق»: notification + staff message in her chat. hasApp=false → she has not signed in to the app yet. */
+export async function sendInApp(id: string, kind: ConfirmKind, body: string) {
+  const { data, error } = await supabase.rpc("send_app_confirmation", { p_appt: id, p_kind: kind, p_body: body });
+  if (error) throw new Error(/not allowed/.test(error.message) ? "لا تملكين صلاحية الإرسال." : /no patient/.test(error.message) ? "لا يوجد ملف مراجِعة مرتبط بهذا الموعد." : "تعذّر الإرسال عبر التطبيق.");
+  revalidate("appointments"); revalidate("booking-requests");
+  return { hasApp: !!(data as { has_app?: boolean } | null)?.has_app };
+}
+
+export async function markWhatsApp(id: string, kind: ConfirmKind) {
+  const { error } = await supabase.rpc("mark_confirm_channel", { p_id: id, p_channel: "whatsapp", p_kind: kind });
+  if (error) console.warn("[mark_confirm_channel]", error);
+  revalidate("appointments"); revalidate("booking-requests");
+}

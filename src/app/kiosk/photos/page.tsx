@@ -294,7 +294,7 @@ function Inner() {
               <span style={{ width: 9, height: 9, borderRadius: 5, background: C.ok }} />{shotState}
             </div>
           </div>
-          {grid && <div style={{ position: "absolute", bottom: 124, left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 40px)", padding: "8px 16px", borderRadius: 18, background: "rgba(53,33,61,0.45)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: C.white, fontSize: 14, fontWeight: 600, textAlign: "center", lineHeight: 1.5 }}>ضعي الوجه داخل الإطار المنقّط — العينان على الخط الأفقي</div>}
+          {grid && <div style={{ position: "absolute", top: 76, left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 40px)", padding: "8px 16px", borderRadius: 18, background: "rgba(53,33,61,0.45)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: C.white, fontSize: 14, fontWeight: 600, textAlign: "center", lineHeight: 1.5 }}>ضعي الوجه داخل الإطار — العينان على الخط</div>}
           <div style={{ position: "absolute", bottom: 20, left: "0", right: "0", display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
             <button type="button" aria-label="شبكة المحاذاة" aria-pressed={grid} onClick={() => setGrid(!grid)} style={{ width: 58, height: 58, borderRadius: 29, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

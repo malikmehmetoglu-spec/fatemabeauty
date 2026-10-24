@@ -61,6 +61,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -96,6 +97,7 @@ export type Database = {
           called_at?: string | null
           cancel_reason?: string | null
           checked_in_at?: string | null
+          confirm_channels?: Json
           confirm_sent_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           called_at?: string | null
           cancel_reason?: string | null
           checked_in_at?: string | null
+          confirm_channels?: Json
           confirm_sent_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -1956,6 +1959,67 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_log: {
+        Row: {
+          appointment_id: string | null
+          body: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          patient_id: string | null
+          phone: string
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          body: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          patient_id?: string | null
+          phone: string
+          sent_by?: string | null
+          status: string
+        }
+        Update: {
+          appointment_id?: string | null
+          body?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          patient_id?: string | null
+          phone?: string
+          sent_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_log_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_log_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_log_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff: {
         Row: {
           active: boolean
@@ -2645,6 +2709,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -2700,6 +2765,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -2751,6 +2817,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -2802,6 +2869,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -3079,6 +3147,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_confirm_channel: {
+        Args: { p_channel: string; p_id: string; p_kind?: string }
+        Returns: undefined
+      }
       mark_confirm_sent: { Args: { p_id: string }; Returns: undefined }
       my_queue: {
         Args: never
@@ -3119,6 +3191,7 @@ export type Database = {
           called_at: string | null
           cancel_reason: string | null
           checked_in_at: string | null
+          confirm_channels: Json
           confirm_sent_at: string | null
           created_at: string
           created_by: string | null
@@ -3348,6 +3421,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      send_app_confirmation: {
+        Args: { p_appt: string; p_body?: string; p_kind: string }
+        Returns: Json
       }
       service_level_for: {
         Args: { p_patient?: string; p_service: string }

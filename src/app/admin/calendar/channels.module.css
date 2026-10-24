@@ -1,0 +1,27 @@
+.box { container-type: inline-size; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.label { font-size: 13px; font-weight: 700; color: #866F8D; }
+.row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.btn {
+  height: 46px; min-width: 0; border-radius: 23px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: var(--font-messiri), sans-serif; font-size: 14px; font-weight: 700; white-space: nowrap; text-decoration: none;
+  border: 1px solid transparent; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; overflow: hidden;
+}
+.btn span { overflow: hidden; text-overflow: ellipsis; }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid #C9A2D8; outline-offset: 2px; }
+.wa { background: linear-gradient(145deg, #2BB36B, #1F9D57); color: #fff; box-shadow: 0 10px 22px rgba(31,157,87,0.24), inset 0 1px 0 rgba(255,255,255,0.25); }
+.sms { background: #fff; color: #7B4687; border-color: #E3CFEA; box-shadow: 0 6px 16px rgba(123,70,135,0.10); }
+.app { background: linear-gradient(145deg, #B5629C, #8E4A8C); color: #fff; box-shadow: 0 10px 22px rgba(142,74,140,0.26), inset 0 1px 0 rgba(255,255,255,0.22); }
+.off { background: #EFEAF1 !important; color: #A595AA !important; border-color: transparent !important; box-shadow: none !important; cursor: not-allowed; }
+.busy { opacity: .7; cursor: progress; }
+.latin { font-family: var(--font-rubik), sans-serif; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 14px; background: #EEF8F2; color: #2F6E4A; font-size: 12.5px; font-weight: 700; }
+.badge time { font-family: var(--font-rubik), sans-serif; font-weight: 500; color: #4E8A66; font-size: 12px; }
+.note { border-radius: 14px; padding: 8px 12px; background: #F6EEF9; color: #6E4A7A; font-size: 13px; font-weight: 600; line-height: 1.6; }
+.err { border-radius: 14px; padding: 8px 12px; background: #FDEEF0; color: #A3354A; font-size: 13px; font-weight: 600; line-height: 1.6; }
+@container (max-width: 340px) {
+  .row { gap: 6px; }
+  .btn { font-size: 13px; gap: 4px; padding: 0 4px; }
+  .btn svg { width: 16px; height: 16px; }
+}

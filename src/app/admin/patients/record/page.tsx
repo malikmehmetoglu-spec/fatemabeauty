@@ -225,9 +225,9 @@ function Consents({ id }: { id: string }) {
   return <div>{data.map((c) => (
     <div key={c.id} style={rowStyle}>
       <Icon name="sign" size={18} color={C.accentMid} />
-      <span style={{ flex: 1, fontWeight: 700 }}>{(c.answers as { title?: string })?.title ?? c.services?.name ?? "موافقة عامة"}</span>
+      <span style={{ flex: 1, fontWeight: 700 }}>{c.kind === "photo" ? "موافقة تصوير الوجه" : c.kind === "photo_declined" ? "تصوير الوجه" : (c.answers as { title?: string })?.title ?? c.services?.name ?? "موافقة عامة"}</span>
       <span style={{ color: C.sub }}>{when(c.signed_at)}</span>
-      <Tag kind="green">موقّعة</Tag>
+      {c.kind === "photo_declined" ? <Tag kind="gray">رفضت</Tag> : <Tag kind="green">موقّعة</Tag>}
     </div>
   ))}</div>;
 }

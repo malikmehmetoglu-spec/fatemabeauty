@@ -103,8 +103,8 @@ function Inner() {
               <div style={{ fontSize: 17, lineHeight: 1.6, paddingTop: 6 }}>{t.text}</div>
             </div>
           ))}
-          <button type="button" onClick={decline} disabled={!!busy} style={{ marginTop: "auto", alignSelf: "flex-start", minHeight: 52, padding: "0 22px", borderRadius: 26, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, color: C.sub, fontSize: 16, fontWeight: 700, fontFamily: "inherit", opacity: busy ? 0.6 : 1 }}>
-            {busy === "decline" ? "جارٍ الحفظ…" : "لا أوافق على التصوير — متابعة بدون صور"}
+          <button type="button" onClick={decline} disabled={!!busy} style={{ marginTop: "auto", alignSelf: "flex-start", maxWidth: "100%", minHeight: 52, padding: "10px 22px", lineHeight: 1.4, borderRadius: 26, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, color: C.sub, fontSize: 16, fontWeight: 700, fontFamily: "inherit", opacity: busy ? 0.6 : 1 }}>
+            {busy === "decline" ? "جارٍ الحفظ…" : "لا أوافق — متابعة بدون صور"}
           </button>
         </div>
         <div className={KC.side} style={{ width: 440, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
