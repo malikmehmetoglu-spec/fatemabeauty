@@ -1,10 +1,12 @@
 "use client";
 
-/** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new. */
+/** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new.
+ *  Day view: time grid with one column per room or specialist (overlaps laid out side by side in lanes, card height = duration);
+ *  phones get an hour-grouped agenda instead. Week view: 7 day columns of compact cards. */
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Chip, EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, Segment, SubmitButton, Tag } from "@/components/ui";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
@@ -15,37 +17,123 @@ import {
 import { apologyText, approveBooking, canConfirm, confirmText, getCentre, pendingCount, smsApologyText, smsConfirmText } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
 import { SendChannels } from "./channels";
-import { isVip, ReserveChips, VipBookingDialog, VipButton, VipStar } from "./vip";
-import { GOLD, GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
+import { isVip, VipBookingDialog, VipButton, VipStar } from "./vip";
+import { GOLD_DEEP, GOLD_LINE, GOLD_SOFT, reserveStatus } from "@/lib/db/vip";
 import { apptCount, arErr } from "../patients/kit";
 import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey, money } from "@/lib/format";
-import { C, SH, SHB } from "@/lib/tokens";
+import { C } from "@/lib/tokens";
+import S from "./calendar.module.css";
 
-const HOUR = 75; // px per hour
+const HOUR = 88; // px per hour (15 min = 22px)
+const PAD = 12; // breathing room above the first hour line so its label is not clipped
+const MIN_H = 24;
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
 const hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const shiftKey = (k: string, n: number) => dayKey(new Date(dateOfKey(k).getTime() + n * 864e5));
+const durOf = (a: Appointment) => a.minutes + (a.extension_minutes ?? 0);
+const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-const LOOK: Record<Status, CSSProperties> = {
-  done: { background: "#F4F0F5", border: "1px solid #EAE1EC", color: "#866F8D" },
-  checked_in: { background: "#FFF5E6", border: "1px solid #F2D8AA", color: "#7A4F12" },
-  pending: { background: "#FFFFFF", border: "1.5px dashed #E2B868", color: "#35213D" },
-  confirmed: { background: "#FFFFFF", border: "1px solid #E9DCEE", borderRight: "4px solid #3FA46A", boxShadow: "0 6px 14px rgba(123,70,135,0.07)", color: "#35213D" },
-  in_session: { background: "linear-gradient(160deg,#F1E3F6,#D9BCE5)", border: "1px solid #FFFFFF", boxShadow: "0 10px 22px rgba(150,100,170,0.30)", color: "#7B4687" },
-  no_show: { background: "repeating-linear-gradient(135deg, #FAF4FB 0 8px, #F3E6F6 8px 16px)", border: "1px dashed #D2ACDA", color: "#B03D6A" },
-  cancelled: { background: "#FAFAFA", border: "1px dashed #E0D8E2", color: "#A99AAE", textDecoration: "line-through" },
+/** One colour per status: the bar on the card's leading edge, a light fill and the chip. */
+const ST: Record<Status, { bar: string; bg: string; bd: string; chipBg: string; chipFg: string }> = {
+  pending: { bar: "#E0A23A", bg: "#FFFBF3", bd: "#F3E1BC", chipBg: "#FCEFD6", chipFg: "#8A5A12" },
+  confirmed: { bar: "#7B4687", bg: "#FFFFFF", bd: "#E6D8EC", chipBg: "#F1E6F5", chipFg: "#6A3A76" },
+  checked_in: { bar: "#2F8F83", bg: "#F3FAF8", bd: "#CFE8E3", chipBg: "#DDF1EC", chipFg: "#1F6A60" },
+  in_session: { bar: "#C8507F", bg: "#FDF1F6", bd: "#F2CADB", chipBg: "#F9DDE8", chipFg: "#9C2F5C" },
+  done: { bar: "#A99AAE", bg: "#F7F5F8", bd: "#E9E3EB", chipBg: "#ECE7EE", chipFg: "#6E6073" },
+  no_show: { bar: "#B03D6A", bg: "#FFFFFF", bd: "#EBC9D6", chipBg: "#F8E3EB", chipFg: "#8E2C53" },
+  cancelled: { bar: "#CFC6D2", bg: "#FBFAFB", bd: "#ECE6EE", chipBg: "#F0ECF1", chipFg: "#8F8394" },
+};
+const LEGEND: Status[] = ["pending", "confirmed", "checked_in", "in_session", "done", "no_show"];
+
+type Col = { id: string | null; name: string; secondary?: boolean };
+type Placed = { a: Appointment; s: number; e: number; lane: number; lanes: number };
+
+/** Google-Calendar style lanes: overlapping appointments of one column sit side by side. */
+function placeLanes(items: Appointment[]): Placed[] {
+  const rows = items.map((a) => { const s = toMin(timeOf(a)); return { a, s, e: s + Math.max(durOf(a), 1), lane: 0, lanes: 1 }; })
+    .sort((x, y) => x.s - y.s || y.e - x.e);
+  let cluster: Placed[] = [], ends: number[] = [], clusterEnd = -1;
+  const close = () => { cluster.forEach((p) => { p.lanes = ends.length; }); cluster = []; ends = []; };
+  for (const p of rows) {
+    if (p.s >= clusterEnd) { close(); clusterEnd = -1; }
+    let lane = ends.findIndex((e) => e <= p.s);
+    if (lane < 0) { lane = ends.length; ends.push(p.e); } else ends[lane] = p.e;
+    p.lane = lane; cluster.push(p); clusterEnd = Math.max(clusterEnd, p.e);
+  }
+  close();
+  return rows;
+}
+
+function payOf(a: Appointment): { paid: boolean } | null {
+  const inv = (a.invoices ?? []).filter((i) => !i.void);
+  if (inv.length) return { paid: inv.every((i) => i.paid) };
+  return a.status === "done" ? { paid: false } : null;
+}
+
+const cardVars = (a: Appointment): CSSProperties => {
+  const t = ST[a.status];
+  const vip = isVip(a) && a.status !== "cancelled" && a.status !== "no_show";
+  return { ["--st" as string]: t.bar, ["--bg" as string]: vip ? "linear-gradient(160deg, #FFFDF7, #FBF1D9)" : a.status === "no_show" ? "repeating-linear-gradient(135deg, #FFFFFF 0 6px, #FBF1F5 6px 12px)" : t.bg,
+    ["--bd" as string]: vip ? "#E8D3A0" : t.bd, ["--chipbg" as string]: t.chipBg, ["--chipfg" as string]: t.chipFg } as CSSProperties;
 };
 
-type Col = { id: string | null; name: string };
+function StatusChip({ s }: { s: Status }) {
+  return <span className={S.chip}><span className={S.dot} style={{ background: ST[s].bar }} />{STATUS_LABEL[s]}</span>;
+}
 
-/** VIP appointments: gold card (the status still reads from the label; cancelled / no-show keep their look). */
-const lookOf = (a: Appointment): CSSProperties => {
-  if (!isVip(a) || a.status === "cancelled" || a.status === "no_show") return LOOK[a.status];
-  const base = LOOK[a.status];
-  return { ...base, background: a.status === "in_session" ? "linear-gradient(160deg,#F8E9C4,#E8CD8A)" : a.status === "done" ? "#F8F3E6" : `linear-gradient(160deg, #FFFDF7, ${GOLD_SOFT})`,
-    border: `1px solid ${GOLD_LINE}`, borderRight: `4px solid ${GOLD}`, color: a.status === "done" ? "#8C7A55" : "#4A3A14", boxShadow: "0 8px 18px rgba(169,129,48,0.16)" };
-};
+/** The one appointment card used everywhere (grid, week, phone agenda). */
+function ApptCard({ a, by, mode, style, compact, narrow, onOpen }: {
+  a: Appointment; by: "room" | "specialist" | "both"; mode: "grid" | "week" | "agenda"; style?: CSSProperties; compact?: boolean; narrow?: boolean; onOpen: (a: Appointment) => void;
+}) {
+  const vip = isVip(a);
+  const range = `${timeOf(a)}–${clock(endsAt(a))}`;
+  const svc = [a.service?.short_name || a.service?.name, a.level?.name].filter(Boolean).join(" · ");
+  const where = by === "room" ? a.specialist?.name : by === "specialist" ? a.room?.name : [a.room?.name, a.specialist?.name].filter(Boolean).join(" · ");
+  const pay = payOf(a);
+  const ext = a.extension_minutes ? ` (+${a.extension_minutes} د)` : "";
+  const title = `${personName(a)} · ${range}${ext} · ${svc}${where ? ` · ${where}` : ""} · ${STATUS_LABEL[a.status]}${pay ? ` · ${pay.paid ? "مدفوع" : "غير مدفوع"}` : ""}`;
+  const cls = cx(S.card, vip && a.status !== "cancelled" && a.status !== "no_show" && S.cardVip, compact && S.compact, a.status === "cancelled" && S.struck,
+    (a.status === "done" || a.status === "cancelled") && S.dim, mode === "week" && S.wCard, mode === "agenda" && S.aCard);
+  const nameLine = (
+    <div className={S.line1}>
+      {vip && <VipStar size={12} />}
+      <span className={S.name}>{personName(a)}</span>
+    </div>
+  );
+  if (compact) {
+    return (
+      <button type="button" className={cls} style={{ ...cardVars(a), ...style }} onClick={() => onOpen(a)} title={title}>
+        {nameLine}
+        <span className={S.time}>{timeOf(a)}</span>
+        {!narrow && <span className={S.dot} style={{ background: ST[a.status].bar }} aria-label={STATUS_LABEL[a.status]} />}
+      </button>
+    );
+  }
+  if (mode === "week") {
+    return (
+      <button type="button" className={cls} style={cardVars(a)} onClick={() => onOpen(a)} title={title}>
+        <div className={S.line1} style={{ fontSize: 12 }}><span className={S.time} style={{ color: C.ink, fontWeight: 600 }}>{timeOf(a)}</span>{vip && <VipStar size={11} />}</div>
+        <div className={S.meta} style={{ color: C.ink, fontSize: 12 }}>{personName(a)}</div>
+        {svc && <div className={S.meta} style={{ fontSize: 11 }}>{svc}</div>}
+      </button>
+    );
+  }
+  return (
+    <button type="button" className={cls} style={{ ...cardVars(a), ...style }} onClick={() => onOpen(a)} title={title}>
+      {nameLine}
+      <div className={S.meta}><span className={S.time}>{range}</span>{ext && <span style={{ color: GOLD_DEEP, fontWeight: 600 }}>{ext}</span>}</div>
+      {svc && <div className={S.meta} style={{ color: C.ink }}>{svc}</div>}
+      {where && <div className={S.meta}>{where}</div>}
+      {!narrow && (
+        <div className={S.chips}>
+          <StatusChip s={a.status} />
+          {pay && <span className={S.pay}><span className={S.dot} style={{ background: pay.paid ? "#3FA46A" : "#E0A23A" }} />{pay.paid ? "مدفوع" : "غير مدفوع"}</span>}
+        </div>
+      )}
+    </button>
+  );
+}
 
 export function CalendarBody() {
   const [day, setDay] = useState(dayKey());
@@ -65,36 +153,43 @@ export function CalendarBody() {
   const hours = useQuery(["appointments", "hours"], getHours);
   const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
   const pend = useQuery(["booking-requests", "count"], pendingCount);
+  const reserve = useQuery(["reserve", day], () => reserveStatus(day));
   const sp = useSearch();
   const [opened, setOpened] = useState<string | null>(null);
-  // deep link from «طلبات الحجز»: ?day=YYYY-MM-DD&open=<appointment id>
+  // deep link from «طلبات الحجز» and elsewhere: ?day=YYYY-MM-DD&open=<appointment id> (or ?id=)
   useEffect(() => { const d = sp?.get("day"); if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) setDay(d); }, [sp]);
   useEffect(() => {
-    const id = sp?.get("open");
+    const id = sp?.get("open") || sp?.get("id");
     if (!id || opened === id || !appts.data) return;
     const a = appts.data.find((x) => x.id === id);
     if (a) { setOpen(a); setOpened(id); }
   }, [sp, appts.data, opened]);
 
-  const list = (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled");
+  const list = useMemo(() => (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled"), [appts.data, showCancelled]);
+  const keyOf = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
   const cols: Col[] = useMemo(() => {
     const base: Col[] = by === "room" ? (rooms.data ?? []).map((r) => ({ id: r.id, name: r.name })) : (team.data ?? []).map((s) => ({ id: s.id, name: s.name }));
-    const key = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
-    const extra = list.some((a) => !base.some((c) => c.id === key(a)));
-    return extra ? [...base, { id: null, name: by === "room" ? "بدون غرفة" : "غير محدّدة" }] : base;
+    const k = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
+    // appointments without a room (older bookings) or a removed specialist: a secondary column, only when it has any
+    const extra = list.some((a) => !base.some((c) => c.id === k(a)));
+    return extra ? [...base, { id: null, name: by === "room" ? "بدون غرفة" : "غير محدّدة", secondary: true }] : base;
   }, [by, rooms.data, team.data, list]);
+  const inCol = (c: Col, a: Appointment) => (c.secondary ? !cols.some((x) => !x.secondary && x.id === keyOf(a)) : keyOf(a) === c.id);
 
   const h = hours.data;
   // visible range: earliest start / latest end of anyone's working hours that day (own schedule or the default hours)
   const rows = staffHours.data ?? [];
   const ids = [...new Set([...(team.data ?? []).map((s) => s.id), ...rows.map((r) => r.staff_id)])];
   const windows = h ? dayWindows(rows, ids, weekday(day), h) : [];
-  const startMin = Math.min(windows.length ? windows[0].from : 600, ...list.map((a) => toMin(clock(a.starts_at))));
-  const endMin = Math.max(windows.length ? Math.max(...windows.map((w) => w.to)) : 1080, ...list.map((a) => toMin(clock(endsAt(a)))));
+  const dayList = view === "day" ? list : [];
+  const startMin = Math.min(windows.length ? windows[0].from : 600, ...dayList.map((a) => toMin(clock(a.starts_at))));
+  const endMin = Math.max(windows.length ? Math.max(...windows.map((w) => w.to)) : 1080, ...dayList.map((a) => toMin(clock(endsAt(a)))));
   const first = Math.floor(startMin / 60) * 60, last = Math.ceil(endMin / 60) * 60;
-  const yOf = (m: number) => ((m - first) * HOUR) / 60;
+  const yOf = (m: number) => PAD + ((m - first) * HOUR) / 60;
+  const bodyH = yOf(last) + PAD;
   const isToday = day === dayKey();
   const nowM = toMin(clock());
+  const showNow = isToday && nowM >= first && nowM <= last;
   const loading = appts.loading || rooms.loading || hours.loading;
   const err = appts.error || rooms.error || hours.error;
   /** Working ranges (minutes) of a specialist column on this day: her «أوقات الدوام», or the default hours without a schedule; null = not a specialist column. */
@@ -109,101 +204,142 @@ export function CalendarBody() {
     return out;
   };
 
+  // open the day scrolled to «now» (today) or to the first appointment
+  const boardRef = useRef<HTMLDivElement>(null);
+  const scrolledFor = useRef("");
+  useEffect(() => {
+    const el = boardRef.current;
+    const sig = `${day}|${view}|${by}`;
+    if (!el || loading || view !== "day" || scrolledFor.current === sig) return;
+    scrolledFor.current = sig;
+    const firstAppt = dayList.length ? Math.min(...dayList.map((a) => toMin(timeOf(a)))) : Infinity;
+    const target = showNow ? Math.min(nowM - 90, firstAppt - 15) : Number.isFinite(firstAppt) ? firstAppt - 15 : first;
+    el.scrollTop = Math.max(0, yOf(target) - PAD);
+  });
+
+  const placedByCol = cols.map((c) => placeLanes(list.filter((a) => inCol(c, a))));
+  const dateLabel = view === "day" ? arDate(dateOfKey(day), { year: true }) : `${arDate(dateOfKey(from), { day: false })} – ${arDate(dateOfKey(to), { day: false })}`;
+  const legend = showCancelled ? [...LEGEND, "cancelled" as Status] : LEGEND;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button type="button" aria-label="السابق" onClick={() => setDay(shiftKey(day, view === "day" ? -1 : -7))} style={navBtn}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
-          <div style={{ minWidth: 0, flex: "1 1 auto", textAlign: "center", fontSize: 16, fontWeight: 700 }}>
-            {view === "day" ? arDate(dateOfKey(day), { year: true }) : `${arDate(dateOfKey(from), { day: false })} – ${arDate(dateOfKey(to), { day: false })}`}
+    <div className={S.root}>
+      <div className={S.bar}>
+        <div className={S.barRow}>
+          <div className={cx(S.group, S.navRow)}>
+            <button type="button" className={S.iconBtn} aria-label={view === "day" ? "اليوم السابق" : "الأسبوع السابق"} onClick={() => setDay(shiftKey(day, view === "day" ? -1 : -7))}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
+            <button type="button" className={S.btn} disabled={isToday} onClick={() => setDay(dayKey())}>اليوم</button>
+            <button type="button" className={S.iconBtn} aria-label={view === "day" ? "اليوم التالي" : "الأسبوع التالي"} onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
+            <span className={S.dateTitle}>{dateLabel}</span>
+            <input type="date" className={S.dateInput} aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr" />
           </div>
-          <button type="button" aria-label="التالي" onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))} style={navBtn}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
+          <span className={S.grow} />
+          <div className={S.group}>
+            <div className={S.seg} role="group" aria-label="العرض">
+              <button type="button" aria-pressed={view === "day"} onClick={() => setView("day")}>يوم</button>
+              <button type="button" aria-pressed={view === "week"} onClick={() => setView("week")}>أسبوع</button>
+            </div>
+            {view === "day" && (
+              <div className={S.seg} role="group" aria-label="التقسيم">
+                <button type="button" aria-pressed={by === "room"} onClick={() => setBy("room")}>الغرف</button>
+                <button type="button" aria-pressed={by === "specialist"} onClick={() => setBy("specialist")}>الأخصائيات</button>
+              </div>
+            )}
+          </div>
         </div>
-        {!isToday && <Chip onClick={() => setDay(dayKey())}>اليوم</Chip>}
-        <input type="date" aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr"
-          style={{ height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", fontSize: 13 }} />
-        <span style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
-          {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "الغرف" }, { value: "specialist", label: "الأخصائيات" }]} />}
-          <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
-          <VipButton onClick={() => setVipOpen(true)} height={40} />
-        </span>
+        <div className={S.barRow}>
+          <div className={S.legend} aria-label="دليل الألوان">
+            {legend.map((s) => <span key={s}><i className={S.sw} style={{ background: ST[s].bar }} />{STATUS_LABEL[s]}</span>)}
+            <span><VipStar size={12} />VIP</span>
+          </div>
+          <span className={S.grow} />
+          <div className={S.group}>
+            <button type="button" className={S.btn} aria-pressed={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>
+              <Icon name={showCancelled ? "M5 12l5 5L20 7" : "M18 6L6 18M6 6l12 12"} size={14} color={C.accent} />الملغاة
+            </button>
+            <VipButton onClick={() => setVipOpen(true)} height={38} style={{ borderRadius: 12, fontSize: 13.5, padding: "0 14px", boxShadow: "0 6px 14px rgba(169,129,48,0.25)" }} />
+            <Link href={R.W_BookingModal} className={S.primary}><Icon name="M12 5v14M5 12h14" size={16} color={C.white} stroke={2} />موعد جديد</Link>
+          </div>
+        </div>
       </div>
 
-      {view === "day" && <ReserveChips day={day} />}
-
       {(pend.data ?? 0) > 0 && (
-        <Link href={R.W_BookingRequests} style={{ borderRadius: 20, padding: "12px 16px", background: "linear-gradient(135deg, #FFF6E8, #FBEAF3)", border: "1px solid #F2D8AA", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#7A4F12" }}>
-          <Icon name="bell" size={19} color="#B4781C" />
-          <b style={{ fontSize: 14 }}><span className="latin">{pend.data}</span> {pend.data === 1 ? "طلب حجز" : "طلبات حجز"} من رابط الحجز بانتظار التأكيد</b>
-          <span style={{ marginInlineStart: "auto", fontSize: 13.5, fontWeight: 700, color: C.accent }}>مراجعة الطلبات ←</span>
+        <Link href={R.W_BookingRequests} className={S.banner}>
+          <Icon name="bell" size={18} color="#B4781C" />
+          <b style={{ fontSize: 13.5 }}><span className="latin">{pend.data}</span> {pend.data === 1 ? "طلب حجز" : "طلبات حجز"} من رابط الحجز بانتظار التأكيد</b>
+          <span style={{ marginInlineStart: "auto", fontSize: 13, fontWeight: 700, color: C.accent }}>مراجعة الطلبات ←</span>
         </Link>
       )}
 
       {h && !staffHours.loading && windows.length === 0 && view === "day" && (
-        <div style={{ borderRadius: 18, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>لا أحد من الفريق يداوم في هذا اليوم حسب «أوقات الدوام» — الحجز من التطبيق ورابط الحجز مغلق فيه.</div>
+        <div style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 600 }}>لا أحد من الفريق يداوم في هذا اليوم حسب «أوقات الدوام» — الحجز من التطبيق ورابط الحجز مغلق فيه.</div>
       )}
 
       {loading ? <Loading /> : err ? <ErrorNote>{arErr(err, "تعذّر تحميل المواعيد. أعيدي تحميل الصفحة.")}</ErrorNote> : view === "week" ? (
-        <WeekGrid from={from} list={list} onOpen={setOpen} onDay={(k) => { setDay(k); setView("day"); }} />
+        <WeekGrid from={from} list={list} onOpen={setOpen} onDay={(k) => { setDay(k); setView("day"); }}
+          isOff={(k) => !!h && !staffHours.loading && dayWindows(rows, ids, weekday(k), h).length === 0} />
       ) : cols.length === 0 ? (
         <EmptyState icon="cal" title={by === "room" ? "لا غرف بعد" : "لا أخصائيات بعد"} text={by === "room" ? "أضيفي غرف المركز من الإعدادات لتظهر أعمدة التقويم." : "أضيفي فريق العمل لتظهر أعمدة الأخصائيات."}
           action={<Link href={by === "room" ? R.W_Rooms : R.W_Staff} style={{ color: C.accent, fontWeight: 700 }}>فتح الإعدادات</Link>} />
       ) : (
-        <div style={{ borderRadius: 26, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, padding: "12px 14px 16px", overflowX: "auto" }}>
-          <div style={{ display: "flex", minWidth: 120 + cols.length * 200 }}>
-            <div style={{ width: 56, flexShrink: 0 }} />
-            {cols.map((c) => {
-              const n = list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id && a.status !== "cancelled").length;
-              return (
-                <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, padding: "0 8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>{c.name}
-                    {(() => { const w = workOf(c.id); return w && <span style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: C.sub2 }}>{w.length ? <span className="latin" dir="ltr">{w.map((x) => `${hm(x.from)}–${hm(x.to)}`).join(" · ")}</span> : "لا دوام اليوم"}</span>; })()}
-                  </span>
-                  <Tag kind="lilac">{apptCount(n)}</Tag>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", position: "relative", minWidth: 120 + cols.length * 200, height: yOf(last) + 4 }}>
-            <div style={{ width: 56, flexShrink: 0, position: "relative" }}>
-              {Array.from({ length: (last - first) / 60 + 1 }, (_, i) => (
-                <span key={i} className="latin" style={{ position: "absolute", top: i * HOUR - 8, right: 6, fontSize: 11.5, color: C.muted }}>{hm(first + i * 60)}</span>
-              ))}
-            </div>
-            {cols.map((c) => (
-              <div key={c.id ?? "none"} style={{ flex: 1, minWidth: 190, position: "relative", borderRight: "1px solid #F1E8F3" }}>
-                {Array.from({ length: (last - first) / 60 }, (_, i) => (
-                  <div key={i} style={{ position: "absolute", top: i * HOUR, left: 0, right: 0, height: HOUR, borderTop: "1px dashed #EFE5F2" }} />
-                ))}
-                {(() => { const w = workOf(c.id); return w && offBands(w).map((b) => (
-                  <div key={b.from} title="خارج دوام الأخصائية" style={{ position: "absolute", top: yOf(b.from), height: yOf(b.to) - yOf(b.from), left: 0, right: 0,
-                    background: "repeating-linear-gradient(135deg, #F4F1F5 0 6px, #ECE7EE 6px 12px)", opacity: 0.85 }} />
-                )); })()}
-                {list.filter((a) => (by === "room" ? a.room_id : a.specialist_id) === c.id).map((a) => {
-                  const s = toMin(timeOf(a));
-                  const short = a.minutes < 30;
-                  return (
-                    <button key={a.id} type="button" onClick={() => setOpen(a)} style={{
-                      position: "absolute", left: 6, right: 6, top: yOf(s) + 2, height: Math.max(22, (a.minutes * HOUR) / 60 - 4), borderRadius: 14, padding: "5px 10px",
-                      overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 1, textAlign: "right", ...lookOf(a),
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, width: "100%" }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>{isVip(a) && <VipStar size={13} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{short ? `${timeOf(a)} · ` : ""}{personName(a)}</span></span>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" }}>{STATUS_LABEL[a.status]}</span>
+        <>
+          <div className={S.board} ref={boardRef}>
+            <div className={S.grid} style={{ gridTemplateColumns: `60px ${placedByCol.map((p) => `minmax(${Math.max(cols.length > 4 ? 170 : 200, Math.max(1, ...p.map((x) => x.lanes)) * 128)}px, ${Math.max(1, ...p.map((x) => x.lanes))}fr)`).join(" ")}` }}>
+              <div className={S.corner} />
+              {cols.map((c) => {
+                const n = list.filter((a) => inCol(c, a) && a.status !== "cancelled").length;
+                const w = workOf(c.id);
+                const r = by === "room" && c.id ? (reserve.data ?? []).find((x) => x.room_id === c.id && x.capacity > 0) : undefined;
+                return (
+                  <div key={c.id ?? "none"} className={cx(S.head, c.secondary && S.headSecondary)}>
+                    <div className={S.headName} title={c.name}>{c.name}</div>
+                    <div className={S.headMeta}>
+                      <span className={S.headCount}>{n > 0 ? apptCount(n) : "—"}</span>
+                      {w && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span>{w.length ? <span className="latin" dir="ltr">{w.map((x) => `${hm(x.from)}–${hm(x.to)}`).join(" · ")}</span> : <span>لا دوام اليوم</span>}</>}
+                      {c.secondary && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span><span>مواعيد قديمة بلا {by === "room" ? "غرفة" : "أخصائية"}</span></>}
+                    </div>
+                    {r && (
+                      <div className={S.reserve} title={`١٠٪ من وقت الغرفة محجوز لحالات VIP والطوارئ — لا يظهر في رابط الحجز ولا في التطبيق.${r.walk_in_open ? " آخر ساعتين: متاح لأي حالة دون موعد." : ""}`}>
+                        <VipStar size={11} title="الاحتياطي" />
+                        <span>احتياطي <span className="latin">{r.reserve_left}/{r.reserve}</span> د</span>
+                        <span className={S.reserveTrack}><span className={S.reserveFill} style={{ display: "block", width: `${r.reserve ? Math.max(0, Math.min(100, (r.reserve_left / r.reserve) * 100)) : 0}%` }} /></span>
+                        {r.walk_in_open && r.reserve_left > 0 && <span className={S.walkin}>مفتوح لأي حالة</span>}
                       </div>
-                      {!short && <div style={{ fontSize: 11.5, opacity: 0.85, whiteSpace: "nowrap" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{timeOf(a)}–{clock(endsAt(a))}</span> · {a.service?.short_name}{by === "room" && a.specialist ? ` · ${a.specialist.name}` : by === "specialist" && a.room ? ` · ${a.room.name}` : ""}</div>}
-                    </button>
-                  );
-                })}
+                    )}
+                  </div>
+                );
+              })}
+
+              <div className={S.times} style={{ height: bodyH }}>
+                {Array.from({ length: (last - first) / 60 + 1 }, (_, i) => (
+                  <span key={i} className={S.tick} style={{ top: yOf(first + i * 60) }}>{hm(first + i * 60)}</span>
+                ))}
+                {showNow && <span className={S.nowBadge} style={{ top: yOf(nowM) }}>{hm(nowM)}</span>}
               </div>
-            ))}
-            {isToday && nowM >= first && nowM <= last && (
-              <div aria-hidden style={{ position: "absolute", top: yOf(nowM), left: 0, right: 56, height: 2, background: "#D0679A", boxShadow: "0 0 0 3px rgba(208,103,154,0.15)" }} />
-            )}
+              {cols.map((c, ci) => {
+                const placed = placedByCol[ci];
+                const w = workOf(c.id);
+                return (
+                  <div key={c.id ?? "none"} className={cx(S.col, c.secondary && S.colSecondary)} style={{ height: bodyH }}>
+                    {w && offBands(w).map((b) => <div key={b.from} className={S.off} title="خارج دوام الأخصائية" style={{ top: yOf(b.from), height: yOf(b.to) - yOf(b.from) }} />)}
+                    {Array.from({ length: (last - first) / 60 + 1 }, (_, i) => <div key={`h${i}`} className={S.hourLine} style={{ top: yOf(first + i * 60) }} />)}
+                    {Array.from({ length: (last - first) / 60 }, (_, i) => <div key={`m${i}`} className={S.halfLine} style={{ top: yOf(first + i * 60 + 30) }} />)}
+                    {placed.length === 0 && <div className={S.emptyCol}>لا مواعيد</div>}
+                    {placed.map((p) => {
+                      const top = yOf(p.s) + 1, height = Math.max(MIN_H, ((p.e - p.s) * HOUR) / 60 - 2);
+                      const gap = 3, pct = 100 / p.lanes;
+                      return (
+                        <ApptCard key={p.a.id} a={p.a} by={by} mode="grid" onOpen={setOpen} compact={p.e - p.s <= 30} narrow={p.lanes >= 3}
+                          style={{ top, height, insetInlineStart: `calc(${p.lane * pct}% + ${gap}px)`, width: `calc(${pct}% - ${gap * 2}px)` }} />
+                      );
+                    })}
+                    {showNow && <div className={S.nowLine} style={{ top: yOf(nowM) - 1 }} aria-hidden />}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          {list.length === 0 && <div style={{ textAlign: "center", fontSize: 13.5, color: C.sub2, paddingTop: 10 }}>لا مواعيد في هذا اليوم بعد — أضيفي موعداً من «موعد جديد».</div>}
-        </div>
+          <Agenda list={list} isToday={isToday} nowM={nowM} onOpen={setOpen} />
+        </>
       )}
 
       <AppointmentDialog appt={open} onClose={() => setOpen(null)} />
@@ -212,36 +348,49 @@ export function CalendarBody() {
   );
 }
 
+/** Phone day view: an hour-grouped agenda instead of a squeezed grid. */
+function Agenda({ list, isToday, nowM, onOpen }: { list: Appointment[]; isToday: boolean; nowM: number; onOpen: (a: Appointment) => void }) {
+  const sorted = [...list].sort((x, y) => x.starts_at.localeCompare(y.starts_at));
+  const groups = new Map<number, Appointment[]>();
+  for (const a of sorted) { const k = Math.floor(toMin(timeOf(a)) / 60); groups.set(k, [...(groups.get(k) ?? []), a]); }
+  const keys = [...groups.keys()];
+  const nowAt = isToday ? keys.findIndex((k) => k * 60 > nowM) : -2;
+  return (
+    <div className={S.agenda}>
+      {keys.length === 0 && <div style={{ textAlign: "center", padding: "28px 0", fontSize: 14, color: C.sub2 }}>لا مواعيد في هذا اليوم بعد.</div>}
+      {keys.map((k, i) => (
+        <div key={k} className={S.aHour}>
+          {i === nowAt && <div className={S.aNow}>الآن <span className="latin">{hm(nowM)}</span></div>}
+          <div className={S.aHourLabel}><span className="latin">{hm(k * 60)}</span></div>
+          {groups.get(k)!.map((a) => <ApptCard key={a.id} a={a} by="both" mode="agenda" onOpen={onOpen} />)}
+        </div>
+      ))}
+      {isToday && keys.length > 0 && nowAt === -1 && <div className={S.aNow}>الآن <span className="latin">{hm(nowM)}</span></div>}
+    </div>
+  );
+}
+
 /** Accent "new appointment" button used in page headers. */
 export const NEW_BTN = { height: 46, borderRadius: 23, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 18px", whiteSpace: "nowrap" } as CSSProperties;
 
-const navBtn: CSSProperties = { width: 38, height: 38, borderRadius: 19, border: "1px solid #EADCF0", background: C.white, boxShadow: SHB, display: "flex", alignItems: "center", justifyContent: "center" };
-
-function WeekGrid({ from, list, onOpen, onDay }: { from: string; list: Appointment[]; onOpen: (a: Appointment) => void; onDay: (k: string) => void }) {
+function WeekGrid({ from, list, onOpen, onDay, isOff }: { from: string; list: Appointment[]; onOpen: (a: Appointment) => void; onDay: (k: string) => void; isOff: (k: string) => boolean }) {
   const days = Array.from({ length: 7 }, (_, i) => shiftKey(from, i));
   return (
-    <div style={{ overflowX: "auto", margin: "0 -4px", padding: "0 4px 6px" }}>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0,1fr))", gap: 10, minWidth: 760 }}>
+    <div className={S.week}>
       {days.map((k) => {
-        const items = list.filter((a) => dayKey(new Date(a.starts_at)) === k);
-        const d = dateOfKey(k);
-        const wd = weekday(k);
+        const items = list.filter((a) => dayKey(new Date(a.starts_at)) === k).sort((x, y) => x.starts_at.localeCompare(y.starts_at));
+        const n = items.filter((a) => a.status !== "cancelled").length;
+        const off = isOff(k);
         return (
-          <div key={k} style={{ borderRadius: 22, background: C.white, border: k === dayKey() ? "1.5px solid #C9A2D8" : "1px solid #F0E6F3", boxShadow: SH, padding: "10px 8px", minHeight: 240, display: "flex", flexDirection: "column", gap: 6 }}>
-            <button type="button" onClick={() => onDay(k)} title="عرض اليوم" style={{ textAlign: "center", lineHeight: 1.3, marginBottom: 4, border: "none", background: "none", padding: 0, color: C.ink }}>
-              <div style={{ fontSize: 12, color: C.sub2 }}>{AR_DAYS[wd]}</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{d.getDate()}</div>
+          <div key={k} className={cx(S.wday, k === dayKey() && S.wdayToday, off && S.wdayOff, items.length === 0 && S.wEmptyDay)}>
+            <button type="button" className={S.wHead} onClick={() => onDay(k)} title="فتح اليوم">
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}><span className={S.wDow}>{AR_DAYS[weekday(k)]}</span><span className={S.wNum}>{dateOfKey(k).getDate()}</span></span>
+              <span className={S.wCount}>{off ? "عطلة" : n ? apptCount(n) : "لا مواعيد"}</span>
             </button>
-            {items.length === 0 ? <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>—</div> : items.map((a) => (
-              <button key={a.id} type="button" onClick={() => onOpen(a)} style={{ borderRadius: 12, padding: "5px 8px", textAlign: "right", ...lookOf(a) }}>
-                <div className="latin" style={{ fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>{isVip(a) && <VipStar size={12} />}{timeOf(a)}</div>
-                <div style={{ fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</div>
-              </button>
-            ))}
+            {items.length === 0 ? <div className={S.wEmpty}>—</div> : items.map((a) => <ApptCard key={a.id} a={a} by="both" mode="week" onOpen={onOpen} />)}
           </div>
         );
       })}
-    </div>
     </div>
   );
 }
