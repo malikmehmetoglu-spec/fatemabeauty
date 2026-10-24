@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { Stage } from "@/components/shell";
 import { R } from "@/lib/routes";
@@ -36,6 +36,8 @@ export default function Page() {
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const receipt = useInvoicePrint();
+  // ?appointment=<id> (from «الدفع» on the desk board) → that session is preselected
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get("appointment"); if (id) setSelId(id); }, []);
   const due = (q.data ?? []).filter((a) => !a.invoiced);
   const A = due.find((a) => a.id === selId) ?? due.find((a) => a.status === "done") ?? due[0];
   const pk = useQuery(["queue", "cashier-pkg", A?.patient_id ?? ""], () => listPatientPackages(A!.patient_id!), { enabled: !k.gate && !!A?.patient_id });

@@ -13,6 +13,7 @@ import { clock } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
+import { isPaid } from "@/lib/db/levels";
 
 /** T_Desk.dc.html */
 const FILTERS = ["الكل", "في الانتظار", "لم يؤكَّد"] as const;
@@ -212,7 +213,8 @@ export default function Page() {
                           <path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z" />
                         </svg>{a.called_at ? "" : r.label}
                       </button>
-                      {a.called_at && <button type="button" onClick={() => act(a.id, () => setStatus(a.id, "in_session"))} style={{ height: 48, padding: "0 14px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" }}>دخلت</button>}
+                      {a.called_at && !isPaid(a) && <Link href={`${R.T_Cashier}?appointment=${a.id}`} title="بانتظار الدفع — الجلسة تبدأ بعد الدفع" style={{ height: 48, padding: "0 14px", borderRadius: 24, border: "1px solid #F6DDB9", background: "#FFF3E0", color: "#9A5B14", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>الدفع</Link>}
+                      {a.called_at && isPaid(a) && <button type="button" onClick={() => act(a.id, () => setStatus(a.id, "in_session"))} style={{ height: 48, padding: "0 14px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" }}>دخلت</button>}
                     </>) : a.status === "pending" || a.status === "confirmed" ? (
                       <button type="button" onClick={() => act(a.id, () => checkIn(a.id))} style={{ height: 48, padding: "0 16px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3FA46A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

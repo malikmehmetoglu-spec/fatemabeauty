@@ -12,6 +12,9 @@ import { arDate, clock } from "@/lib/format";
 import { C, DARK, ICON_FILL, SH } from "@/lib/tokens";
 import css from "../calendar/appts.module.css";
 import { arErr } from "../patients/kit";
+import { isPaid } from "@/lib/db/levels";
+import { useSession } from "@/lib/supabase/session";
+import { ExtensionRequests, OverrideStartButton, SessionTimer, ToCashier, UnpaidTag, usePendingExtensions } from "./session-ui";
 
 const mins = (iso: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
 
@@ -21,6 +24,9 @@ export default function QueuePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [called, setCalled] = useState<number | null | undefined>(undefined);
+  const { staff } = useSession();
+  const isAdmin = staff?.role === "owner" || staff?.role === "admin";
+  const ext = usePendingExtensions("queue-ext");
 
   const list = data ?? [];
   const waiting = list.filter((a) => a.status === "checked_in");
@@ -59,6 +65,7 @@ export default function QueuePage() {
 
       {called === null && <div style={{ borderRadius: 18, padding: "10px 14px", background: "#F0EDF0", color: "#695D6B", fontSize: 13.5, fontWeight: 600 }}>لا أحد ينتظر النداء الآن.</div>}
       {err && <ErrorNote>{err}</ErrorNote>}
+      <ExtensionRequests list={ext.data ?? []} />
 
       {loading ? <Loading /> : error ? <ErrorNote>{arErr(error, "تعذّر تحميل الأدوار. أعيدي تحميل الصفحة.")}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="users" title="لم تصل أي مراجِعة اليوم بعد"
@@ -68,19 +75,26 @@ export default function QueuePage() {
           <div style={{ flex: 1.6, minWidth: 0, borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>صالة الانتظار والجلسات</div>
             {list.filter((a) => a.status !== "done" && a.status !== "no_show" && a.status !== "cancelled").map((a) => (
-              <div key={a.id} className={css.qrow}>
+              <div key={a.id} className={css.qrow} style={{ flexWrap: "wrap" }}>
                 <span className="latin" style={{ width: 46, height: 46, borderRadius: 16, background: a.called_at && a.status === "checked_in" ? C.accent : ICON_FILL, color: a.called_at && a.status === "checked_in" ? C.white : C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{a.queue_no}</span>
-                <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+                <div style={{ flex: "1 1 200px", minWidth: 0, lineHeight: 1.35 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{personName(a)}</div>
                   <div style={{ fontSize: 12, color: C.sub2 }}>
-                    موعد {timeOf(a)} · {a.service?.short_name} · {a.room?.name ?? "بدون غرفة"}{a.specialist ? ` · ${a.specialist.name}` : ""}
+                    موعد {timeOf(a)} · {a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · <span className="latin">{a.minutes + (a.extension_minutes ?? 0)}</span> د · {a.room?.name ?? "بدون غرفة"}{a.specialist ? ` · ${a.specialist.name}` : ""}
                     {a.status === "checked_in" && ` · ينتظر منذ ${mins(a.checked_in_at)} د`}
                   </div>
                 </div>
-                <Tag kind={a.called_at && a.status === "checked_in" ? "pink" : STATUS_KIND[a.status]}>{a.called_at && a.status === "checked_in" ? "نُوديت" : STATUS_LABEL[a.status]}</Tag>
-                {(a.status === "checked_in" || a.status === "in_session") && <div className={css.qacts}>{a.status === "checked_in" && <>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  {a.status === "in_session" && <SessionTimer a={a} compact />}
+                  {a.status === "checked_in" && !isPaid(a) && <UnpaidTag />}
+                  <Tag kind={a.called_at && a.status === "checked_in" ? "pink" : STATUS_KIND[a.status]}>{a.called_at && a.status === "checked_in" ? "نُوديت" : STATUS_LABEL[a.status]}</Tag>
+                </div>
+                {(a.status === "checked_in" || a.status === "in_session") && <div className={css.qacts} style={{ width: "100%", flexWrap: "wrap", paddingInlineStart: 58 }}>{a.status === "checked_in" && <>
                   <GhostButton icon="bell" onClick={() => run(a.id + "call", () => callPatient(a.id))} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>
-                  <GhostButton icon="sparkle" onClick={() => act(a, "in_session")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>بدء</GhostButton>
+                  {isPaid(a)
+                    ? <GhostButton icon="sparkle" onClick={() => act(a, "in_session")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>بدء</GhostButton>
+                    : <ToCashier a={a} small />}
+                  {!isPaid(a) && isAdmin && <OverrideStartButton apptId={a.id} name={personName(a)} small />}
                   <GhostButton color={C.danger} onClick={() => act(a, "no_show")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>غادرت</GhostButton>
                 </>}
                 {a.status === "in_session" && <GhostButton icon="check" onClick={() => act(a, "done")} style={{ height: 36, padding: "0 12px", fontSize: 12.5 }}>إنهاء</GhostButton>}</div>}

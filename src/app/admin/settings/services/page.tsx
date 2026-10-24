@@ -17,6 +17,8 @@ import { C, CARD, ICON_FILL } from "@/lib/tokens";
 import { CategoryDialog, PackageDialog, ServiceDialog } from "./dialogs";
 import { serviceProviders } from "@/lib/db/appointments";
 import { useTeam, StaffAvatar } from "@/app/admin/staff/team-ui";
+import { listLevels } from "@/lib/db/levels";
+import { ExtensionPriceCard, LevelsDialog, LevelsSummary } from "./levels";
 
 /** Admin price: dollars stay visible here only, with today's SYP equivalent. */
 function AdminPrice({ s }: { s: Service }) {
@@ -40,6 +42,8 @@ export default function ServicesPage() {
   const { data: rate } = useQuery(["catalog", "fx"], usdRate);
   const { data: prov } = useQuery(["appointments", "providers"], serviceProviders);
   const team = useTeam();
+  const { data: levels } = useQuery(["levels", "all"], listLevels);
+  const [lvFor, setLvFor] = useState<Service | null>(null);
   /** Who provides a service (assignments, else the «all services of her kind» fallback). */
   const doers = (key: string) => team.active.filter((t) => (prov?.map[t.id] ?? []).includes(key));
   const [edit, setEdit] = useState<Service | "new" | null>(null);
@@ -61,6 +65,7 @@ export default function ServicesPage() {
     <AdminShell active="الإعدادات" title="الخدمات والأسعار" subtitle="فئات الخدمات وتعليماتها، ومدد الخدمات وأسعارها وغرفها وأجهزتها"
       actions={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><GhostButton icon="plus" onClick={() => setEditCat("new")}>فئة جديدة</GhostButton><GhostButton icon="plus" onClick={() => { setNewIn(undefined); setEdit("new"); }}>خدمة جديدة</GhostButton></div>}>
       {rate == null && S.some((x) => x.price_currency === "USD") && <ErrorNote>بعض الأسعار بالدولار ولم يُحدَّد سعر الصرف بعد، فتظهر للمراجعات «السعر عند الاستفسار». حدّديه من المالية ← سعر الصرف.</ErrorNote>}
+      <ExtensionPriceCard />
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الخدمات: {error}</ErrorNote> : S.length === 0 && C2.length === 0 ? (
         <EmptyState icon="sparkle" title="لا خدمات بعد"
           text="أضيفي أول خدمة بسعرها ومدتها وغرفتها. تظهر الخدمات المفعّلة فوراً في التطبيق والموقع وفي الحجز."
@@ -87,9 +92,9 @@ export default function ServicesPage() {
                 <GhostButton icon="plus" onClick={() => { setNewIn(cat.key); setEdit("new"); }}>خدمة</GhostButton>
               </div>}
             </div>
-            {list.length > 0 && <DataTable minWidth={960}
-              headers={["الخدمة", "المدة", "السعر", "من تقدّمها", "الغرفة الأساسية", "الجهاز", "الحجز أونلاين", "مفعّلة", ""]}
-              widths={[2.4, 0.8, 1.1, 1.4, 1, 1.1, 0.9, 0.7, 0.5]}
+            {list.length > 0 && <DataTable minWidth={1080}
+              headers={["الخدمة", "المدة", "السعر", "المستويات", "من تقدّمها", "الغرفة الأساسية", "الجهاز", "الحجز أونلاين", "مفعّلة", ""]}
+              widths={[2.3, 0.8, 1.1, 1.1, 1.4, 1, 1, 0.9, 0.7, 0.5]}
               rowHeight={62}
               rows={list.map((s) => [
                 <>
@@ -103,6 +108,7 @@ export default function ServicesPage() {
                 </>,
                 `${s.minutes} دقيقة`,
                 <AdminPrice key="p" s={s} />,
+                <LevelsSummary key="lv" name={s.name} levels={(levels ?? []).filter((l) => l.service_key === s.key)} onOpen={() => setLvFor(s)} />,
                 <Providers key="w" people={doers(s.key)} active={s.active && !!prov} />,
                 roomName(s.room_id) ? <Tag key="r" kind="gray">{roomName(s.room_id)}</Tag> : <span style={{ color: C.muted }}>أي غرفة</span>,
                 deviceName(s.device_id) ?? <span style={{ color: C.muted }}>—</span>,
@@ -150,6 +156,7 @@ export default function ServicesPage() {
         })}
       </div>
 
+      <LevelsDialog service={lvFor} levels={levels ?? []} onClose={() => setLvFor(null)} />
       <ServiceDialog open={!!edit} service={edit === "new" ? null : edit} rooms={rooms ?? []} devices={devices ?? []} categories={C2} rate={rate ?? null} defaultCategory={newIn} onClose={() => setEdit(null)} />
       <CategoryDialog open={!!editCat} category={editCat === "new" ? null : editCat} nextSort={(C2.at(-1)?.sort ?? 0) + 1} onClose={() => setEditCat(null)} />
       <PackageDialog open={!!editPkg} pkg={editPkg === "new" ? null : editPkg} services={S} onClose={() => setEditPkg(null)} />

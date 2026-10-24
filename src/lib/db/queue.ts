@@ -26,10 +26,11 @@ export type QueueAppt = Tables<"appointments"> & {
   services: Pick<Tables<"services">, "key" | "name" | "short_name" | "price" | "minutes"> | null;
   rooms: Pick<Tables<"rooms">, "id" | "name"> | null;
   staff: Pick<Tables<"staff">, "id" | "name"> | null;
+  invoices?: { id: string; paid: boolean; void: boolean }[] | null;
 };
 export type TvRow = { queue_no: number; room: string | null; status: Status; called_at: string | null; starts_at: string };
 
-const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding), services(key,name,short_name,price,minutes), rooms(id,name), staff:specialist_id(id,name)";
+const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding), services(key,name,short_name,price,minutes), rooms(id,name), staff:specialist_id(id,name), invoices(id,paid,void)";
 
 export const STATUS_AR: Record<Status, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكَّد", checked_in: "في الانتظار", in_session: "في الجلسة",
@@ -42,8 +43,8 @@ export const STATUS_KIND: Record<Status, TagKind> = {
 /** Display name of the person on an appointment (patient file or walk-in). */
 export const personName = (a: Pick<QueueAppt, "patients" | "walk_in_name">) => a.patients?.name || a.walk_in_name || "مراجِعة";
 export const serviceName = (a: Pick<QueueAppt, "services">) => a.services?.name ?? "";
-export const endTime = (a: Pick<QueueAppt, "starts_at" | "started_at" | "minutes">) =>
-  clock(new Date(new Date(a.started_at ?? a.starts_at).getTime() + a.minutes * 60000));
+export const endTime = (a: Pick<QueueAppt, "starts_at" | "started_at" | "minutes"> & { extension_minutes?: number | null }) =>
+  clock(new Date(new Date(a.started_at ?? a.starts_at).getTime() + (a.minutes + (a.extension_minutes ?? 0)) * 60000));
 
 /** "+9639…" from what reception types (09…, 9639…, +9639…). */
 export function normPhone(raw: string) {
@@ -170,11 +171,11 @@ export async function searchPatients(term: string): Promise<PatientHit[]> {
 }
 
 /** Quick booking at the desk (rpc book_appointment: refuses overlaps for the room and the specialist). */
-export async function quickBook(input: { name: string; phone: string; patientId?: string; service: Tables<"services">; day: string; time: string; specialistId?: string | null }) {
+export async function quickBook(input: { name: string; phone: string; patientId?: string; service: Tables<"services">; day: string; time: string; specialistId?: string | null; level?: string | null }) {
   const patient_id = input.patientId ?? await ensurePatient(input.name, input.phone);
-  const row = need(await supabase.rpc("book_appointment", {
+  const row = need(await supabase.rpc("book_appointment_v2", {
     p_service: input.service.key, p_starts: atDamascus(input.day, input.time), p_patient: patient_id,
-    p_specialist: input.specialistId || undefined, p_source: "reception",
+    p_specialist: input.specialistId || undefined, p_source: "reception", p_level: input.level || undefined,
   }));
   invalidate("queue"); invalidate("appointments");
   return row.id;

@@ -14,6 +14,7 @@ import { angleLabel, listConsents, listNotes, listPatientPackages, listPhotos, l
 import { C } from "@/lib/tokens";
 import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
+import { PatientLevels } from "../levels";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
 const TABS = ["الزيارات", "ملاحظات الجلسات", "الوصفات", "الموافقات", "الصور"];
@@ -76,6 +77,7 @@ function Record() {
           <div className={t.side} style={{ ["--side" as string]: "340px", display: "flex", flexDirection: "column", gap: 16 }}>
             <Conditions patientId={p.id} />
             <Packages patientId={p.id} />
+            <PatientLevels patientId={p.id} />
           </div>
           <History p={p} />
         </div>

@@ -12,6 +12,8 @@ export type Appointment = Tables<"appointments"> & {
   room: { name: string } | null;
   specialist: { id: string; name: string; title: string; photo_url: string | null } | null;
   patient: { id: string; name: string; file_no: number; phone: string | null } | null;
+  level?: { id: string; name: string; level: number } | null;
+  invoices?: { id: string; paid: boolean; void: boolean }[] | null;
 };
 export type WaitEntry = Tables<"waitlist"> & {
   service: { name: string } | null;
@@ -21,7 +23,7 @@ export type WaitEntry = Tables<"waitlist"> & {
 export type Hours = { days: number[]; from: string; to: string; slot: number };
 export type MyQueue = Database["public"]["Functions"]["my_queue"]["Returns"][number];
 
-const SEL = "*, service:services(name,short_name,minutes), room:rooms(name), specialist:staff(id,name,title,photo_url), patient:patients(id,name,file_no,phone)";
+const SEL = "*, service:services(name,short_name,minutes), room:rooms(name), specialist:staff(id,name,title,photo_url), patient:patients(id,name,file_no,phone), level:service_levels(id,name,level), invoices(id,paid,void)";
 
 export const STATUS_LABEL: Record<Status, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكد", checked_in: "وصلت", in_session: "في الجلسة",
@@ -33,7 +35,7 @@ export const STATUS_KIND: Record<Status, "pink" | "green" | "amber" | "gray" | "
 export const ACTIVE: Status[] = ["pending", "confirmed", "checked_in", "in_session"];
 
 export const personName = (a: Pick<Appointment, "patient" | "walk_in_name">) => a.patient?.name || a.walk_in_name || "مراجِعة بدون اسم";
-export const endsAt = (a: Pick<Appointment, "starts_at" | "minutes">) => new Date(new Date(a.starts_at).getTime() + a.minutes * 60000);
+export const endsAt = (a: Pick<Appointment, "starts_at" | "minutes"> & { extension_minutes?: number | null }) => new Date(new Date(a.starts_at).getTime() + (a.minutes + (a.extension_minutes ?? 0)) * 60000);
 
 /** Readable Arabic message for errors raised by the booking functions. */
 export function bookingError(e: unknown) {
@@ -54,6 +56,7 @@ export function bookingError(e: unknown) {
   if (/not_provider/.test(m)) return "هذه الأخصائية لا تقدّم هذه الخدمة.";
   if (/specialist off duty/.test(m)) return "الأخصائية لا تداوم في هذا الوقت. اختاري وقتاً آخر.";
   if (/specialist not found/.test(m)) return "الأخصائية غير متاحة.";
+  if (/not allowed: (start override|extension)/.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
   if (/failed to fetch|network|load failed/i.test(m)) return "تعذّر الاتصال بالخادم. تحقّقي من الإنترنت ثم أعيدي المحاولة.";
   if (/row-level security|permission denied|not allowed/i.test(m)) return "لا تملكين صلاحية لهذا الإجراء.";
   if (/duplicate key.*phone|patients_phone_key/i.test(m)) return "يوجد ملف بهذا الرقم — ابحثي عنه بالاسم أو الرقم.";
@@ -148,8 +151,9 @@ export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], 
  * Patient app: free start times ("HH:MM") computed by the server (rpc app_slots) — same rules as the public link and
  * book_appointment: opening hours, slot grid, room/specialist overlaps and the specialist's working hours («أوقات الدوام»).
  */
-export async function appSlots(day: string, service: string, specialist: string | null): Promise<string[]> {
-  const rows = must(await supabase.rpc("app_slots", { p_day: day, p_service: service, p_specialist: specialist ?? undefined })) ?? [];
+export async function appSlots(day: string, service: string, specialist: string | null, level?: string | null): Promise<string[]> {
+  // the level's minutes decide which start times fit (patient: own assigned level, else level 1 — resolved by the server)
+  const rows = must(await supabase.rpc("app_slots_v2", { p_day: day, p_service: service, p_specialist: specialist ?? undefined, p_level: level ?? undefined })) ?? [];
   return rows.filter((r) => r.available).map((r) => clock(r.starts_at));
 }
 
@@ -158,12 +162,14 @@ export async function appSlots(day: string, service: string, specialist: string 
 export async function book(p: {
   service: string; day: string; time: string; specialist?: string | null; room?: string | null;
   patient?: string | null; walkInName?: string; walkInPhone?: string; source?: "reception" | "walk_in" | "admin"; checkIn?: boolean;
+  /** service level id (minutes + price); empty = the patient's assigned level, else level 1 */
+  level?: string | null;
 }) {
-  const row = mustOk(await supabase.rpc("book_appointment", {
+  const row = mustOk(await supabase.rpc("book_appointment_v2", {
     p_service: p.service, p_starts: atDamascus(p.day, p.time),
     p_specialist: p.specialist ?? undefined, p_room: p.room ?? undefined, p_patient: p.patient ?? undefined,
     p_walk_in_name: p.walkInName || undefined, p_walk_in_phone: p.walkInPhone || undefined,
-    p_source: p.source, p_check_in: p.checkIn ?? false,
+    p_source: p.source, p_check_in: p.checkIn ?? false, p_level: p.level ?? undefined,
   }));
   invalidate("appointments");
   return row;

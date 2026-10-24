@@ -13,6 +13,7 @@ import { useSession } from "@/lib/supabase/session";
 import { getPatient, listConditions } from "@/lib/db/patients";
 import { getVisit, listNotes, saveNote, type NoteFields } from "@/lib/db/clinical";
 import { C } from "@/lib/tokens";
+import { PatientLevels } from "../levels";
 import { arErr, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_GRAY } from "../kit";
 
 const FIELDS: [keyof NoteFields, string, string][] = [
@@ -107,6 +108,7 @@ function SessionNote() {
               {(conds ?? []).filter((c) => c.kind !== "allergy").map((c) => <span key={c.id} style={PILL_GRAY}>{c.name}</span>)}
             </div>
           </Panel>
+          {visit?.service_key && <PatientLevels patientId={p.id} service={visit.service_key} title="حدّدي مستوى هذه العميلة للمرات القادمة" />}
           <Panel title="ملاحظات سابقة">
             {!notes?.length ? <div style={{ fontSize: 13, color: C.muted }}>لا ملاحظات سابقة.</div> : notes.slice(0, 4).map((n) => (
               <div key={n.id} style={{ borderTop: "1px solid #EDE2F1", padding: "8px 0", fontSize: 12.5, lineHeight: 1.6 }}>

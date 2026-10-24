@@ -16,6 +16,7 @@ import { clock, dayKey } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
+import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 
 /** T_QuickBook.dc.html */
 const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
@@ -49,6 +50,9 @@ export default function Page() {
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [lvPick, setLvPick] = useState<{ svc: string; id: string } | null>(null);
+  const levels = useQuery(["levels", "all"], listLevels, { enabled: !k.gate });
+  const pLevels = useQuery(["levels", "patient", pat?.id], () => patientLevels(pat!.id), { enabled: !k.gate && !!pat });
   if (k.gate) return k.gate;
   const SV = q.data?.services ?? [];
   const SV0 = q.data?.services ?? [];
@@ -60,8 +64,13 @@ export default function Page() {
   const NOW = toMin(NOW_HM);
   const s = SV[st.svc];
   const p = st.sp >= 0 ? SP[st.sp] : undefined;
+  // «مستوى الجلسة»: picked here, else the level set in her file, else level 1 — its minutes drive the slot grid
+  const LV = levelsOf(levels.data, s?.key);
+  const assigned = (pLevels.data ?? []).find((x) => x.service_key === s?.key)?.level_id;
+  const lvl = LV.find((l) => lvPick?.svc === s?.key && l.id === lvPick?.id) ?? LV.find((l) => l.id === assigned) ?? LV[0] ?? null;
+  const DUR = lvl?.minutes ?? s?.minutes ?? 30;
   const busyList = today.filter((a) => a.status !== "no_show" && (s?.room_id ? a.room_id === s.room_id : p ? a.specialist_id === p.id : false));
-  const B: [number, number][] = busyList.map((a) => { const m = toMin(clock(a.starts_at)); return [m, m + a.minutes]; });
+  const B: [number, number][] = busyList.map((a) => { const m = toMin(clock(a.starts_at)); return [m, m + a.minutes + (a.extension_minutes ?? 0)]; });
   const WD = weekday(dayKey());
   // working windows today: the chosen specialist's «أوقات الدوام» (or the default hours without a schedule),
   // otherwise everyone's hours together. The timeline spans them (default 10:00–18:00 when nobody works).
@@ -74,8 +83,8 @@ export default function Page() {
   const pc = (m: number) => ((m - D0) / DL * 100).toFixed(2) + "%";
   const ticks = Array.from({ length: 5 }, (_, i) => fmt(Math.round((D0 + (DL * i) / 4) / 15) * 15));
   // outside working hours: still bookable by staff, but flagged
-  const cs = (s ? slotsFor(B, s.minutes, NOW, D0, END, Math.max(5, clinic.slot || 15)) : [])
-    .map((c) => ({ ...c, off: !wins.some((w) => w.from <= c.t && w.to >= c.t + s!.minutes) }));
+  const cs = (s ? slotsFor(B, DUR, NOW, D0, END, Math.max(5, clinic.slot || 15)) : [])
+    .map((c) => ({ ...c, off: !wins.some((w) => w.from <= c.t && w.to >= c.t + DUR) }));
   let slot = st.slot;
   if (slot === null || !cs.some((c) => c.t === slot && c.fits)) { const f = cs.find((c) => c.fits && !c.off) ?? cs.find((c) => c.fits); slot = f ? f.t : null; }
   const slotOff = slot !== null && !!cs.find((c) => c.t === slot)?.off;
@@ -99,11 +108,11 @@ export default function Page() {
   const roomName = s?.room_id ? rooms.find((r) => r.id === s.room_id)?.name ?? "" : "";
   const free = cs.filter((c) => c.fits).length;
   const blocks = B.map((b) => ({ style: css("position:absolute;top:0;bottom:0;right:" + pc(b[0]) + ";width:calc(" + ((b[1] - b[0]) / DL * 100).toFixed(2) + "% - 3px);border-radius:8px;background:" + (b[1] <= NOW ? "#E5DEE6" : "#D3C6D6")) }));
-  const pickBlock = css(slot === null || !s ? "display:none" : "position:absolute;top:-5px;bottom:-5px;right:" + pc(slot) + ";width:" + (s.minutes / DL * 100).toFixed(2) + "%;border-radius:9px;background:linear-gradient(160deg,#DEB3E8,#A877B6);box-shadow:0 6px 14px rgba(150,100,170,0.40);border:2px solid #FFFFFF");
+  const pickBlock = css(slot === null || !s ? "display:none" : "position:absolute;top:-5px;bottom:-5px;right:" + pc(slot) + ";width:" + (DUR / DL * 100).toFixed(2) + "%;border-radius:9px;background:linear-gradient(160deg,#DEB3E8,#A877B6);box-shadow:0 6px 14px rgba(150,100,170,0.40);border:2px solid #FFFFFF");
   const nowStyle = css("position:absolute;top:-10px;bottom:-10px;width:2px;border-radius:1px;background:#7B4687;right:" + pc(Math.min(END, Math.max(D0, NOW))));
   const tlRoom = roomName || p?.name || "المركز";
-  const sum = { svc: s?.name ?? "اختاري خدمة", sp: p?.name ?? "أي أخصائية", room: roomName || "—", time: slot === null ? "لا وقت شاغر اليوم" : fmt(slot) + " – " + fmt(slot + (s?.minutes ?? 0)),
-    price: s ? priceLabel(s) : "" };
+  const sum = { svc: s?.name ?? "اختاري خدمة", sp: p?.name ?? "أي أخصائية", room: roomName || "—", time: slot === null ? "لا وقت شاغر اليوم" : fmt(slot) + " – " + fmt(slot + DUR),
+    price: s ? (lvl && lvl.level > 1 ? `${lvl.name} · ${lvl.price_currency === "USD" ? `${lvl.price}$` : `${lvl.price.toLocaleString("en-US")} ل.س`}` : priceLabel(s)) : "" };
   const freeTxt = free ? (free === 1 ? "وقت واحد يناسب مدة الخدمة" : free + " أوقات تناسب مدة الخدمة") : "لا يوجد وقت شاغر يناسب مدة الخدمة اليوم";
   const btn = busy ? "جارٍ الحجز…" : "تأكيد الحجز";
   const search = async () => {
@@ -117,7 +126,7 @@ export default function Page() {
     if (slotOff && !confirm(p ? `خارج دوام الأخصائية: ${p.name} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟` : "خارج أوقات الدوام: لا أحد من الفريق يداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟")) return;
     setBusy(true); setErr(null);
     try {
-      await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null });
+      await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null, level: lvl?.id ?? null });
       router.push(R.T_Desk);
     } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
@@ -190,6 +199,18 @@ export default function Page() {
                 {q.error && <ErrorNote>{q.error}</ErrorNote>}
                 {!q.loading && !SV.length && <div style={{ fontSize: 14, color: C.sub }}>لا توجد خدمات مفعّلة بعد — أضيفيها من لوحة الإدارة.</div>}
               </div>
+              {LV.length > 1 && (
+                <div role="radiogroup" aria-label="مستوى الجلسة" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: C.sub }}>المستوى</span>
+                  {LV.map((l) => (
+                    <button key={l.id} type="button" role="radio" aria-checked={lvl?.id === l.id} onClick={() => setLvPick({ svc: s!.key, id: l.id })}
+                      style={css("height:44px;padding:0 14px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" +
+                        (lvl?.id === l.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
+                      {l.name} · <span className="latin">{l.minutes}</span> د{l.id === assigned ? " · ملفها" : ""}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12, flexGrow: 1 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>الأخصائية

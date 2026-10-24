@@ -14,6 +14,7 @@ import { useRequirePatient } from "@/lib/supabase/session";
 import { arDate, dayName, money } from "@/lib/format";
 import { C, DARK } from "@/lib/tokens";
 import { SpecialistAvatar } from "../SpecialistAvatar";
+import { levelFor } from "@/lib/db/levels";
 
 const chip = { display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12.5, fontWeight: 600, color: C.white } as const;
 
@@ -27,6 +28,9 @@ export default function ConfirmPage() {
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const policy = useQuery(["appointments", "policy"], freeChangeHours);
   const pkgs = useQuery(["appointments", "pkgs", s.patient?.id, key], () => myPackagesFor(s.patient!.id, key), { enabled: !!s.patient && !!key });
+  // her file may set a longer level for this service (minutes + price come from it; level 1 = the service itself)
+  const lvq = useQuery(["levels", "for", s.patient?.id, key], () => levelFor(key), { enabled: !!s.patient && !!key });
+  const lv = lvq.data && lvq.data.level > 1 ? lvq.data : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,7 +81,7 @@ export default function ConfirmPage() {
               </div>
               <div style={{ height: 1, background: "rgba(255,255,255,0.18)", margin: "14px 0 12px" }} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={chip}><Icon name="sparkle" color="#FFFFFF" size={15} />{service.name} · {service.minutes} د</span>
+                <span style={chip}><Icon name="sparkle" color="#FFFFFF" size={15} />{service.name}{lv ? ` · ${lv.name}` : ""} · {lv?.minutes ?? service.minutes} د</span>
                 {room && <span style={chip}><Icon name="door" color="#FFFFFF" size={15} />{room.name}</span>}
               </div>
             </div>
@@ -96,7 +100,7 @@ export default function ConfirmPage() {
               <Circ icon="receipt" size={42} iconSize={19} />
               <div style={{ flexGrow: 1, minWidth: 0, lineHeight: 1.4 }}>
                 <div style={{ fontSize: 12, color: C.sub2 }}>قيمة الجلسة</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>{priceLabel(service)}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>{lv && lv.price != null ? money(lv.price) : priceLabel(service)}</div>
               </div>
               {pkg && <Tag kind="green">مشمولة بباقتكِ</Tag>}
             </div>
@@ -124,7 +128,7 @@ export default function ConfirmPage() {
           <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "0 6px" }}>
               <span style={{ fontSize: 13, color: C.sub2 }}>{pkg ? "المستحق الآن" : service.price ? "تدفعينها في المركز" : "قيمة الجلسة"}</span>
-              <span style={{ fontSize: 20, fontWeight: 700, color: C.accent }}>{pkg || !service.price ? "بدون مقابل" : money(service.price)}</span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: C.accent }}>{pkg || !(lv?.price ?? service.price) ? "بدون مقابل" : money(lv?.price ?? service.price)}</span>
             </div>
             <PrimaryButton onClick={confirm} disabled={busy} style={{ width: "100%" }}>{busy ? "جارٍ الحجز…" : replace ? "تأكيد الموعد الجديد" : "تأكيد الحجز"}</PrimaryButton>
           </div>

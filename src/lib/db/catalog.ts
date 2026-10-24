@@ -135,7 +135,7 @@ export async function saveService(input: ServiceInput) {
   const row = key
     ? must(await supabase.from("services").update(rest).eq("key", key).select().single())
     : must(await supabase.from("services").insert({ ...rest, key: slug(rest.name) }).select().single());
-  invalidate("catalog");
+  invalidate("catalog"); invalidate("levels"); // level 1 follows the service's minutes/price (and new services get 3 levels)
   return row;
 }
 

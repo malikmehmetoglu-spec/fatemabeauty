@@ -14,6 +14,8 @@ import { ROLE_LABEL, useSession } from "@/lib/supabase/session";
 import { C, DARK, ICON_FILL, SELECTED, SH } from "@/lib/tokens";
 import css from "../calendar/appts.module.css";
 import { arErr } from "../patients/kit";
+import { isPaid } from "@/lib/db/levels";
+import { ExtendRequest, OverrideStartButton, SessionTimer, ToCashier, UnpaidTag, usePendingExtensions } from "../queue/session-ui";
 
 export default function MyDayPage() {
   useLiveAppointments("my-day");
@@ -21,6 +23,8 @@ export default function MyDayPage() {
   const { data, loading, error } = useQuery(["appointments", "myday", staff?.id], () => listMyDay(staff!.id), { enabled: !!staff });
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+  const ext = usePendingExtensions("my-day-ext");
+  const isAdmin = staff?.role === "owner" || staff?.role === "admin";
 
   const mine = (data ?? []).filter((a) => a.status !== "cancelled");
   const done = mine.filter((a) => a.status === "done").length;
@@ -57,9 +61,17 @@ export default function MyDayPage() {
 
             {current ? (
               <div style={{ ...DARK, borderRadius: 28, padding: "20px 22px", position: "relative", overflow: "hidden" }}>
-                <div style={{ fontSize: 13, color: C.onDark }}>الجلسة الحالية · منذ {clock(current.started_at ?? current.starts_at)}</div>
-                <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{personName(current)}</div>
-                <div style={{ fontSize: 14, color: "#F2E6F4" }}>{current.service?.name} · {current.room?.name ?? "بدون غرفة"} · حتى {clock(endsAt(current))}</div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+                    <div style={{ fontSize: 13, color: C.onDark }}>الجلسة الحالية · منذ {clock(current.started_at ?? current.starts_at)}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{personName(current)}</div>
+                    <div style={{ fontSize: 14, color: "#F2E6F4" }}>{current.service?.name}{current.level && current.level.level > 1 ? ` · ${current.level.name}` : ""} · {current.room?.name ?? "بدون غرفة"} · حتى {clock(endsAt({ starts_at: current.started_at ?? current.starts_at, minutes: current.minutes, extension_minutes: current.extension_minutes }))}{current.extension_minutes ? ` · مُدّدت ${current.extension_minutes} د` : ""}</div>
+                  </div>
+                  <SessionTimer a={current} dark />
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <ExtendRequest apptId={current.id} pending={(ext.data ?? []).find((e) => e.appointment_id === current.id)} dark onError={setErr} />
+                </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
                   <SubmitButton busy={busy === current.id + "done"} onClick={() => go(current, "done")} style={{ background: C.white, color: C.accent }}>إنهاء الجلسة</SubmitButton>
                   <Link href={`${R.W_SessionNote}?appointment=${current.id}${current.patient_id ? `&patient=${current.patient_id}` : ""}`} style={{ height: 50, borderRadius: 25, padding: "0 20px", border: "1px solid rgba(255,255,255,0.4)", color: C.white, display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
@@ -74,17 +86,24 @@ export default function MyDayPage() {
             {next && (
               <div style={{ borderRadius: 28, padding: "18px 22px", ...SELECTED }}>
                 <div style={{ fontSize: 13, color: C.sub2 }}>التالية</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
                   <Avatar initials={initials(personName(next))} size={48} />
-                  <div style={{ flex: 1, lineHeight: 1.4 }}>
+                  <div style={{ flex: "1 1 200px", minWidth: 0, lineHeight: 1.4 }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>{personName(next)}{next.queue_no != null && <span className="latin" style={{ fontSize: 14, color: C.accent }}> · دور {next.queue_no}</span>}</div>
-                    <div style={{ fontSize: 13, color: C.sub2 }}>{timeOf(next)} · {next.service?.name} · {next.room?.name ?? "بدون غرفة"} · {STATUS_LABEL[next.status]}</div>
+                    <div style={{ fontSize: 13, color: C.sub2 }}>{timeOf(next)} · {next.service?.name}{next.level && next.level.level > 1 ? ` · ${next.level.name}` : ""} · <span className="latin">{next.minutes}</span> د · {next.room?.name ?? "بدون غرفة"} · {STATUS_LABEL[next.status]}</div>
                   </div>
+                  {!isPaid(next) && <UnpaidTag />}
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
                   {next.status === "confirmed" && <SubmitButton busy={busy === next.id + "checked_in"} onClick={() => go(next, "checked_in")}>تسجيل وصولها</SubmitButton>}
                   {next.status === "checked_in" && <GhostButton icon="bell" onClick={() => run(next.id + "call", () => callPatient(next.id))}>{next.called_at ? "إعادة النداء" : "نداء على الشاشة"}</GhostButton>}
-                  {next.status === "checked_in" && !current && <SubmitButton busy={busy === next.id + "in_session"} onClick={() => go(next, "in_session")}>بدء الجلسة</SubmitButton>}
+                  {next.status === "checked_in" && !current && (isPaid(next)
+                    ? <SubmitButton busy={busy === next.id + "in_session"} onClick={() => go(next, "in_session")}>بدء الجلسة</SubmitButton>
+                    : <button type="button" disabled aria-disabled title="تبدأ الجلسة بعد دفعها في الكاشير" style={{ height: 50, padding: "0 22px", borderRadius: 25, border: "1px dashed #D9C7DF", background: "#F3EDF5", color: "#A592AB", fontSize: 15, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 8, cursor: "not-allowed", whiteSpace: "nowrap" }}>
+                        <Icon name="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM8 11V7a4 4 0 1 1 8 0v4" size={17} color="#A592AB" />بدء الجلسة بعد الدفع
+                      </button>)}
+                  {!isPaid(next) && <ToCashier a={next} />}
+                  {!isPaid(next) && isAdmin && next.status === "checked_in" && !current && <OverrideStartButton apptId={next.id} name={personName(next)} />}
                   {next.patient_id && <Link href={`${R.W_Record}?id=${next.patient_id}`} style={{ height: 46, display: "inline-flex", alignItems: "center", color: C.accent, fontWeight: 700, fontSize: 14 }}>فتح الملف</Link>}
                 </div>
               </div>
@@ -99,7 +118,8 @@ export default function MyDayPage() {
                 <span className="latin" style={{ width: 48, fontSize: 13.5, fontWeight: 700 }}>{timeOf(a)}</span>
                 <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{personName(a)}</div>
-                  <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name} · {a.minutes} د · {a.room?.name ?? "بدون غرفة"}</div>
+                  <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · {a.minutes + (a.extension_minutes ?? 0)} د · {a.room?.name ?? "بدون غرفة"}
+                    {["pending", "confirmed", "checked_in"].includes(a.status) && !isPaid(a) && <span style={{ color: "#A3621A", fontWeight: 700, whiteSpace: "nowrap" }}> · بانتظار الدفع</span>}</div>
                 </div>
                 <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
               </div>

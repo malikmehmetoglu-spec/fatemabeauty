@@ -18,6 +18,8 @@ import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
 import css from "../appts.module.css";
+import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
+import { levelPrice } from "../../settings/services/levels";
 
 type Mode = "existing" | "new" | "walkin";
 const hm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
@@ -40,6 +42,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   const hours = useQuery(["appointments", "hours"], getHours);
   const staffHours = useQuery(["staff_hours", "all"], listStaffHours);
   const prov = useQuery(["appointments", "providers"], serviceProviders);
+  const levels = useQuery(["levels", "all"], listLevels);
 
   const [mode, setMode] = useState<Mode>("existing");
   const [q, setQ] = useState("");
@@ -77,6 +80,16 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => { if (svc && !svcKey) setSvcKey(svc.key); }, [svc, svcKey]);
   useEffect(() => { setRoom(svc?.room_id ?? ""); setTime(""); }, [svc?.key, svc?.room_id]);
 
+  // «مستوى الجلسة»: default = the level set in her file for this service, else level 1
+  const pLevels = useQuery(["levels", "patient", patient?.id], () => patientLevels(patient!.id), { enabled: mode === "existing" && !!patient });
+  const svcLevels = levelsOf(levels.data, svc?.key);
+  const assigned = mode === "existing" ? (pLevels.data ?? []).find((x) => x.service_key === svc?.key)?.level_id : null;
+  const [lvPick, setLvPick] = useState("");
+  useEffect(() => { setLvPick(""); }, [svc?.key, patient?.id]);
+  const lvl = svcLevels.find((l) => l.id === lvPick) ?? svcLevels.find((l) => l.id === assigned) ?? svcLevels[0] ?? null;
+  const lvMin = lvl?.minutes ?? svc?.minutes ?? 30;
+  useEffect(() => { setTime(""); }, [lvMin]);
+
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
   // candidate times: the chosen specialist's own hours, or the union of everyone's hours (default hours without a schedule)
   const slots = useMemo(() => {
@@ -86,13 +99,13 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
     const doers = prov.data ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
     const ids = doers.length ? doers : [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
     const wins = sp ? rangesOn(rows, sp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
-    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, svc.minutes, busyQ.data!, room || null, sp || null));
+    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, room || null, sp || null));
     return [...new Set(all)].sort();
-  }, [svc, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data, prov.data]);
+  }, [svc, lvMin, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data, prov.data]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
-    worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + svc.minutes, hours.data);
+    worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + lvMin, hours.data);
   const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);
   const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
   // the chosen specialist does not provide this service («الخدمات التي تقدّمها») — warn, do not block
@@ -121,7 +134,7 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
       await book({
         service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
         walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,
-        source: walk ? "walk_in" : "reception", checkIn: walk && checkIn,
+        source: walk ? "walk_in" : "reception", checkIn: walk && checkIn, level: lvl?.id ?? null,
       });
       onClose();
     } catch (e) {
@@ -176,6 +189,19 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
             <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...teamSorted.map((t) => ({ value: t.id, label: provides(prov.data, t.id, svc?.key) ? t.name : `${t.name} — لا تقدّم هذه الخدمة` }))]} />
             <Select label="الغرفة" value={room} onChange={setRoom} options={[{ value: "", label: "بدون غرفة" }, ...(rooms.data ?? []).map((r) => ({ value: r.id, label: r.name }))]} />
           </div>
+
+          {svcLevels.length > 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>مستوى الجلسة{assigned && lvl?.id === assigned ? " · المحدّد في ملفها" : ""}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {svcLevels.map((l) => (
+                  <Chip key={l.id} height={40} selected={lvl?.id === l.id} onClick={() => setLvPick(l.id)}>
+                    {l.name} · <span className="latin">{l.minutes}</span> د · {levelPrice(l)}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
 
           {mode === "walkin" ? (
             <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderRadius: 18, padding: "12px 14px", background: C.tint2, fontSize: 14, fontWeight: 600 }}>

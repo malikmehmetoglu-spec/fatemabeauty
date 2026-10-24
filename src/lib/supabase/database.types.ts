@@ -66,8 +66,10 @@ export type Database = {
           created_by: string | null
           eligibility: Json | null
           eligibility_at: string | null
+          extension_minutes: number
           finished_at: string | null
           id: string
+          level_id: string | null
           minutes: number
           note: string | null
           patient_id: string | null
@@ -80,6 +82,9 @@ export type Database = {
           service_key: string
           source: string
           specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
@@ -95,8 +100,10 @@ export type Database = {
           created_by?: string | null
           eligibility?: Json | null
           eligibility_at?: string | null
+          extension_minutes?: number
           finished_at?: string | null
           id?: string
+          level_id?: string | null
           minutes: number
           note?: string | null
           patient_id?: string | null
@@ -109,6 +116,9 @@ export type Database = {
           service_key: string
           source?: string
           specialist_id?: string | null
+          start_override_at?: string | null
+          start_override_by?: string | null
+          start_override_reason?: string | null
           started_at?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -124,8 +134,10 @@ export type Database = {
           created_by?: string | null
           eligibility?: Json | null
           eligibility_at?: string | null
+          extension_minutes?: number
           finished_at?: string | null
           id?: string
+          level_id?: string | null
           minutes?: number
           note?: string | null
           patient_id?: string | null
@@ -138,6 +150,9 @@ export type Database = {
           service_key?: string
           source?: string
           specialist_id?: string | null
+          start_override_at?: string | null
+          start_override_by?: string | null
+          start_override_reason?: string | null
           started_at?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -145,6 +160,13 @@ export type Database = {
           walk_in_phone?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "service_levels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_patient_id_fkey"
             columns: ["patient_id"]
@@ -788,6 +810,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          author: string
           body: string
           created_at: string
           from_patient: boolean
@@ -797,6 +820,7 @@ export type Database = {
           staff_id: string | null
         }
         Insert: {
+          author?: string
           body: string
           created_at?: string
           from_patient: boolean
@@ -806,6 +830,7 @@ export type Database = {
           staff_id?: string | null
         }
         Update: {
+          author?: string
           body?: string
           created_at?: string
           from_patient?: boolean
@@ -827,6 +852,128 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mira_drafts: {
+        Row: {
+          body: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          patient_id: string
+          status: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          patient_id: string
+          status?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          patient_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mira_drafts_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mira_drafts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mira_kb: {
+        Row: {
+          active: boolean
+          answer: string
+          id: string
+          question: string
+          sort: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          id?: string
+          question: string
+          sort?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          id?: string
+          question?: string
+          sort?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mira_threads: {
+        Row: {
+          escalated: boolean
+          handoff_at: string | null
+          notified_at: string | null
+          notify_count: number
+          patient_id: string
+          reason: string | null
+          resolved_at: string | null
+          status: string
+          summary: string | null
+          updated_at: string
+          urgent: boolean
+        }
+        Insert: {
+          escalated?: boolean
+          handoff_at?: string | null
+          notified_at?: string | null
+          notify_count?: number
+          patient_id: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          urgent?: boolean
+        }
+        Update: {
+          escalated?: boolean
+          handoff_at?: string | null
+          notified_at?: string | null
+          notify_count?: number
+          patient_id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          urgent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mira_threads_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
@@ -1181,6 +1328,52 @@ export type Database = {
           },
         ]
       }
+      patient_service_levels: {
+        Row: {
+          level_id: string | null
+          patient_id: string
+          service_key: string
+          set_at: string
+          set_by: string | null
+        }
+        Insert: {
+          level_id?: string | null
+          patient_id: string
+          service_key: string
+          set_at?: string
+          set_by?: string | null
+        }
+        Update: {
+          level_id?: string | null
+          patient_id?: string
+          service_key?: string
+          set_at?: string
+          set_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_service_levels_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "service_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_service_levels_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_service_levels_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string | null
@@ -1504,6 +1697,56 @@ export type Database = {
         }
         Relationships: []
       }
+      service_levels: {
+        Row: {
+          active: boolean
+          created_at: string
+          extension_price_30: number | null
+          id: string
+          level: number
+          minutes: number
+          name: string
+          price: number
+          price_currency: string
+          service_key: string
+          sort: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          extension_price_30?: number | null
+          id?: string
+          level: number
+          minutes: number
+          name: string
+          price?: number
+          price_currency?: string
+          service_key: string
+          sort?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          extension_price_30?: number | null
+          id?: string
+          level?: number
+          minutes?: number
+          name?: string
+          price?: number
+          price_currency?: string
+          service_key?: string
+          sort?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_levels_service_key_fkey"
+            columns: ["service_key"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       services: {
         Row: {
           active: boolean
@@ -1576,6 +1819,60 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_extensions: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          invoice_id: string | null
+          minutes: number
+          price: number
+          requested_by: string | null
+          status: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          invoice_id?: string | null
+          minutes: number
+          price?: number
+          requested_by?: string | null
+          status?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          invoice_id?: string | null
+          minutes?: number
+          price?: number
+          requested_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_extensions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_extensions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -1764,6 +2061,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_hours_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_push_subs: {
+        Row: {
+          created_at: string
+          device: string | null
+          endpoint: string
+          id: string
+          last_ok_at: string | null
+          staff_id: string
+          sub: Json
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          endpoint: string
+          id?: string
+          last_ok_at?: string | null
+          staff_id: string
+          sub: Json
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          endpoint?: string
+          id?: string
+          last_ok_at?: string | null
+          staff_id?: string
+          sub?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_push_subs_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
@@ -2253,6 +2588,19 @@ export type Database = {
           starts_at: string
         }[]
       }
+      app_slots_v2: {
+        Args: {
+          p_day: string
+          p_level?: string
+          p_patient?: string
+          p_service: string
+          p_specialist?: string
+        }
+        Returns: {
+          available: boolean
+          starts_at: string
+        }[]
+      }
       approve_booking: { Args: { p_id: string }; Returns: undefined }
       attendance_punch: {
         Args: { p_kind: string }
@@ -2293,8 +2641,10 @@ export type Database = {
           created_by: string | null
           eligibility: Json | null
           eligibility_at: string | null
+          extension_minutes: number
           finished_at: string | null
           id: string
+          level_id: string | null
           minutes: number
           note: string | null
           patient_id: string | null
@@ -2307,6 +2657,63 @@ export type Database = {
           service_key: string
           source: string
           specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_appointment_v2: {
+        Args: {
+          p_check_in?: boolean
+          p_level?: string
+          p_patient?: string
+          p_room?: string
+          p_service: string
+          p_source?: string
+          p_specialist?: string
+          p_starts: string
+          p_walk_in_name?: string
+          p_walk_in_phone?: string
+        }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          confirm_sent_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          extension_minutes: number
+          finished_at: string | null
+          id: string
+          level_id: string | null
+          minutes: number
+          note: string | null
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
@@ -2339,6 +2746,30 @@ export type Database = {
       }
       cancel_order: { Args: { p_order: string }; Returns: undefined }
       cash_shift_expected: { Args: { p_shift: string }; Returns: number }
+      charge_session_extension: {
+        Args: {
+          p_ext: string
+          p_method?: Database["public"]["Enums"]["pay_method"]
+        }
+        Returns: {
+          appointment_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          invoice_id: string | null
+          minutes: number
+          price: number
+          requested_by: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "session_extensions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       check_offer_code: {
         Args: { p_code: string; p_items: Json; p_subtotal: number }
         Returns: Json
@@ -2455,6 +2886,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      decline_session_extension: {
+        Args: { p_ext: string }
+        Returns: {
+          appointment_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          invoice_id: string | null
+          minutes: number
+          price: number
+          requested_by: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "session_extensions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_stock_location: {
         Args: { p_location: string; p_mode?: string; p_target?: string }
         Returns: Json
@@ -2484,6 +2936,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      extension_price: {
+        Args: { p_appt: string; p_minutes: number }
+        Returns: number
       }
       link_my_staff: {
         Args: never
@@ -2539,6 +2995,49 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "cash_shifts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      override_start_without_payment: {
+        Args: { p_appt: string; p_reason: string }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          confirm_sent_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          extension_minutes: number
+          finished_at: string | null
+          id: string
+          level_id: string | null
+          minutes: number
+          note: string | null
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2647,6 +3146,27 @@ export type Database = {
         Args: { p_id: string; p_reason: string }
         Returns: undefined
       }
+      request_session_extension: {
+        Args: { p_appt: string; p_minutes: number }
+        Returns: {
+          appointment_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          invoice_id: string | null
+          minutes: number
+          price: number
+          requested_by: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "session_extensions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_stock_location: {
         Args: {
           p_active?: boolean
@@ -2676,6 +3196,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      service_level_for: {
+        Args: { p_patient?: string; p_service: string }
+        Returns: Json
       }
       service_price_syp: { Args: { p_key: string }; Returns: number }
       service_prices_syp: {
@@ -2707,6 +3231,22 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "exchange_rates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_patient_service_level: {
+        Args: { p_level: string; p_patient: string; p_service: string }
+        Returns: {
+          level_id: string | null
+          patient_id: string
+          service_key: string
+          set_at: string
+          set_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "patient_service_levels"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2802,6 +3342,11 @@ export type Database = {
           p_qty: number
           p_to: string
         }
+        Returns: undefined
+      }
+      vapid_get: { Args: never; Returns: Json }
+      vapid_set: {
+        Args: { p_keys: Json; p_public: string }
         Returns: undefined
       }
       void_invoice: {

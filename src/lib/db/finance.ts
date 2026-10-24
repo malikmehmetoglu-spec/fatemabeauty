@@ -146,13 +146,13 @@ export async function listPatientPackages(patientId: string) {
 
 /* ---------- cashier ---------- */
 
-const APPT_SELECT = "id, patient_id, walk_in_name, service_key, price, status, starts_at, finished_at, minutes, patients(name, file_no, phone), services(name, price), staff(name), rooms(name), invoices(id, void)";
+const APPT_SELECT = "id, patient_id, walk_in_name, service_key, price, status, starts_at, finished_at, minutes, patients(name, file_no, phone), services(name, price), staff(name), rooms(name), invoices(id, void), level:service_levels(name, level)";
 
 /** Today's appointments the cashier cares about: finished (ready to pay), in session or checked in. Invoiced ones are flagged. */
 export async function listCashierQueue() {
   const r = dayRange();
   const list = rows(await supabase.from("appointments").select(APPT_SELECT).gte("starts_at", r.from).lt("starts_at", r.to)
-    .in("status", ["checked_in", "in_session", "done"]).order("starts_at"));
+    .in("status", ["pending", "confirmed", "checked_in", "in_session", "done"]).order("starts_at"));
   return list.map((a) => ({ ...a, invoiced: (a.invoices ?? []).some((i) => !i.void) }));
 }
 export type CashierAppt = Awaited<ReturnType<typeof listCashierQueue>>[number];

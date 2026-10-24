@@ -27,6 +27,7 @@ import { locLabel, useLocations } from "../../inventory/dialogs";
 import { qtyAt } from "@/lib/db/products";
 import { getPatient } from "@/lib/db/patients";
 import css from "../finance.module.css";
+import { ExtensionRequests, usePendingExtensions } from "../../queue/session-ui";
 
 type Who =
   | { type: "appt"; appt: CashierAppt }
@@ -39,7 +40,7 @@ const MODES: { k: Mode; label: string }[] = [
   { k: "package", label: "رصيد باقة" }, { k: "deferred", label: "آجل / قسط" },
 ];
 const PCTS = [0, 5, 10, 15, 20];
-const STATUS_AR: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "حضرت" };
+const STATUS_AR: Record<string, string> = { done: "انتهت", in_session: "في الجلسة", checked_in: "حضرت", confirmed: "موعد اليوم", pending: "موعد اليوم" };
 
 const avatar = (size: number): CSSProperties => ({ width: size, height: size, borderRadius: size / 2, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: C.accent });
 
@@ -86,13 +87,26 @@ export default function Page() {
   };
   // ?patient=<id> (from the patients list «فاتورة») → that file is preselected once
   useEffect(() => {
-    const pid = new URLSearchParams(window.location.search).get("patient");
-    if (!pid) return;
+    const sp = new URLSearchParams(window.location.search);
+    const pid = sp.get("patient");
+    if (!pid || sp.get("appointment")) return;
     let live = true;
     getPatient(pid).then((p) => { if (live && p) setWho((w) => w ?? { type: "patient", id: p.id, name: p.name || "بدون اسم", file_no: p.file_no, phone: p.phone }); }).catch(() => {});
     return () => { live = false; };
   }, []);
-  const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: a.services?.name ?? "جلسة", unit_price: a.price || sellables.data?.services.find((x) => x.key === a.service_key)?.price || 0 }]);
+  // the booked price is the level's price (the server uses the same appointment price)
+  const pickAppt = (a: CashierAppt) => reset({ type: "appt", appt: a }, [{ kind: "service", ref: a.service_key, qty: 1, label: (a.services?.name ?? "جلسة") + (a.level && a.level.level > 1 ? ` — ${a.level.name}` : ""), unit_price: a.price || sellables.data?.services.find((x) => x.key === a.service_key)?.price || 0 }]);
+  const ext = usePendingExtensions("cashier-ext");
+  // ?appointment=<id> (from «إلى الكاشير» in جدولي / الأدوار) → that session is preselected once the list loads
+  const [wantAppt, setWantAppt] = useState<string | null>(null);
+  useEffect(() => { setWantAppt(new URLSearchParams(window.location.search).get("appointment")); }, []);
+  useEffect(() => {
+    if (!wantAppt || !queue.data) return;
+    const a = queue.data.find((x) => x.id === wantAppt);
+    if (a && !a.invoiced) pickAppt(a);
+    setWantAppt(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantAppt, queue.data]);
 
   // the package covers one session of its service → that line is free
   const pkg = usable.find((p) => p.id === pkgId) ?? null;
@@ -157,6 +171,7 @@ export default function Page() {
       <Link href={R.W_Invoices} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
         <Icon name="receipt" color={C.accent} size={17} stroke={1.9} />كل الفواتير
       </Link>}>
+      <ExtensionRequests list={ext.data ?? []} />
       <div className={css.cashier}>
         {/* ---------- left: who pays ---------- */}
         <div className={css.cWho} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -168,7 +183,7 @@ export default function Page() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {ready.map((a) => <ApptRow key={a.id} a={a} on={who?.type === "appt" && who.appt.id === a.id} onClick={() => pickAppt(a)} />)}
               {!ready.length && <div style={{ fontSize: 12.5, color: C.muted, padding: "6px 4px" }}>لا جلسات منتهية بلا فاتورة الآن.</div>}
-              {!!inSession.length && <div style={{ fontSize: 12, fontWeight: 700, color: C.sub2, padding: "4px 4px 0" }}>في المركز الآن</div>}
+              {!!inSession.length && <div style={{ fontSize: 12, fontWeight: 700, color: C.sub2, padding: "4px 4px 0" }}>اليوم — الدفع قبل الجلسة</div>}
               {inSession.map((a) => <ApptRow key={a.id} a={a} on={who?.type === "appt" && who.appt.id === a.id} onClick={() => pickAppt(a)} />)}
               <div style={{ fontSize: 12, color: C.muted, padding: "2px 4px" }}>تظهر الجلسة هنا تلقائياً عند انتهائها.</div>
             </div>
@@ -404,7 +419,7 @@ function ApptRow({ a, on, onClick }: { a: CashierAppt; on: boolean; onClick: () 
       <span style={avatar(done ? 42 : 38)}>{initials(name)}</span>
       <div style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}>
         <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap" }}>{a.services?.name ?? "—"} · {done && a.finished_at ? <>انتهت <span dir="ltr" style={LATIN}>{clock(a.finished_at)}</span></> : STATUS_AR[a.status]}</div>
+        <div style={{ fontSize: 12, color: C.sub2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.services?.name ?? "—"} · {done && a.finished_at ? <>انتهت <span dir="ltr" style={LATIN}>{clock(a.finished_at)}</span></> : STATUS_AR[a.status]}</div>
       </div>
       {done && <span style={{ height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: C.accent, color: C.white, display: "inline-flex", alignItems: "center" }}>جاهزة</span>}
     </button>
