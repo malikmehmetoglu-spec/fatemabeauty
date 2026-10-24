@@ -46,7 +46,7 @@ const SECTION_ROLES: Record<AdminSection, Role[]> = {
   "المواعيد": ["reception", "specialist"],
   "الأدوار": ["reception", "specialist"],
   "المراجعات": ["reception", "specialist"],
-  "ميرا": ["reception"],
+  "ميرا": [],
   "جدولي": ["reception", "specialist", "accountant"],
   "المالية": ["reception", "accountant"],
   "المخزون والأجهزة": ["specialist"],
@@ -100,7 +100,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const [q, setQ] = useState("");
   const pend = useQuery(["booking-requests", "count"], pendingCount, { enabled: !!staff });
   const pending = pend.data ?? 0;
-  const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff });
+  const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff && canSee(staff.role as Role, "ميرا") });
   const miraCount = mira.data ?? 0;
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   const role = staff?.role as Role | undefined;
