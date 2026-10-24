@@ -16,6 +16,7 @@ import { C, DARK, ICON_FILL, SELECTED, SH } from "@/lib/tokens";
 import css from "../calendar/appts.module.css";
 import { arErr } from "../patients/kit";
 import { isPaid } from "@/lib/db/levels";
+import { IntakeBadgeButton, IntakePanel, useIntakeStatus } from "./IntakePanel";
 import { ExtendRequest, OverrideStartButton, SessionTimer, ToCashier, UnpaidTag, usePendingExtensions } from "../queue/session-ui";
 
 export default function MyDayPage() {
@@ -32,6 +33,10 @@ export default function MyDayPage() {
   const current = mine.find((a) => a.status === "in_session");
   const left = mine.filter((a) => ["pending", "confirmed", "checked_in"].includes(a.status));
   const next = left.find((a) => a.status === "checked_in") ?? left[0];
+
+  const consults = mine.filter((a) => a.service?.is_consultation && a.patient_id);
+  const intake = useIntakeStatus(consults.map((a) => a.id));
+  const prep = current?.service?.is_consultation && current.patient_id ? current : next?.service?.is_consultation && next.patient_id ? next : null;
 
   async function run(key: string, f: () => Promise<unknown>) {
     setBusy(key); setErr("");
@@ -109,6 +114,8 @@ export default function MyDayPage() {
                 </div>
               </div>
             )}
+
+            {prep && <IntakePanel appointmentId={prep.id} />}
           </div>
 
           <div style={{ flex: 1, minWidth: 0, borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, alignSelf: "flex-start" }}>
@@ -121,6 +128,9 @@ export default function MyDayPage() {
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}</div>
                   <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · {a.minutes + (a.extension_minutes ?? 0)} د · {a.room?.name ?? "بدون غرفة"}
                     {["pending", "confirmed", "checked_in"].includes(a.status) && !isPaid(a) && <span style={{ color: "#A3621A", fontWeight: 700, whiteSpace: "nowrap" }}> · بانتظار الدفع</span>}</div>
+                  {a.service?.is_consultation && a.patient_id && intake.data && a.status !== "done" && a.status !== "no_show" && (
+                    <div style={{ marginTop: 5 }}><IntakeBadgeButton appointmentId={a.id} ready={!!intake.data[a.id]} reviewed={intake.data[a.id]?.reviewed} /></div>
+                  )}
                 </div>
                 <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
               </div>

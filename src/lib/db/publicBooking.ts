@@ -42,7 +42,7 @@ export type PubInfo = {
   centre: { phone: string | null; whatsapp: string | null } | null; horizon_days: number;
 };
 export type PubSlot = { starts_at: string; available: boolean };
-export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null; phone?: string | null; level?: string | null; price?: number | null };
+export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null; phone?: string | null; level?: string | null; price?: number | null; consult?: boolean };
 
 /** "+963991234567" → "0991 234 567" (shown on the success screen). */
 export function localPhone(p?: string | null) {

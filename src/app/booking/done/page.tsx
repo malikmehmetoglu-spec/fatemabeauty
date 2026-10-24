@@ -13,6 +13,7 @@ import { arDate, money } from "@/lib/format";
 import { durationLabel } from "@/lib/db/publicBooking";
 import { C, CARD, DONE_GRAD, GLASS } from "@/lib/tokens";
 import { downloadIcs, SpecialistAvatar } from "../SpecialistAvatar";
+import { IntakeCard } from "../../appointments/IntakeCard";
 
 const abs = (top: number, left: number, extra: CSSProperties = {}): CSSProperties => ({ position: "absolute", top, left, ...extra });
 
@@ -92,6 +93,8 @@ export default function BookedPage() {
           <span style={{ marginInlineStart: "auto" }}><Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag></span>
         </div>
       </div>
+
+      <IntakeCard appointmentId={a.id} />
 
       <div style={{ marginTop: "auto", position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
         <SecondaryButton icon="calcheck" onClick={() => downloadIcs({ id: a.id, starts_at: a.starts_at, minutes: a.minutes, title: a.service?.name ?? "جلسة", location: a.room?.name })}>إضافة إلى التقويم</SecondaryButton>

@@ -14,6 +14,7 @@ import { AR_DAYS, AR_MONTHS } from "@/lib/data";
 import { dayKey, money } from "@/lib/format";
 import { C, CARD, DARK, SH_SOFT, SHB } from "@/lib/tokens";
 import { downloadIcs, SpecialistAvatar } from "../../booking/SpecialistAvatar";
+import { IntakeCard } from "../IntakeCard";
 
 const GLASS_PILL: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12.5, fontWeight: 600 };
 const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "11px 0" };
@@ -82,6 +83,8 @@ export default function AppointmentDetailPage() {
           <Icon name="chev" size={18} stroke={2} />
         </Link>
       ) : null}
+
+      <IntakeCard appointmentId={a.id} />
 
       <div style={{ ...CARD, position: "relative", borderRadius: 26, padding: "2px 16px" }}>
         <div style={ROW}>

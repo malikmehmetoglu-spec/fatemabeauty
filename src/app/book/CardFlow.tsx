@@ -469,6 +469,13 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           {r.price != null && r.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(r.price)}</span></div>}
           {r.specialist && <div className={s.miniRow}><span>مع</span><span>{r.specialist}</span></div>}
         </div>
+        {r.consult && (
+          <a href={appHref(R.P_Appointments)} style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "start", margin: "14px 0 0", padding: "14px 16px", borderRadius: 22, color: "#fff", background: "linear-gradient(140deg,#9C64AA,#7B4687 60%,#5E2F6B)", boxShadow: "0 12px 26px rgba(123,70,135,0.28)" }}>
+            <span style={{ width: 42, height: 42, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.18)" }}><Icon name="file" color="#fff" size={21} /></span>
+            <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}><b style={{ display: "block", fontSize: 15 }}>جهّزي استشارتكِ</b><span style={{ fontSize: 12.5, opacity: 0.88 }}>من التطبيق: أخبري المستشارة عن بشرتكِ قبل الموعد — دقائق قليلة فقط</span></span>
+            <Icon name="chev" color="#fff" size={18} />
+          </a>
+        )}
         <div className={s.doneBtns}>
           <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم (مبدئياً)</button>
           <a className={s.ghostBtn} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>

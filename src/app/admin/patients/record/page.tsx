@@ -17,6 +17,7 @@ import { C } from "@/lib/tokens";
 import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
 import { PatientLevels } from "../levels";
+import { RecordIntake } from "../../my-day/IntakePanel";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
 const TABS = ["الزيارات", "ملاحظات الجلسات", "الوصفات", "الموافقات", "الصور"];
@@ -75,6 +76,8 @@ function Record() {
           </div>
           {p.notes && <div style={{ marginTop: 12, fontSize: 13, color: C.sub, background: "#FAF5FB", borderRadius: 14, padding: "8px 12px" }}>{p.notes}</div>}
         </Panel>
+
+        <RecordIntake patientId={p.id} />
 
         <div className={t.split}>
           <div className={t.side} style={{ ["--side" as string]: "340px", display: "flex", flexDirection: "column", gap: 16 }}>
