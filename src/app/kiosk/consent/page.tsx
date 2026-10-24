@@ -88,7 +88,7 @@ function Inner() {
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={`${R.T_Eligibility}?id=${A.id}`} title="توقيع الموافقة" sub={apptLine(A)} />
+      <StepHeader back={`${R.T_Eligibility}?id=${A.id}`} title="توقيع الموافقة" sub={apptLine(A)} flow={{ step: 2, skip: `${R.T_Photos}?id=${A.id}` }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderRadius: 32, padding: "22px 26px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -233,7 +233,7 @@ function Inner() {
           <button type="button" onClick={submit} disabled={!ready} style={btnStyle}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 19h18M5 15c2-2 3.5-5 3.5-7.5C8.5 5.5 7.8 5 7 5S5 6 5 8c0 3 3 5 5 7 1.5-2 2.5-3 3.5-3s1 2 2 2 1.5-1 2.5-1" />
-            </svg>{busy ? "جارٍ الحفظ…" : "توقيع"}
+            </svg>{busy ? "جارٍ الحفظ…" : "توقيع والتالي"}
           </button>
         </div>
       </div>

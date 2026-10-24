@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { saveEligibility } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SH_SOFT } from "@/lib/tokens";
-import { ApptPicker, KC, StepHeader, apptLine, kioskError, useApptParam, useKiosk } from "../kiosk";
+import { ApptPicker, KC, StepHeader, apptLine, kioskError, setFlash, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Eligibility.dc.html */
 const Q: [string, "block" | "warn", string][] = [["هل أنتِ حامل أو مرضعة؟", "block", "حمل أو رضاعة: تُؤجَّل جلسة الليزر."], ["تعرّض للشمس أو تسمير خلال آخر أسبوعين؟", "warn", "بشرة متعرّضة للشمس: خطر أعلى للحروق والتصبّغ — طاقة أخف أو تأجيل حسب تقدير الأخصائية."], ["أدوية تزيد التحسّس للضوء؟", "warn", "دواء يزيد التحسّس للضوء: راجعي نوع الدواء قبل البدء."], ["علاج إيزوتريتينوين لحب الشباب خلال 6 أشهر؟", "block", "إيزوتريتينوين حديث: يُؤجَّل الإجراء."], ["التهاب أو هربس نشط في منطقة الجلسة؟", "block", "التهاب نشط: لا تُعالج المنطقة حتى الشفاء."], ["ميل لظهور ندبات بارزة بعد الجروح؟", "warn", "ميل للندبات البارزة: اختبار بقعة صغيرة أولاً."], ["وشم أو مكياج دائم في المنطقة؟", "warn", "وشم في المنطقة: تجنّبي المرور فوقه."]];
@@ -44,7 +44,7 @@ function Inner() {
     sw: css("width:22px;height:22px;border-radius:11px;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(0,0,0,0.15);background:" + COL[i]) }));
   const skinNote = st.skin < 0 ? "اختاري نوع البشرة قبل ضبط إعدادات الجهاز." : st.skin >= 3 ? "بشرة داكنة (IV–VI): ابدئي بطاقة أخف واختبار بقعة، فخطر التصبّغ بعد الليزر أعلى." : "تأكدي من النوع قبل ضبط إعدادات الجهاز.";
   const noAlerts = alerts.length === 0, nAlerts = alerts.length;
-  const btn = busy ? "جارٍ الحفظ…" : block ? "تأجيل الجلسة" : alerts.length ? "متابعة الجلسة بحذر" : "متابعة الجلسة";
+  const btn = busy ? "جارٍ الحفظ…" : block ? "تأجيل الجلسة" : alerts.length ? "حفظ والتالي (بحذر)" : "حفظ والتالي";
   if (k.gate) return k.gate;
   const A = f.appt;
   if (!A) return <ApptPicker title="قبل الإجراء" today={f.today} loading={f.loading} error={f.error} path={R.T_Eligibility} />;
@@ -57,13 +57,14 @@ function Inner() {
         decision: block ? "postpone" : alerts.length ? "caution" : "ok",
         by: k.staff?.name ?? null,
       });
+      if (block) setFlash("حُفظ فحص الأهلية — الجلسة مؤجّلة");
       router.push(block ? R.T_Desk : `${R.T_Consent}?id=${A.id}`);
     } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={R.T_Desk} title="قبل الإجراء" sub={`${apptLine(A)}${A.eligibility_at ? " · تم الفحص مسبقاً" : ""}`} />
+      <StepHeader back={R.T_Desk} title="قبل الإجراء" sub={`${apptLine(A)}${A.eligibility_at ? " · تم الفحص مسبقاً" : ""}`} flow={{ step: 1, skip: `${R.T_Consent}?id=${A.id}` }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ flex: 1, minWidth: "0", borderRadius: 32, padding: "14px 24px 8px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0 4px" }}>

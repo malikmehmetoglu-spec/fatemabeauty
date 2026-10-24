@@ -12,7 +12,7 @@ import { ROLE_LABEL } from "@/lib/supabase/session";
 import { clock } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
-import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
+import { afterHref, DatePill, FlashToast, KC, KioskNav, kioskError, prepDone, prepHref, PrepLink, PrepMarks, usePrep, useKiosk } from "../kiosk";
 import { isPaid } from "@/lib/db/levels";
 import { isVip, VipBookingDialog, VipButton, VipStar } from "../../admin/calendar/vip";
 
@@ -30,8 +30,9 @@ export default function Page() {
   const [query, setQuery] = useState("");
   const [vipOpen, setVipOpen] = useState(false);
   useEffect(() => { const t = setInterval(() => invalidate("queue"), 20000); return () => clearInterval(t); }, []);
-  if (k.gate) return k.gate;
   const today = q.data?.today ?? [];
+  const prep = usePrep(today.filter((a) => a.status === "checked_in" || a.status === "in_session"), !k.gate);
+  if (k.gate) return k.gate;
   const rooms = q.data?.rooms ?? [];
   const by = (st: QueueAppt["status"]) => today.filter((a) => a.status === st);
   const nowIso = new Date().toISOString();
@@ -74,6 +75,7 @@ export default function Page() {
     <Stage fluid width={1194} height={834} background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
 
       <KioskNav active={R.T_Desk} />
+      <FlashToast />
       <div style={{ flex: 1, minWidth: "0", display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
         <div className={KC.hdr} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
           <div style={{ lineHeight: 1.3 }}>
@@ -197,8 +199,10 @@ export default function Page() {
             {list.map((a, i) => {
               const waiting = a.status === "checked_in", inSession = a.status === "in_session";
               const r = rowState(a);
+              const p = prep[a.id], ready = prepDone(p);
               return (
-                <div key={a.id} className={KC.drow} style={{ display: "flex", alignItems: "center", gap: 14, height: 62, padding: "0 12px", borderRadius: 20, borderTop: i === 0 ? "1px solid transparent" : "1px solid #EDE2F1", ...(waiting ? { background: "linear-gradient(270deg, rgba(243,234,246,0.95) 0%, rgba(243,234,246,0) 100%)" } : {}) }}>
+                <div key={a.id} style={{ borderRadius: 20, borderTop: i === 0 ? "1px solid transparent" : "1px solid #EDE2F1", ...(waiting ? { background: "linear-gradient(270deg, rgba(243,234,246,0.95) 0%, rgba(243,234,246,0) 100%)" } : {}) }}>
+                <div className={KC.drow} style={{ display: "flex", alignItems: "center", gap: 14, height: 62, padding: "0 12px" }}>
                   <span style={{ width: 50, fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 500, color: C.ink }}>{clock(inSession ? (a.started_at ?? a.starts_at) : a.starts_at)}</span>
                   <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 700, color: C.accent }}>{a.queue_no ?? "—"}</span>
                   <div className={KC.dname} style={{ flex: 1, minWidth: "0", lineHeight: 1.3 }}>
@@ -229,6 +233,14 @@ export default function Page() {
                       <span style={{ fontSize: 14, color: C.muted }}>—</span>
                     )}
                   </span>
+                </div>
+                {(waiting || inSession) && (
+                  <div className={KC.dprep} style={{ display: "flex", alignItems: "center", gap: 10, margin: 0, padding: "4px 12px 12px", marginInlineStart: 122 }}>
+                    <span style={{ flex: "1 1 auto", minWidth: 0 }}><PrepMarks p={p} after={inSession} /></span>
+                    {!ready && <PrepLink href={prepHref(a.id, p)} primary>تجهيز الجلسة</PrepLink>}
+                    {inSession && <PrepLink href={afterHref(a.id)} primary={ready && !p?.after}>صور بعد</PrepLink>}
+                  </div>
+                )}
                 </div>
               );
             })}

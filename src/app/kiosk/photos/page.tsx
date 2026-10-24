@@ -2,7 +2,7 @@
  
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { ErrorNote } from "@/components/ui";
 import { R } from "@/lib/routes";
@@ -10,7 +10,7 @@ import { initials } from "@/lib/data";
 import { personName, savePhoto, serviceName } from "@/lib/db/queue";
 import { css } from "../css";
 import { BG, C, SH, SH_SOFT } from "@/lib/tokens";
-import { ApptPicker, KC, StepHeader, kioskError, useApptParam, useKiosk } from "../kiosk";
+import { ApptPicker, KC, StepHeader, kioskError, setFlash, useApptParam, useKiosk } from "../kiosk";
 
 /** T_Photos.dc.html */
 const NAMES = ["أمامي", "جانبي 45°", "جانبي 90°"];
@@ -18,7 +18,7 @@ const KEYS = ["front", "side45", "side90"];
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
 type Shot = { blob: Blob; url: string } | null;
 
-/** Reception tablet: standardised before-session photos (three angles) → private "photos" bucket. */
+/** Reception tablet: standardised before-session (or ?kind=after: after-session) photos (three angles) → private "photos" bucket. */
 export default function Page() {
   return <Suspense><Inner /></Suspense>;
 }
@@ -27,6 +27,8 @@ function Inner() {
   const k = useKiosk();
   const router = useRouter();
   const f = useApptParam(!k.gate);
+  const after = useSearchParams().get("kind") === "after";
+  const stage = after ? "after" : "before", word = after ? "بعد" : "قبل";
   const [st, setSt] = useState<{ ang: number; shots: Shot[] }>({ ang: 0, shots: [null, null, null] });
   const [grid, setGrid] = useState(true);
   const [cam, setCam] = useState<"off" | "on" | "denied">("off");
@@ -49,7 +51,7 @@ function Inner() {
 
   if (k.gate) return k.gate;
   const A = f.appt;
-  if (!A) return <ApptPicker title="تصوير قبل الجلسة" today={f.today} loading={f.loading} error={f.error} path={R.T_Photos} />;
+  if (!A) return <ApptPicker title={`تصوير ${word} الجلسة`} today={f.today} loading={f.loading} error={f.error} path={R.T_Photos} />;
 
   const angs = NAMES.map((_, i) => ({ pick: () => setSt({ ...st, ang: i }),
     style: css("flex:1;height:58px;border-radius:29px;font-family:inherit;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" +
@@ -77,19 +79,20 @@ function Inner() {
   const retake = () => setSt({ ...st, shots: st.shots.map((x, i) => (i === st.ang ? null : x)) });
   const n = st.shots.filter(Boolean).length;
   const a0 = st.ang === 0, a1 = st.ang === 1, a2 = st.ang === 2, angName = NAMES[st.ang];
-  const count = n + " من 3", saveLbl = busy ? "جارٍ الحفظ…" : n === 3 ? "حفظ في الملف" : "حفظ في الملف (" + n + "/3)";
+  const count = n + " من 3", saveLbl = busy ? "جارٍ الحفظ…" : n === 3 ? (after ? "حفظ في الملف" : "حفظ وإنهاء التجهيز") : (after ? "حفظ في الملف" : "حفظ وإنهاء التجهيز") + " (" + n + "/3)";
   const shotState = cam === "denied" ? "الكاميرا غير متاحة" : st.shots[st.ang] ? "تم التقاطها — يمكنكِ الإعادة" : "جاهزة للالتقاط";
   const save = async () => {
     setBusy(true); setErr(null);
     try {
-      for (let i = 0; i < 3; i++) { const sh = st.shots[i]; if (sh) await savePhoto(A, sh.blob, KEYS[i], "before"); }
+      for (let i = 0; i < 3; i++) { const sh = st.shots[i]; if (sh) await savePhoto(A, sh.blob, KEYS[i], stage); }
+      setFlash(after ? `حُفظت صور ما بعد الجلسة — ${personName(A)}` : `اكتمل تجهيز جلسة ${personName(A)}`);
       router.push(R.T_Desk);
     } catch (e) { setErr(kioskError(e)); setBusy(false); }
   };
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={20}>
 
-      <StepHeader back={`${R.T_Consent}?id=${A.id}`} title="تصوير قبل الجلسة" sub={`الصور محفوظة في ملف المراجعة فقط${A.staff ? ` · مع ${A.staff.name}` : ""}`} />
+      <StepHeader back={after ? R.T_Desk : `${R.T_Consent}?id=${A.id}`} title={`تصوير ${word} الجلسة`} sub={`${personName(A)} · الصور محفوظة في ملف المراجعة فقط${A.staff ? ` · مع ${A.staff.name}` : ""}`} flow={{ step: after ? 0 : 3 }} />
       <div className={KC.cols} style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: "0", position: "relative" }}>
         <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", alignItems: "center", gap: 12 }}>
@@ -120,7 +123,7 @@ function Inner() {
           </div>
           <div style={{ borderRadius: 28, padding: "16px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>صور قبل الجلسة
+              <div style={{ fontSize: 18, fontWeight: 700 }}>صور {word} الجلسة
               </div>
               <div style={{ fontSize: 14, color: C.sub2 }}>{count}
               </div>

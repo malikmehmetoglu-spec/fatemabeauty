@@ -204,7 +204,7 @@ export async function saveConsent(a: QueueAppt, signature: Blob, answers: Record
   if (!a.patient_id) throw new Error("لا يوجد ملف مراجِعة لهذا الموعد");
   const path = await upload("consents", a.patient_id, signature, "png");
   need(await supabase.from("consents").insert({ patient_id: a.patient_id, appointment_id: a.id, service_key: a.service_key, answers, signature_path: path }));
-  invalidate("consents");
+  invalidate("consents"); invalidate("queue");
 }
 
 export async function hasConsent(appointmentId: string) {
@@ -216,7 +216,7 @@ export async function savePhoto(a: QueueAppt, image: Blob, angle: string, stage:
   if (!a.patient_id) throw new Error("لا يوجد ملف مراجِعة لهذا الموعد");
   const path = await upload("photos", a.patient_id, image, "jpg");
   const row = need(await supabase.from("patient_photos").insert({ patient_id: a.patient_id, appointment_id: a.id, path, angle, stage }).select().single());
-  invalidate("photos");
+  invalidate("photos"); invalidate("queue");
   return row;
 }
 
@@ -229,6 +229,31 @@ export async function listPhotos(appointmentId: string) {
 export async function saveEligibility(id: string, answers: Record<string, Json>) {
   need(await supabase.from("appointments").update({ eligibility: answers, eligibility_at: new Date().toISOString() }).eq("id", id));
   invalidate("queue"); invalidate("appointments");
+}
+
+/** Session-preparation progress of an appointment: eligibility checked, consent signed, before/after photos taken. */
+export type Prep = { elig: boolean; consent: boolean; before: boolean; after: boolean };
+
+/** Prep progress for many appointments at once (2 queries): consent = row for this appointment, or same patient + service. */
+export async function prepFor(appts: QueueAppt[]): Promise<Record<string, Prep>> {
+  const ids = appts.map((a) => a.id);
+  const pids = [...new Set(appts.map((a) => a.patient_id).filter((x): x is string => !!x))];
+  if (!ids.length) return {};
+  const [cr, pr] = await Promise.all([
+    supabase.from("consents").select("appointment_id,patient_id,service_key").in("patient_id", pids.length ? pids : ["00000000-0000-0000-0000-000000000000"]),
+    supabase.from("patient_photos").select("appointment_id,stage").in("appointment_id", ids),
+  ]);
+  const cons = need(cr), photos = need(pr);
+  const out: Record<string, Prep> = {};
+  for (const a of appts) {
+    out[a.id] = {
+      elig: !!a.eligibility_at,
+      consent: cons.some((c) => c.appointment_id === a.id || (!!a.patient_id && c.patient_id === a.patient_id && !!a.service_key && c.service_key === a.service_key)),
+      before: photos.some((p) => p.appointment_id === a.id && p.stage === "before"),
+      after: photos.some((p) => p.appointment_id === a.id && p.stage === "after"),
+    };
+  }
+  return out;
 }
 
 /* ---------- settings (call + TV content) ---------- */

@@ -88,7 +88,19 @@
 :global([data-stage="fluid"]) .issue { order: 5; margin-top: 0 !important; }
 
 /* ---------- photos ---------- */
-:global([data-stage="fluid"]) .camView { order: -1; min-height: 560px; }
-:global([data-narrow]) .camView { min-height: 440px; border-radius: 28px !important; }
+:global([data-stage="fluid"]) .camView { order: -1; min-height: 560px !important; }
+:global([data-narrow]) .camView { min-height: 440px !important; border-radius: 28px !important; }
 :global([data-narrow]) .camTop { left: 12px !important; right: 12px !important; }
 :global([data-stage="fluid"]) .walk { margin-top: 28px !important; }
+
+/* ---------- session prep: header actions, list rows, desk prep strip ---------- */
+:global([data-stage="fluid"]) .flowAct { flex-wrap: wrap !important; flex-basis: 100% !important; justify-content: flex-end; }
+:global([data-narrow]) .flowAct { justify-content: stretch !important; }
+:global([data-narrow]) .flowAct > a { flex: 1 1 0 !important; justify-content: center; height: 48px !important; padding: 0 12px !important; }
+:global([data-narrow]) .flowStep { flex-basis: 100% !important; }
+:global([data-narrow]) .prow { flex-wrap: wrap !important; row-gap: 10px !important; }
+:global([data-narrow]) .pname { flex-basis: calc(100% - 60px) !important; }
+:global([data-narrow]) .pact { flex-basis: 100% !important; }
+:global([data-narrow]) .pact > a { flex: 1 1 0 !important; justify-content: center; }
+:global([data-narrow]) .dprep { margin-inline-start: 0 !important; flex-wrap: wrap !important; row-gap: 8px !important; }
+:global([data-narrow]) .dprep > a { flex: 1 1 0 !important; justify-content: center; }
