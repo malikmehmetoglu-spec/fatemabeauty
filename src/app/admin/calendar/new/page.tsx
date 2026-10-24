@@ -17,6 +17,8 @@ import { weekday } from "@/lib/db/appointments";
 import { clock, dayKey } from "@/lib/format";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
+import { GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
+import { VipBookingDialog, VipButton } from "../vip";
 import css from "../appts.module.css";
 import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 import { levelPrice } from "../../settings/services/levels";
@@ -27,15 +29,16 @@ const hm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${Stri
 export default function BookingModalPage() {
   const router = useRouter();
   const close = () => router.push(R.W_Calendar);
+  const [vip, setVip] = useState(false);
   return (
     <AdminShell active="المواعيد" title="المواعيد" subtitle="موعد جديد">
       <CalendarBody />
-      <BookingDialog onClose={close} />
+      {vip ? <VipBookingDialog open onClose={close} /> : <BookingDialog onClose={close} onVip={() => setVip(true)} />}
     </AdminShell>
   );
 }
 
-function BookingDialog({ onClose }: { onClose: () => void }) {
+function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => void }) {
   const services = useQuery(["catalog", "services"], listServices);
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
@@ -151,6 +154,10 @@ function BookingDialog({ onClose }: { onClose: () => void }) {
         <ErrorNote>لا توجد خدمات بعد. أضيفي الخدمات من الإعدادات أولاً.</ErrorNote>
       ) : (
         <>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderRadius: 20, padding: "10px 12px 10px 16px", background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}` }}>
+            <span style={{ flex: "1 1 220px", fontSize: 13.5, fontWeight: 600, color: GOLD_DEEP, lineHeight: 1.5 }}>عميلة VIP أو حالة طارئة دون موعد؟ أقرب وقت اليوم من الاحتياطي، بسعر <span className="latin">×1.7</span>.</span>
+            <VipButton onClick={onVip} height={42} />
+          </div>
           <Segment label="نوع الحجز" value={mode} onChange={(v) => { setMode(v); setError(""); }}
             options={[{ value: "existing", label: "لها ملف" }, { value: "new", label: "ملف جديد" }, { value: "walkin", label: "حضور مباشر" }]} />
 

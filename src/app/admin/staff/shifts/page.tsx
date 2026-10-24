@@ -18,6 +18,7 @@ import { AR_DAYS } from "@/lib/data";
 import { C, SHB } from "@/lib/tokens";
 import { StaffAvatar, TeamTabs, errText, useTeam } from "../team-ui";
 import css from "./hours.module.css";
+import { getReserveSettings, saveReserveSettings, GOLD, GOLD_DEEP, type ReserveSettings } from "@/lib/db/vip";
 
 /** Syrian week: Saturday first. */
 const WEEK = [6, 0, 1, 2, 3, 4, 5];
@@ -93,6 +94,7 @@ export default function WorkingHoursPage() {
       ) : (
         <div className={css.list}>
           {canManage && <DefaultHoursCard hours={hours.data!} />}
+          {canManage && <ReserveCard />}
           {members.map((s) => (
             <MemberCard key={s.id} s={s} clinic={hours.data!} saved={weekOf(rows.data ?? [], s.id)} canManage={canManage} />
           ))}
@@ -266,6 +268,55 @@ function DefaultHoursCard({ hours }: { hours: Hours }) {
               {(SLOT_CHOICES.includes(h.slot) ? SLOT_CHOICES : [h.slot, ...SLOT_CHOICES]).map((n) => <option key={n} value={n}>{n} د</option>)}
             </select>
           </label>
+        </div>
+        <div className={css.foot}>
+          {msg && <span style={{ color: msg.ok ? C.okDeep : C.danger, fontSize: 13.5, fontWeight: 600 }}>{msg.text}</span>}
+          <button type="button" className={css.save} disabled={busy || !dirty} onClick={save}>{busy ? "جارٍ الحفظ…" : "حفظ"}</button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+const PCT_CHOICES = [0, 5, 10, 15, 20, 25, 30];
+const LAST_CHOICES = [0, 1, 2, 3, 4];
+
+/** «احتياطي VIP» — settings vip_reserve_pct / vip_reserve_last_hours (server: private.reserve_ok, book_vip). */
+function ReserveCard() {
+  const q = useQuery(["reserve", "settings"], getReserveSettings);
+  const [v, setV] = useState<ReserveSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => { if (q.data) setV(q.data); }, [q.data]);
+  if (!v) return null;
+  const dirty = !!q.data && (v.pct !== q.data.pct || v.lastHours !== q.data.lastHours);
+  async function save() {
+    setBusy(true); setMsg(null);
+    try { await saveReserveSettings(v!); setMsg({ ok: true, text: "حُفظ احتياطي VIP." }); }
+    catch (e) { setMsg({ ok: false, text: errText(e) }); } finally { setBusy(false); }
+  }
+  const sel = (label: string, value: number, choices: number[], unit: (n: number) => string, on: (n: number) => void) => (
+    <label className={css.work}>{label}
+      <select aria-label={label} className={`${css.time} latin`} dir="ltr" value={value} style={{ boxShadow: SHB }} onChange={(e) => { setMsg(null); on(Number(e.target.value)); }}>
+        {(choices.includes(value) ? choices : [value, ...choices]).map((n) => <option key={n} value={n}>{unit(n)}</option>)}
+      </select>
+    </label>
+  );
+  return (
+    <Card padding={0} style={{ overflow: "hidden" }}>
+      <div className={css.defHead}>
+        <div className={css.who}>
+          <div className={css.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.75l-6.17 3.24 1.18-6.87-5-4.87 6.9-1 3.08-6.25 3.08 6.25 6.9 1-5 4.87 1.18 6.87z" fill={GOLD} stroke={GOLD_DEEP} strokeWidth={1.2} /></svg>
+            <b>احتياطي VIP والحالات الطارئة</b>
+          </div>
+          <div className={css.sum}>نسبة من وقت كل غرفة يومياً لا تظهر في رابط الحجز ولا في التطبيق، ويحجز فيها الاستقبال والإدارة فقط. في آخر الساعات المحدّدة من الدوام يُستخدم ما تبقّى لأي حالة دون موعد.</div>
+        </div>
+      </div>
+      <div className={css.body}>
+        <div className={css.defRow}>
+          {sel("نسبة الاحتياطي", v.pct, PCT_CHOICES, (n) => `${n}%`, (n) => setV({ ...v, pct: n }))}
+          {sel("مفتوح لأي حالة في آخر", v.lastHours, LAST_CHOICES, (n) => (n === 0 ? "لا" : `${n} س`), (n) => setV({ ...v, lastHours: n }))}
         </div>
         <div className={css.foot}>
           {msg && <span style={{ color: msg.ok ? C.okDeep : C.danger, fontSize: 13.5, fontWeight: 600 }}>{msg.text}</span>}

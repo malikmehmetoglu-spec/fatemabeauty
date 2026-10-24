@@ -14,6 +14,7 @@ import css from "../calendar/appts.module.css";
 import { arErr } from "../patients/kit";
 import { isPaid } from "@/lib/db/levels";
 import { useSession } from "@/lib/supabase/session";
+import { isVip, VipBookingDialog, VipButton, VipStar } from "../calendar/vip";
 import { ExtensionRequests, OverrideStartButton, SessionTimer, ToCashier, UnpaidTag, usePendingExtensions } from "./session-ui";
 
 const mins = (iso: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
@@ -22,6 +23,7 @@ export default function QueuePage() {
   useLiveAppointments("admin-queue");
   const { data, loading, error } = useQuery(["appointments", "queue-today"], listTodayQueue);
   const [busy, setBusy] = useState<string | null>(null);
+  const [vipOpen, setVipOpen] = useState(false);
   const [err, setErr] = useState("");
   const [called, setCalled] = useState<number | null | undefined>(undefined);
   const { staff } = useSession();
@@ -49,6 +51,7 @@ export default function QueuePage() {
   return (
     <AdminShell active="الأدوار" title="إدارة الأدوار" subtitle={`مباشر · ${arDate(new Date())}`}
       actions={<>
+        <VipButton onClick={() => setVipOpen(true)} />
         <Link href={R.TV_Board} target="_blank" style={{ height: 46, borderRadius: 23, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 14px" }}>
           <Icon name="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 21h8M12 18v3" size={16} color={C.accent} />شاشة الانتظار
         </Link>
@@ -78,7 +81,7 @@ export default function QueuePage() {
               <div key={a.id} className={css.qrow} style={{ flexWrap: "wrap" }}>
                 <span className="latin" style={{ width: 46, height: 46, borderRadius: 16, background: a.called_at && a.status === "checked_in" ? C.accent : ICON_FILL, color: a.called_at && a.status === "checked_in" ? C.white : C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{a.queue_no}</span>
                 <div style={{ flex: "1 1 200px", minWidth: 0, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{personName(a)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}</div>
                   <div style={{ fontSize: 12, color: C.sub2 }}>
                     موعد {timeOf(a)} · {a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · <span className="latin">{a.minutes + (a.extension_minutes ?? 0)}</span> د · {a.room?.name ?? "بدون غرفة"}{a.specialist ? ` · ${a.specialist.name}` : ""}
                     {a.status === "checked_in" && ` · ينتظر منذ ${mins(a.checked_in_at)} د`}
@@ -125,6 +128,7 @@ export default function QueuePage() {
           </div>
         </div>
       )}
+      <VipBookingDialog open={vipOpen} onClose={() => setVipOpen(false)} />
     </AdminShell>
   );
 }

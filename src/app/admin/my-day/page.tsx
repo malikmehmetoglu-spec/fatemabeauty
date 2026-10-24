@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/shell";
 import { Avatar, DoneDot, EmptyState, ErrorNote, GhostButton, Icon, Loading, SubmitButton, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
+import { isVip, VipStar } from "../calendar/vip";
 import { bookingError, callPatient, endsAt, listMyDay, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments, type Appointment, type Status } from "@/lib/db/appointments";
 import { initials } from "@/lib/data";
 import { arDate, clock } from "@/lib/format";
@@ -64,7 +65,7 @@ export default function MyDayPage() {
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ minWidth: 0, flex: "1 1 220px" }}>
                     <div style={{ fontSize: 13, color: C.onDark }}>الجلسة الحالية · منذ {clock(current.started_at ?? current.starts_at)}</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{personName(current)}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{isVip(current) && <VipStar size={20} style={{ marginInlineEnd: 6 }} />}{personName(current)}</div>
                     <div style={{ fontSize: 14, color: "#F2E6F4" }}>{current.service?.name}{current.level && current.level.level > 1 ? ` · ${current.level.name}` : ""} · {current.room?.name ?? "بدون غرفة"} · حتى {clock(endsAt({ starts_at: current.started_at ?? current.starts_at, minutes: current.minutes, extension_minutes: current.extension_minutes }))}{current.extension_minutes ? ` · مُدّدت ${current.extension_minutes} د` : ""}</div>
                   </div>
                   <SessionTimer a={current} dark />
@@ -89,7 +90,7 @@ export default function MyDayPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
                   <Avatar initials={initials(personName(next))} size={48} />
                   <div style={{ flex: "1 1 200px", minWidth: 0, lineHeight: 1.4 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>{personName(next)}{next.queue_no != null && <span className="latin" style={{ fontSize: 14, color: C.accent }}> · دور {next.queue_no}</span>}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>{isVip(next) && <VipStar size={16} style={{ marginInlineEnd: 5 }} />}{personName(next)}{next.queue_no != null && <span className="latin" style={{ fontSize: 14, color: C.accent }}> · دور {next.queue_no}</span>}</div>
                     <div style={{ fontSize: 13, color: C.sub2 }}>{timeOf(next)} · {next.service?.name}{next.level && next.level.level > 1 ? ` · ${next.level.name}` : ""} · <span className="latin">{next.minutes}</span> د · {next.room?.name ?? "بدون غرفة"} · {STATUS_LABEL[next.status]}</div>
                   </div>
                   {!isPaid(next) && <UnpaidTag />}
@@ -117,7 +118,7 @@ export default function MyDayPage() {
                 {a.status === "done" ? <DoneDot size={30} /> : <span className="latin" style={{ width: 30, height: 30, borderRadius: 15, background: a.status === "in_session" ? C.accent : ICON_FILL, flexShrink: 0 }} />}
                 <span className="latin" style={{ width: 48, fontSize: 13.5, fontWeight: 700 }}>{timeOf(a)}</span>
                 <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{personName(a)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}</div>
                   <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · {a.minutes + (a.extension_minutes ?? 0)} د · {a.room?.name ?? "بدون غرفة"}
                     {["pending", "confirmed", "checked_in"].includes(a.status) && !isPaid(a) && <span style={{ color: "#A3621A", fontWeight: 700, whiteSpace: "nowrap" }}> · بانتظار الدفع</span>}</div>
                 </div>

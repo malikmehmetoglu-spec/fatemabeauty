@@ -14,6 +14,7 @@ import { css } from "../css";
 import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
 import { isPaid } from "@/lib/db/levels";
+import { isVip, VipBookingDialog, VipButton, VipStar } from "../../admin/calendar/vip";
 
 /** T_Desk.dc.html */
 const FILTERS = ["الكل", "في الانتظار", "لم يؤكَّد"] as const;
@@ -27,6 +28,7 @@ export default function Page() {
   const [err, setErr] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("الكل");
   const [query, setQuery] = useState("");
+  const [vipOpen, setVipOpen] = useState(false);
   useEffect(() => { const t = setInterval(() => invalidate("queue"), 20000); return () => clearInterval(t); }, []);
   if (k.gate) return k.gate;
   const today = q.data?.today ?? [];
@@ -88,9 +90,11 @@ export default function Page() {
               <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>بحث</span>
               <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحثي بالاسم أو الدور أو الملف" style={{ flexGrow: 1, minWidth: "0", border: "none", outline: "none", background: "transparent", fontSize: 15, color: C.ink }} />
             </label>
+            <VipButton onClick={() => setVipOpen(true)} height={56} />
             <DatePill />
           </div>
         </div>
+        <VipBookingDialog open={vipOpen} onClose={() => setVipOpen(false)} />
         <div className={KC.kpis} style={{ display: "flex", gap: 14 }}>
           <div style={{ flex: 1, minWidth: "0", borderRadius: 26, padding: "16px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
@@ -198,7 +202,7 @@ export default function Page() {
                   <span style={{ width: 50, fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 500, color: C.ink }}>{clock(inSession ? (a.started_at ?? a.starts_at) : a.starts_at)}</span>
                   <span style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 17, fontWeight: 700, color: C.accent }}>{a.queue_no ?? "—"}</span>
                   <div className={KC.dname} style={{ flex: 1, minWidth: "0", lineHeight: 1.3 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isVip(a) && <VipStar size={16} style={{ marginInlineEnd: 5 }} />}{personName(a)}</div>
                     <div style={{ fontSize: 13, color: C.sub2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{serviceName(a)}{a.rooms ? ` · ${a.rooms.name}` : ""}</div>
                   </div>
                   <span className={KC.dtag} style={{ width: 118 }}>
@@ -267,7 +271,7 @@ export default function Page() {
                   </svg>
                 </span>
                 <div style={{ flex: 1, minWidth: "0", lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}
+                  <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}
                   </div>
                   <div style={{ fontSize: 12.5, color: C.sub2 }}>{a.services?.short_name ?? serviceName(a)} {clock(a.starts_at)} · لم تحضر
                   </div>

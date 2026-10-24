@@ -14,6 +14,8 @@ import { clock, money } from "@/lib/format";
 import { css } from "../css";
 import { BG, C, SH, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, useKiosk } from "../kiosk";
+import { isVip, VipStar } from "../../admin/calendar/vip";
+import { GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
 
 /** T_Cashier.dc.html */
 const SEL = "background:linear-gradient(160deg,#F1E3F6,#D9BCE5);border:1px solid #FFFFFF;box-shadow:0 10px 22px rgba(150,100,170,0.30);color:#7B4687";
@@ -45,7 +47,8 @@ export default function Page() {
   const doneCount = (q.data ?? []).filter((a) => a.status === "done").length;
   const pkg0 = (pk.data ?? []).find((p) => p.sessions_used < p.sessions_total && p.packages?.service_key === A?.service_key);
   const PRICE = A?.price || A?.services?.price || 0; // same rule as the server (booked price, else the service price)
-  const line: CartLine[] = A ? [{ kind: "service", ref: A.service_key, qty: 1, label: A.services?.name ?? A.service_key, unit_price: PRICE }] : [];
+  const VIP = !!A?.vip;
+  const line: CartLine[] = A ? [{ kind: "service", ref: A.service_key, qty: 1, label: (A.services?.name ?? A.service_key) + (VIP ? " — VIP" : ""), unit_price: PRICE }] : [];
   const code = st.m !== 2 ? offer : null; // a package session is free → no code on it
   const DISC = code ? offerDiscount(code, line) : 0;
   const TOTAL = PRICE - DISC;
@@ -108,7 +111,7 @@ export default function Page() {
           <div className={KC.wrap} style={{ display: "flex", gap: 8, overflowX: "auto", flexShrink: 0 }}>
             {due.map((a) => (
               <button key={a.id} type="button" onClick={() => { setSelId(a.id); setDone(null); setOffer(null); }} style={css("height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:600;font-family:inherit;white-space:nowrap;" + (a.id === A?.id ? SEL : "background:#FFFFFF;border:1px solid #EADCF0;color:#866F8D"))}>
-                {nameOf(a)} · {clock(a.starts_at)}
+                {isVip(a) && <VipStar size={13} style={{ marginInlineEnd: 4 }} />}{nameOf(a)} · {clock(a.starts_at)}
               </button>
             ))}
           </div>
@@ -144,7 +147,7 @@ export default function Page() {
                 <span style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, color: C.accent }}>{initials(nameOf(A))}
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 19, fontWeight: 700 }}>{nameOf(A)}
+                  <div style={{ fontSize: 19, fontWeight: 700 }}>{isVip(A) && <VipStar size={17} style={{ marginInlineEnd: 6 }} />}{nameOf(A)}
                   </div>
                   <div style={{ fontSize: 14, color: C.sub2 }}>{A.patients ? `ملف ${A.patients.file_no} · ` : ""}{clock(A.starts_at)}
                   </div>
@@ -159,7 +162,8 @@ export default function Page() {
                   </svg>
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700 }}>{A.services?.name ?? A.service_key}
+                  <div style={{ fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{A.services?.name ?? A.service_key}
+                    {VIP && <span style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 24, padding: "0 10px", borderRadius: 12, background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}`, color: GOLD_DEEP, fontSize: 12.5, fontWeight: 700 }}><VipStar size={12} />VIP <span className="latin">×1.7</span></span>}
                   </div>
                   <div style={{ fontSize: 13, color: C.sub2 }}>{[A.staff?.name, A.rooms?.name, `${A.minutes} دقيقة`].filter(Boolean).join(" · ")}
                   </div>

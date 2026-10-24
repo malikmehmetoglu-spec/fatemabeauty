@@ -17,6 +17,7 @@ import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
 import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
+import { ReserveChips, VipBookingDialog, VipButton } from "../../admin/calendar/vip";
 
 /** T_QuickBook.dc.html */
 const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
@@ -51,6 +52,7 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [lvPick, setLvPick] = useState<{ svc: string; id: string } | null>(null);
+  const [vipOpen, setVipOpen] = useState(false);
   const levels = useQuery(["levels", "all"], listLevels, { enabled: !k.gate });
   const pLevels = useQuery(["levels", "patient", pat?.id], () => patientLevels(pat!.id), { enabled: !k.gate && !!pat });
   if (k.gate) return k.gate;
@@ -142,8 +144,13 @@ export default function Page() {
             <div style={{ fontSize: 15, color: C.sub2 }}>موعد جديد لليوم — الأوقات محسوبة من جدول الغرف
             </div>
           </div>
-          <DatePill />
+          <div className={KC.wrap} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <VipButton onClick={() => setVipOpen(true)} height={56} />
+            <DatePill />
+          </div>
         </div>
+        <ReserveChips day={dayKey()} compact />
+        <VipBookingDialog open={vipOpen} onClose={() => setVipOpen(false)} initialClient={pat ? { ...pat, name: pat.name ?? "", vip: false } : null} />
         <div className={KC.cols} style={{ display: "flex", gap: 18, flexGrow: 1, minHeight: "0" }}>
           <div style={{ width: 470, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ borderRadius: 30, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column", gap: 12 }}>

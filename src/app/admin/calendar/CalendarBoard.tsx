@@ -15,9 +15,11 @@ import {
 import { approveBooking, canConfirm, confirmText, getCentre, markConfirmSent, pendingCount } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
 import { WaButton } from "./whatsapp";
+import { isVip, ReserveChips, VipBookingDialog, VipButton, VipStar } from "./vip";
+import { GOLD, GOLD_DEEP, GOLD_LINE, GOLD_SOFT } from "@/lib/db/vip";
 import { apptCount, arErr } from "../patients/kit";
 import { AR_DAYS } from "@/lib/data";
-import { arDate, clock, dayKey } from "@/lib/format";
+import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C, SH, SHB } from "@/lib/tokens";
 
 const HOUR = 75; // px per hour
@@ -37,12 +39,21 @@ const LOOK: Record<Status, CSSProperties> = {
 
 type Col = { id: string | null; name: string };
 
+/** VIP appointments: gold card (the status still reads from the label; cancelled / no-show keep their look). */
+const lookOf = (a: Appointment): CSSProperties => {
+  if (!isVip(a) || a.status === "cancelled" || a.status === "no_show") return LOOK[a.status];
+  const base = LOOK[a.status];
+  return { ...base, background: a.status === "in_session" ? "linear-gradient(160deg,#F8E9C4,#E8CD8A)" : a.status === "done" ? "#F8F3E6" : `linear-gradient(160deg, #FFFDF7, ${GOLD_SOFT})`,
+    border: `1px solid ${GOLD_LINE}`, borderRight: `4px solid ${GOLD}`, color: a.status === "done" ? "#8C7A55" : "#4A3A14", boxShadow: "0 8px 18px rgba(169,129,48,0.16)" };
+};
+
 export function CalendarBody() {
   const [day, setDay] = useState(dayKey());
   const [view, setView] = useState<"day" | "week">("day");
   const [by, setBy] = useState<"room" | "specialist">("room");
   const [showCancelled, setShowCancelled] = useState(false);
   const [open, setOpen] = useState<Appointment | null>(null);
+  const [vipOpen, setVipOpen] = useState(false);
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
 
@@ -115,8 +126,11 @@ export function CalendarBody() {
           <Segment label="العرض" value={view} onChange={setView} options={[{ value: "day", label: "يوم" }, { value: "week", label: "أسبوع" }]} />
           {view === "day" && <Segment label="التقسيم" value={by} onChange={setBy} options={[{ value: "room", label: "الغرف" }, { value: "specialist", label: "الأخصائيات" }]} />}
           <Chip selected={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>الملغاة</Chip>
+          <VipButton onClick={() => setVipOpen(true)} height={40} />
         </span>
       </div>
+
+      {view === "day" && <ReserveChips day={day} />}
 
       {(pend.data ?? 0) > 0 && (
         <Link href={R.W_BookingRequests} style={{ borderRadius: 20, padding: "12px 16px", background: "linear-gradient(135deg, #FFF6E8, #FBEAF3)", border: "1px solid #F2D8AA", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", color: "#7A4F12" }}>
@@ -172,10 +186,10 @@ export function CalendarBody() {
                   return (
                     <button key={a.id} type="button" onClick={() => setOpen(a)} style={{
                       position: "absolute", left: 6, right: 6, top: yOf(s) + 2, height: Math.max(22, (a.minutes * HOUR) / 60 - 4), borderRadius: 14, padding: "5px 10px",
-                      overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 1, textAlign: "right", ...LOOK[a.status],
+                      overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 1, textAlign: "right", ...lookOf(a),
                     }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, width: "100%" }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{short ? `${timeOf(a)} · ` : ""}{personName(a)}</span>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>{isVip(a) && <VipStar size={13} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{short ? `${timeOf(a)} · ` : ""}{personName(a)}</span></span>
                         <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" }}>{STATUS_LABEL[a.status]}</span>
                       </div>
                       {!short && <div style={{ fontSize: 11.5, opacity: 0.85, whiteSpace: "nowrap" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{timeOf(a)}–{clock(endsAt(a))}</span> · {a.service?.short_name}{by === "room" && a.specialist ? ` · ${a.specialist.name}` : by === "specialist" && a.room ? ` · ${a.room.name}` : ""}</div>}
@@ -193,6 +207,7 @@ export function CalendarBody() {
       )}
 
       <AppointmentDialog appt={open} onClose={() => setOpen(null)} />
+      <VipBookingDialog open={vipOpen} onClose={() => setVipOpen(false)} />
     </div>
   );
 }
@@ -218,8 +233,8 @@ function WeekGrid({ from, list, onOpen, onDay }: { from: string; list: Appointme
               <div style={{ fontSize: 18, fontWeight: 700 }}>{d.getDate()}</div>
             </button>
             {items.length === 0 ? <div style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>—</div> : items.map((a) => (
-              <button key={a.id} type="button" onClick={() => onOpen(a)} style={{ borderRadius: 12, padding: "5px 8px", textAlign: "right", ...LOOK[a.status] }}>
-                <div className="latin" style={{ fontSize: 11.5, fontWeight: 700 }}>{timeOf(a)}</div>
+              <button key={a.id} type="button" onClick={() => onOpen(a)} style={{ borderRadius: 12, padding: "5px 8px", textAlign: "right", ...lookOf(a) }}>
+                <div className="latin" style={{ fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>{isVip(a) && <VipStar size={12} />}{timeOf(a)}</div>
                 <div style={{ fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</div>
               </button>
             ))}
@@ -273,6 +288,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+        {isVip(a) && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 14, background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}`, color: GOLD_DEEP, fontSize: 12.5, fontWeight: 700 }}><VipStar size={13} />VIP</span>}
         {a.queue_no != null && <Tag kind="plum">الدور {a.queue_no}</Tag>}
         {a.patient && <span style={{ fontSize: 12.5, color: C.sub2 }}>ملف {a.patient.file_no}{a.patient.phone ? ` · ${a.patient.phone}` : ""}</span>}
         {!a.patient && a.walk_in_phone && <span className="latin" style={{ fontSize: 12.5, color: C.sub2 }}>{a.walk_in_phone}</span>}
@@ -282,6 +298,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         {row("الموعد", `${arDate(new Date(a.starts_at))} · ${timeOf(a)}`)}
         {row("الغرفة", a.room?.name ?? "—")}
         {row("الأخصائية", a.specialist?.name ?? "—")}
+        {row(a.vip ? "السعر (VIP ×1.7)" : "السعر", money(a.price ?? 0))}
         {row("المصدر", a.source === "app" ? "التطبيق" : a.source === "walk_in" ? "حضور مباشر" : a.source === "public" ? "حجز من الرابط" : a.source === "admin" ? "الإدارة" : "الاستقبال")}
         {a.note && row("ملاحظة المراجِعة", a.note)}
         {a.cancel_reason && row("سبب الإلغاء", a.cancel_reason)}

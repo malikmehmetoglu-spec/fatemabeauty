@@ -146,7 +146,7 @@ export async function listPatientPackages(patientId: string) {
 
 /* ---------- cashier ---------- */
 
-const APPT_SELECT = "id, patient_id, walk_in_name, service_key, price, status, starts_at, finished_at, minutes, patients(name, file_no, phone), services(name, price), staff(name), rooms(name), invoices(id, void), level:service_levels(name, level)";
+const APPT_SELECT = "id, patient_id, walk_in_name, service_key, price, status, starts_at, finished_at, minutes, vip, patients(name, file_no, phone, vip), services(name, price), staff(name), rooms(name), invoices(id, void), level:service_levels(name, level)";
 
 /** Today's appointments the cashier cares about: finished (ready to pay), in session or checked in. Invoiced ones are flagged. */
 export async function listCashierQueue() {

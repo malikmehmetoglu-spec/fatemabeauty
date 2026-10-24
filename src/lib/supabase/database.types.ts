@@ -88,6 +88,7 @@ export type Database = {
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
           walk_in_name: string | null
           walk_in_phone: string | null
         }
@@ -122,6 +123,7 @@ export type Database = {
           started_at?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          vip?: boolean
           walk_in_name?: string | null
           walk_in_phone?: string | null
         }
@@ -156,6 +158,7 @@ export type Database = {
           started_at?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          vip?: boolean
           walk_in_name?: string | null
           walk_in_phone?: string | null
         }
@@ -1391,6 +1394,7 @@ export type Database = {
           skin_type: string | null
           source: string | null
           user_id: string | null
+          vip: boolean
         }
         Insert: {
           birth_date?: string | null
@@ -1408,6 +1412,7 @@ export type Database = {
           skin_type?: string | null
           source?: string | null
           user_id?: string | null
+          vip?: boolean
         }
         Update: {
           birth_date?: string | null
@@ -1425,6 +1430,7 @@ export type Database = {
           skin_type?: string | null
           source?: string | null
           user_id?: string | null
+          vip?: boolean
         }
         Relationships: []
       }
@@ -2663,6 +2669,7 @@ export type Database = {
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
           walk_in_name: string | null
           walk_in_phone: string | null
         }
@@ -2717,6 +2724,109 @@ export type Database = {
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_reserve_walk_in: {
+        Args: {
+          p_check_in?: boolean
+          p_level?: string
+          p_patient: string
+          p_service: string
+          p_specialist?: string
+          p_starts?: string
+        }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          confirm_sent_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          extension_minutes: number
+          finished_at: string | null
+          id: string
+          level_id: string | null
+          minutes: number
+          note: string | null
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_vip: {
+        Args: {
+          p_check_in?: boolean
+          p_level?: string
+          p_patient: string
+          p_service: string
+          p_specialist?: string
+          p_starts?: string
+        }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          confirm_sent_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          extension_minutes: number
+          finished_at: string | null
+          id: string
+          level_id: string | null
+          minutes: number
+          note: string | null
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
           walk_in_name: string | null
           walk_in_phone: string | null
         }
@@ -2929,6 +3039,7 @@ export type Database = {
           skin_type: string | null
           source: string | null
           user_id: string | null
+          vip: boolean
         }
         SetofOptions: {
           from: "*"
@@ -3032,6 +3143,7 @@ export type Database = {
           started_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
           walk_in_name: string | null
           walk_in_phone: string | null
         }
@@ -3167,6 +3279,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reserve_status: {
+        Args: { p_day?: string }
+        Returns: {
+          booked: number
+          capacity: number
+          closes_at: number
+          reserve: number
+          reserve_left: number
+          room_id: string
+          room_name: string
+          walk_in_open: boolean
+        }[]
+      }
       save_stock_location: {
         Args: {
           p_active?: boolean
@@ -3247,6 +3372,33 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "patient_service_levels"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_patient_vip: {
+        Args: { p_id: string; p_vip: boolean }
+        Returns: {
+          birth_date: string | null
+          breastfeeding: boolean
+          created_at: string
+          file_no: number
+          id: string
+          lang: string
+          name: string
+          notes: string | null
+          notify: Json
+          phone: string | null
+          points: number
+          pregnant: boolean
+          skin_type: string | null
+          source: string | null
+          user_id: string | null
+          vip: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "patients"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3348,6 +3500,47 @@ export type Database = {
       vapid_set: {
         Args: { p_keys: Json; p_public: string }
         Returns: undefined
+      }
+      vip_next_slots: {
+        Args: {
+          p_level?: string
+          p_limit?: number
+          p_service: string
+          p_specialist?: string
+        }
+        Returns: {
+          base_price: number
+          ends_at: string
+          in_reserve: boolean
+          minutes: number
+          price: number
+          room_id: string
+          room_name: string
+          specialist_id: string
+          specialist_name: string
+          starts_at: string
+        }[]
+      }
+      vip_override: {
+        Args: {
+          p_check_in?: boolean
+          p_level: string
+          p_patient: string
+          p_service: string
+          p_specialist?: string
+          p_starts: string
+        }
+        Returns: Json
+      }
+      vip_override_preview: {
+        Args: {
+          p_level: string
+          p_patient: string
+          p_service: string
+          p_specialist?: string
+          p_starts: string
+        }
+        Returns: Json
       }
       void_invoice: {
         Args: { p_invoice: string; p_reason?: string }

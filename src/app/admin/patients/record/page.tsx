@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { VipStar, VipToggleRow } from "../../calendar/vip";
+import { invalidate } from "@/lib/db/query";
 import t from "../../adminPages.module.css";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -45,7 +47,7 @@ function Record() {
             <Initials name={p.name} size={72} />
             <div style={{ flex: "1 1 220px", lineHeight: 1.4, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
+                {p.vip && <VipStar size={22} />}<span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                 <span style={PILL_DANGER} className="latin">ملف {p.file_no}</span>
                 {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
                 {tier && <span style={{ ...PILL_GRAY, background: "linear-gradient(145deg,#FFFFFF,#CFCBD6)", color: "#4A4452" }}>العضوية {tier.name}</span>}
@@ -61,6 +63,7 @@ function Record() {
                 {p.pregnant && <span style={PILL_DANGER}>حامل</span>}
                 {p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
               </div>
+              <div style={{ marginTop: 10 }}><VipToggleRow patient={p} onChanged={() => invalidate("patients")} /></div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Link href={fileHref(R.W_BookingModal, "patient", p.id)} style={outlineBtn(42)}><Icon name={PLUS} size={16} color={C.accent} stroke={1.9} />موعد جديد</Link>

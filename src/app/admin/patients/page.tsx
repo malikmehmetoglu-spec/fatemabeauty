@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCanSetVip, VipStar, VipStarButton } from "../calendar/vip";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -69,7 +70,8 @@ function Patients() {
   }
 
   const lastVisit = (p: PatientRow) => !p.lastVisit ? "—" : dayKey(new Date(p.lastVisit)) === today ? `اليوم ${clock(p.lastVisit)}` : arDate(new Date(p.lastVisit), { day: false });
-  const act = `0 0 ${canDelete ? 216 : canEdit ? 174 : 132}px`;
+  const canVip = useCanSetVip();
+  const act = `0 0 ${(canDelete ? 216 : canEdit ? 174 : 132) + (canVip ? 42 : 0)}px`;
   /** The whole row/card opens the file: click, or Enter/Space when it has focus. */
   const openProps = (p: PatientRow) => {
     const href = fileHref(R.W_Record, "id", p.id);
@@ -118,7 +120,7 @@ function Patients() {
                     <div style={{ ...cell, flex: 0.55 }}><span className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</span></div>
                     <div style={{ ...cell, flex: 1.45 }}>
                       <Initials name={p.name} />
-                      <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
+                      {p.vip && <VipStar size={14} />}<span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                     </div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                     <div style={{ ...cell, flex: 0.8 }}><span style={{ color: C.sub, whiteSpace: "nowrap" }}>{lastVisit(p)}</span></div>
@@ -147,7 +149,7 @@ function Patients() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <Initials name={p.name} size={40} />
                       <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</div>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{p.vip && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{displayName(p.name)}</div>
                         <div style={{ fontSize: 12, color: C.sub2 }}>ملف <span className="latin" style={{ color: C.accent, fontWeight: 700 }}>{p.file_no}</span> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                       </div>
                       <RowActions p={p} canEdit={canEdit} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} compact />
@@ -253,6 +255,7 @@ function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: P
   if (compact) return (
     <div ref={ref} {...stop} style={{ display: "flex", gap: 6, alignItems: "center", position: "relative", flexShrink: 0 }}>
       <WaIconLink phone={p.phone} name={p.name} size={34} />
+      <VipStarButton patient={p} />
       <button type="button" className={css.iconBtn} aria-label="إجراءات أخرى" title="إجراءات أخرى" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}><Icon name={MORE} size={20} color={C.accent} stroke={2.6} /></button>
       {open && (
         <div role="menu" className={css.menu}>
@@ -267,6 +270,7 @@ function RowActions({ p, canEdit, canDelete, onEdit, onDelete, compact }: { p: P
   return (
     <div {...stop} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
       <WaIconLink phone={p.phone} name={p.name} size={34} />
+      <VipStarButton patient={p} />
       {canEdit && <button type="button" className={css.iconBtn} aria-label="تعديل البيانات" title="تعديل البيانات" onClick={onEdit}><Icon name="edit" size={16} color={C.accent} /></button>}
       <Link href={appt} className={css.iconBtn} aria-label="موعد جديد" title="موعد جديد"><Icon name="calcheck" size={16} color={C.accent} /></Link>
       <Link href={bill} className={css.iconBtn} aria-label="فاتورة" title="فاتورة"><Icon name="receipt" size={16} color={C.accent} /></Link>

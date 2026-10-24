@@ -22,7 +22,7 @@ import type { TagKind } from "@/components/ui";
 
 export type Status = Tables<"appointments">["status"];
 export type QueueAppt = Tables<"appointments"> & {
-  patients: Pick<Tables<"patients">, "id" | "name" | "phone" | "file_no" | "pregnant" | "breastfeeding"> | null;
+  patients: Pick<Tables<"patients">, "id" | "name" | "phone" | "file_no" | "pregnant" | "breastfeeding" | "vip"> | null;
   services: Pick<Tables<"services">, "key" | "name" | "short_name" | "price" | "minutes"> | null;
   rooms: Pick<Tables<"rooms">, "id" | "name"> | null;
   staff: Pick<Tables<"staff">, "id" | "name"> | null;
@@ -30,7 +30,7 @@ export type QueueAppt = Tables<"appointments"> & {
 };
 export type TvRow = { queue_no: number; room: string | null; status: Status; called_at: string | null; starts_at: string };
 
-const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding), services(key,name,short_name,price,minutes), rooms(id,name), staff:specialist_id(id,name), invoices(id,paid,void)";
+const SELECT = "*, patients(id,name,phone,file_no,pregnant,breastfeeding,vip), services(key,name,short_name,price,minutes), rooms(id,name), staff:specialist_id(id,name), invoices(id,paid,void)";
 
 export const STATUS_AR: Record<Status, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكَّد", checked_in: "في الانتظار", in_session: "في الجلسة",
