@@ -12,8 +12,9 @@ import { Icon, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { appHref } from "@/lib/hosts";
 import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
-import { clock, dayKey } from "@/lib/format";
-import { localPhone, normalisePhone, pubPrice, type PubCategory, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot } from "@/lib/db/publicBooking";
+import { clock, dayKey, money } from "@/lib/format";
+import { durationLabel, levelsOfService, localPhone, normalisePhone, pubPrice, type PubCategory, type PubInfo, type PubLevel, type PubPerson, type PubResult, type PubService, type PubSlot } from "@/lib/db/publicBooking";
+import LevelPicker from "./LevelPicker";
 import { C } from "@/lib/tokens";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 import s from "./cardflow.module.css";
@@ -44,7 +45,8 @@ type Kind = "session" | "consult";
 export type FlowCard = { kind: Kind; key: string; name: string; sub: string; icon: string; count: number; ready: boolean };
 export type BookingCtx = {
   info: PubInfo | null; loadErr: string; load: () => void; now: Date | null;
-  kind: Kind | null; service: PubService | null; specialist: string | null; day: string | null; time: string | null;
+  kind: Kind | null; service: PubService | null;
+  levels: PubLevel[]; level: PubLevel | null; hasLevels: boolean; minutes: number; priceText: string | null; pickLevel: (id: string) => void; specialist: string | null; day: string | null; time: string | null;
   slots: PubSlot[] | null; slotErr: string;
   name: string; setName: (v: string) => void; phone: string; setPhone: (v: string) => void; note: string; setNote: (v: string) => void;
   busy: boolean; err: string; setErr: (v: string) => void; result: PubResult | null;
@@ -57,7 +59,8 @@ export type BookingCtx = {
   contact: string | null; waLink: string | null; siteHref: string;
 };
 
-const STEPS = ["النوع", "الجلسة", "الأخصائية", "اليوم", "الساعة", "بياناتكِ", "تأكيد"];
+const STEPS = ["النوع", "الجلسة", "المدة", "الأخصائية", "اليوم", "الساعة", "بياناتكِ", "تأكيد"];
+const LAST = STEPS.length - 1;
 const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
 const dayLabel = (k: string) => { const d = dateOf(k); return `${AR_DAYS[weekday(k)]} ${d.getUTCDate()} ${AR_MONTHS[d.getUTCMonth()]}`; };
@@ -86,6 +89,8 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
 
   // the session card is skipped when the chosen type has a single service (auto-selected by pickCard)
   const skipSession = !!c.kind && c.kindServices.length === 1;
+  // the duration card is skipped for consultations and services with a single active level
+  const skipLevel = !c.hasLevels;
 
   function go(to: number) {
     if (to === step) return;
@@ -97,7 +102,10 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   }
   function back() {
     if (step === 0) return;
-    go(step === 2 && skipSession ? 0 : step - 1);
+    let to = step - 1;
+    if (to === 2 && skipLevel) to = 1;
+    if (to === 1 && skipSession) to = 0;
+    go(to);
   }
   useEffect(() => {
     if (!leaving) return;
@@ -109,7 +117,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     headRef.current?.focus({ preventScroll: true });
   }, [step]);
   // the chosen time vanished (taken while confirming) → back to the hours card
-  useEffect(() => { if (step >= 5 && !c.time && !c.result) go(4); }, [c.time]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (step >= 6 && !c.time && !c.result) go(5); }, [c.time]); // eslint-disable-line react-hooks/exhaustive-deps
   // errors fade by themselves
   useEffect(() => {
     if (!c.err) return;
@@ -143,17 +151,18 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     c.pickCard(card.kind, card.key);
     const list = card.kind === "consult" ? c.consultServices
       : c.sessionCats.length ? c.sessionServices.filter((x) => (card.key ? x.category_id === card.key : !c.sessionCats.some((k) => k.key === x.category_id))) : c.sessionServices;
-    go(list.length === 1 ? 2 : 1);
+    const only = list.length === 1 ? list[0] : null;
+    go(only ? (card.kind !== "consult" && levelsOfService(only).length > 1 ? 2 : 3) : 1);
   }
-  function chooseService(x: PubService) { c.pickService(x); go(2); }
-  function chooseSpecialist(id: string | null) { c.pickSpecialist(id); go(3); }
-  function chooseDay(k: string) { c.pickDay(k); go(4); }
-  function chooseTime(iso: string) { c.pickTime(iso); go(5); }
+  function chooseService(x: PubService) { c.pickService(x); go(levelsOfService(x).length > 1 ? 2 : 3); }
+  function chooseSpecialist(id: string | null) { c.pickSpecialist(id); go(4); }
+  function chooseDay(k: string) { c.pickDay(k); go(5); }
+  function chooseTime(iso: string) { c.pickTime(iso); go(6); }
   function reviewDetails() {
     c.setErr("");
     if (c.name.trim().length < 2) { c.setErr("اكتبي اسمكِ (حرفان على الأقل)."); return; }
     if (!normalisePhone(c.phone)) { c.setErr("اكتبي رقم موبايل سوري صحيحاً، مثل 0991 234 567."); return; }
-    go(6);
+    go(7);
   }
 
   const typeName = c.kind ? (c.kind === "consult" ? c.consultCat?.name ?? "استشارة" : c.sessionCats.find((k) => k.key === c.curPubCat)?.name ?? "جلسة عناية") : null;
@@ -161,16 +170,17 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   const chips: { step: number; icon: string; text: string }[] = [
     ...(typeName ? [{ step: 0, icon: "sparkle", text: typeName }] : []),
     ...(c.service ? [{ step: skipSession ? 0 : 1, icon: "drop", text: c.service.short_name || c.service.name }] : []),
-    ...(c.service && step > 2 && personName ? [{ step: 2, icon: "user", text: personName }] : []),
-    ...(c.day && c.service && step > 3 ? [{ step: 3, icon: "cal", text: dayLabel(c.day) }] : []),
-    ...(c.time && step > 4 ? [{ step: 4, icon: "clock", text: clock(c.time) }] : []),
+    ...(c.service && !skipLevel && c.level && step > 2 ? [{ step: 2, icon: "history", text: c.level.name }] : []),
+    ...(c.service && step > 3 && personName ? [{ step: 3, icon: "user", text: personName }] : []),
+    ...(c.day && c.service && step > 4 ? [{ step: 4, icon: "cal", text: dayLabel(c.day) }] : []),
+    ...(c.time && step > 5 ? [{ step: 5, icon: "clock", text: clock(c.time) }] : []),
   ];
 
   /* ---------- the cards ---------- */
   function head({ n, title, sub }: { n: number; title: string; sub?: ReactNode }) {
     return (
       <div className={s.head}>
-        <div className={s.eyebrow}><span className="latin">{n + 1}</span> من <span className="latin">7</span> · {STEPS[n]}</div>
+        <div className={s.eyebrow}><span className="latin">{n + 1}</span> من <span className="latin">{STEPS.length}</span> · {STEPS[n]}</div>
         <h2 className={s.title} ref={n === step ? headRef : undefined} tabIndex={-1}>{title}</h2>
         {sub && <p className={s.sub}>{sub}</p>}
       </div>
@@ -232,13 +242,25 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           </div>
         </>
       );
-      case 2: {
+      case 2: return (
+        <>
+          {head({ n: 2, title: "مدة الجلسة", sub: c.service ? <>لـ«{c.service.short_name || c.service.name}» {c.levels.length === 3 ? "ثلاثة مستويات" : c.levels.length === 2 ? "مستويان" : `${c.levels.length} مستويات`} — اختاري الوقت الذي تحتاجه بشرتكِ.</> : undefined })}
+          <div className={s.body}>
+            {skipSession && c.service && (
+              <div className={s.autoNote}><Icon name="check" size={16} color={C.accent} stroke={2.4} />اخترنا لكِ «{c.service.name}» — الخدمة الوحيدة في هذا النوع.</div>
+            )}
+            <LevelPicker layout="stack" levels={c.levels} value={c.level?.id ?? null} onChange={c.pickLevel} />
+          </div>
+          <div className={s.actions}><button type="button" className={s.primary} onClick={() => go(3)}>متابعة{c.level ? ` · ${c.level.name}` : ""}<Icon name="chev" size={19} color="#fff" /></button></div>
+        </>
+      );
+      case 3: {
         const consult = c.kind === "consult";
         return (
           <>
-            {head({ n: 2, title: consult ? "استشارتكِ مع" : "مع من تفضّلين؟", sub: consult ? "الاستشارات مع استشارية المركز." : "اختاري أخصائية بعينها أو اتركيها لنا لنعرض لكِ كل الأوقات المتاحة." })}
+            {head({ n: 3, title: consult ? "استشارتكِ مع" : "مع من تفضّلين؟", sub: consult ? "الاستشارات مع استشارية المركز." : "اختاري أخصائية بعينها أو اتركيها لنا لنعرض لكِ كل الأوقات المتاحة." })}
             <div className={s.body}>
-              {skipSession && c.service && (
+              {skipSession && skipLevel && c.service && (
                 <div className={s.autoNote}><Icon name="check" size={16} color={C.accent} stroke={2.4} />اخترنا لكِ «{c.service.name}» — الخدمة الوحيدة في هذا النوع.</div>
               )}
               {c.svcCat?.not_for_pregnant && skipSession && <PregnancyNotice style={{ marginBottom: 12 }} />}
@@ -279,14 +301,14 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                 </div>
               )}
             </div>
-            {consult && info.consultant && <div className={s.actions}><button type="button" className={s.primary} onClick={() => go(3)}>متابعة<Icon name="chev" size={19} color="#fff" /></button></div>}
+            {consult && info.consultant && <div className={s.actions}><button type="button" className={s.primary} onClick={() => go(4)}>متابعة<Icon name="chev" size={19} color="#fff" /></button></div>}
             {!consult && c.noProvider && <div className={s.actions}><button type="button" className={s.ghostBtn} onClick={() => go(skipSession ? 0 : 1)}>اختاري جلسة أخرى</button></div>}
           </>
         );
       }
-      case 3: return (
+      case 4: return (
         <>
-          {head({ n: 3, title: "أي يوم يناسبكِ؟", sub: "خلال الأسبوعين القادمين — الأيام المغلقة باهتة." })}
+          {head({ n: 4, title: "أي يوم يناسبكِ؟", sub: "خلال الأسبوعين القادمين — الأيام المغلقة باهتة." })}
           <div className={s.body}>
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
@@ -319,7 +341,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                   </div>
                 )}
                 {c.slots && c.freeCount === 0 && <div className={s.personTitle} style={{ marginTop: 8 }}>لا أوقات متاحة في هذا اليوم، اختاري يوماً آخر.</div>}
-                {c.slots && c.freeCount > 3 && <button type="button" className={s.peekMore} onClick={() => go(4)}>كل أوقات اليوم<Icon name="chev" size={16} color={C.accent} /></button>}
+                {c.slots && c.freeCount > 3 && <button type="button" className={s.peekMore} onClick={() => go(5)}>كل أوقات اليوم<Icon name="chev" size={16} color={C.accent} /></button>}
               </div>
             )}
             <div className={s.dayHint}>
@@ -332,9 +354,9 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           )}
         </>
       );
-      case 4: return (
+      case 5: return (
         <>
-          {head({ n: 4, title: "اختاري الساعة", sub: c.day && c.service ? <>{dayLabel(c.day)} · <span className="latin">{c.service.minutes}</span> دقيقة</> : undefined })}
+          {head({ n: 5, title: "اختاري الساعة", sub: c.day && c.service ? <>{dayLabel(c.day)} · {durationLabel(c.minutes)}</> : undefined })}
           <div className={s.body}>
             <div className={s.legend}><span><i className={s.lgFree} />متاح</span><span><i className={s.lgBusy} />محجوز</span></div>
             {c.slotErr && <div className={s.err}>{c.slotErr}<button type="button" className={s.linkBtn} onClick={c.fetchSlots}>أعيدي المحاولة</button></div>}
@@ -363,12 +385,12 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
               </div>
             ))}
           </div>
-          {c.slots && c.freeCount === 0 && <div className={s.actions}><button type="button" className={s.ghostBtn} onClick={() => go(3)}><Icon name="cal" size={18} color={C.accent} />اختاري يوماً آخر</button></div>}
+          {c.slots && c.freeCount === 0 && <div className={s.actions}><button type="button" className={s.ghostBtn} onClick={() => go(4)}><Icon name="cal" size={18} color={C.accent} />اختاري يوماً آخر</button></div>}
         </>
       );
-      case 5: return (
+      case 6: return (
         <>
-          {head({ n: 5, title: "بياناتكِ", sub: "نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ فقط." })}
+          {head({ n: 6, title: "بياناتكِ", sub: "نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ فقط." })}
           <div className={s.body}>
             <form className={s.form} onSubmit={(e) => { e.preventDefault(); reviewDetails(); }} id="cf-details">
               <label className={s.field}>
@@ -389,21 +411,22 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           <div className={s.actions}><button type="submit" form="cf-details" className={s.primary}>مراجعة الموعد<Icon name="chev" size={19} color="#fff" /></button></div>
         </>
       );
-      case 6: {
+      case 7: {
         const rows: [string, string, string | null, number][] = [
-          ["drop", "الخدمة", c.service ? `${c.service.name} · ${c.service.minutes} دقيقة` : null, skipSession ? 0 : 1],
-          ["user", c.kind === "consult" ? "الاستشارية" : "الأخصائية", personName, 2],
-          ["cal", "اليوم", c.day ? dayLabel(c.day) : null, 3],
-          ["clock", "الساعة", c.time ? `${clock(c.time)} بتوقيت دمشق` : null, 4],
-          ["phone", "بياناتكِ", `${c.name.trim()} · ${c.phone.trim()}`, 5],
+          ["drop", "الخدمة", c.service ? (skipLevel ? `${c.service.name} · ${durationLabel(c.minutes)}` : c.service.name) : null, skipSession ? 0 : 1],
+          ...(!skipLevel && c.level ? [["history", "مدة الجلسة", `${c.level.name} · ${durationLabel(c.level.minutes)}`, 2] as [string, string, string | null, number]] : []),
+          ["user", c.kind === "consult" ? "الاستشارية" : "الأخصائية", personName, 3],
+          ["cal", "اليوم", c.day ? dayLabel(c.day) : null, 4],
+          ["clock", "الساعة", c.time ? `${clock(c.time)} بتوقيت دمشق` : null, 5],
+          ["phone", "بياناتكِ", `${c.name.trim()} · ${c.phone.trim()}`, 6],
         ];
         return (
           <>
-            {head({ n: 6, title: "راجعي موعدكِ", sub: "تأكّدي من التفاصيل، ويمكنكِ تعديل أي منها." })}
+            {head({ n: 7, title: "راجعي موعدكِ", sub: "تأكّدي من التفاصيل، ويمكنكِ تعديل أي منها." })}
             <div className={s.body}>
               <div className={s.receipt}>
                 <div className={s.receiptGlow} aria-hidden />
-                {c.service && <div className={s.rPrice}><span>{typeName}</span><b>{c.service.price == null ? "السعر عند الاستفسار" : pubPrice(c.service)}</b></div>}
+                {c.service && <div className={s.rPrice}><span>{typeName}</span><b>{c.level ? c.priceText : c.service.price == null ? "السعر عند الاستفسار" : pubPrice(c.service)}</b></div>}
                 {rows.map(([icon, label, value, to]) => (
                   <div key={label} className={s.rRow}>
                     <span className={s.rIcon}><Icon name={icon} color="#fff" size={16} /></span>
@@ -441,7 +464,9 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
           <div className={s.miniRow}><span>الخدمة</span><span>{r.service}</span></div>
           <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(r.starts_at)))}</span></div>
-          <div className={s.miniRow}><span>الساعة</span><span><span className="latin">{clock(r.starts_at)}</span> · {r.minutes} دقيقة</span></div>
+          {r.level && !skipLevel && <div className={s.miniRow}><span>مدة الجلسة</span><span>{r.level}</span></div>}
+          <div className={s.miniRow}><span>الساعة</span><span><span className="latin">{clock(r.starts_at)}</span> · {durationLabel(r.minutes)}</span></div>
+          {r.price != null && r.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(r.price)}</span></div>}
           {r.specialist && <div className={s.miniRow}><span>مع</span><span>{r.specialist}</span></div>}
         </div>
         <div className={s.doneBtns}>
@@ -481,7 +506,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       </section>
     );
   } else {
-    const remaining = 6 - step;
+    const remaining = LAST - step;
     content = (
       <div className={s.deck}>
         {remaining >= 2 && <div className={`${s.ghost} ${s.ghost2}`} aria-hidden />}
@@ -493,7 +518,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         )}
         <section key={`c${step}`} className={`${s.card} ${dir === "fwd" ? s.enterFwd : s.enterBack} ${drag ? s.dragging : ""}`}
           style={drag ? { transform: `translateX(${drag}px) rotate(${drag / 40}deg)`, opacity: Math.max(0.5, 1 - drag / 400) } : undefined}
-          onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label={`الخطوة ${step + 1} من 7: ${STEPS[step]}`}>
+          onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label={`الخطوة ${step + 1} من ${STEPS.length}: ${STEPS[step]}`}>
           {renderCard(step)}
         </section>
       </div>
@@ -516,7 +541,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           <>
             <ol className={s.progress} aria-label="مراحل الحجز">
               {STEPS.map((label, i) => {
-                const skipped = i === 1 && skipSession && step > 1;
+                const skipped = (i === 1 && skipSession && step > 1) || (i === 2 && skipLevel && step > 2);
                 return (
                   <li key={label} className={`${s.pStep} ${i < step ? s.pDone : ""} ${i === step ? s.pNow : ""} ${skipped ? s.pSkip : ""}`} aria-current={i === step ? "step" : undefined}>
                     <span className={s.pBar} />
@@ -525,7 +550,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                 );
               })}
             </ol>
-            {step < 6 && <div className={s.chips} data-noswipe aria-label="اختياراتكِ">
+            {step < LAST && <div className={s.chips} data-noswipe aria-label="اختياراتكِ">
               {chips.length === 0
                 ? <span className={s.chipHint}>احجزي موعدكِ في دقيقة — الأوقات حقيقية ومحدّثة لحظة بلحظة.</span>
                 : chips.map((ch) => (

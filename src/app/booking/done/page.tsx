@@ -9,7 +9,8 @@ import { useQuery } from "@/lib/db/query";
 import { getAppointment, STATUS_KIND, STATUS_LABEL, timeOf, useSearch } from "@/lib/db/appointments";
 import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
-import { arDate } from "@/lib/format";
+import { arDate, money } from "@/lib/format";
+import { durationLabel } from "@/lib/db/publicBooking";
 import { C, CARD, DONE_GRAD, GLASS } from "@/lib/tokens";
 import { downloadIcs, SpecialistAvatar } from "../SpecialistAvatar";
 
@@ -52,7 +53,8 @@ export default function BookedPage() {
   const rows: [string, string, string][][] = [
     [["cal", "التاريخ", arDate(start)]],
     [["clock", "الساعة", timeOf(a)], ["door", "المكان", a.room?.name ?? "يُحدَّد في المركز"]],
-    [["sparkle", "الجلسة", a.service?.name ?? ""]],
+    [["sparkle", "الجلسة", `${a.service?.name ?? ""}${a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""}`]],
+    [["wallet", "المدة والسعر", `${durationLabel(a.minutes)}${a.price ? ` · ${money(a.price)}` : ""}`]],
   ];
   return (
     <PhoneScreen gap={12} padding="calc(env(safe-area-inset-top, 0px) + 54px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px)">

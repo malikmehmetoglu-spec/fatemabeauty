@@ -3225,9 +3225,33 @@ export type Database = {
         }
         Returns: Json
       }
+      public_book_level: {
+        Args: {
+          p_level?: string
+          p_name: string
+          p_note?: string
+          p_phone: string
+          p_service: string
+          p_specialist: string
+          p_starts: string
+        }
+        Returns: Json
+      }
       public_booking_info: { Args: never; Returns: Json }
       public_slots: {
         Args: { p_day: string; p_service: string; p_specialist?: string }
+        Returns: {
+          available: boolean
+          starts_at: string
+        }[]
+      }
+      public_slots_level: {
+        Args: {
+          p_day: string
+          p_level?: string
+          p_service: string
+          p_specialist?: string
+        }
         Returns: {
           available: boolean
           starts_at: string

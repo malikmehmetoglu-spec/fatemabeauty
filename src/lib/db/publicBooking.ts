@@ -11,7 +11,27 @@ import { priceLabel } from "./catalog";
 import { staffPhoto } from "./staff";
 
 /** `price` is already in SYP (dollar prices converted server-side); null = «السعر عند الاستفسار». */
-export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null };
+/** A session level («عادية / مكثّفة / علاجية مطوّلة»); `price` in SYP (server-converted). */
+export type PubLevel = { id: string; level: number; name: string; minutes: number; price: number };
+export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null; levels?: PubLevel[] };
+/** Levels the client chooses from (consultations never have levels). */
+export const levelsOfService = (x: PubService | null | undefined): PubLevel[] => (x && !x.is_consultation ? x.levels ?? [] : []);
+/** 45 → «45 دقيقة», 60 → «ساعة», 90 → «ساعة ونصف», 120 → «ساعتان», 180 → «3 ساعات». */
+export function durationLabel(min: number) {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0) return `${min} دقيقة`;
+  const hours = h === 1 ? "ساعة" : h === 2 ? "ساعتان" : h <= 10 ? `${h} ساعات` : `${h} ساعة`;
+  if (m === 0) return hours;
+  if (m === 30) return `${hours} ونصف`;
+  if (m === 15) return `${hours} وربع`;
+  return `${hours} و${m} دقيقة`;
+}
+/** One-line explanation per level number. */
+export const LEVEL_BLURB: Record<number, string> = {
+  1: "للعناية الدورية والبشرة المستقرة",
+  2: "للبشرة التي تحتاج عناية أعمق",
+  3: "للحالات التي تحتاج وقتاً وعلاجاً أطول",
+};
 export type PubCategory = { key: string; name: string; short_description: string; instructions: string; icon: string; not_for_pregnant: boolean };
 /** Price label for a public service (SYP only). */
 export const pubPrice = (x: PubService) => priceLabel({ price: x.price ?? 0, price_from: x.price_from, price_syp: x.price });
@@ -22,7 +42,7 @@ export type PubInfo = {
   centre: { phone: string | null; whatsapp: string | null } | null; horizon_days: number;
 };
 export type PubSlot = { starts_at: string; available: boolean };
-export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null; phone?: string | null };
+export type PubResult = { starts_at: string; minutes: number; service: string; specialist: string | null; phone?: string | null; level?: string | null; price?: number | null };
 
 /** "+963991234567" → "0991 234 567" (shown on the success screen). */
 export function localPhone(p?: string | null) {
@@ -46,16 +66,19 @@ export async function getBookingWeekdays(service: string, specialist: string | n
   return (data ?? []) as number[];
 }
 
-export async function getPublicSlots(day: string, service: string, specialist: string | null): Promise<PubSlot[]> {
-  const { data, error } = await supabase.rpc("public_slots", { p_day: day, p_service: service, p_specialist: specialist ?? undefined });
+export async function getPublicSlots(day: string, service: string, specialist: string | null, level?: string | null): Promise<PubSlot[]> {
+  const { data, error } = level
+    ? await supabase.rpc("public_slots_level", { p_day: day, p_service: service, p_specialist: specialist ?? undefined, p_level: level })
+    : await supabase.rpc("public_slots", { p_day: day, p_service: service, p_specialist: specialist ?? undefined });
   if (error) throw new Error(error.message);
   return (data ?? []) as PubSlot[];
 }
 
-export async function publicBook(p: { service: string; starts: string; specialist: string | null; name: string; phone: string; note: string }): Promise<PubResult> {
-  const { data, error } = await supabase.rpc("public_book", {
-    p_service: p.service, p_starts: p.starts, p_specialist: p.specialist as string, p_name: p.name, p_phone: p.phone, p_note: p.note || undefined,
-  });
+export async function publicBook(p: { service: string; starts: string; specialist: string | null; name: string; phone: string; note: string; level?: string | null }): Promise<PubResult> {
+  const args = { p_service: p.service, p_starts: p.starts, p_specialist: p.specialist as string, p_name: p.name, p_phone: p.phone, p_note: p.note || undefined };
+  const { data, error } = p.level
+    ? await supabase.rpc("public_book_level", { ...args, p_level: p.level })
+    : await supabase.rpc("public_book", args);
   if (error) throw new Error(error.message);
   return data as unknown as PubResult;
 }
@@ -70,6 +93,7 @@ const CODES: Record<string, string> = {
   bad_name: "اكتبي اسمكِ (حرفان على الأقل).",
   bad_phone: "اكتبي رقم موبايل سوري صحيحاً، مثل 0991 234 567.",
   bad_note: "الملاحظة طويلة، اختصريها قليلاً.",
+  bad_level: "مدة الجلسة المختارة غير متاحة الآن. اختاري مدة أخرى.",
   bad_service: "هذه الخدمة غير متاحة للحجز الآن.",
   not_provider: "هذه الأخصائية لا تقدّم هذه الخدمة. اختاري أخصائية أخرى أو «أي أخصائية متاحة».",
   bad_specialist: "الأخصائية المختارة غير متاحة. اختاري «أي أخصائية متاحة».",

@@ -13,8 +13,11 @@ import { appSlots, bookingWeekdays, getHours, openDays, provides, serviceProvide
 import { useRequirePatient } from "@/lib/supabase/session";
 import { askLogin } from "@/components/guest";
 import { AR_MONTHS, initials } from "@/lib/data";
-import { dayName } from "@/lib/format";
+import { dayName, money } from "@/lib/format";
 import { C, CARD, GLASS } from "@/lib/tokens";
+import { getPublicInfo, levelsOfService } from "@/lib/db/publicBooking";
+import { patientLevels } from "@/lib/db/levels";
+import LevelPicker from "@/app/book/LevelPicker";
 
 const glassBtn: CSSProperties = { ...GLASS, width: 46, height: 46, borderRadius: 23, boxShadow: "0 6px 18px rgba(0,0,0,0.10)", display: "flex", alignItems: "center", justifyContent: "center" };
 const PANEL: CSSProperties = { background: "linear-gradient(180deg, #FBF5FC 0%, #F6ECF8 100%)", border: "1px solid #FFFFFF", boxShadow: "inset 0 1px 0 #FFFFFF, 0 10px 26px rgba(123,70,135,0.06)", borderRadius: 28, padding: "16px 16px 18px" };
@@ -40,6 +43,7 @@ export default function BookingPage() {
   const [sp, setSp] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
+  const [lvId, setLvId] = useState<string | null>(null);
 
   useEffect(() => { if (q && !svcKey) setSvcKey(q.get("service")); }, [q, svcKey]);
   const cats = (catsQ.data ?? []).filter((c) => bookable.some((x) => x.category_id === c.key));
@@ -59,16 +63,24 @@ export default function BookingPage() {
   useEffect(() => { if (sp && prov.data && svc && !provides(prov.data, sp, svc.key)) setSp(null); }, [sp, prov.data, svc]);
   const specialist = provTeam.find((t) => t.id === sp) ?? null;
 
+  // «مدة الجلسة»: every active level of the service (SYP prices from public_booking_info); her file's level is preselected
+  const pub = useQuery(["catalog", "public_info"], getPublicInfo);
+  const mine = useQuery(["levels", "mine", s.patient?.id], () => patientLevels(s.patient!.id), { enabled: !!s.patient });
+  const levels = levelsOfService(pub.data?.services.find((x) => x.key === svc?.key));
+  const assignedId = (mine.data ?? []).find((m) => m.service_key === svc?.key && levels.some((l) => l.id === m.level_id))?.level_id ?? null;
+  const level = levels.find((l) => l.id === lvId) ?? levels.find((l) => l.id === assignedId) ?? levels[0] ?? null;
+  useEffect(() => { setLvId(null); }, [svc?.key]);
+
   // free times come from the server (rpc app_slots): opening hours, overlaps and each specialist's working hours
-  const busy = useQuery(["appointments", "app_slots", svc?.key, curDay, sp], () => appSlots(curDay!, svc!.key, sp), { enabled: !!svc && !!curDay && !!s.patient });
+  const busy = useQuery(["appointments", "app_slots", svc?.key, curDay, sp, level?.id], () => appSlots(curDay!, svc!.key, sp, level?.id), { enabled: !!svc && !!curDay && !!s.patient && !pub.loading });
   const slots = busy.data ?? [];
-  useEffect(() => { setTime(null); }, [svcKey, sp, day]);
+  useEffect(() => { setTime(null); }, [svcKey, sp, day, lvId]);
 
   if (s.loading || (!s.patient && !s.guest)) return <PhoneScreen><Loading /></PhoneScreen>;
   const loading = services.loading || hours.loading || team.loading;
   const error = services.error || hours.error || team.error || busy.error;
   const replace = q?.get("replace") ?? "";
-  const next = svc && curDay && time ? `${R.P_Confirm}?service=${svc.key}&day=${curDay}&time=${time}${sp ? `&sp=${sp}` : ""}${replace ? `&replace=${replace}` : ""}` : undefined;
+  const next = svc && curDay && time ? `${R.P_Confirm}?service=${svc.key}&day=${curDay}&time=${time}${sp ? `&sp=${sp}` : ""}${level && levels.length > 1 ? `&level=${level.id}` : ""}${replace ? `&replace=${replace}` : ""}` : undefined;
 
   return (
     <PhoneScreen padding="0" gap={0} background={C.white} blobs={false}>
@@ -89,7 +101,7 @@ export default function BookingPage() {
           <div style={{ fontSize: 13, color: C.navText, marginTop: 4 }}>{specialist ? specialist.title : replace ? "يُلغى موعدكِ الحالي بعد تأكيد الجديد" : "اختاري الخدمة واليوم والوقت المناسب"}</div>
           {svc && (
             <div style={{ ...GLASS, display: "inline-block", marginTop: 12, boxShadow: "0 4px 12px rgba(123,70,135,0.10)", borderRadius: 14, padding: "4px 12px", fontSize: 13, fontWeight: 600, color: C.accent, whiteSpace: "nowrap" }}>
-              {svc.short_name} · {priceLabel(svc)}
+              {svc.short_name} · {level && levels.length > 1 ? money(level.price) : priceLabel(svc)}
             </div>
           )}
         </div>
@@ -120,6 +132,13 @@ export default function BookingPage() {
                 ))}
               </div>
             </div>
+
+            {levels.length > 1 && (
+              <div>
+                <div style={{ fontSize: 13, color: C.sub2, marginBottom: 8 }}>مدة الجلسة</div>
+                <LevelPicker layout="stack" compact levels={levels} value={level?.id ?? null} onChange={setLvId} assignedId={assignedId} />
+              </div>
+            )}
 
             {cat?.not_for_pregnant && <PregnancyNotice warn={!!s.patient?.pregnant} />}
             {!!team.data?.length && !provTeam.length && prov.data && (

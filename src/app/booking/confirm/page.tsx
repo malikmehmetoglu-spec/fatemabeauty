@@ -15,6 +15,7 @@ import { arDate, dayName, money } from "@/lib/format";
 import { C, DARK } from "@/lib/tokens";
 import { SpecialistAvatar } from "../SpecialistAvatar";
 import { levelFor } from "@/lib/db/levels";
+import { durationLabel, getPublicInfo, levelsOfService } from "@/lib/db/publicBooking";
 
 const chip = { display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 15, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 12.5, fontWeight: 600, color: C.white } as const;
 
@@ -22,15 +23,19 @@ export default function ConfirmPage() {
   const s = useRequirePatient();
   const router = useRouter();
   const q = useSearch();
-  const key = q?.get("service") ?? "", day = q?.get("day") ?? "", time = q?.get("time") ?? "", spId = q?.get("sp") ?? null, replace = q?.get("replace") ?? "";
+  const key = q?.get("service") ?? "", day = q?.get("day") ?? "", time = q?.get("time") ?? "", spId = q?.get("sp") ?? null, replace = q?.get("replace") ?? "", levelId = q?.get("level") ?? null;
   const svc = useQuery(["catalog", "service", key], () => getService(key), { enabled: !!key });
   const team = useQuery(["catalog", "specialists"], listSpecialists);
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const policy = useQuery(["appointments", "policy"], freeChangeHours);
   const pkgs = useQuery(["appointments", "pkgs", s.patient?.id, key], () => myPackagesFor(s.patient!.id, key), { enabled: !!s.patient && !!key });
   // her file may set a longer level for this service (minutes + price come from it; level 1 = the service itself)
-  const lvq = useQuery(["levels", "for", s.patient?.id, key], () => levelFor(key), { enabled: !!s.patient && !!key });
-  const lv = lvq.data && lvq.data.level > 1 ? lvq.data : null;
+  const lvq = useQuery(["levels", "for", s.patient?.id, key], () => levelFor(key), { enabled: !!s.patient && !!key && !levelId });
+  // the level she chose on the booking page (any active level), else her file's level
+  const pub = useQuery(["catalog", "public_info"], getPublicInfo, { enabled: !!levelId });
+  const allLv = levelsOfService(pub.data?.services.find((x) => x.key === key));
+  const chosen = levelId ? allLv.find((l) => l.id === levelId) ?? null : null;
+  const lv = chosen ? (allLv.length > 1 ? chosen : null) : lvq.data && lvq.data.level > 1 ? lvq.data : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,7 +50,7 @@ export default function ConfirmPage() {
   async function confirm() {
     setBusy(true); setError("");
     try {
-      const row = await book({ service: key, day, time, specialist: spId });
+      const row = await book({ service: key, day, time, specialist: spId, level: levelId });
       // Changing an existing appointment: the old one is cancelled only after the new one is booked.
       if (replace && row?.id) {
         try { await cancelMine(replace, "غيّرت المراجِعة موعدها إلى وقت آخر"); }
@@ -81,7 +86,7 @@ export default function ConfirmPage() {
               </div>
               <div style={{ height: 1, background: "rgba(255,255,255,0.18)", margin: "14px 0 12px" }} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={chip}><Icon name="sparkle" color="#FFFFFF" size={15} />{service.name}{lv ? ` · ${lv.name}` : ""} · {lv?.minutes ?? service.minutes} د</span>
+                <span style={chip}><Icon name="sparkle" color="#FFFFFF" size={15} />{service.name}{lv ? ` · ${lv.name}` : ""} · {durationLabel(lv?.minutes ?? service.minutes)}</span>
                 {room && <span style={chip}><Icon name="door" color="#FFFFFF" size={15} />{room.name}</span>}
               </div>
             </div>

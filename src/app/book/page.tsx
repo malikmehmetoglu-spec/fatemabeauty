@@ -10,11 +10,12 @@ import { Icon, Logo } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { appHref, DOMAIN } from "@/lib/hosts";
 import { AR_DAYS, AR_MONTHS, initials } from "@/lib/data";
-import { clock, dayKey } from "@/lib/format";
+import { clock, dayKey, money } from "@/lib/format";
 import {
   getBookingWeekdays, getPublicInfo, getPublicSlots, icsFile, localPhone, nextDays, normalisePhone, publicBook, publicError,
-  pubPrice, type PubInfo, type PubPerson, type PubResult, type PubService, type PubSlot,
+  durationLabel, levelsOfService, pubPrice, type PubInfo, type PubLevel, type PubPerson, type PubResult, type PubService, type PubSlot,
 } from "@/lib/db/publicBooking";
+import LevelPicker from "./LevelPicker";
 import { C } from "@/lib/tokens";
 import s from "./book.module.css";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
@@ -61,6 +62,7 @@ export default function PublicBookingPage() {
   const [slots, setSlots] = useState<PubSlot[] | null>(null);
   const [slotErr, setSlotErr] = useState("");
   const [time, setTime] = useState<string | null>(null);
+  const [levelId, setLevelId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -106,6 +108,15 @@ export default function PublicBookingPage() {
   const noProvider = kind === "session" && !!service && (info?.specialists.length ?? 0) > 0 && people.length === 0;
   const chosenPerson = kind === "consult" ? info?.consultant ?? null : people.find((p) => p.id === specialist) ?? null;
 
+  // «مدة الجلسة»: active levels of the chosen service (default = the first, «عادية»); the step shows only when there are 2+
+  const levels = levelsOfService(service);
+  const level: PubLevel | null = levels.find((l) => l.id === levelId) ?? levels[0] ?? null;
+  const hasLevels = levels.length > 1;
+  const minutes = level?.minutes ?? service?.minutes ?? 0;
+  const priceText = service ? (level ? money(level.price) : pubPrice(service)) : null;
+  const serviceText = service ? `${service.name}${hasLevels && level ? ` · ${level.name}` : ""} · ${durationLabel(minutes)}` : null;
+  function pickLevel(id: string) { setLevelId(id); setTime(null); setErr(""); }
+
   const days = useMemo(() => (now ? nextDays(DAYS_AHEAD) : []), [now?.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
   // availability of the chosen day
   const specialistParam = kind === "consult" ? info?.consultant?.id ?? null : specialist;
@@ -128,9 +139,9 @@ export default function PublicBookingPage() {
   const fetchSlots = useCallback(async () => {
     if (!service || !day) return;
     setSlots(null); setSlotErr("");
-    try { setSlots(await getPublicSlots(day, service.key, specialistParam)); }
+    try { setSlots(await getPublicSlots(day, service.key, specialistParam, level?.id ?? null)); }
     catch (e) { setSlotErr(publicError(e)); }
-  }, [service, day, specialistParam]);
+  }, [service, day, specialistParam, level?.id]);
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
   const visibleSlots = (slots ?? []).filter((x) => !now || new Date(x.starts_at).getTime() > now.getTime());
@@ -146,11 +157,12 @@ export default function PublicBookingPage() {
     if (k === "session") setPubCat(cat);
     const list = k === "consult" ? consultServices : sessionCats.length ? sessionServices.filter((x) => (cat ? x.category_id === cat : !sessionCats.some((c) => c.key === x.category_id))) : sessionServices;
     const only = list.length === 1 ? list[0] : null;
-    setService(only); setSpecialist(null);
+    setService(only); setSpecialist(null); setLevelId(levelsOfService(only)[0]?.id ?? null);
     if (only) { if (!day) setDay(days.find(isOpen) ?? null); goTo(k === "consult" ? refs[2] : refs[1]); }
     else goTo(refs[1]);
   }
   function pickService(x: PubService) {
+    if (x.key !== service?.key) setLevelId(levelsOfService(x)[0]?.id ?? null);
     setService(x); setTime(null); setErr("");
     const sp = info?.specialists.find((p) => p.id === specialist);
     if (sp?.services && !sp.services.includes(x.key)) setSpecialist(null);
@@ -169,7 +181,7 @@ export default function PublicBookingPage() {
     if (!ph) { setErr("اكتبي رقم موبايل سوري صحيحاً، مثل 0991 234 567."); return; }
     setBusy(true);
     try {
-      const r = await publicBook({ service: service.key, starts: time, specialist: specialistParam, name: name.trim(), phone: ph, note: note.trim() });
+      const r = await publicBook({ service: service.key, starts: time, specialist: specialistParam, name: name.trim(), phone: ph, note: note.trim(), level: level?.id ?? null });
       setResult(r);
       goTo(refs.top);
     } catch (e) {
@@ -189,18 +201,18 @@ export default function PublicBookingPage() {
   }
 
   function restart() {
-    setResult(null); setKind(null); setService(null); setSpecialist(null); setDay(null); setTime(null); setNote(""); setErr("");
+    setResult(null); setKind(null); setService(null); setLevelId(null); setSpecialist(null); setDay(null); setTime(null); setNote(""); setErr("");
     fetchSlots();
   }
 
   const step1Done = !!service;
   const summary: [string, string, string | null][] = [
     ["sparkle", "نوع الموعد", kind ? (kind === "consult" ? consultCat?.name ?? "استشارة" : sessionCats.find((c) => c.key === curPubCat)?.name ?? "جلسة عناية") : null],
-    ["drop", "الخدمة", service ? `${service.name} · ${service.minutes} دقيقة` : null],
+    ["drop", "الخدمة", serviceText],
     ["user", kind === "consult" ? "الاستشارية" : "الأخصائية", kind === "consult" ? info?.consultant?.name ?? null : service ? (chosenPerson?.name ?? "أي أخصائية متاحة") : null],
     ["cal", "اليوم", day && service ? dayLabel(day) : null],
     ["clock", "الساعة", time ? `${clock(time)} بتوقيت دمشق` : null],
-    ["wallet", "السعر", service ? pubPrice(service) : null],
+    ["wallet", "السعر", priceText],
   ];
 
   const contact = info?.centre?.whatsapp || info?.centre?.phone || null;
@@ -209,7 +221,7 @@ export default function PublicBookingPage() {
 
   // phones: card deck (CardFlow.tsx) — same state and rules; BOOKING_MOBILE_FLOW = "classic" or ?classic=1 restores the layout below
   const cardView = <CardFlow ctx={{
-    info, loadErr, load, now, kind, service, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
+    info, loadErr, load, now, kind, service, levels, level, hasLevels, minutes, priceText, pickLevel, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
     cards, curPubCat, consultCat, sessionCats, sessionServices, consultServices, kindServices, svcCat, people, noProvider, chosenPerson,
     days, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
     contact, waLink, siteHref,
@@ -235,7 +247,9 @@ export default function PublicBookingPage() {
               <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
               <div className={s.miniRow}><span>الخدمة</span><span>{result.service}</span></div>
               <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(result.starts_at)))}</span></div>
-              <div className={s.miniRow}><span>الساعة</span><span>{clock(result.starts_at)} · {result.minutes} دقيقة</span></div>
+              {result.level && hasLevels && <div className={s.miniRow}><span>مدة الجلسة</span><span>{result.level}</span></div>}
+              <div className={s.miniRow}><span>الساعة</span><span>{clock(result.starts_at)} · {durationLabel(result.minutes)}</span></div>
+              {result.price != null && result.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(result.price)}</span></div>}
               {result.specialist && <div className={s.miniRow}><span>مع</span><span>{result.specialist}</span></div>}
             </div>
             <div className={s.doneBtns}>
@@ -325,6 +339,12 @@ export default function PublicBookingPage() {
                       </>
                     )}
 
+                    {service && hasLevels && (
+                      <>
+                        <div className={s.subHead}>مدة الجلسة</div>
+                        <LevelPicker levels={levels} value={level?.id ?? null} onChange={pickLevel} />
+                      </>
+                    )}
                     {svcCat?.not_for_pregnant && <PregnancyNotice style={{ marginTop: 14 }} />}
                     {kind === "session" && service && people.length > 0 && (
                       <>
@@ -377,7 +397,7 @@ export default function PublicBookingPage() {
                   {/* 3 — time */}
                   {service && !noProvider && day && (
                     <section className={s.step} ref={refs[3]}>
-                      <StepHead n={3} title="اختاري الساعة" sub={`${dayLabel(day)} · مدة الجلسة ${service.minutes} دقيقة`} done={!!time} />
+                      <StepHead n={3} title="اختاري الساعة" sub={`${dayLabel(day)} · مدة الجلسة ${durationLabel(minutes)}`} done={!!time} />
                       <div className={s.legend}><span><i className={s.lgFree} />متاح</span><span><i className={s.lgBusy} />محجوز</span></div>
                       {slotErr && <div className={s.err}>{slotErr}</div>}
                       {!slots && !slotErr && <div className={s.stepSub}>جارٍ التحقق من الأوقات…</div>}
