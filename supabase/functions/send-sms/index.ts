@@ -38,7 +38,8 @@ Deno.serve(async (req) => {
     if (!user || !pass) return fail("gateway credentials not configured");
     const url = Deno.env.get("SMSGATE_URL") ?? "https://api.sms-gate.app/3rdparty/v1/messages";
 
-    const text = `رمز التحقق في فاطمة بيوتي: ${otp}\nلا تشاركي هذا الرمز مع أحد.`;
+    // MTN Syria blocks on-net SMS worded like an OTP («رمز التحقق… لا تشاركي…»); this wording passes (tested by hand).
+    const text = `أهلاً بكِ في فاطمة بيوتي: ${otp}`;
     const r = await fetch(`${url}?skipPhoneValidation=true`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Basic ${btoa(`${user}:${pass}`)}` },
