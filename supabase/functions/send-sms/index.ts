@@ -26,7 +26,10 @@ Deno.serve(async (req) => {
       return fail("invalid signature", 401);
     }
 
-    const phone = body?.user?.phone ? `+${String(body.user.phone).replace(/^\+/, "")}` : "";
+    // Syrian numbers go out in local form (0959…): MTN Syria rejects on-net SMS addressed as +963…,
+    // while Syriatel accepts either. Other countries keep the international form.
+    const digits = String(body?.user?.phone ?? "").replace(/\D/g, "");
+    const phone = !digits ? "" : digits.startsWith("963") ? `0${digits.slice(3)}` : `+${digits}`;
     const otp = body?.sms?.otp;
     if (!phone || !otp) return fail("missing phone or code", 400);
 
