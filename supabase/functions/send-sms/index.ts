@@ -39,7 +39,8 @@ Deno.serve(async (req) => {
     const url = Deno.env.get("SMSGATE_URL") ?? "https://api.sms-gate.app/3rdparty/v1/messages";
 
     // MTN Syria blocks on-net SMS worded like an OTP («رمز التحقق… لا تشاركي…»); this wording passes (tested by hand).
-    const text = `أهلاً بكِ في فاطمة بيوتي: ${otp}`;
+    // U+200F (right-to-left mark) at both ends keeps the line RTL so the colon and code don't jump around.
+    const text = `\u200Fأهلاً بكِ في فاطمة بيوتي: ${otp}\u200F`;
     const r = await fetch(`${url}?skipPhoneValidation=true`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Basic ${btoa(`${user}:${pass}`)}` },
