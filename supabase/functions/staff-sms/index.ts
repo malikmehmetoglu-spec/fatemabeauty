@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         r = await fetch(url, {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Basic ${btoa(`${user}:${pass}`)}` },
-          body: JSON.stringify({ textMessage: { text }, phoneNumbers: [phone], ttl: 3600 }),
+          body: JSON.stringify({ textMessage: { text }, phoneNumbers: [phone.replace(/^\+963/, "0")], ttl: 3600 /* MTN rejects +963 on-net */ }),
         });
       } catch (e) {
         await log("failed", String(e).slice(0, 300));
