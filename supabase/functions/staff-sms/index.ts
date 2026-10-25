@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       const url = Deno.env.get("SMSGATE_URL") ?? "https://api.sms-gate.app/3rdparty/v1/messages";
       let r: Response;
       try {
-        r = await fetch(url, {
+        r = await fetch(`${url}?skipPhoneValidation=true`, {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Basic ${btoa(`${user}:${pass}`)}` },
           body: JSON.stringify({ textMessage: { text }, phoneNumbers: [phone.replace(/^\+963/, "0")], ttl: 3600 /* MTN rejects +963 on-net */ }),
