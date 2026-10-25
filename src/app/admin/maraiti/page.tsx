@@ -28,10 +28,8 @@ const POLL = 25000;
 const CSS = `
 .mr-root, .mr-root * { font-family: ${BRAND}; }
 .mr-root .latin, .mr-root .latin * { font-family: var(--font-rubik), Rubik, sans-serif; }
-.mr-scroll { scrollbar-width: thin; scrollbar-color: #D9BCE5 transparent; overscroll-behavior: contain; }
-.mr-scroll::-webkit-scrollbar { display: block; width: 6px; height: 6px; }
-.mr-scroll::-webkit-scrollbar-thumb { background: #D9BCE5; border-radius: 3px; }
-.mr-scroll::-webkit-scrollbar-track { background: transparent; }
+.mr-scroll { scrollbar-width: none; overscroll-behavior: contain; }
+.mr-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .mr-row { scrollbar-width: none; }
 .mr-row::-webkit-scrollbar { display: none; }
 @keyframes mrIn { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
