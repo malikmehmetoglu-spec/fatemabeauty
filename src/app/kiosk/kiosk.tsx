@@ -12,6 +12,7 @@ import { R } from "@/lib/routes";
 import { arDate, clock } from "@/lib/format";
 import { BG, C, ICON_FILL, LOGO, SH, SHB } from "@/lib/tokens";
 import K from "./kiosk.module.css";
+import { permsOf, type Perm } from "@/lib/permissions";
 
 export { K as KC };
 
@@ -50,7 +51,8 @@ const NAV: { href: string; label: string; icon: string }[] = [
 /** Staff-mode side rail (top bar on portrait / phone): desk, quick booking, cashier, back to the patient welcome screen. */
 export function KioskNav({ active }: { active: string }) {
   const { staff } = useSession();
-  const nav = staff?.role === "reception" ? NAV.filter((n) => RECEPTION_OK.includes(n.href)) : NAV;
+  const mine = permsOf(staff);
+  const nav = NAV.filter((n) => mine.has(KIOSK_PERM[n.href] ?? "kiosk_desk"));
   return (
     <nav aria-label="وضع الاستقبال" className={K.nav} style={{ width: 96, flexShrink: 0, borderRadius: 34, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: SH, padding: "22px 0", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", gap: 22, position: "relative" }}>
       <div className={K.navLogo} style={{ display: "flex" }}>
@@ -210,23 +212,26 @@ export function FlashToast() {
   );
 }
 
-/** Tablet screens open to «خدمة العملاء» (role reception): booking only — no queue, payments or session prep. */
-const RECEPTION_OK: string[] = [R.T_QuickBook];
+/** Permission needed by each tablet screen (others: kiosk_desk). Follows staff.permissions / role defaults. */
+const KIOSK_PERM: Record<string, Perm> = { [R.T_QuickBook]: "calendar", [R.T_Cashier]: "cashier" };
 
 /**
  * Reception tablet guard: staff session required; shows a loader on the tablet canvas meanwhile.
- * `reception: true` marks a booking screen open to «خدمة العملاء»; every other tablet screen is closed to her.
+ * `perm` is the permission the screen needs (default kiosk_desk); `reception: true` = booking screen (calendar).
  */
-export function useKiosk(opts: { reception?: boolean } = {}) {
+export function useKiosk(opts: { reception?: boolean; perm?: Perm } = {}) {
   const s = useRequireStaff();
-  const denied = !!s.staff && s.staff.role === "reception" && !opts.reception;
+  const need: Perm = opts.perm ?? (opts.reception ? "calendar" : "kiosk_desk");
+  const mine = permsOf(s.staff);
+  const denied = !!s.staff && !mine.has(need);
+  const fallback = NAV.find((n) => mine.has(KIOSK_PERM[n.href] ?? "kiosk_desk"));
   const gate = s.loading || !s.staff
     ? <Stage fluid width={1194} height={834} background={BG} padding="36px 40px"><Loading style={{ margin: "auto" }} /></Stage>
     : denied
       ? <Stage fluid width={1194} height={834} background={BG} padding="36px 40px">
           <div style={{ margin: "auto", textAlign: "center", display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: C.ink }}>هذه الشاشة غير متاحة لخدمة العملاء</div>
-            <Link href={R.T_QuickBook} style={{ height: 48, padding: "0 22px", borderRadius: 24, background: C.accent, color: C.white, fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}>حجز سريع</Link>
+            <div style={{ fontSize: 22, fontWeight: 700, color: C.ink }}>هذه الشاشة خارج صلاحياتكِ</div>
+            {fallback && <Link href={fallback.href} style={{ height: 48, padding: "0 22px", borderRadius: 24, background: C.accent, color: C.white, fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}>{fallback.label}</Link>}
           </div>
         </Stage>
       : null;

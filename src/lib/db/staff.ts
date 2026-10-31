@@ -40,6 +40,12 @@ export async function saveStaff(input: StaffInput) {
   return row;
 }
 
+/** Per-staff permissions (null = role defaults). Owner/admin only — RPC set_staff_permissions (audited). */
+export async function setStaffPermissions(staffId: string, perms: string[] | null) {
+  must(await supabase.rpc("set_staff_permissions", { p_staff: staffId, p_perms: perms }));
+  invalidate("staff");
+}
+
 /** Deactivate / reactivate a member without a login (members with a login go through the Edge Function so the login is banned too). */
 export async function setStaffActive(s: Staff, active: boolean) {
   if (s.user_id) await staffAdmin({ action: active ? "enable" : "disable", staff_id: s.id });

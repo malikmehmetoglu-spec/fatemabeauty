@@ -20,12 +20,15 @@ import { RowBtn, StaffAvatar, TeamTabs, errText, useTeam } from "./team-ui";
 import { listAllServices, listCategories, type Service } from "@/lib/db/catalog";
 import { listAssignments, servicesSummary, setStaffServices, type Assignment } from "@/lib/db/staffServices";
 import { ServicePicker } from "./ServicePicker";
+import { PermissionsDialog } from "./PermissionsDialog";
+import { isCustom } from "@/lib/permissions";
 
 export default function StaffPage() {
   const { staff: me } = useSession();
   const { list, loading, error, refresh } = useTeam();
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
   const [login, setLogin] = useState<Staff | null>(null);
+  const [perms, setPerms] = useState<Staff | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [msg, setMsg] = useState("");
   const svcQ = useQuery(["catalog", "services", "all"], listAllServices);
@@ -67,7 +70,7 @@ export default function StaffPage() {
 
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الفريق: {error}</ErrorNote> : (
         <>
-          {shown.length > 0 && <TeamTable rows={shown} me={me} services={svcQ.data ?? []} assignments={asgQ.data ?? []} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onToggle={toggleActive} onDelete={deleteMember} />}
+          {shown.length > 0 && <TeamTable rows={shown} me={me} services={svcQ.data ?? []} assignments={asgQ.data ?? []} canEdit={canEdit} onEdit={setEditing} onLogin={setLogin} onPerms={setPerms} onToggle={toggleActive} onDelete={deleteMember} />}
           {list.length > active.length && (
             <button type="button" onClick={() => setShowInactive((v) => !v)} style={{ alignSelf: "flex-start", border: "none", background: "none", color: C.accent, fontSize: 13.5, fontWeight: 600 }}>
               {showInactive ? "إخفاء الموقوفات" : `إظهار الموقوفات (${list.length - active.length})`}
@@ -83,15 +86,16 @@ export default function StaffPage() {
 
       <StaffDialog open={!!editing} member={editing === "new" ? null : editing} isOwner={isOwner} onClose={() => setEditing(null)} />
       <LoginDialog member={login} onClose={() => setLogin(null)} />
+      <PermissionsDialog member={perms ? list.find((x) => x.id === perms.id) ?? perms : null} onClose={() => setPerms(null)} />
     </AdminShell>
   );
 }
 
-function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, onToggle, onDelete }: {
-  rows: Staff[]; me: Staff | null; services: Service[]; assignments: Assignment[]; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
+function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, onPerms, onToggle, onDelete }: {
+  rows: Staff[]; me: Staff | null; services: Service[]; assignments: Assignment[]; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onPerms: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
 }) {
   return (
-    <DataTable headers={["الموظفة", "الدور", "الخدمات", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 0.9, 1.2, 1.1, 1.3, 0.7, 3.8]} minWidth={1300} rowHeight={64}
+    <DataTable headers={["الموظفة", "الدور", "الخدمات", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 1, 1.2, 1.1, 1.3, 0.7, 4.8]} minWidth={1480} rowHeight={64}
       rows={rows.map((s) => [
         <>
           <StaffAvatar s={s} size={42} />
@@ -100,7 +104,10 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
             <div style={{ fontSize: 12, color: C.sub2 }}>{s.title || "—"}{s.photo_placeholder && s.photo_url && <Tag kind="amber" style={{ height: 18, padding: "0 7px", fontSize: 10.5, marginInlineStart: 6 }}>صورة مؤقتة</Tag>}</div>
           </div>
         </>,
-        <Tag key="r" kind={s.role === "owner" ? "plum" : s.role === "admin" ? "lilac" : s.role === "specialist" ? "pink" : "gray"}>{ROLE_LABEL[s.role]}</Tag>,
+        <span key="r" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+          <Tag kind={s.role === "owner" ? "plum" : s.role === "admin" ? "lilac" : s.role === "specialist" ? "pink" : "gray"}>{ROLE_LABEL[s.role]}</Tag>
+          {isCustom(s) && <span style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>صلاحيات مخصّصة</span>}
+        </span>,
         s.role === "specialist" || s.is_consultant || assignments.some((a) => a.staff_id === s.id) ? (() => {
           const keys = assignments.filter((a) => a.staff_id === s.id).map((a) => a.service_key);
           return <span key="sv" title={keys.length ? services.filter((x) => keys.includes(x.key)).map((x) => x.short_name || x.name).join("، ") : "إن لم تُحدَّد خدمات تقدّم كل خدمات قسمها"}
@@ -115,6 +122,7 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
           <span key="b" style={{ display: "flex", gap: 8, flexWrap: "nowrap", justifyContent: "flex-end", width: "100%" }}>
             <RowBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} />
             <RowBtn icon="lock" label={s.user_id ? "كلمة المرور" : "إنشاء حساب"} onClick={() => onLogin(s)} />
+            {s.role !== "owner" && <RowBtn icon="badge" label="الصلاحيات" onClick={() => onPerms(s)} />}
             {s.id !== me?.id && s.role !== "owner" && <RowBtn icon={s.active ? "pause" : "refresh"} label={s.active ? "إيقاف" : "تفعيل"} color={s.active ? C.danger : C.okDeep} onClick={() => onToggle(s)} />}
             {s.id !== me?.id && s.role !== "owner" && <RowBtn icon="trash" label="حذف" color={C.danger} onClick={() => onDelete(s)} />}
           </span>
@@ -181,7 +189,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Select label="الدور (يحدد الصلاحيات)" value={role} onChange={setRole} options={roleOpts} />
+        <Select label="الدور (يحدد الصلاحيات الافتراضية)" value={role} onChange={setRole} options={roleOpts} />
         <TextInput label="رقم الهاتف" dir="ltr" value={phone} onChange={setPhone} placeholder="09xx xxx xxx" />
       </div>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>

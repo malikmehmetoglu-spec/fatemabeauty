@@ -36,6 +36,13 @@ honest empty state. The database is currently empty except for the owner account
   `reception` to finance/store/stock/medical `has_role` arrays. Trigger `guard_reception_patient_update` blocks
   reception from changing medical/patient-system columns (birth_date, skin_type, pregnant, breastfeeding, notes,
   points, vip, user_id, file_no). Tablet: `useKiosk({ reception: true })` marks the only screens open to her (quick-book).
+- Per-staff permissions (migration 0183): `staff.permissions text[]` (null = role defaults). Catalogue + defaults in
+  `src/lib/permissions.ts` = `private.role_default_perms()`. `private.has_perm(p)`; DB gates use
+  `coalesce(private.perm_override(p) / perm_override_any(arr), <old role check>)` so null keeps the old rule verbatim.
+  Gated: invoices/items/payments/cash_shifts read + cashier RPCs (cashier/finance), approve/reject_booking +
+  book_appointment_v2 staff path + appointments (calendar…), patients read/insert/update, medical tables + guard trigger
+  (patients_medical), products/stock_batches/orders read. Edit via RPC `set_staff_permissions(p_staff, p_perms)` (admin/owner, audited).
+  UI: AdminShell `canSee/pathOk/homeFor` and `useKiosk({ perm })` read effective perms.
 
 ## Schema changes
 - Existing tables: see `supabase/migrations/*.sql` and `src/lib/supabase/database.types.ts`.

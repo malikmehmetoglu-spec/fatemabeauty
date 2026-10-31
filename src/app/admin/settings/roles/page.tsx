@@ -9,6 +9,7 @@ import { Card, ErrorNote, Icon, Loading, SectionTitle } from "@/components/ui";
 import { ROLES, type Role } from "@/lib/db/staff";
 import { ROLE_LABEL } from "@/lib/supabase/session";
 import { C } from "@/lib/tokens";
+import { PERMS, ROLE_DEFAULTS } from "@/lib/permissions";
 import { StaffAvatar, TeamTabs, useTeam } from "@/app/admin/staff/team-ui";
 
 type Level = "full" | "read" | "own" | "none";
@@ -46,8 +47,28 @@ const CELL: Record<Level, { label: string; bg: string; fg: string; icon: string 
 export default function RolesPage() {
   const team = useTeam();
   return (
-    <AdminShell active="الإعدادات" title="الأدوار والصلاحيات" subtitle="الصلاحيات مطبّقة في قاعدة البيانات نفسها؛ لتغيير صلاحيات موظفة غيّري دورها من صفحة الفريق">
+    <AdminShell active="الإعدادات" title="الأدوار والصلاحيات" subtitle="الدور يحدد الصلاحيات الافتراضية؛ ويمكن تخصيص أقسام كل موظفة على حدة من «فريق العمل ← الصلاحيات»">
       <TeamTabs />
+      <Card padding="16px 20px" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <b style={{ fontSize: 15 }}>الأقسام الافتراضية لكل دور</b>
+        <div style={{ fontSize: 12.5, color: C.sub2, lineHeight: 1.8 }}>
+          كل موظفة تأخذ أقسام دورها تلقائياً. لتحديد أقسام بعينها لموظفة (مثلاً: خدمة العملاء على «المواعيد» و«الكاشير» فقط) افتحي «فريق العمل» ثم زر «الصلاحيات» بجانب اسمها؛
+          تظهر عندها «صلاحيات مخصّصة»، ويمكن إعادتها للافتراضي في أي وقت. التخصيص يطبَّق على القائمة والتابلت وقاعدة البيانات.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
+          {(["specialist", "reception", "accountant"] as Role[]).map((r) => (
+            <div key={r} style={{ padding: "10px 14px", borderRadius: 18, background: "#F8F2FA", display: "flex", flexDirection: "column", gap: 6 }}>
+              <b style={{ fontSize: 13.5 }}>{ROLE_LABEL[r]}</b>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {PERMS.filter((p) => ROLE_DEFAULTS[r].includes(p.key)).map((p) => (
+                  <span key={p.key} style={{ height: 24, padding: "0 9px", borderRadius: 12, background: "#fff", border: "1px solid #EADDEF", fontSize: 11.5, fontWeight: 600, display: "inline-flex", alignItems: "center" }}>{p.label}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ padding: "10px 14px", borderRadius: 18, background: "#F8F2FA", fontSize: 12.5, color: C.sub2 }}><b style={{ color: C.ink }}>المدير العام والإدارة</b><br />كل الأقسام.</div>
+        </div>
+      </Card>
       <Card padding="10px 20px" style={{ overflowX: "auto" }}>
         <div role="table" style={{ display: "grid", gridTemplateColumns: `2.2fr repeat(${ROLES.length}, 1fr)`, minWidth: 640 }}>
           <div role="columnheader" style={{ padding: "12px 0", fontSize: 12, color: C.sub2, fontWeight: 600 }}>القسم</div>

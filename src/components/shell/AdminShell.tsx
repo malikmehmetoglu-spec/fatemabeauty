@@ -19,6 +19,7 @@ import { Blobs } from "./PhoneScreen";
 import s from "./admin.module.css";
 import { ChangePasswordDialog } from "./ChangePassword";
 import { AdminInstall } from "@/components/pwa/AdminInstall";
+import { permsOf, type Perm } from "@/lib/permissions";
 
 export type AdminSection =
   | "مرايتي" | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
@@ -45,46 +46,52 @@ const NAV: [string, AdminSection, string][] = [
 ];
 
 type Role = "owner" | "admin" | "specialist" | "reception" | "accountant";
+type Who = { role: Role; permissions?: string[] | null; is_consultant?: boolean };
 
-/** Which roles see each section (owner and admin always see everything). Mirrors the RLS rules in the database. */
-const SECTION_ROLES: Record<AdminSection, Role[]> = {
-  // «مرايتي»: the consultant herself only — see SELF_ONLY (owner/admin without is_consultant are excluded)
-  "مرايتي": ["owner", "admin", "specialist", "reception", "accountant"],
-  "لوحة القيادة": ["accountant"],
-  "المواعيد": ["reception", "specialist"],
-  "الأدوار": ["specialist"],
-  "المراجعات": ["reception", "specialist"],
-  "ميرا": [],
-  "جدولي": ["specialist", "accountant"],
-  // consultant screens: specialists only when staff.is_consultant (see CONSULT_ONLY)
-  "يوم فاطمة": ["specialist"],
-  "الاستشارات المكتوبة": ["specialist"],
-  "المالية": ["accountant"],
-  "المخزون والأجهزة": ["specialist"],
-  "فريق العمل": ["accountant"],
-  "التسويق والولاء": [],
-  "تثبيت التطبيق": [],
-  "المتجر": [],
-  "التقارير": ["accountant"],
-  "الإعدادات": [],
+/**
+ * Permission(s) that open each section (any one is enough). Effective permissions come from
+ * staff.permissions, or the role defaults when null — see src/lib/permissions.ts (mirrors private.has_perm()).
+ */
+const SECTION_PERMS: Record<AdminSection, Perm[] | null> = {
+  "مرايتي": null, // SELF_ONLY
+  "لوحة القيادة": ["dashboard"],
+  "المواعيد": ["calendar"],
+  "الأدوار": ["queue"],
+  "المراجعات": ["patients", "patients_medical"],
+  "ميرا": ["mira"],
+  "جدولي": null, // personal: specialist/accountant by role (see MYDAY_ROLES)
+  "يوم فاطمة": null, // CONSULT_ONLY
+  "الاستشارات المكتوبة": null,
+  "المالية": ["cashier", "finance", "written_consults_payments", "package_requests"],
+  "المخزون والأجهزة": ["inventory", "devices"],
+  "فريق العمل": ["staff"],
+  "التسويق والولاء": ["marketing"],
+  "تثبيت التطبيق": ["marketing"],
+  "المتجر": ["store"],
+  "التقارير": ["reports"],
+  "الإعدادات": ["settings"],
 };
+const MYDAY_ROLES: Role[] = ["owner", "admin", "specialist", "accountant"];
 
-/** Sub-pages limited further than their section (path prefix → roles; owner/admin always pass). */
-const SUB_ROLES: [string, Role[]][] = [
-  [R.W_Receivables, ["accountant"]],
-  [R.W_Expenses, ["accountant"]],
-  [R.W_FinanceReports, ["accountant"]],
-  [R.W_WcPayments, []],
-  [R.W_PkgRequests, []],
-  ["/admin/finance/commissions/", ["accountant"]],
-  [R.W_Products, []],
-  ["/admin/store/storefront/", []],
-  [R.W_Inventory, []],
-  [R.W_Purchases, []],
-  [R.W_Stocktake, []],
-  [R.W_Devices, ["specialist"]],
-  ["/admin/inventory/locations/", []],
-  [R.W_Staff, ["accountant"]],
+/** Sub-pages limited further than their section (path prefix → permissions). Longest prefix wins. */
+const SUB_PERMS: [string, Perm[]][] = [
+  [R.W_Cashier, ["cashier"]],
+  [R.W_Invoices, ["cashier", "finance"]],
+  [R.W_CashBox, ["cashier", "finance"]],
+  [R.W_Receivables, ["finance"]],
+  [R.W_Expenses, ["finance"]],
+  [R.W_FinanceReports, ["finance"]],
+  [R.W_WcPayments, ["written_consults_payments"]],
+  [R.W_PkgRequests, ["package_requests"]],
+  ["/admin/finance/commissions/", ["finance"]],
+  [R.W_Products, ["store"]],
+  ["/admin/store/", ["store"]],
+  [R.W_Inventory, ["inventory"]],
+  [R.W_Purchases, ["inventory"]],
+  [R.W_Stocktake, ["inventory"]],
+  [R.W_Devices, ["devices", "inventory"]],
+  ["/admin/inventory/locations/", ["inventory"]],
+  [R.W_Staff, ["staff"]],
 ];
 
 const full = (r: Role) => r === "owner" || r === "admin";
@@ -92,17 +99,30 @@ const full = (r: Role) => r === "owner" || r === "admin";
 const CONSULT_ONLY: AdminSection[] = ["يوم فاطمة", "الاستشارات المكتوبة"];
 /** Personal to the consultant: NOT opened to owner/admin. Mirrors private.is_maraiti_user() (migration 0179). */
 const SELF_ONLY: AdminSection[] = ["مرايتي"];
-export const canSee = (r: Role, sec: AdminSection, consultant = false) =>
-  SELF_ONLY.includes(sec) ? consultant :
-  full(r) || (SECTION_ROLES[sec].includes(r) && (!CONSULT_ONLY.includes(sec) || consultant));
-const pathOk = (r: Role, path: string) => {
-  if (full(r)) return true;
-  const n = (h: string) => h.replace(/\/$/, "") + "/";
-  const hit = SUB_ROLES.filter(([pre]) => n(path).startsWith(n(pre))).sort((a, b) => b[0].length - a[0].length)[0];
-  return !hit || hit[1].includes(r);
+const anyOf = (w: Who, ps: Perm[]) => { const mine = permsOf(w); return ps.some((p) => mine.has(p)); };
+export const canSee = (w: Who, sec: AdminSection) => {
+  const consultant = !!w.is_consultant;
+  if (SELF_ONLY.includes(sec)) return consultant;
+  if (CONSULT_ONLY.includes(sec)) return full(w.role) || (w.role === "specialist" && consultant);
+  if (sec === "جدولي") return MYDAY_ROLES.includes(w.role);
+  return anyOf(w, SECTION_PERMS[sec] ?? []);
 };
-/** First page this role may open — used as its landing page. */
-export const homeFor = (r: Role, consultant = false) => NAV.find(([, sec]) => canSee(r, sec, consultant))?.[2] ?? R.W_MyDay;
+const pathOk = (w: Who, path: string) => {
+  if (w.role === "owner") return true;
+  const n = (h: string) => h.replace(/\/$/, "") + "/";
+  const hit = SUB_PERMS.filter(([pre]) => n(path).startsWith(n(pre))).sort((a, b) => b[0].length - a[0].length)[0];
+  return !hit || anyOf(w, hit[1]);
+};
+/** First page this staff member may open — used as her landing page. */
+export const homeFor = (w: Who) => {
+  for (const [, sec, href] of NAV) {
+    if (!canSee(w, sec)) continue;
+    if (pathOk(w, href)) return href;
+    const sub = SUB[sec]?.find(([, h]) => pathOk(w, h));
+    if (sub) return sub[1];
+  }
+  return R.W_MyDay;
+};
 
 /**
  * Admin web frame: glass sidebar on the right (RTL), top bar with title + search + bell, fluid content area.
@@ -119,17 +139,18 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   const [q, setQ] = useState("");
   const pend = useQuery(["booking-requests", "count"], pendingCount, { enabled: !!staff });
   const pending = pend.data ?? 0;
-  const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff && canSee(staff.role as Role, "ميرا") });
+  const mira = useQuery(["mira", "attention"], miraAttention, { enabled: !!staff && canSee(staff as Who, "ميرا") });
   const miraCount = mira.data ?? 0;
   useEffect(() => { if (!loading && !staff) router.replace(R.W_Login); }, [loading, staff, router]);
   const role = staff?.role as Role | undefined;
+  const who = staff as Who | null;
   const cons = !!staff?.is_consultant;
-  const allowed = !role || (canSee(role, active, cons) && pathOk(role, path));
-  const wcDue = useQuery(["wc", "due"], dueCount, { enabled: !!role && canSee(role, "الاستشارات المكتوبة", cons) });
+  const allowed = !who || (canSee(who, active) && pathOk(who, path));
+  const wcDue = useQuery(["wc", "due"], dueCount, { enabled: !!who && canSee(who, "الاستشارات المكتوبة") });
   const mrUnseen = useQuery(["maraiti", "unseen"], maraitiUnseen, { enabled: cons });
   useEffect(() => { if (!cons) return; const x = setInterval(() => mrUnseen.refresh(), 30000); return () => clearInterval(x); }, [cons, mrUnseen]);
-  const pkgPend = useQuery(["pkgreq", "count"], pendingPackageCount, { enabled: !!role && full(role) });
-  useEffect(() => { if (role && active === "لوحة القيادة" && !canSee(role, active)) router.replace(homeFor(role, cons)); }, [role, active, router, cons]);
+  const pkgPend = useQuery(["pkgreq", "count"], pendingPackageCount, { enabled: !!who && permsOf(who).has("package_requests") });
+  useEffect(() => { if (who && active === "لوحة القيادة" && !canSee(who, active)) router.replace(homeFor(who)); }, [who, active, router]);
   // The consultant lands on «مرايتي» once per browser session (she can still open the dashboard afterwards).
   useEffect(() => {
     if (!role || !cons || active !== "لوحة القيادة") return;
@@ -137,7 +158,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
     try { landed = sessionStorage.getItem("maraiti-landed") === "1"; sessionStorage.setItem("maraiti-landed", "1"); } catch { /* private mode */ }
     if (!landed) router.replace(R.W_Maraiti);
   }, [role, cons, active, router]);
-  if (loading || !staff || !role) {
+  if (loading || !staff || !role || !who) {
     return <div style={{ minHeight: "100dvh", background: BG_WIDE, display: "flex", alignItems: "center", justifyContent: "center" }}><Logo height={90} style={{ opacity: 0.6 }} /></div>;
   }
   const signOut = async () => { await disableAlerts().catch(() => {}); await supabase.auth.signOut(); router.replace(R.W_Login); };
@@ -149,16 +170,16 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
         <button type="button" className={s.menuBtn} onClick={() => setMenu(true)} aria-label="القائمة" style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: C.white, boxShadow: SHB, alignItems: "center", justifyContent: "center" }}>
           <Icon name="list" color={C.accent} size={20} />
         </button>
-        <Link href={homeFor(role, cons)}><Logo height={40} /></Link>
+        <Link href={homeFor(who)}><Logo height={40} /></Link>
         <span style={{ width: 44 }} />
       </div>
       {menu && <div className={s.scrim} onClick={() => setMenu(false)} aria-hidden />}
       <aside className={`${s.aside} ${menu ? s.asideOpen : ""}`} onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenu(false); }}>
-        <Link href={homeFor(role, cons)} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
+        <Link href={homeFor(who)} style={{ padding: "0 10px 16px", display: "flex", justifyContent: "center" }}>
           <Logo height={78} />
         </Link>
         <nav aria-label="أقسام لوحة الإدارة" className={s.nav}>
-          {NAV.filter(([, sec]) => canSee(role, sec, cons)).map(([icon, label, href]) =>
+          {NAV.filter(([, sec]) => canSee(who, sec)).map(([icon, label, href]) =>
             label === active ? (
               <Link key={label} href={href} aria-current="page" style={{ ...SELECTED, height: 44, borderRadius: 22, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
                 <Icon name={icon} color={C.accent} size={19} stroke={1.9} />{label}{label === "المواعيد" && pending > 0 && <span title="طلبات حجز بانتظار التأكيد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pending}</span>}{label === "ميرا" && miraCount > 0 && <span title="محادثات تحتاج تدخّلكِ" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{miraCount}</span>}{label === "مرايتي" && active !== "مرايتي" && (mrUnseen.data ?? 0) > 0 && <span title="رسائل جديدة من مرايتي" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{mrUnseen.data}</span>}{label === "الاستشارات المكتوبة" && (wcDue.data ?? 0) > 0 && <span title="استشارات بانتظار الرد" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{wcDue.data}</span>}{label === "المالية" && (pkgPend.data ?? 0) > 0 && <span title="طلبات باقات بانتظار الدفع" className="latin" style={{ marginInlineStart: "auto", minWidth: 22, height: 22, borderRadius: 11, padding: "0 7px", background: "#D0679A", color: "#fff", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{pkgPend.data}</span>}
@@ -202,12 +223,12 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
             </form>
           </div>
         </header>
-        {allowed ? <><SubNav section={active} role={role} />{children}</> : (
+        {allowed ? <><SubNav section={active} who={who} />{children}</> : (
           <div role="alert" style={{ margin: "40px auto", maxWidth: 440, textAlign: "center", padding: "32px 28px", borderRadius: 28, background: "rgba(255,255,255,0.86)", boxShadow: SHB, display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
             <Icon name="lock" color={C.accent} size={34} />
-            <b style={{ fontSize: 18 }}>هذه الصفحة خارج صلاحيات دوركِ</b>
+            <b style={{ fontSize: 18 }}>هذه الصفحة خارج صلاحياتكِ</b>
             <div style={{ fontSize: 13.5, color: C.sub2 }}>دوركِ الحالي: {ROLE_LABEL[role]}. إن احتجتِ الوصول إليها اطلبي ذلك من الإدارة.</div>
-            <Link href={homeFor(role, cons)} style={{ ...SELECTED, height: 42, borderRadius: 21, padding: "0 20px", display: "inline-flex", alignItems: "center", fontWeight: 700 }}>العودة</Link>
+            <Link href={homeFor(who)} style={{ ...SELECTED, height: 42, borderRadius: 21, padding: "0 20px", display: "inline-flex", alignItems: "center", fontWeight: 700 }}>العودة</Link>
           </div>
         )}
       </main>
@@ -226,9 +247,9 @@ const SUB: Partial<Record<AdminSection, [string, string][]>> = {
 };
 
 /** Sub-section tabs for sections that have several pages. */
-function SubNav({ section, role }: { section?: AdminSection; role: Role }) {
+function SubNav({ section, who }: { section?: AdminSection; who: Who }) {
   const path = usePathname() || "";
-  const items = section ? SUB[section]?.filter(([, href]) => pathOk(role, href)) : undefined;
+  const items = section ? SUB[section]?.filter(([, href]) => pathOk(who, href)) : undefined;
   if (!items || items.length < 2) return null;
   const norm = (h: string) => h.replace(/\/$/, "");
   return (

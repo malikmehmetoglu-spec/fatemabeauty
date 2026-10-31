@@ -28,7 +28,7 @@ const doneBtn = { height: 40, padding: "0 16px", borderRadius: 20, border: "1px 
 
 /** Reception tablet: cashier — issues the invoice for a finished session (real rows via finance.ts). */
 export default function Page() {
-  const k = useKiosk();
+  const k = useKiosk({ perm: "cashier" });
   const q = useQuery(["queue", "cashier"], () => listCashierQueue(), { enabled: !k.gate });
   const [selId, setSelId] = useState<string | null>(null);
   const [st, setSt] = useState({ m: 0, recv: "" });

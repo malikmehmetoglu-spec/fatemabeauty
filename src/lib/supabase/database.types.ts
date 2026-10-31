@@ -2154,6 +2154,7 @@ export type Database = {
           id: string
           is_consultant: boolean
           name: string
+          permissions: string[] | null
           phone: string | null
           photo_placeholder: boolean
           photo_url: string | null
@@ -2169,6 +2170,7 @@ export type Database = {
           id?: string
           is_consultant?: boolean
           name: string
+          permissions?: string[] | null
           phone?: string | null
           photo_placeholder?: boolean
           photo_url?: string | null
@@ -2184,6 +2186,7 @@ export type Database = {
           id?: string
           is_consultant?: boolean
           name?: string
+          permissions?: string[] | null
           phone?: string | null
           photo_placeholder?: boolean
           photo_url?: string | null
@@ -3607,6 +3610,10 @@ export type Database = {
           service_key: string
           staff_id: string
         }[]
+      }
+      set_staff_permissions: {
+        Args: { p_perms: string[] | null; p_staff: string }
+        Returns: undefined
       }
       set_exchange_rate: {
         Args: { p_note?: string; p_rate: number; p_source?: string }
