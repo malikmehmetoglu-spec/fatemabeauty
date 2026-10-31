@@ -49,9 +49,9 @@ function Photos() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const shell = (sub: React.ReactNode, body: React.ReactNode) => (
-    <AdminShell active="المراجعات" title="صور الوجه" subtitle={sub} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">الملف الصحي</BackLink> : undefined}>{body}</AdminShell>
+    <AdminShell active="العميلات" title="صور الوجه" subtitle={sub} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">الملف الصحي</BackLink> : undefined}>{body}</AdminShell>
   );
-  if (!patientId) return shell("صور المراجعات", <EmptyState icon="camera" title="اختاري مراجعة أولاً" text="افتحي الصور من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>المراجعات</Link>} />);
+  if (!patientId) return shell("صور المراجعات", <EmptyState icon="camera" title="اختاري مراجعة أولاً" text="افتحي الصور من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>العميلات</Link>} />);
   if (lp || loading) return shell("", <Loading />);
   if (!p) return shell("", <EmptyState icon="users" title="لم يُعثر على هذا الملف" />);
 

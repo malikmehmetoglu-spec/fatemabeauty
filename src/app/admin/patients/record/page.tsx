@@ -36,10 +36,10 @@ function Record() {
   const [editing, setEditing] = useState(false);
   const contactOnly = useSession().staff?.role === "reception";
 
-  if (!id) return <Shell><EmptyState icon="users" title="اختاري مراجعة من القائمة" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
+  if (!id) return <Shell><EmptyState icon="users" title="اختاري مراجعة من القائمة" action={<Link href={R.W_Patients} style={outlineBtn()}>كل العميلات</Link>} /></Shell>;
   if (error) return <Shell><ErrorNote>{arErr(error, "تعذّر تحميل الملف. أعيدي تحميل الصفحة.")}</ErrorNote></Shell>;
   if (loading) return <Shell><Loading /></Shell>;
-  if (!p) return <Shell><EmptyState icon="users" title="لم يُعثر على هذا الملف" action={<Link href={R.W_Patients} style={outlineBtn()}>كل المراجعات</Link>} /></Shell>;
+  if (!p) return <Shell><EmptyState icon="users" title="لم يُعثر على هذا الملف" action={<Link href={R.W_Patients} style={outlineBtn()}>كل العميلات</Link>} /></Shell>;
   const tier = tierFor(p.points, tiers ?? []);
 
   return (
@@ -97,7 +97,7 @@ function Record() {
 
 function Shell({ children, fileNo }: { children: React.ReactNode; fileNo?: number }) {
   return (
-    <AdminShell active="المراجعات" title={fileNo ? `ملف ${fileNo}` : "ملف المراجعة"} subtitle="السجل الصحي للمراجعة" actions={<BackLink href={R.W_Patients}>كل المراجعات</BackLink>}>
+    <AdminShell active="العميلات" title={fileNo ? `ملف ${fileNo}` : "ملف المراجعة"} subtitle="السجل الصحي للمراجعة" actions={<BackLink href={R.W_Patients}>كل العميلات</BackLink>}>
       {children}
     </AdminShell>
   );

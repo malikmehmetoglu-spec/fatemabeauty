@@ -43,7 +43,7 @@ function Prescription() {
   const shell = (body: React.ReactNode) => (
     <AdminShell active="جدولي" title="وصفة جديدة" subtitle="تُرسل لتطبيق المراجعة وتُحفظ في سجلّها" actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)}>العودة للملف</BackLink> : undefined}>{body}</AdminShell>
   );
-  if (!patientId) return shell(<EmptyState icon="pill" title="اختاري مراجعة أولاً" text="افتحي الوصفة من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>المراجعات</Link>} />);
+  if (!patientId) return shell(<EmptyState icon="pill" title="اختاري مراجعة أولاً" text="افتحي الوصفة من ملف المراجعة." action={<Link href={R.W_Patients} style={outlineBtn()}>العميلات</Link>} />);
   if (loading) return shell(<Loading />);
   if (!p) return shell(<EmptyState icon="users" title="لم يُعثر على هذا الملف" />);
 

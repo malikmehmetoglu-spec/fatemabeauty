@@ -51,7 +51,7 @@ function SessionNote() {
   const shell = (body: React.ReactNode) => (
     <AdminShell active="جدولي" title="ملاحظة الجلسة" subtitle={subtitle} actions={patientId ? <BackLink href={fileHref(R.W_Record, "id", patientId)} icon="file">فتح الملف</BackLink> : undefined}>{body}</AdminShell>
   );
-  if (!apptId && !patientId) return shell(<EmptyState icon="edit" title="اختاري جلسة أو مراجعة" text="افتحي الملاحظة من ملف المراجعة أو من جدولكِ اليومي." action={<Link href={R.W_Patients} style={outlineBtn()}>المراجعات</Link>} />);
+  if (!apptId && !patientId) return shell(<EmptyState icon="edit" title="اختاري جلسة أو مراجعة" text="افتحي الملاحظة من ملف المراجعة أو من جدولكِ اليومي." action={<Link href={R.W_Patients} style={outlineBtn()}>العميلات</Link>} />);
   if (lv || lp) return shell(<Loading />);
   if (!p) return shell(<EmptyState icon="users" title="لا يوجد ملف مراجعة مرتبط" text="هذا الموعد لمراجعة بدون ملف. افتحي لها ملفاً من الاستقبال أولاً." />);
 

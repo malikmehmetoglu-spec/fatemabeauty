@@ -88,7 +88,7 @@ function Patients() {
   const cell = { minWidth: 0, fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 } as const;
 
   return (
-    <AdminShell active="المراجعات" title="المراجعات" subtitle="الملفات الصحية وسجلّ الزيارات والباقات"
+    <AdminShell active="العميلات" title="العميلات" subtitle="الملفات الصحية وسجلّ الزيارات والباقات"
       actions={<button type="button" onClick={() => setAdding(true)} style={primaryBtn}><Icon name={PLUS} size={19} color={C.white} stroke={1.9} />مراجعة جديدة</button>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -104,7 +104,7 @@ function Patients() {
           </span>
         </div>
 
-        {error ? <ErrorNote>{arErr(error, "تعذّر تحميل المراجعات. أعيدي تحميل الصفحة.")}</ErrorNote> : loading ? <Loading /> : !data?.length ? (
+        {error ? <ErrorNote>{arErr(error, "تعذّر تحميل العميلات. أعيدي تحميل الصفحة.")}</ErrorNote> : loading ? <Loading /> : !data?.length ? (
           <EmptyState icon="users" title="لا توجد ملفات مراجعات بعد" text="تظهر هنا كل مراجعة تسجّل في التطبيق أو يُفتح لها ملف في الاستقبال، مع آخر زيارة والباقة والرصيد."
             action={<SubmitButton onClick={() => setAdding(true)}>فتح ملف جديد</SubmitButton>} />
         ) : (

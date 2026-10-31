@@ -71,7 +71,7 @@ export async function listMembers() {
 /* ---------- campaigns (drafts; sending is not connected yet) ---------- */
 
 export const AUDIENCES = [
-  { value: "all", label: "كل المراجعات" },
+  { value: "all", label: "كل العميلات" },
   { value: "new", label: "مراجعات جدد (آخر 30 يوماً)" },
   { value: "lapsed", label: "لم تزر المركز منذ 90 يوماً" },
   { value: "members", label: "لديها نقاط ولاء" },

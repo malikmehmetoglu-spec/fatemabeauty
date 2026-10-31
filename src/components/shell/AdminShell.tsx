@@ -22,7 +22,7 @@ import { AdminInstall } from "@/components/pwa/AdminInstall";
 import { permsOf, type Perm } from "@/lib/permissions";
 
 export type AdminSection =
-  | "مرايتي" | "لوحة القيادة" | "المواعيد" | "الأدوار" | "المراجعات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
+  | "مرايتي" | "لوحة القيادة" | "المواعيد" | "الأدوار" | "العميلات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
   | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
@@ -30,7 +30,7 @@ const NAV: [string, AdminSection, string][] = [
   ["dash", "لوحة القيادة", R.W_Dashboard],
   ["cal", "المواعيد", R.W_Calendar],
   ["tv", "الأدوار", R.W_Queue],
-  ["users", "المراجعات", R.W_Patients],
+  ["users", "العميلات", R.W_Patients],
   ["msg", "ميرا", R.W_Mira],
   ["sparkle", "جدولي", R.W_MyDay],
   ["star", "يوم فاطمة", R.W_FatemaDay],
@@ -57,7 +57,7 @@ const SECTION_PERMS: Record<AdminSection, Perm[] | null> = {
   "لوحة القيادة": ["dashboard"],
   "المواعيد": ["calendar"],
   "الأدوار": ["queue"],
-  "المراجعات": ["patients", "patients_medical"],
+  "العميلات": ["patients", "patients_medical"],
   "ميرا": ["mira"],
   "جدولي": null, // personal: specialist/accountant by role (see MYDAY_ROLES)
   "يوم فاطمة": null, // CONSULT_ONLY

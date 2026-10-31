@@ -39,7 +39,7 @@ export default function ConsentsPage() {
   );
 
   return (
-    <AdminShell active="المراجعات" title="الموافقات" subtitle="نماذج الموافقة لكل إجراء وسجلّ التواقيع">
+    <AdminShell active="العميلات" title="الموافقات" subtitle="نماذج الموافقة لكل إجراء وسجلّ التواقيع">
       <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           {kpi("sign", "وُقّعت اليوم", todays.length, "على التابلت أو التطبيق")}

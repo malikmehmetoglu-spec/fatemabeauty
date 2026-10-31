@@ -14,7 +14,7 @@ export type PermGroup = "العمل اليومي" | "المال" | "الإدار
 export const PERMS: { key: Perm; label: string; hint: string; group: PermGroup }[] = [
   { key: "calendar", label: "المواعيد", hint: "التقويم والحجز وطلبات الحجز", group: "العمل اليومي" },
   { key: "queue", label: "الأدوار", hint: "شاشة الأدوار والجلسات الجارية", group: "العمل اليومي" },
-  { key: "patients", label: "المراجعات", hint: "الملفات وبيانات التواصل", group: "العمل اليومي" },
+  { key: "patients", label: "العميلات", hint: "الملفات وبيانات التواصل", group: "العمل اليومي" },
   { key: "patients_medical", label: "السجل الطبي", hint: "الحالات والملاحظات والصور", group: "العمل اليومي" },
   { key: "kiosk_desk", label: "تابلت الاستقبال", hint: "الاستقبال وتسجيل الحضور وتجهيز الجلسة", group: "العمل اليومي" },
   { key: "dashboard", label: "لوحة القيادة", hint: "ملخص اليوم والأرقام", group: "العمل اليومي" },
