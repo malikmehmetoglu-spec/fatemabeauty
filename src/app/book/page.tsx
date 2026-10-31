@@ -264,11 +264,6 @@ export default function PublicBookingPage() {
               {result.price != null && result.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(result.price)}</span></div>}
             </div>
             <div className={s.note} style={{ marginTop: 14, textAlign: "start" }}>الدفع في المركز قبل بدء الجلسة. نرجو الحضور قبل الموعد بعشر دقائق.</div>
-            <div className={s.doneBtns}>
-              <button type="button" className={s.btnPrimary} onClick={downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
-              <a className={s.btnGhost} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
-            </div>
-            <p className={s.stepSub} style={{ marginTop: 14 }}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>
             <button type="button" className={s.again} onClick={restart}>حجز موعد آخر</button>
           </section>
         ) : (

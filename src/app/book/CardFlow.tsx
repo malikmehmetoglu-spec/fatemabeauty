@@ -471,11 +471,6 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           {r.price != null && r.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(r.price)}</span></div>}
         </div>
         <div className={s.note} style={{ marginTop: 12 }}>الدفع في المركز قبل بدء الجلسة. نرجو الحضور قبل الموعد بعشر دقائق.</div>
-        <div className={s.doneBtns}>
-          <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
-          <a className={s.ghostBtn} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
-        </div>
-        <p className={s.fine}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>
         <button type="button" className={s.again} onClick={() => { c.restart(); setStep(0); setLeaving(null); }}>حجز موعد آخر</button>
       </section>
     );
