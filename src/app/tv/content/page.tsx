@@ -103,17 +103,17 @@ export default function Page() {
         </div>
       </div>
       )}
-      <div style={{ height: 112, borderRadius: 56, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, display: "flex", alignItems: "center", gap: 40, padding: "0 48px", position: "relative", overflow: "hidden" }}>
+      <div style={{ minHeight: 112, boxSizing: "border-box", paddingBlock: 10, borderRadius: 56, backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, display: "flex", alignItems: "center", gap: 28, paddingInline: 48, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
-        <span style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 28, fontWeight: 700, position: "relative" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 28, fontWeight: 700, position: "relative", whiteSpace: "nowrap", flexShrink: 0 }}>
           <span style={{ width: 14, height: 14, borderRadius: 7, background: "#DEB3E8", boxShadow: "0 0 0 6px rgba(222,179,232,0.3)" }} />في الجلسة الآن
         </span>
         {tv.board.length === 0 && <span style={{ fontSize: 28, color: C.onDark }}>—</span>}
         {tv.board.map((b) => (
-        <div key={b.room} style={{ display: "flex", alignItems: "baseline", gap: 40 }}>
+        <div key={b.room} style={{ display: "flex", alignItems: "center", gap: 28, minWidth: 0 }}>
         <span style={{ width: 2, height: 44, background: "#7C5485", alignSelf: "center" }} />
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ fontSize: 28, color: C.onDark, whiteSpace: "nowrap" }}>{b.room}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 22, lineHeight: 1.25, color: C.onDark, maxWidth: 190, overflowWrap: "anywhere" }}>{b.room}
           </span>
           <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 52, fontWeight: 500 }}>{b.cur}
           </span>
@@ -124,7 +124,7 @@ export default function Page() {
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, position: "relative" }}>
           <span style={{ fontSize: 28, color: C.onDark }}>نُودي
           </span>
-          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 40, fontWeight: 500 }}>{tv.next.length ? tv.next.slice(0, 3).map((a) => a.queue_no).join(" · ") : "—"}
+          <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 40, fontWeight: 500, whiteSpace: "nowrap" }}>{tv.next.length ? tv.next.slice(0, 3).map((a) => a.queue_no).join(" · ") : "—"}
           </span>
         </div>
         <span style={{ marginInlineStart: "auto", fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 44, fontWeight: 500, position: "relative" }}>{tv.time}

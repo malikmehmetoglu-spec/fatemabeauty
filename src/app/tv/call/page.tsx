@@ -37,11 +37,10 @@ function Inner() {
     const t = setTimeout(() => router.replace(back), Math.max(5000, left));
     return () => clearTimeout(t);
   }, [back, CALL?.called_at, router]);
-  const roomNo = CALL?.room ? CALL.room.replace(/^غرفة\s*/, "") : "";
   return (
     <Stage width={1920} height={1080}  padding="0" direction="column" gap={0}>
 
-      <div style={{ position: "absolute", inset: "0", padding: "60px 72px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 40, opacity: 0.32, filter: "blur(3px) saturate(0.7)", pointerEvents: "none" }} aria-hidden="true">
+      <div style={{ position: "absolute", inset: "0", padding: "60px 72px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 40, opacity: 0.14, filter: "blur(10px) saturate(0.6)", pointerEvents: "none" }} aria-hidden="true">
         <BoardView tv={tv} />
       </div>
       <div style={{ position: "absolute", inset: "0", background: "radial-gradient(ellipse at 50% 50%, rgba(249,245,250,0.2) 0%, rgba(240,224,244,0.55) 100%)", zIndex: 1 }} />
@@ -55,22 +54,18 @@ function Inner() {
             <circle cx="80" cy="80" r="78" fill="none" stroke="#7C5485" strokeWidth="0.6" />
             <circle cx="80" cy="80" r="56" fill="none" stroke="#7C5485" strokeWidth="0.6" />
           </svg>
-          <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minWidth: 0, position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
             <div style={{ fontSize: 40, color: C.onDark, fontWeight: 600 }}>الرقم
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 40 }}>
-              <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 330, fontWeight: 500, lineHeight: 0.95, letterSpacing: -10, textShadow: "0 20px 50px rgba(0,0,0,0.25)" }}>{CALL?.queue_no ?? "—"}
-              </div>
-              <div style={{ marginBottom: 40, height: 84, padding: "0 36px", borderRadius: 42, background: "linear-gradient(145deg,#FFFFFF,#E8D0ED)", color: C.accent, fontSize: 44, fontWeight: 700, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 14px 30px rgba(0,0,0,0.22)" }}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
-                </svg>{CALL?.room ?? "—"}
-              </div>
+            <div style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 300, fontWeight: 500, lineHeight: 0.95, letterSpacing: -8, textShadow: "0 20px 50px rgba(0,0,0,0.25)" }}>{CALL?.queue_no ?? "—"}
             </div>
+            {CALL && <div style={{ marginTop: 28, maxWidth: "100%", boxSizing: "border-box", minHeight: 84, padding: "12px 36px", borderRadius: 42, background: "linear-gradient(145deg,#FFFFFF,#E8D0ED)", color: C.accent, fontSize: 44, fontWeight: 700, lineHeight: 1.3, display: "flex", alignItems: "center", gap: 14, boxShadow: "0 14px 30px rgba(0,0,0,0.22)" }}>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M14 12v.01M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
+              </svg><span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{CALL.room ?? "الاستقبال"}</span>
+            </div>}
             <div style={{ height: 2, background: "#7C5485", margin: "30px 0 26px", width: "100%" }} />
-            <div style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.25 }}>{CALL ? `تفضّلي إلى ${CALL.room ?? "الاستقبال"}` : "لا نداء بعد اليوم"}
-            </div>
-            <div dir="ltr" style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 44, fontWeight: 500, color: C.onDark, textAlign: "right", marginTop: 8 }}>{CALL ? (roomNo && /^\d+$/.test(roomNo) ? `Please proceed to Room ${roomNo}` : "Please proceed") : "No calls yet today"}
+            <div style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.3, overflowWrap: "anywhere", textWrap: "balance" }}>{CALL ? "تفضّلي إلى الغرفة الآن" : "لا نداء بعد اليوم"}
             </div>
           </div>
           <div style={{ position: "relative", width: 330, height: 330, flexShrink: 0 }}>
