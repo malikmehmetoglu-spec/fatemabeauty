@@ -59,7 +59,11 @@ export type BookingCtx = {
   contact: string | null; waLink: string | null; siteHref: string;
 };
 
-const STEPS = ["النوع", "الجلسة", "المدة", "الأخصائية", "اليوم", "الساعة", "بياناتكِ", "تأكيد"];
+const STEPS = ["الفئة", "الجلسة", "المستوى", "الأخصائية", "اليوم", "الساعة", "بياناتكِ", "تأكيد"];
+/** The link no longer offers a specialist choice (auto-assigned server-side): card 3 is always skipped. */
+const SKIP = new Set([3]);
+const shown = (n: number) => n + 1 - [...SKIP].filter((k) => k < n).length;
+const SHOWN_TOTAL = STEPS.length - SKIP.size;
 const LAST = STEPS.length - 1;
 const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
@@ -103,6 +107,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   function back() {
     if (step === 0) return;
     let to = step - 1;
+    if (SKIP.has(to)) to -= 1;
     if (to === 2 && skipLevel) to = 1;
     if (to === 1 && skipSession) to = 0;
     go(to);
@@ -152,9 +157,9 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     const list = card.kind === "consult" ? c.consultServices
       : c.sessionCats.length ? c.sessionServices.filter((x) => (card.key ? x.category_id === card.key : !c.sessionCats.some((k) => k.key === x.category_id))) : c.sessionServices;
     const only = list.length === 1 ? list[0] : null;
-    go(only ? (card.kind !== "consult" && levelsOfService(only).length > 1 ? 2 : 3) : 1);
+    go(only ? (card.kind !== "consult" && levelsOfService(only).length > 1 ? 2 : 4) : 1);
   }
-  function chooseService(x: PubService) { c.pickService(x); go(levelsOfService(x).length > 1 ? 2 : 3); }
+  function chooseService(x: PubService) { c.pickService(x); go(levelsOfService(x).length > 1 ? 2 : 4); }
   function chooseSpecialist(id: string | null) { c.pickSpecialist(id); go(4); }
   function chooseDay(k: string) { c.pickDay(k); go(5); }
   function chooseTime(iso: string) { c.pickTime(iso); go(6); }
@@ -166,12 +171,10 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   }
 
   const typeName = c.kind ? (c.kind === "consult" ? c.consultCat?.name ?? "استشارة" : c.sessionCats.find((k) => k.key === c.curPubCat)?.name ?? "جلسة عناية") : null;
-  const personName = c.kind === "consult" ? c.info?.consultant?.name ?? null : c.service ? c.chosenPerson?.name ?? "أي أخصائية متاحة" : null;
   const chips: { step: number; icon: string; text: string }[] = [
     ...(typeName ? [{ step: 0, icon: "sparkle", text: typeName }] : []),
     ...(c.service ? [{ step: skipSession ? 0 : 1, icon: "drop", text: c.service.short_name || c.service.name }] : []),
     ...(c.service && !skipLevel && c.level && step > 2 ? [{ step: 2, icon: "history", text: c.level.name }] : []),
-    ...(c.service && step > 3 && personName ? [{ step: 3, icon: "user", text: personName }] : []),
     ...(c.day && c.service && step > 4 ? [{ step: 4, icon: "cal", text: dayLabel(c.day) }] : []),
     ...(c.time && step > 5 ? [{ step: 5, icon: "clock", text: clock(c.time) }] : []),
   ];
@@ -180,7 +183,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   function head({ n, title, sub }: { n: number; title: string; sub?: ReactNode }) {
     return (
       <div className={s.head}>
-        <div className={s.eyebrow}><span className="latin">{n + 1}</span> من <span className="latin">{STEPS.length}</span> · {STEPS[n]}</div>
+        <div className={s.eyebrow}><span className="latin">{shown(n)}</span> من <span className="latin">{SHOWN_TOTAL}</span> · {STEPS[n]}</div>
         <h2 className={s.title} ref={n === step ? headRef : undefined} tabIndex={-1}>{title}</h2>
         {sub && <p className={s.sub}>{sub}</p>}
       </div>
@@ -192,7 +195,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     switch (n) {
       case 0: return (
         <>
-          {head({ n: 0, title: "ما نوع موعدكِ؟", sub: "استشارة لتحديد ما يناسبكِ، أو جلسة من فئات العناية مع أخصائيات المركز." })}
+          {head({ n: 0, title: "اختاري فئة جلستكِ", sub: "جلسات العناية في المركز — نختار لكِ أخصائية متاحة تلقائياً." })}
           <div className={s.body}>
             <div className={s.types}>
               {c.cards.map((card, i) => {
@@ -244,14 +247,14 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 2: return (
         <>
-          {head({ n: 2, title: "مدة الجلسة", sub: c.service ? <>لـ«{c.service.short_name || c.service.name}» {c.levels.length === 3 ? "ثلاثة مستويات" : c.levels.length === 2 ? "مستويان" : `${c.levels.length} مستويات`} — اختاري الوقت الذي تحتاجه بشرتكِ.</> : undefined })}
+          {head({ n: 2, title: "مستوى الجلسة", sub: c.service ? <>لـ«{c.service.short_name || c.service.name}» {c.levels.length === 2 ? "مستويان" : `${c.levels.length} مستويات`} — اختاري ما تحتاجه بشرتكِ.</> : undefined })}
           <div className={s.body}>
             {skipSession && c.service && (
               <div className={s.autoNote}><Icon name="check" size={16} color={C.accent} stroke={2.4} />اخترنا لكِ «{c.service.name}» — الخدمة الوحيدة في هذا النوع.</div>
             )}
             <LevelPicker layout="stack" levels={c.levels} value={c.level?.id ?? null} onChange={c.pickLevel} />
           </div>
-          <div className={s.actions}><button type="button" className={s.primary} onClick={() => go(3)}>متابعة{c.level ? ` · ${c.level.name}` : ""}<Icon name="chev" size={19} color="#fff" /></button></div>
+          <div className={s.actions}><button type="button" className={s.primary} onClick={() => go(4)}>متابعة{c.level ? ` · ${c.level.name}` : ""}<Icon name="chev" size={19} color="#fff" /></button></div>
         </>
       );
       case 3: {
@@ -346,7 +349,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             )}
             <div className={s.dayHint}>
               <Icon name="info" size={16} color={C.accentMid} />
-              <span>نعرض الأيام التي تداوم فيها {c.kind === "consult" ? "الاستشارية" : c.chosenPerson ? "الأخصائية المختارة" : "أخصائيات هذه الجلسة"}. الأوقات بتوقيت دمشق.</span>
+              <span>نعرض الأيام التي تداوم فيها أخصائيات هذه الجلسة. الأوقات بتوقيت دمشق.</span>
             </div>
           </div>
           {c.day && c.isOpen(c.day) && (
@@ -390,7 +393,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       );
       case 6: return (
         <>
-          {head({ n: 6, title: "بياناتكِ", sub: "نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ فقط." })}
+          {head({ n: 6, title: "بياناتكِ", sub: "الاسم ورقم الموبايل السوري مطلوبان — تصلكِ رسالة التأكيد عليه." })}
           <div className={s.body}>
             <form className={s.form} onSubmit={(e) => { e.preventDefault(); reviewDetails(); }} id="cf-details">
               <label className={s.field}>
@@ -414,8 +417,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       case 7: {
         const rows: [string, string, string | null, number][] = [
           ["drop", "الخدمة", c.service ? (skipLevel ? `${c.service.name} · ${durationLabel(c.minutes)}` : c.service.name) : null, skipSession ? 0 : 1],
-          ...(!skipLevel && c.level ? [["history", "مدة الجلسة", `${c.level.name} · ${durationLabel(c.level.minutes)}`, 2] as [string, string, string | null, number]] : []),
-          ["user", c.kind === "consult" ? "الاستشارية" : "الأخصائية", personName, 3],
+          ...(!skipLevel && c.level ? [["history", "المستوى", `${c.level.name} · ${durationLabel(c.level.minutes)}`, 2] as [string, string, string | null, number]] : []),
           ["cal", "اليوم", c.day ? dayLabel(c.day) : null, 4],
           ["clock", "الساعة", c.time ? `${clock(c.time)} بتوقيت دمشق` : null, 5],
           ["phone", "بياناتكِ", `${c.name.trim()} · ${c.phone.trim()}`, 6],
@@ -435,7 +437,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
                   </div>
                 ))}
               </div>
-              <p className={s.fine}>بالضغط على «ثبّتي الموعد» يُسجَّل حجزكِ بانتظار تأكيد المركز، وسنتواصل معكِ على رقمكِ.</p>
+              <p className={s.fine}>بالضغط على «ثبّتي الموعد» يُثبَّت حجزكِ مباشرة وتصلكِ رسالة تأكيد. الدفع في المركز قبل الجلسة.</p>
             </div>
             <div className={s.actions}>
               <button type="button" className={s.primary} onClick={c.submit} disabled={c.busy}>
@@ -458,26 +460,19 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       <section className={`${s.card} ${s.success}`} aria-live="polite">
         <div className={s.burst} aria-hidden>{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ ["--a" as string]: `${i * 30}deg`, animationDelay: `${120 + (i % 3) * 40}ms` }} />)}</div>
         <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
-        <h2 className={s.doneTitle}>تم استلام طلب حجزكِ</h2>
-        <p className={s.doneText}>الموعد <b>بانتظار تأكيد المركز</b>، وستصلكِ رسالة واتساب لتأكيد الحجز على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(r.phone || c.phone)}</b></p>
+        <h2 className={s.doneTitle}>تم تأكيد حجزكِ</h2>
+        <p className={s.doneText}>موعدكِ <b>{dayLabel(dayKey(new Date(r.starts_at)))}</b> الساعة <b className="latin">{clock(r.starts_at)}</b> بتوقيت دمشق. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(r.phone || c.phone)}</b></p>
         <div className={s.miniSum}>
-          <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
-          <div className={s.miniRow}><span>الخدمة</span><span>{r.service}</span></div>
+          <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>مؤكد</span></div>
+          <div className={s.miniRow}><span>الجلسة</span><span>{r.service}</span></div>
+          {r.level && <div className={s.miniRow}><span>المستوى</span><span>{r.level}</span></div>}
           <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(r.starts_at)))}</span></div>
-          {r.level && !skipLevel && <div className={s.miniRow}><span>مدة الجلسة</span><span>{r.level}</span></div>}
           <div className={s.miniRow}><span>الساعة</span><span><span className="latin">{clock(r.starts_at)}</span> · {durationLabel(r.minutes)}</span></div>
           {r.price != null && r.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(r.price)}</span></div>}
-          {r.specialist && <div className={s.miniRow}><span>مع</span><span>{r.specialist}</span></div>}
         </div>
-        {r.consult && (
-          <a href={appHref(R.P_Appointments)} style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "start", margin: "14px 0 0", padding: "14px 16px", borderRadius: 22, color: "#fff", background: "linear-gradient(140deg,#9C64AA,#7B4687 60%,#5E2F6B)", boxShadow: "0 12px 26px rgba(123,70,135,0.28)" }}>
-            <span style={{ width: 42, height: 42, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.18)" }}><Icon name="file" color="#fff" size={21} /></span>
-            <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}><b style={{ display: "block", fontSize: 15 }}>جهّزي استشارتكِ</b><span style={{ fontSize: 12.5, opacity: 0.88 }}>من التطبيق: أخبري المستشارة عن بشرتكِ قبل الموعد — دقائق قليلة فقط</span></span>
-            <Icon name="chev" color="#fff" size={18} />
-          </a>
-        )}
+        <div className={s.note} style={{ marginTop: 12 }}>الدفع في المركز قبل بدء الجلسة. نرجو الحضور قبل الموعد بعشر دقائق.</div>
         <div className={s.doneBtns}>
-          <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم (مبدئياً)</button>
+          <button type="button" className={s.primary} onClick={c.downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
           <a className={s.ghostBtn} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
         </div>
         <p className={s.fine}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>
@@ -549,6 +544,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             <ol className={s.progress} aria-label="مراحل الحجز">
               {STEPS.map((label, i) => {
                 const skipped = (i === 1 && skipSession && step > 1) || (i === 2 && skipLevel && step > 2);
+                if (SKIP.has(i)) return null;
                 return (
                   <li key={label} className={`${s.pStep} ${i < step ? s.pDone : ""} ${i === step ? s.pNow : ""} ${skipped ? s.pSkip : ""}`} aria-current={i === step ? "step" : undefined}>
                     <span className={s.pBar} />

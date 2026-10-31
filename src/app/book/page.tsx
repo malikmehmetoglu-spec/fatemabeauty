@@ -2,8 +2,11 @@
 
 /**
  * Public booking link — https://fatema.beauty/book/ and https://book.fatema.beauty/ (for Instagram).
- * No login: visitors only reach rpc public_booking_info / public_slots / public_book. Bookings land in the same
- * appointments table as «بانتظار التأكيد» (source 'public'), so staff see them in the calendar and queue.
+ * No login: visitors only reach rpc public_booking_info / public_slots_level / public_book_level.
+ * The link sells SESSIONS only: no consultations (consultation, follow-up, online-consultation, hair-consultation),
+ * no specialist choice (the server auto-assigns an available specialist; reception can reassign) and only
+ * levels 1–2. Bookings land directly as «مؤكد» (source 'public') and the server texts an Arabic SMS confirmation.
+ * The server enforces the same rules (migration 0187).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon, Logo } from "@/components/ui";
@@ -28,6 +31,16 @@ const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
 const dayLabel = (k: string) => { const d = dateOf(k); return `${AR_DAYS[weekday(k)]} ${d.getUTCDate()} ${AR_MONTHS[d.getUTCMonth()]}`; };
 const hourOf = (iso: string) => Number(clock(iso).slice(0, 2));
+/** Link-only catalogue: sessions only, levels 1–2, no specialist / consultant choice (admin and the app keep everything). */
+const LINK_HIDDEN = new Set(["hair-consultation"]);
+function linkInfo(i: PubInfo): PubInfo {
+  return {
+    ...i,
+    services: i.services.filter((x) => !x.is_consultation && !LINK_HIDDEN.has(x.key))
+      .map((x) => ({ ...x, levels: (x.levels ?? []).filter((l) => l.level <= 2) })),
+    specialists: [], consultant: null,
+  };
+}
 
 function Ava({ p, size = 38 }: { p: PubPerson; size?: number }) {
   return (
@@ -77,7 +90,7 @@ export default function PublicBookingPage() {
 
   const load = useCallback(() => {
     setLoadErr("");
-    getPublicInfo().then(setInfo).catch((e) => setLoadErr(publicError(e)));
+    getPublicInfo().then((i) => setInfo(linkInfo(i))).catch((e) => setLoadErr(publicError(e)));
   }, []);
   useEffect(() => {
     load();
@@ -207,9 +220,8 @@ export default function PublicBookingPage() {
 
   const step1Done = !!service;
   const summary: [string, string, string | null][] = [
-    ["sparkle", "نوع الموعد", kind ? (kind === "consult" ? consultCat?.name ?? "استشارة" : sessionCats.find((c) => c.key === curPubCat)?.name ?? "جلسة عناية") : null],
+    ["sparkle", "الفئة", kind ? (kind === "consult" ? consultCat?.name ?? "استشارة" : sessionCats.find((c) => c.key === curPubCat)?.name ?? "جلسة عناية") : null],
     ["drop", "الخدمة", serviceText],
-    ["user", kind === "consult" ? "الاستشارية" : "الأخصائية", kind === "consult" ? info?.consultant?.name ?? null : service ? (chosenPerson?.name ?? "أي أخصائية متاحة") : null],
     ["cal", "اليوم", day && service ? dayLabel(day) : null],
     ["clock", "الساعة", time ? `${clock(time)} بتوقيت دمشق` : null],
     ["wallet", "السعر", priceText],
@@ -241,26 +253,19 @@ export default function PublicBookingPage() {
         {result ? (
           <section className={s.done} aria-live="polite">
             <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
-            <h1 className={s.doneTitle}>تم استلام طلب حجزكِ</h1>
-            <p className={s.doneText}>الموعد <b style={{ color: C.accent }}>بانتظار تأكيد المركز</b>، وستصلكِ رسالة واتساب لتأكيد الحجز على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(result.phone || phone)}</b></p>
+            <h1 className={s.doneTitle}>تم تأكيد حجزكِ</h1>
+            <p className={s.doneText}>موعدكِ <b style={{ color: C.accent }}>{dayLabel(dayKey(new Date(result.starts_at)))}</b> الساعة <b className="latin" style={{ color: C.accent }}>{clock(result.starts_at)}</b> بتوقيت دمشق. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(result.phone || phone)}</b></p>
             <div className={`${s.miniSum} ${s.doneCard}`}>
-              <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>بانتظار التأكيد</span></div>
-              <div className={s.miniRow}><span>الخدمة</span><span>{result.service}</span></div>
+              <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>مؤكد</span></div>
+              <div className={s.miniRow}><span>الجلسة</span><span>{result.service}</span></div>
+              {result.level && <div className={s.miniRow}><span>المستوى</span><span>{result.level}</span></div>}
               <div className={s.miniRow}><span>اليوم</span><span>{dayLabel(dayKey(new Date(result.starts_at)))}</span></div>
-              {result.level && hasLevels && <div className={s.miniRow}><span>مدة الجلسة</span><span>{result.level}</span></div>}
               <div className={s.miniRow}><span>الساعة</span><span>{clock(result.starts_at)} · {durationLabel(result.minutes)}</span></div>
               {result.price != null && result.price > 0 && <div className={s.miniRow}><span>السعر</span><span>{money(result.price)}</span></div>}
-              {result.specialist && <div className={s.miniRow}><span>مع</span><span>{result.specialist}</span></div>}
             </div>
-            {result.consult && (
-              <a href={appHref(R.P_Appointments)} style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "start", margin: "14px 0 0", padding: "14px 16px", borderRadius: 22, color: "#fff", background: "linear-gradient(140deg,#9C64AA,#7B4687 60%,#5E2F6B)", boxShadow: "0 12px 26px rgba(123,70,135,0.28)" }}>
-                <span style={{ width: 42, height: 42, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.18)" }}><Icon name="file" color="#fff" size={21} /></span>
-                <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}><b style={{ display: "block", fontSize: 15 }}>جهّزي استشارتكِ</b><span style={{ fontSize: 12.5, opacity: 0.88 }}>من التطبيق: أخبري المستشارة عن بشرتكِ قبل الموعد — دقائق قليلة فقط</span></span>
-                <Icon name="chev" color="#fff" size={18} />
-              </a>
-            )}
+            <div className={s.note} style={{ marginTop: 14, textAlign: "start" }}>الدفع في المركز قبل بدء الجلسة. نرجو الحضور قبل الموعد بعشر دقائق.</div>
             <div className={s.doneBtns}>
-              <button type="button" className={s.btnPrimary} onClick={downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم (مبدئياً)</button>
+              <button type="button" className={s.btnPrimary} onClick={downloadIcs}><Icon name="calcheck" color="#fff" size={19} />أضيفي إلى التقويم</button>
               <a className={s.btnGhost} href={appHref(R.P_Appointments)}><Icon name="phone" color={C.accent} size={19} />أديري موعدكِ من التطبيق</a>
             </div>
             <p className={s.stepSub} style={{ marginTop: 14 }}>ادخلي إلى التطبيق برقم الموبايل نفسه لتجدي موعدكِ وتتابعي دوركِ يوم الزيارة.</p>
@@ -270,7 +275,7 @@ export default function PublicBookingPage() {
           <>
             <section className={s.hero}>
               <h1 className={s.h1}>احجزي <em>موعدكِ</em> في دقيقة</h1>
-              <p className={s.lead}>اختاري الجلسة واليوم والساعة التي تناسبكِ — الأوقات المعروضة حقيقية ومحدّثة لحظة بلحظة بتوقيت دمشق.</p>
+              <p className={s.lead}>اختاري الجلسة ومستواها ثم اليوم والساعة — الأوقات المعروضة حقيقية ومحدّثة لحظة بلحظة بتوقيت دمشق، ويُثبَّت حجزكِ فوراً.</p>
             </section>
 
             {loadErr && (
@@ -301,14 +306,14 @@ export default function PublicBookingPage() {
                   <Summary rows={summary} />
                   <div className={s.trust}>
                     <span><Icon name="shield" size={17} />نستخدم رقمكِ لتأكيد الموعد فقط</span>
-                    <span><Icon name="msg" size={17} />تصلكِ رسالة واتساب لتأكيد الحجز</span>
+                    <span><Icon name="msg" size={17} />يُثبَّت الحجز فوراً وتصلكِ رسالة تأكيد</span>
                   </div>
                 </aside>
 
                 <div className={s.main}>
                   {/* 1 — kind, service, specialist */}
                   <section className={s.step} ref={refs[1]}>
-                    <StepHead n={1} title="اختاري نوع الموعد" sub="استشارة لتحديد ما يناسبكِ، أو جلسة من فئات العناية مع أخصائيات المركز" done={step1Done} />
+                    <StepHead n={1} title="اختاري جلستكِ" sub="من فئات العناية في المركز" done={step1Done} />
                     <div className={s.kinds}>
                       {cards.map((c) => {
                         const on = kind === c.kind && (c.kind === "consult" || curPubCat === c.key);
@@ -348,7 +353,7 @@ export default function PublicBookingPage() {
 
                     {service && hasLevels && (
                       <>
-                        <div className={s.subHead}>مدة الجلسة</div>
+                        <div className={s.subHead}>مستوى الجلسة</div>
                         <LevelPicker levels={levels} value={level?.id ?? null} onChange={pickLevel} />
                       </>
                     )}
@@ -430,7 +435,7 @@ export default function PublicBookingPage() {
                   {/* 4 — details */}
                   {service && !noProvider && day && time && (
                     <section className={s.step} ref={refs[4]}>
-                      <StepHead n={4} title="بياناتكِ" sub="نحتاج اسمكِ ورقمكِ لتأكيد الموعد معكِ" />
+                      <StepHead n={4} title="بياناتكِ" sub="الاسم ورقم الموبايل السوري مطلوبان — تصلكِ رسالة التأكيد عليه" />
                       <div className={s.mobileSummary}>
                         <div className={s.miniSum}>
                           {summary.filter((r) => r[2]).map((r) => <div key={r[1]} className={s.miniRow}><span>{r[1]}</span><span>{r[2]}</span></div>)}
@@ -454,7 +459,7 @@ export default function PublicBookingPage() {
                       <button type="button" className={s.confirm} onClick={submit} disabled={busy}>
                         {busy ? "جارٍ الحجز…" : <><Icon name="calcheck" color="#fff" size={21} />ثبّتي الموعد</>}
                       </button>
-                      <div className={s.hint} style={{ textAlign: "center", marginTop: 10 }}>بالضغط على «ثبّتي الموعد» يُسجَّل حجزكِ بانتظار تأكيد المركز.</div>
+                      <div className={s.hint} style={{ textAlign: "center", marginTop: 10 }}>بالضغط على «ثبّتي الموعد» يُثبَّت حجزكِ مباشرة وتصلكِ رسالة تأكيد. الدفع في المركز قبل الجلسة.</div>
                     </section>
                   )}
                 </div>
@@ -490,7 +495,7 @@ function Summary({ rows }: { rows: [string, string, string | null][] }) {
           </div>
         ))}
       </div>
-      <div className={s.sumFoot}>يبقى الموعد بانتظار تأكيد المركز، وتصلكِ رسالة واتساب لتأكيده.</div>
+      <div className={s.sumFoot}>يُثبَّت الموعد فوراً وتصلكِ رسالة تأكيد. الدفع في المركز قبل الجلسة.</div>
     </div>
   );
 }
