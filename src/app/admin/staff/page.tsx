@@ -95,7 +95,7 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
   rows: Staff[]; me: Staff | null; services: Service[]; assignments: Assignment[]; canEdit: (s: Staff) => boolean; onEdit: (s: Staff) => void; onLogin: (s: Staff) => void; onPerms: (s: Staff) => void; onToggle: (s: Staff) => void; onDelete: (s: Staff) => void;
 }) {
   return (
-    <DataTable headers={["الموظفة", "الدور", "الخدمات", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 1, 1.2, 1.1, 1.3, 0.7, 4.8]} minWidth={1480} rowHeight={64}
+    <DataTable headers={["الموظفة", "الدور", "الخدمات", "الهاتف", "حساب الدخول", "الحالة", ""]} widths={[2, 1, 1.2, 1.1, 1.3, 0.7, 2]} minWidth={980} rowHeight={64}
       rows={rows.map((s) => [
         <>
           <StaffAvatar s={s} size={42} />
@@ -119,12 +119,12 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
           : <span key="l" style={{ fontSize: 12.5, color: C.muted }}>لا يوجد حساب</span>,
         <Tag key="a" kind={s.active ? "green" : "gray"}>{s.active ? "نشطة" : "موقوفة"}</Tag>,
         canEdit(s) ? (
-          <span key="b" style={{ display: "flex", gap: 8, flexWrap: "nowrap", justifyContent: "flex-end", width: "100%" }}>
-            <RowBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} />
-            <RowBtn icon="lock" label={s.user_id ? "كلمة المرور" : "إنشاء حساب"} onClick={() => onLogin(s)} />
-            {s.role !== "owner" && <RowBtn icon="badge" label="الصلاحيات" onClick={() => onPerms(s)} />}
-            {s.id !== me?.id && s.role !== "owner" && <RowBtn icon={s.active ? "pause" : "refresh"} label={s.active ? "إيقاف" : "تفعيل"} color={s.active ? C.danger : C.okDeep} onClick={() => onToggle(s)} />}
-            {s.id !== me?.id && s.role !== "owner" && <RowBtn icon="trash" label="حذف" color={C.danger} onClick={() => onDelete(s)} />}
+          <span key="b" style={{ display: "flex", gap: 6, flexWrap: "nowrap", justifyContent: "flex-end", width: "100%" }}>
+            <RowBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} iconOnly />
+            <RowBtn icon="lock" label={s.user_id ? "كلمة المرور" : "إنشاء حساب"} onClick={() => onLogin(s)} iconOnly />
+            {s.role !== "owner" && <RowBtn icon="badge" label="الصلاحيات" onClick={() => onPerms(s)} iconOnly />}
+            {s.id !== me?.id && s.role !== "owner" && <RowBtn icon={s.active ? "pause" : "refresh"} label={s.active ? "إيقاف" : "تفعيل"} color={s.active ? C.danger : C.okDeep} onClick={() => onToggle(s)} iconOnly />}
+            {s.id !== me?.id && s.role !== "owner" && <RowBtn icon="trash" label="حذف" color={C.danger} onClick={() => onDelete(s)} iconOnly />}
           </span>
         ) : <span key="b" />,
       ])} />

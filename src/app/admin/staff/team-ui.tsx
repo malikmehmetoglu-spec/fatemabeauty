@@ -64,10 +64,10 @@ export function StaffCell({ s, sub }: { s: Staff | undefined; sub?: string }) {
   );
 }
 
-export function RowBtn({ icon, label, onClick, color = C.accent }: { icon: string; label: string; onClick: () => void; color?: string }) {
+export function RowBtn({ icon, label, onClick, color = C.accent, iconOnly }: { icon: string; label: string; onClick: () => void; color?: string; iconOnly?: boolean }) {
   return (
-    <button type="button" onClick={onClick} title={label} style={{ height: 34, padding: "0 12px", borderRadius: 17, border: "1px solid #EADCF0", background: C.white, fontSize: 12.5, fontWeight: 600, color, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-      <Icon name={icon} color={color} size={14} stroke={2} />{label}
+    <button type="button" onClick={onClick} title={label} aria-label={label} style={{ height: 34, ...(iconOnly ? { width: 34, padding: 0, justifyContent: "center", flexShrink: 0 } : { padding: "0 12px" }), borderRadius: 17, border: "1px solid #EADCF0", background: C.white, fontSize: 12.5, fontWeight: 600, color, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+      <Icon name={icon} color={color} size={iconOnly ? 15 : 14} stroke={2} />{iconOnly ? null : label}
     </button>
   );
 }
