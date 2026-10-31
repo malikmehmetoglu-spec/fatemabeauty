@@ -1,0 +1,38 @@
+# Manual: empties the client-data storage buckets (photos, consents, consult-audio). Staff/products are untouched.
+name: Empty client storage buckets
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type EMPTY to confirm"
+        required: true
+jobs:
+  empty:
+    if: ${{ inputs.confirm == 'EMPTY' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: btcyrzvaexmgffeamlmg
+    steps:
+      - name: Empty buckets
+        run: |
+          KEY=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=true" | jq -r '.[] | select(.name=="service_role") | .api_key')
+          [ -n "$KEY" ] && [ "$KEY" != "null" ] || { echo "no service key"; exit 1; }
+          echo "::add-mask::$KEY"
+          for B in photos consents consult-audio; do
+            for i in 1 2 3 4 5; do
+              NAMES=$(curl -sS -X POST "https://$REF.supabase.co/storage/v1/object/list/$B" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "content-type: application/json" \
+                -d '{"prefix":"","limit":1000,"options":{"deep":true}}' | jq -c '[.[]? | select(.id != null) | .name]')
+              # list is not recursive on all versions: walk one folder level too
+              DIRS=$(curl -sS -X POST "https://$REF.supabase.co/storage/v1/object/list/$B" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "content-type: application/json" \
+                -d '{"prefix":"","limit":1000}' | jq -r '.[]? | select(.id == null) | .name')
+              for D in $DIRS; do
+                SUB=$(curl -sS -X POST "https://$REF.supabase.co/storage/v1/object/list/$B" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "content-type: application/json" \
+                  -d "{\"prefix\":\"$D\",\"limit\":1000}" | jq -c --arg d "$D" '[.[]? | select(.id != null) | ($d + "/" + .name)]')
+                NAMES=$(jq -c -n --argjson a "$NAMES" --argjson b "$SUB" '$a + $b')
+              done
+              N=$(echo "$NAMES" | jq length); echo "$B: $N"
+              [ "$N" -gt 0 ] || break
+              curl -sS -X DELETE "https://$REF.supabase.co/storage/v1/object/$B" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "content-type: application/json" -d "{\"prefixes\":$NAMES}" | jq length
+            done
+          done
