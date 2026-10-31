@@ -124,6 +124,9 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
     if (mode === "existing" && !patient) { setError("ابحثي عن المراجِعة واختاريها."); return; }
     if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
+    const okPhone = (v?: string | null) => /^(\+?963|0)?9\d{8}$/.test((v ?? "").replace(/[\s-]/g, ""));
+    if (mode !== "existing" && !okPhone(phone)) { setError("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
+    if (mode === "existing" && patient && !patient.phone) { setError("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
     if (notProvider && !confirm(`${spName} لا تقدّم خدمة «${svc.short_name}» حسب «الخدمات التي تقدّمها». الحجز رغم ذلك؟`)) return;
     if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
     // consultations: «قالب الاستشارات», rest between consultations and the daily cap — warnings only for staff
@@ -191,7 +194,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
           {mode !== "existing" && (
             <div className={css.grid2}>
               <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
-              <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
+              <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
             </div>
           )}
 

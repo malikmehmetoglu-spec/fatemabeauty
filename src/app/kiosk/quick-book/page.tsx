@@ -126,6 +126,7 @@ export default function Page() {
   const canBook = !!s && slot !== null && (!!pat || (isPhone && !!newName.trim()));
   const book = async () => {
     if (!s || slot === null) return;
+    if (pat && !pat.phone) { setErr("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
     if (slotOff && !confirm(p ? `خارج دوام الأخصائية: ${p.name} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟` : "خارج أوقات الدوام: لا أحد من الفريق يداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟")) return;
     const cw = s.is_consultation && p ? await consultWarnings(s.key, atDamascus(dayKey(), fmt(slot)), p.id, DUR) : [];
     if (cw.length && !confirm(`${cw.join("\n")}\n\nتأكيد الحجز رغم ذلك؟`)) return;
