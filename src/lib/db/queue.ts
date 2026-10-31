@@ -92,18 +92,6 @@ export async function findToday(term: string) {
   });
 }
 
-/** Position in the queue: people checked-in before her and not yet in session (same room when known). */
-export function queueInfo(a: QueueAppt, today: QueueAppt[]) {
-  const ahead = today.filter((x) => x.id !== a.id && x.status === "checked_in" && x.queue_no != null && a.queue_no != null && x.queue_no < a.queue_no
-    && (!a.room_id || !x.room_id || x.room_id === a.room_id));
-  const inRoom = today.find((x) => x.status === "in_session" && (!a.room_id || x.room_id === a.room_id));
-  let wait = ahead.reduce((s, x) => s + x.minutes, 0);
-  if (inRoom) wait += Math.max(0, Math.round((new Date(inRoom.started_at ?? inRoom.starts_at).getTime() + inRoom.minutes * 60000 - Date.now()) / 60000));
-  return { ahead: ahead.length, wait };
-}
-
-export const aheadText = (n: number) => (n === 0 ? "لا أحد" : n === 1 ? "مراجعة واحدة" : n === 2 ? "مراجعتان" : n <= 10 ? `${n} مراجعات` : `${n} مراجعة`);
-
 /* ---------- writes ---------- */
 
 /** Checks an appointment in; the queue number is assigned by the database. */
@@ -364,6 +352,81 @@ export function speakCall(no: number, room: string | null, s: CallSettings = CAL
       if (s.chime !== false) setTimeout(() => synth.speak(u), 750); else synth.speak(u);
     }
   }
+}
+
+/* ---------- recorded voice calls (/calls/<n>.mp3, pool in /calls/index.json) ---------- */
+
+let poolP: Promise<Set<number>> | null = null;
+/** Numbers that have a recorded Arabic voice file. */
+export function callPool() {
+  poolP ??= fetch("/calls/index.json").then((r) => r.json()).then((j: { numbers: number[] }) => new Set(j.numbers)).catch(() => new Set<number>());
+  return poolP;
+}
+
+const SOUND_KEY = "fb_tv_sound";
+export const soundEnabled = () => typeof window !== "undefined" && localStorage.getItem(SOUND_KEY) === "1";
+/** Called from the one-time «تفعيل الصوت» tap: unlocks audio for this page and remembers the choice. */
+export function enableSound() {
+  try { localStorage.setItem(SOUND_KEY, "1"); } catch { /* private mode */ }
+  try { const a = new Audio("/calls/126.mp3"); a.volume = 0; void a.play().then(() => a.pause()).catch(() => {}); } catch { /* ignore */ }
+  try { getCtx()?.resume(); } catch { /* ignore */ }
+}
+/** True when the browser still blocks autoplay (needs a tap). */
+export async function autoplayBlocked() {
+  try {
+    const ctx = getCtx();
+    if (ctx && ctx.state === "suspended") await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 300))]);
+    return !!ctx && ctx.state !== "running";
+  } catch { return true; }
+}
+
+let ctxRef: AudioContext | null = null;
+function getCtx() {
+  if (typeof window === "undefined") return null;
+  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  ctxRef ??= new Ctx();
+  return ctxRef;
+}
+
+/** Short gentle two-tone chime; resolves when finished. */
+export function chime(volume = 80) {
+  return new Promise<void>((done) => {
+    const ctx = getCtx();
+    if (!ctx) return done();
+    const g = ctx.createGain(); g.connect(ctx.destination);
+    [880, 660].forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f; o.connect(g);
+      const t = ctx.currentTime + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25 * (volume / 100) + 0.001, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+      o.start(t); o.stop(t + 0.34);
+    });
+    setTimeout(done, 800);
+  });
+}
+
+function playFile(src: string, volume: number) {
+  return new Promise<void>((done) => {
+    const a = new Audio(src); a.volume = Math.min(1, Math.max(0, volume / 100));
+    a.onended = () => done(); a.onerror = () => done();
+    a.play().catch(() => done());
+  });
+}
+
+let playing: Promise<void> = Promise.resolve();
+/**
+ * Plays a call: chime, then the recorded «الرقم …» twice (pool numbers). A number outside the pool (fallback when all 50
+ * are held) only gets the chime — the TV shows it. Calls are queued so two quick calls never talk over each other.
+ */
+export function playCall(no: number, s: CallSettings = CALL_DEFAULT) {
+  const vol = s.volume ?? 80;
+  playing = playing.then(async () => {
+    const pool = await callPool();
+    await chime(vol);
+    if (!pool.has(no)) { await chime(vol); return; }
+    for (let i = 0; i < 2; i++) { await playFile(`/calls/${no}.mp3`, vol); await new Promise((r) => setTimeout(r, 600)); }
+  });
+  return playing;
 }
 
 /** Calls `onCall` whenever a newer called_at appears (not on first load). */

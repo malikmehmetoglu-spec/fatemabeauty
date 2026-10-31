@@ -3,6 +3,7 @@
 /** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new.
  *  Day view: time grid with one column per room or specialist (overlaps laid out side by side in lanes, card height = duration);
  *  phones get an hour-grouped agenda instead. Week view: 7 day columns of compact cards. */
+import { openTicket } from "@/components/ticket/QueueTicket";
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -13,6 +14,7 @@ import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
   bookingError, dateOfKey, endsAt, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
   type Appointment, type Status, useSearch, weekday,
+  callPatient as callOnTv,
 } from "@/lib/db/appointments";
 import { apologyText, approveBooking, canConfirm, confirmText, getCentre, pendingCount, smsApologyText, smsConfirmText } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
@@ -423,7 +425,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
     try {
       // approving a request keeps the dialog open so the WhatsApp confirmation can be sent right away
       if (a.status === "pending" && to === "confirmed") { await approveBooking(a.id); setConfirmedNow(true); }
-      else { await setStatus(a.id, to); onClose(); }
+      else { await setStatus(a.id, to); onClose(); if (to === "checked_in") openTicket(a.id); }
     } catch (e) { setError(/not allowed/.test(String((e as Error)?.message)) ? "تأكيد المواعيد للمالكة والإدارة والاستقبال." : bookingError(e)); } finally { setBusy(false); }
   }
   const row = (label: string, value: string) => (
@@ -435,7 +437,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
     <Modal open onClose={onClose} title={personName(a)} width={520}
       footer={<>{(NEXT[a.status] ?? []).filter((n) => (can || a.status !== "pending") && (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
         ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
-        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}</>}>
+        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}{a.status === "checked_in" && <GhostButton icon="bell" onClick={async () => { if (busy) return; setBusy(true); setError(""); try { await callOnTv(a.id); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); } }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
         {isVip(a) && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 14, background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}`, color: GOLD_DEEP, fontSize: 12.5, fontWeight: 700 }}><VipStar size={13} />VIP</span>}

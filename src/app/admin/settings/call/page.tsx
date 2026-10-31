@@ -10,7 +10,7 @@ import { ErrorNote, GhostButton, Loading, Modal, SubmitButton, TextArea, TextInp
 import { R } from "@/lib/routes";
 import { C } from "@/lib/tokens";
 import { ch, css, tg } from "@/app/admin/_h/css";
-import { CALL_DEFAULT, TV_DEFAULT, getSetting, saveSetting, speakCall, type CallSettings, type TvContent, type TvTip } from "@/lib/db/queue";
+import { enableSound, CALL_DEFAULT, TV_DEFAULT, getSetting, saveSetting, playCall, type CallSettings, type TvContent, type TvTip } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { useTv } from "@/app/tv/tv";
 
@@ -55,7 +55,7 @@ export default function Page() {
     pl: s.tips.map((p, i) => ({ name: p.title || p.body, kind: "نصيحة", dur: s.interval_s, icon: TIP_ICON, on: p.on !== false, tg: tg(p.on !== false),
       t: () => set({ tips: s.tips.map((x, j) => (j === i ? { ...x, on: x.on === false } : x)) }), edit: () => setEdit({ i, title: p.title, body: p.body, points: (p.points ?? []).join("\n") }) })),
     now: enabledTips[0] ? (enabledTips[0].title || enabledTips[0].body) : "لا يوجد محتوى مفعّل — يظهر شريط الدور فقط",
-    test: () => { setTested(true); speakCall(Number(n), callNow?.room ?? null, s); },
+    test: () => { setTested(true); enableSound(); void playCall(callNow?.queue_no ?? 256, s); },
     ann: (s.chime !== false ? "نغمة · " : "") + "الرقم " + n + "، " + room + (lang === 0 ? " — Number " + n + (/^\d+$/.test(rn) ? ", Room " + rn : "") : "") + (s.repeat > 1 ? " (×" + s.repeat + ")" : ""),
     annst: "display:flex;align-items:center;gap:8px;border-radius:16px;padding:10px 14px;font-size:13px;font-weight:600;color:#7B4687;background:#FFFFFF;border:1px solid #DEC6E8;" + (tested ? "" : "opacity:0.55"),
   };

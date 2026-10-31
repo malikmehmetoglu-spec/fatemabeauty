@@ -5,7 +5,8 @@ import { arError } from "@/lib/arError";
 import ac from "../../adminPages.module.css";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/shell";
-import { Card, Chip, ErrorNote, Loading, NumberInput, SubmitButton, Toggle } from "@/components/ui";
+import { Card, Chip, ErrorNote, Loading, NumberInput, SubmitButton, TextArea, Toggle } from "@/components/ui";
+import { supabase } from "@/lib/supabase/client";
 import { useQuery } from "@/lib/db/query";
 import { getPolicies, saveSetting, type Policies } from "@/lib/db/marketing";
 import { C } from "@/lib/tokens";
@@ -95,6 +96,7 @@ export default function PoliciesPage() {
           </Card>
         </div>
       )}
+      <TicketPromoCard />
     </AdminShell>
   );
 }
@@ -106,6 +108,36 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
         <div style={{ fontSize: 15, fontWeight: 700 }}>{title}</div>{right}
       </div>
       {children}
+    </Card>
+  );
+}
+
+/** Promo block printed at the bottom of the queue ticket (settings «ticket_promo»; hidden on the ticket when empty). */
+function TicketPromoCard() {
+  const { data } = useQuery(["settings", "ticket_promo"], async () => {
+    const r = await supabase.from("settings").select("value").eq("key", "ticket_promo").maybeSingle();
+    const v = r.data?.value as { text?: string } | null | undefined;
+    return v?.text ?? "";
+  });
+  const [text, setText] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const value = text ?? data ?? "";
+  const save = async () => {
+    setBusy(true); setMsg(null);
+    try { await saveSetting("ticket_promo", { text: value.trim() }); setMsg("تم الحفظ"); }
+    catch (e) { setMsg(arError(e)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Card padding="18px 20px" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 16, fontWeight: 700 }}>عرض تذكرة الدور</div>
+      <div style={{ fontSize: 13, color: C.sub }}>نصّ قصير يُطبع أسفل تذكرة الدور (عرض، باقة، تذكير). اتركيه فارغاً لإخفائه.</div>
+      <TextArea label="نص العرض" value={value} onChange={(v) => { setText(v); setMsg(null); }} rows={3} placeholder="مثال: خصم 10% على جلسة الهيدرافيشل هذا الشهر" />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <SubmitButton busy={busy} onClick={save}>حفظ</SubmitButton>
+        {msg && <span style={{ fontSize: 13, color: msg === "تم الحفظ" ? C.ok : C.danger }}>{msg}</span>}
+      </div>
     </Card>
   );
 }

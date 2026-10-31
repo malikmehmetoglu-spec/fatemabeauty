@@ -14,6 +14,7 @@ import { css } from "../css";
 import { BG, C, SH, SHB, ICON_FILL } from "@/lib/tokens";
 import { afterHref, canAfter, DatePill, FlashToast, KC, KioskNav, kioskError, prepDone, prepHref, PrepLink, PrepMarks, usePrep, useKiosk } from "../kiosk";
 import { isPaid } from "@/lib/db/levels";
+import { openTicket, TicketHost } from "@/components/ticket/QueueTicket";
 import { isVip, VipBookingDialog, VipButton, VipStar } from "../../admin/calendar/vip";
 
 /** T_Desk.dc.html */
@@ -48,7 +49,7 @@ export default function Page() {
     .filter((a) => (filter === "الكل" ? a.status !== "done" && a.status !== "no_show" : filter === "في الانتظار" ? a.status === "checked_in" : a.status === "pending"))
     .sort((x, y) => {
       const rank = (a: QueueAppt) => (a.status === "in_session" ? 0 : a.status === "checked_in" ? 1 : 2);
-      return rank(x) - rank(y) || (x.queue_no ?? 999) - (y.queue_no ?? 999) || x.starts_at.localeCompare(y.starts_at);
+      return rank(x) - rank(y) || (x.checked_in_at ?? x.starts_at).localeCompare(y.checked_in_at ?? y.starts_at);
     });
   const act = async (id: string, f: () => Promise<unknown>) => {
     setBusyId(id); setErr(null);
@@ -66,13 +67,14 @@ export default function Page() {
   };
   const roomNow = rooms.map((r) => {
     const cur = today.find((a) => a.room_id === r.id && a.status === "in_session");
-    const next = today.filter((a) => a.room_id === r.id && a.status === "checked_in").sort((x, y) => (x.queue_no ?? 0) - (y.queue_no ?? 0))[0];
+    const next = today.filter((a) => a.room_id === r.id && a.status === "checked_in").sort((x, y) => (x.checked_in_at ?? x.starts_at).localeCompare(y.checked_in_at ?? y.starts_at))[0];
     let pct = 0;
     if (cur) { const st = new Date(cur.started_at ?? cur.starts_at).getTime(); pct = Math.min(100, Math.max(2, ((Date.now() - st) / (cur.minutes * 60000)) * 100)); }
     return { r, cur, next, pct };
   });
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="28px 28px 28px 32px" direction="row" gap={24}>
+      <TicketHost />
 
       <KioskNav active={R.T_Desk} />
       <FlashToast />
@@ -224,7 +226,7 @@ export default function Page() {
                       {a.called_at && !isPaid(a) && <Link href={`${R.T_Cashier}?appointment=${a.id}`} title="بانتظار الدفع — الجلسة تبدأ بعد الدفع" style={{ height: 48, padding: "0 14px", borderRadius: 24, border: "1px solid #F6DDB9", background: "#FFF3E0", color: "#9A5B14", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>الدفع</Link>}
                       {a.called_at && isPaid(a) && <button type="button" onClick={() => act(a.id, () => setStatus(a.id, "in_session"))} style={{ height: 48, padding: "0 14px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" }}>دخلت</button>}
                     </>) : a.status === "pending" || a.status === "confirmed" ? (
-                      <button type="button" onClick={() => act(a.id, () => checkIn(a.id))} style={{ height: 48, padding: "0 16px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                      <button type="button" onClick={() => act(a.id, async () => { await checkIn(a.id); openTicket(a.id); })} style={{ height: 48, padding: "0 16px", borderRadius: 24, border: "1px solid #EADCF0", background: C.white, color: C.accent, fontSize: 14, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3FA46A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M5 12l5 5L20 7" />
                         </svg>{busyId === a.id ? "…" : "وصلت"}

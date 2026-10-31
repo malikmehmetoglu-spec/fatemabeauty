@@ -118,9 +118,9 @@ export default function Page() {
                   <path d="M10 5a2 2 0 1 1 4 0 7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6M9 17v1a3 3 0 0 0 6 0v-1" />
                 </svg>
               </span>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>الانتظار حسب الدور
+              <div style={{ fontSize: 18, fontWeight: 700 }}>رقم انتظار فوري
               </div>
-              <div style={{ fontSize: 15, color: C.sub, lineHeight: 1.6 }}>تأخذين رقماً فوراً، وندخلكِ بعد المراجعات المسجّلات قبلكِ في الغرفة نفسها.
+              <div style={{ fontSize: 15, color: C.sub, lineHeight: 1.6 }}>تأخذين رقماً فوراً — سننادي رقمكِ قريباً على شاشة الانتظار.
               </div>
             </div>
           </div>}

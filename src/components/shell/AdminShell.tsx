@@ -10,6 +10,7 @@ import { BG_WIDE, C, SELECTED, SHB } from "@/lib/tokens";
 import { R } from "@/lib/routes";
 import { Icon, Logo } from "@/components/ui";
 import { staffPhoto } from "@/lib/db/staff";
+import { TicketHost } from "@/components/ticket/QueueTicket";
 import { useQuery } from "@/lib/db/query";
 import { pendingCount } from "@/lib/db/bookingRequests";
 import { disableAlerts, miraAttention } from "@/lib/db/mira";
@@ -166,6 +167,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
   return (
     <div dir="rtl" className={s.root} style={{ background: BG_WIDE }}>
       <Blobs width={900} />
+      <TicketHost />
       <div className={s.topbar}>
         <button type="button" className={s.menuBtn} onClick={() => setMenu(true)} aria-label="القائمة" style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: C.white, boxShadow: SHB, alignItems: "center", justifyContent: "center" }}>
           <Icon name="list" color={C.accent} size={20} />

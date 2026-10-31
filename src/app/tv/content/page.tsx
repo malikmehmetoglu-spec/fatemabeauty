@@ -122,7 +122,7 @@ export default function Page() {
         ))}
         <span style={{ width: 2, height: 44, background: "#7C5485" }} />
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, position: "relative" }}>
-          <span style={{ fontSize: 28, color: C.onDark }}>التالي
+          <span style={{ fontSize: 28, color: C.onDark }}>نُودي
           </span>
           <span style={{ fontFamily: "var(--font-rubik), Rubik, sans-serif", fontSize: 40, fontWeight: 500 }}>{tv.next.length ? tv.next.slice(0, 3).map((a) => a.queue_no).join(" · ") : "—"}
           </span>

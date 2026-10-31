@@ -1,6 +1,7 @@
 "use client";
 
 /** W_MyDay.dc.html — «جدولي»: the signed-in specialist's real appointments today (live). */
+import { openTicket } from "@/components/ticket/QueueTicket";
 import Link from "next/link";
 import { useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -42,7 +43,7 @@ export default function MyDayPage() {
     setBusy(key); setErr("");
     try { await f(); } catch (e) { setErr(bookingError(e)); } finally { setBusy(""); }
   }
-  const go = (a: Appointment, s: Status) => run(a.id + s, () => setStatus(a.id, s));
+  const go = (a: Appointment, s: Status) => run(a.id + s, async () => { await setStatus(a.id, s); if (s === "checked_in") openTicket(a.id); });
 
   return (
     <AdminShell active="جدولي" title="جدولي" subtitle={`${staff ? `${staff.name} · ${staff.title || ROLE_LABEL[staff.role]} · ` : ""}${arDate(new Date())} · الآن ${clock()}`}

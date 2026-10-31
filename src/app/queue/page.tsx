@@ -1,6 +1,6 @@
 "use client";
 
-/** Queue.dc.html — «موعدي اليوم»: the patient's live queue number via rpc my_queue (counts only, never other names). */
+/** Queue.dc.html — «موعدي اليوم»: the patient's live queue number via rpc my_queue (her number only — no position or ahead count). */
 import Link from "next/link";
 import { useEffect } from "react";
 import { PhoneScreen, TopBar } from "@/components/shell";
@@ -13,8 +13,6 @@ import { GuestCard } from "@/components/guest";
 import { useRequirePatient } from "@/lib/supabase/session";
 import { C, DARK, SH } from "@/lib/tokens";
 import { SpecialistAvatar } from "../booking/SpecialistAvatar";
-
-const patientsAr = (n: number) => (n === 0 ? "لا أحد" : n === 1 ? "مراجِعة واحدة" : n === 2 ? "مراجِعتان" : n <= 10 ? `${n} مراجِعات` : `${n} مراجِعة`);
 
 export default function QueuePage() {
   const s = useRequirePatient();
@@ -42,7 +40,6 @@ export default function QueuePage() {
   );
 
   const called = me.status === "in_session" || !!me.called_at;
-  const ahead = called ? 0 : me.ahead;
   const appt = a.data;
   const rows = [
     { icon: "sparkle", label: "الجلسة", value: appt?.service?.name ?? "" },
@@ -68,20 +65,7 @@ export default function QueuePage() {
         {called ? (
           <div style={{ position: "relative", fontSize: 17, fontWeight: 700 }}>{me.status === "in_session" ? "جلستكِ جارية الآن" : `حان دوركِ — تفضّلي إلى ${me.room ?? "الغرفة"}`}</div>
         ) : (
-          <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 12, color: C.onDark }}>أمامكِ</div>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>{patientsAr(ahead)}</div>
-            </div>
-            <div aria-hidden style={{ display: "flex", gap: 6 }}>
-              {Array.from({ length: Math.min(ahead, 8) }, (_, i) => <span key={i} style={{ width: 10, height: 10, borderRadius: 5, background: "#E8D6F0" }} />)}
-              <span style={{ width: 24, height: 10, borderRadius: 5, background: "#FFFFFF" }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 12, color: C.onDark }}>يُخدَم الآن</div>
-              <div className="latin" style={{ fontSize: 17, fontWeight: 700 }}>{me.now_serving ?? "—"}</div>
-            </div>
-          </div>
+          <div style={{ position: "relative", fontSize: 17, fontWeight: 700 }}>سننادي رقمكِ قريباً</div>
         )}
       </div>
 

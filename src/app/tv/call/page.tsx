@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Stage } from "@/components/shell";
 import { C } from "@/lib/tokens";
 import { BoardView } from "../BoardView";
-import { SoundUnlock, speakCall, useTv } from "../tv";
+import { SoundUnlock, playCall, useTv } from "../tv";
 
 const SHOW_S = 25;
 
@@ -28,7 +28,7 @@ function Inner() {
     const first = spoken.current === null;
     spoken.current = CALL.called_at;
     if (first && Date.now() - new Date(CALL.called_at).getTime() > 60000) return;
-    speakCall(CALL.queue_no, CALL.room, settings.current);
+    void playCall(CALL.queue_no, settings.current);
   }, [CALL?.called_at, CALL?.queue_no, CALL?.room]);
   // Return to the board after a while when we were switched here automatically.
   useEffect(() => {

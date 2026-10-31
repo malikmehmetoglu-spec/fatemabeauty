@@ -69,7 +69,7 @@ export default function DashboardPage() {
   });
   const maxBar = Math.max(1, ...hourBars.map((b) => b.n));
 
-  const queue = [...checkedIn].sort((a, b) => (a.queue_no ?? 0) - (b.queue_no ?? 0)).slice(0, 5);
+  const queue = [...checkedIn].sort((a, b) => (a.checked_in_at ?? a.starts_at).localeCompare(b.checked_in_at ?? b.starts_at)).slice(0, 5);
   const nextList = queue.length ? queue : upcoming.filter((a) => new Date(a.starts_at).getTime() >= nowMs - 15 * 60000).slice(0, 5);
 
   const bySvc = new Map<string, { name: string; count: number; total: number }>();

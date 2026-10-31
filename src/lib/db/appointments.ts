@@ -218,9 +218,11 @@ export async function listRange(fromKey: string, toKey: string = fromKey) {
     .order("starts_at")) as unknown as Appointment[];
 }
 
-/** Today's checked-in queue (and those in session / called). */
+/** Today's checked-in queue (and those in session / finished). Queue numbers are random labels: ordered by check-in time, never by number. */
 export async function listTodayQueue() {
-  return must(await supabase.from("appointments").select(SEL).eq("queue_day", dayKey()).not("queue_no", "is", null).order("queue_no")) as unknown as Appointment[];
+  const r = dayRange();
+  return must(await supabase.from("appointments").select(SEL).gte("starts_at", r.from).lt("starts_at", r.to).not("queue_no", "is", null)
+    .not("checked_in_at", "is", null).order("checked_in_at")) as unknown as Appointment[];
 }
 
 export async function setStatus(id: string, status: Status, extra: Partial<Tables<"appointments">> = {}) {
@@ -236,10 +238,10 @@ export async function callPatient(id: string) {
   invalidate("appointments");
 }
 
-/** Calls the lowest queue number that is waiting and not yet called. Returns it, or null when nobody waits. */
+/** Calls the earliest-checked-in client that is waiting and not yet called (numbers are random, so never by number). Returns her number, or null. */
 export async function callNext() {
   const rows = must(await supabase.from("appointments").select("id, queue_no").eq("queue_day", dayKey()).eq("status", "checked_in")
-    .is("called_at", null).order("queue_no").limit(1)) ?? [];
+    .is("called_at", null).order("checked_in_at").limit(1)) ?? [];
   if (!rows.length) return null;
   await callPatient(rows[0].id);
   return rows[0].queue_no;

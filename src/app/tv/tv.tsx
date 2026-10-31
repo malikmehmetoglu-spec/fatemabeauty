@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import { CALL_DEFAULT, TV_DEFAULT, getSetting, lastCalled, speakCall, useLiveQueue, useNow, useOnNewCall, type CallSettings, type TvContent, type TvRow } from "@/lib/db/queue";
+import { CALL_DEFAULT, TV_DEFAULT, autoplayBlocked, enableSound, getSetting, lastCalled, playCall, soundEnabled, useLiveQueue, useNow, useOnNewCall, type CallSettings, type TvContent, type TvRow } from "@/lib/db/queue";
 import { arDate, clock, dayName } from "@/lib/format";
 import { C, SHB } from "@/lib/tokens";
 
@@ -35,15 +35,16 @@ export function useTv() {
   }, []);
   const list = rows ?? [];
   const names = rooms.length ? rooms : [...new Set(list.map((r) => r.room).filter(Boolean) as string[])];
-  const waiting = list.filter((r) => r.status === "checked_in").sort((a, b) => a.queue_no - b.queue_no);
+  // numbers are random labels: never shown in an order that hints at positions — only numbers already called, newest first
+  const called = list.filter((r) => r.status === "checked_in" && r.called_at).sort((a, b) => b.called_at!.localeCompare(a.called_at!));
   const board = names.map((room) => ({
     room,
-    cur: list.filter((r) => r.room === room && r.status === "in_session").sort((a, b) => b.queue_no - a.queue_no).at(0)?.queue_no ?? "—",
-    next: waiting.find((r) => r.room === room)?.queue_no ?? "—",
+    cur: list.filter((r) => r.room === room && r.status === "in_session").at(0)?.queue_no ?? "—",
+    next: called.find((r) => r.room === room)?.queue_no ?? "—",
   }));
   const tips = (content.tips ?? []).filter((t) => t && (t.title || t.body));
   return {
-    rows, error, board, next: waiting, call, content, tips, last: lastCalled(rows),
+    rows, error, board, next: called, call, content, tips, last: lastCalled(rows),
     time: now ? clock(now) : "", day: now ? dayName(damascusDate(now)) : "", date: now ? arDate(damascusDate(now), { day: false, year: true }) : "",
   };
 }
@@ -65,20 +66,29 @@ export function useJumpToCall(rows: TvRow[] | null, back: string) {
   useOnNewCall(rows, () => router.push(`/tv/call/?back=${encodeURIComponent(back)}`));
 }
 
-/** Browsers block speech until the screen has been touched once — this button unlocks it. */
+/**
+ * Browsers block autoplay until the screen is tapped once: a full-screen «تفعيل الصوت» overlay, remembered in
+ * localStorage. It comes back only if the browser still refuses audio after a reload.
+ */
 export function SoundUnlock({ settings }: { settings: CallSettings }) {
   const [need, setNeed] = useState(false);
   useEffect(() => {
-    const ua = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
-    setNeed(!!ua && !ua.hasBeenActive && "speechSynthesis" in window);
+    if (!soundEnabled()) { setNeed(true); return; }
+    autoplayBlocked().then(setNeed);
   }, []);
   if (!need) return null;
   return (
-    <button type="button" onClick={() => { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; window.speechSynthesis.speak(u); setNeed(false); void settings; }}
-      style={{ position: "absolute", bottom: 24, left: 24, zIndex: 5, height: 56, padding: "0 24px", borderRadius: 28, border: "none", background: "rgba(255,255,255,0.85)", boxShadow: SHB, color: C.accent, fontSize: 22, fontWeight: 700, fontFamily: "inherit" }}>
-      المسي الشاشة لتفعيل صوت النداء
+    <button type="button" onClick={() => { enableSound(); setNeed(false); void settings; }}
+      style={{ position: "absolute", inset: 0, zIndex: 50, border: "none", background: "rgba(43,26,48,0.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", cursor: "pointer" }}>
+      <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: "48px 72px", borderRadius: 48, background: C.white, boxShadow: SHB }}>
+        <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="#7B4687" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z" />
+        </svg>
+        <span style={{ fontSize: 56, fontWeight: 700, color: C.accent }}>تفعيل الصوت</span>
+        <span style={{ fontSize: 26, color: C.sub }}>المسي الشاشة مرة واحدة ليُسمع نداء الأرقام</span>
+      </span>
     </button>
   );
 }
 
-export { speakCall };
+export { playCall };

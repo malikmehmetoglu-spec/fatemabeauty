@@ -62,7 +62,7 @@ export function Modal({ open, onClose, title, children, footer, width = 560 }: {
           </button>
         </div>
         {children}
-        {footer && <div style={{ display: "flex", gap: 10, justifyContent: "flex-start", marginTop: 4 }}>{footer}</div>}
+        {footer && <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "flex-start", marginTop: 4 }}>{footer}</div>}
       </div>
     </div>
   );

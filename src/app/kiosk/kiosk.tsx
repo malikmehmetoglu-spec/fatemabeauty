@@ -264,7 +264,7 @@ export function useApptParam(enabled: boolean) {
 export function ApptPicker({ title, today, loading, error, path }: { title: string; today: QueueAppt[]; loading: boolean; error?: string; path: string }) {
   const list = today.filter((a) => a.status === "checked_in" || a.status === "in_session" || a.status === "done")
     .filter((a) => (path === R.T_Photos || path === T_PHOTO_CONSENT ? isConsult(a) : true))
-    .sort((x, y) => { const r = (a: QueueAppt) => (a.status === "in_session" ? 0 : a.status === "checked_in" ? 1 : 2); return r(x) - r(y) || (x.queue_no ?? 999) - (y.queue_no ?? 999); });
+    .sort((x, y) => { const r = (a: QueueAppt) => (a.status === "in_session" ? 0 : a.status === "checked_in" ? 1 : 2); return r(x) - r(y) || (x.checked_in_at ?? x.starts_at).localeCompare(y.checked_in_at ?? y.starts_at); });
   const prep = usePrep(list, !loading);
   const generic = path === R.T_Eligibility;
   return (

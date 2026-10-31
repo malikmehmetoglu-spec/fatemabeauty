@@ -8,10 +8,11 @@ import { Stage } from "@/components/shell";
 import { ErrorNote, Loading } from "@/components/ui";
 import { initials as initialsOf } from "@/lib/data";
 import { R } from "@/lib/routes";
-import { aheadText, getAppointment, listToday, personName, queueInfo, serviceName } from "@/lib/db/queue";
+import { getAppointment, listToday, personName, serviceName } from "@/lib/db/queue";
 import { useQuery } from "@/lib/db/query";
 import { clock } from "@/lib/format";
 import { DatePill, KC, NowText, useKiosk } from "../kiosk";
+import { TicketHost } from "@/components/ticket/QueueTicket";
 import { BG, C, SH, SH_SOFT, ICON_FILL, LOGO } from "@/lib/tokens";
 
 /** T_CheckedIn.dc.html */
@@ -31,11 +32,12 @@ function Inner() {
     return { a, today };
   }, { enabled: !k.gate && !!id });
   const [left, setLeft] = useState(BACK_AFTER);
+  const [ticketOpen, setTicketOpen] = useState(!!id);
   useEffect(() => {
-    if (k.gate) return;
+    if (k.gate || ticketOpen) return;
     const t = setInterval(() => setLeft((n) => { if (n <= 1) { router.push(R.T_Welcome); return 0; } return n - 1; }), 1000);
     return () => clearInterval(t);
-  }, [k.gate, router]);
+  }, [k.gate, router, ticketOpen]);
   if (k.gate) return k.gate;
   const A = q.data?.a;
   if (!A) return (
@@ -46,11 +48,10 @@ function Inner() {
       </div>}
     </Stage>
   );
-  const { ahead: AHEAD, wait } = queueInfo(A, q.data!.today);
-  const AHEAD_TXT = aheadText(AHEAD);
   const spec = A.staff?.name;
   return (
     <Stage fluid width={1194} height={834} background={BG} padding="36px 40px 32px" direction="column" gap={22}>
+      <TicketHost initial={id || null} onOpenChange={setTicketOpen} />
 
       <div className={KC.hdr} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative" }}>
@@ -94,24 +95,7 @@ function Inner() {
             </div>
           </div>
           <div style={{ position: "relative", height: 1, background: "#7C5485", margin: "18px 0 20px" }} />
-          <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 15, color: C.onDark }}>أمامكِ
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>{AHEAD_TXT}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <span style={{ width: 14, height: 14, borderRadius: 7, background: "#E8D6F0" }} />
-              <span style={{ width: 34, height: 14, borderRadius: 7, background: C.white }} />
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 15, color: C.onDark }}>الانتظار المتوقع
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>{wait === 0 ? "الآن تقريباً" : `~ ${wait} دقيقة`}
-              </div>
-            </div>
-          </div>
+          <div style={{ position: "relative", fontSize: 26, fontWeight: 700 }}>سننادي رقمكِ قريباً</div>
         </div>
         <div style={{ flex: 1, minWidth: "0", borderRadius: 36, padding: "8px 30px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minHeight: 84 }}>
@@ -178,7 +162,7 @@ function Inner() {
           <div style={{ lineHeight: 1.4 }}>
             <div style={{ fontSize: 19, fontWeight: 700 }}>تابعي دوركِ من هاتفكِ أيضاً
             </div>
-            <div style={{ fontSize: 15, color: C.sub }}>افتحي «موعدي اليوم» في التطبيق، وسيصلكِ إشعار قبل دوركِ بدقائق.
+            <div style={{ fontSize: 15, color: C.sub }}>افتحي «موعدي اليوم» في التطبيق، وسيظهر فيه رقمكِ مع النداء.
             </div>
           </div>
         </div>
