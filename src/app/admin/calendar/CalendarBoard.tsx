@@ -46,7 +46,7 @@ const ST: Record<Status, { bar: string; bg: string; bd: string; chipBg: string; 
 };
 const LEGEND: Status[] = ["pending", "confirmed", "checked_in", "in_session", "done", "no_show"];
 
-type Col = { id: string | null; name: string; secondary?: boolean };
+type Col = { id: string | null; name: string; secondary?: boolean; beds?: number };
 type Placed = { a: Appointment; s: number; e: number; lane: number; lanes: number };
 
 /** Google-Calendar style lanes: overlapping appointments of one column sit side by side. */
@@ -168,7 +168,7 @@ export function CalendarBody() {
   const list = useMemo(() => (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled"), [appts.data, showCancelled]);
   const keyOf = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
   const cols: Col[] = useMemo(() => {
-    const base: Col[] = by === "room" ? (rooms.data ?? []).map((r) => ({ id: r.id, name: r.name })) : (team.data ?? []).map((s) => ({ id: s.id, name: s.name }));
+    const base: Col[] = by === "room" ? (rooms.data ?? []).map((r) => ({ id: r.id, name: r.name, beds: r.capacity })) : (team.data ?? []).map((s) => ({ id: s.id, name: s.name }));
     const k = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
     // appointments without a room (older bookings) or a removed specialist: a secondary column, only when it has any
     const extra = list.some((a) => !base.some((c) => c.id === k(a)));
@@ -295,6 +295,7 @@ export function CalendarBody() {
                     <div className={S.headMeta}>
                       {n > 0 ? <span className={S.headCount}>{apptCount(n)}</span> : <span style={{ color: "#C9BCCE" }}>—</span>}
                       {w && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span>{w.length ? <span className="latin" dir="ltr">{w.map((x) => `${hm(x.from)}–${hm(x.to)}`).join(" · ")}</span> : <span>لا دوام اليوم</span>}</>}
+                      {(c.beds ?? 1) > 1 && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span><span>{c.beds} أسرّة</span></>}
                       {c.secondary && <><span aria-hidden style={{ color: "#D9CCE0" }}>|</span><span>مواعيد قديمة بلا {by === "room" ? "غرفة" : "أخصائية"}</span></>}
                     </div>
                     {r && (

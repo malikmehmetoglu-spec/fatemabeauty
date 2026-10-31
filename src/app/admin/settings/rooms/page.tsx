@@ -50,6 +50,7 @@ export default function RoomsPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ width: 40, height: 40, borderRadius: 20, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="door" size={19} /></span>
                   <button type="button" onClick={() => setEditRoom(r)} style={{ flex: 1, border: "none", background: "none", padding: 0, textAlign: "right", fontSize: 17, fontWeight: 700, color: C.ink }}>{r.name}</button>
+                  <Tag kind="lilac">{r.capacity > 1 ? `${r.capacity} أسرّة` : "سرير واحد"}</Tag>
                   <Tag kind={r.active ? "green" : "pink"}>{r.active ? "متاحة للحجز" : "مغلقة للحجز"}</Tag>
                   <Toggle on={r.active} label={`إتاحة ${r.name} للحجز`} onChange={(v) => saveRoom({ id: r.id, name: r.name, active: v })} />
                 </div>

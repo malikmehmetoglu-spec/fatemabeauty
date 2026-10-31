@@ -1778,18 +1778,21 @@ export type Database = {
       rooms: {
         Row: {
           active: boolean
+          capacity: number
           id: string
           name: string
           sort: number
         }
         Insert: {
           active?: boolean
+          capacity?: number
           id?: string
           name: string
           sort?: number
         }
         Update: {
           active?: boolean
+          capacity?: number
           id?: string
           name?: string
           sort?: number

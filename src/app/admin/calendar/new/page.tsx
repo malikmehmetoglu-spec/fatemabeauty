@@ -103,9 +103,9 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     const doers = prov.data ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
     const ids = doers.length ? doers : [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
     const wins = sp ? rangesOn(rows, sp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
-    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, room || null, sp || null));
+    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, room || null, sp || null, (rooms.data ?? []).find((r) => r.id === room)?.capacity ?? 1));
     return [...new Set(all)].sort();
-  }, [svc, lvMin, hours.data, busyQ.data, day, room, sp, staffHours.data, team.data, prov.data]);
+  }, [svc, lvMin, hours.data, busyQ.data, day, room, rooms.data, sp, staffHours.data, team.data, prov.data]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||

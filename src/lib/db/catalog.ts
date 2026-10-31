@@ -178,7 +178,7 @@ export async function setPackageActive(id: string, active: boolean) {
   invalidate("catalog");
 }
 
-export async function saveRoom(input: { id?: string; name: string; sort?: number; active?: boolean }) {
+export async function saveRoom(input: { id?: string; name: string; sort?: number; active?: boolean; capacity?: number }) {
   const { id, ...rest } = input;
   const row = id
     ? must(await supabase.from("rooms").update(rest).eq("id", id).select().single())

@@ -131,8 +131,11 @@ export async function busyRanges(fromKey: string, toKey: string = fromKey): Prom
   return must(await supabase.rpc("booked_ranges", { p_from: dayRange(fromKey).from, p_to: dayRange(toKey).to })) ?? [];
 }
 
-/** Free start times ("HH:MM") on a day for a service length, avoiding the room's and the specialist's existing bookings. */
-export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], roomId: string | null, specialistId: string | null) {
+/**
+ * Free start times ("HH:MM") on a day for a service length: the specialist must be free, and the room must have a free
+ * bed (fewer than `roomCapacity` overlapping bookings at every instant) — same rule as private.room_has_space.
+ */
+export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], roomId: string | null, specialistId: string | null, roomCapacity = 1) {
   if (!isOpen(h, key)) return [];
   const now = Date.now();
   const out: string[] = [];
@@ -140,9 +143,14 @@ export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], 
     const s = new Date(atDamascus(key, toHHMM(t))).getTime();
     const e = s + minutes * 60000;
     if (s <= now) continue;
-    const clash = busy.some((b) => new Date(b.starts_at).getTime() < e && new Date(b.ends_at).getTime() > s &&
-      ((roomId && b.room_id === roomId) || (specialistId && b.specialist_id === specialistId)));
-    if (!clash) out.push(toHHMM(t));
+    const over = busy.filter((b) => new Date(b.starts_at).getTime() < e && new Date(b.ends_at).getTime() > s);
+    if (specialistId && over.some((b) => b.specialist_id === specialistId)) continue;
+    if (roomId) {
+      const inRoom = over.filter((b) => b.room_id === roomId).map((b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()]);
+      const points = [s, ...inRoom.map(([a]) => a).filter((a) => a > s)];
+      if (points.some((p) => inRoom.filter(([a, z]) => a <= p && z > p).length >= Math.max(1, roomCapacity))) continue;
+    }
+    out.push(toHHMM(t));
   }
   return out;
 }

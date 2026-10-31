@@ -18,17 +18,20 @@ export function RoomDialog({ open, room, onClose }: { open: boolean; room: Room 
   const [name, setName] = useState("");
   const [sort, setSort] = useState("");
   const [active, setActive] = useState(true);
+  const [beds, setBeds] = useState("1");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     if (!open) return;
-    setError(""); setName(room?.name ?? ""); setSort(room ? String(room.sort) : ""); setActive(room?.active ?? true);
+    setError(""); setName(room?.name ?? ""); setSort(room ? String(room.sort) : ""); setActive(room?.active ?? true); setBeds(String(room?.capacity ?? 1));
   }, [open, room]);
 
   async function submit() {
     if (!name.trim()) { setError("اكتبي اسم الغرفة."); return; }
+    const cap = Number(beds);
+    if (!Number.isInteger(cap) || cap < 1 || cap > 20) { setError("عدد الأسرّة بين 1 و 20."); return; }
     setBusy(true); setError("");
-    try { await saveRoom({ id: room?.id, name: name.trim(), sort: Number(sort) || 0, active }); onClose(); }
+    try { await saveRoom({ id: room?.id, name: name.trim(), sort: Number(sort) || 0, active, capacity: cap }); onClose(); }
     catch (e) { setError(errText(e)); } finally { setBusy(false); }
   }
 
@@ -36,6 +39,7 @@ export function RoomDialog({ open, room, onClose }: { open: boolean; room: Room 
     <Modal open={open} onClose={onClose} title={room ? "تعديل غرفة" : "غرفة جديدة"} width={480}
       footer={<SubmitButton onClick={submit} busy={busy}>{room ? "حفظ التعديلات" : "إضافة الغرفة"}</SubmitButton>}>
       <TextInput label="اسم الغرفة" required value={name} onChange={setName} placeholder="مثلاً: غرفة 1" />
+      <NumberInput label="عدد الأسرّة" value={beds} onChange={setBeds} hint="عدد الجلسات المتزامنة في الغرفة — كل جلسة بأخصائية مختلفة" />
       <NumberInput label="الترتيب" value={sort} onChange={setSort} hint="الأصغر يظهر أولاً" />
       <Row title="متاحة للحجز" sub="الغرفة المغلقة لا تظهر في الحجز"><Toggle on={active} onChange={setActive} label="متاحة للحجز" /></Row>
       {error && <ErrorNote>{error}</ErrorNote>}
