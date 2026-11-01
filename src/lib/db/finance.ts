@@ -110,7 +110,7 @@ export async function getPolicies() {
 
 export async function listSellables() {
   const [services, products, packages, syp, cats] = await Promise.all([
-    supabase.from("services").select("key, name, short_name, price, minutes, category_id").eq("active", true).order("sort"),
+    supabase.from("services").select("key, name, short_name, price, minutes, category_id").eq("active", true).neq("key", "open-visit").order("sort"),
     supabase.from("products").select("key, name, size, price, stock, unit").eq("active", true).eq("kind", "retail").not("price", "is", null).order("name"),
     supabase.from("packages").select("id, name, sessions, price, service_key").eq("active", true).order("name"),
     supabase.rpc("service_prices_syp"),

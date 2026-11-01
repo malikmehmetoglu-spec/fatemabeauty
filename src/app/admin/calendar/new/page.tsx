@@ -9,7 +9,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import {
-  book, bookingError, busyRanges, createPatient, freeSlots, getHours, provides, searchPatients, serviceProviders, useSearch, type PatientHit,
+  book, bookingError, busyRanges, OPEN_VISIT, OPEN_VISIT_MIN, OPEN_VISIT_ROOM, createPatient, freeSlots, getHours, provides, searchPatients, serviceProviders, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
 import { getPatient } from "@/lib/db/patients";
 import { dayWindows, listStaffHours, rangesOn, worksAt } from "@/lib/db/staff";
@@ -55,6 +55,8 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [checkIn, setCheckIn] = useState(true);
+  // «تُحدَّد عند الوصول»: no service / specialist — holds 60 min (one bed) in the skin room
+  const [later, setLater] = useState(false);
   const [svcKey, setSvcKey] = useState("");
   const [sp, setSp] = useState("");
   const [room, setRoom] = useState("");
@@ -91,8 +93,11 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const [lvPick, setLvPick] = useState("");
   useEffect(() => { setLvPick(""); }, [svc?.key, patient?.id]);
   const lvl = svcLevels.find((l) => l.id === lvPick) ?? svcLevels.find((l) => l.id === assigned) ?? svcLevels[0] ?? null;
-  const lvMin = lvl?.minutes ?? svc?.minutes ?? 30;
-  useEffect(() => { setTime(""); }, [lvMin]);
+  const openV = later && mode !== "walkin";
+  const lvMin = openV ? OPEN_VISIT_MIN : lvl?.minutes ?? svc?.minutes ?? 30;
+  const effRoom = openV ? OPEN_VISIT_ROOM : room;
+  const effSp = openV ? "" : sp;
+  useEffect(() => { setTime(""); }, [lvMin, openV]);
 
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
   // candidate times: the chosen specialist's own hours, or the union of everyone's hours (default hours without a schedule)
@@ -100,20 +105,20 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     if (!svc || !hours.data || !busyQ.data || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return [];
     const rows = staffHours.data ?? [], wd = weekday(day);
     // without a chosen specialist: the hours of those who provide this service (fallback: everyone)
-    const doers = prov.data ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
+    const doers = prov.data && !openV ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
     const ids = doers.length ? doers : [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
-    const wins = sp ? rangesOn(rows, sp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
-    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, room || null, sp || null, (rooms.data ?? []).find((r) => r.id === room)?.capacity ?? 1));
+    const wins = effSp ? rangesOn(rows, effSp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
+    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, effRoom || null, effSp || null, (rooms.data ?? []).find((r) => r.id === effRoom)?.capacity ?? 1));
     return [...new Set(all)].sort();
-  }, [svc, lvMin, hours.data, busyQ.data, day, room, rooms.data, sp, staffHours.data, team.data, prov.data]);
+  }, [svc, lvMin, hours.data, busyQ.data, day, effRoom, rooms.data, effSp, staffHours.data, team.data, prov.data, openV]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
-  const onDuty = (t: string, d: string) => !sp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
+  const onDuty = (t: string, d: string) => !effSp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
     worksAt(staffHours.data ?? [], sp, weekday(d), toM(t), toM(t) + lvMin, hours.data);
   const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);
   const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
   // the chosen specialist does not provide this service («الخدمات التي تقدّمها») — warn, do not block
-  const notProvider = !!sp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
+  const notProvider = !openV && !!sp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
   const teamSorted = [...(team.data ?? [])].sort((a, b) => Number(!provides(prov.data, a.id, svc?.key)) - Number(!provides(prov.data, b.id, svc?.key)));
 
   async function submit() {
@@ -130,7 +135,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     if (notProvider && !confirm(`${spName} لا تقدّم خدمة «${svc.short_name}» حسب «الخدمات التي تقدّمها». الحجز رغم ذلك؟`)) return;
     if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
     // consultations: «قالب الاستشارات», rest between consultations and the daily cap — warnings only for staff
-    const cw = svc.is_consultation && sp ? await consultWarnings(svc.key, atDamascus(walk ? dayKey() : day, t), sp, lvMin) : [];
+    const cw = !openV && svc.is_consultation && sp ? await consultWarnings(svc.key, atDamascus(walk ? dayKey() : day, t), sp, lvMin) : [];
     if (cw.length && !confirm(`${cw.join("\n")}\n\nالحجز رغم ذلك؟`)) return;
     setBusy(true);
     try {
@@ -140,6 +145,11 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
         pid = created?.id ?? null;
         // keep the new file selected so a retry after a booking error does not open a second file
         if (created) { setPatient(created); setMode("existing"); }
+      }
+      if (openV) {
+        await book({ service: OPEN_VISIT, day, time: t, specialist: null, room: OPEN_VISIT_ROOM, patient: pid, source: "reception", level: null });
+        onClose();
+        return;
       }
       await book({
         service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
@@ -198,6 +208,16 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
             </div>
           )}
 
+          {mode !== "walkin" && (
+            <Segment label="الجلسة" value={later ? "later" : "now"} onChange={(v) => { setLater(v === "later"); setError(""); }}
+              options={[{ value: "now", label: "تحديد الجلسة الآن" }, { value: "later", label: "تُحدَّد عند الوصول" }]} />
+          )}
+          {openV ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 18, padding: "12px 14px", background: "#F4F0FA", border: "1.5px dashed #B9A3D0", fontSize: 13.5, fontWeight: 600, color: "#5B3F75", lineHeight: 1.55 }}>
+              <Icon name="info" size={18} color="#7B4687" />
+              <span>يُحجز سرير في غرفة العناية بالبشرة لمدة <span className="latin">{OPEN_VISIT_MIN}</span> دقيقة، دون أخصائية أو سعر. عند وصولها تحدّد الاستقبال الجلسة والمستوى والأخصائية ثم الدفع.</span>
+            </div>
+          ) : (<>
           <div className={css.grid3}>
             <Select label="الخدمة" value={svc?.key ?? ""} onChange={(v) => setSvcKey(v)} options={(services.data ?? []).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
             <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...teamSorted.map((t) => ({ value: t.id, label: provides(prov.data, t.id, svc?.key) ? t.name : `${t.name} — لا تقدّم هذه الخدمة` }))]} />
@@ -216,6 +236,8 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
               </div>
             </div>
           )}
+
+          </>)}
 
           {mode === "walkin" ? (
             <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderRadius: 18, padding: "12px 14px", background: C.tint2, fontSize: 14, fontWeight: 600 }}>
@@ -239,7 +261,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
               )}
             </div>
           )}
-          {sp && slots.some((t) => !onDuty(t, day)) && mode !== "walkin" && (
+          {effSp && slots.some((t) => !onDuty(t, day)) && mode !== "walkin" && (
             <div style={{ fontSize: 12.5, color: C.sub2 }}>الأوقات المنقّطة باللون الذهبي خارج دوام {spName}.</div>
           )}
           {notProvider && (

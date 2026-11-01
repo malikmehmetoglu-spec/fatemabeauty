@@ -105,7 +105,7 @@ export async function pendingConsentsToday() {
 
 /** Consent forms = one per active service. */
 export async function consentForms() {
-  return must(await supabase.from("services").select("key, name").eq("active", true).order("sort"));
+  return must(await supabase.from("services").select("key, name").eq("active", true).neq("key", "open-visit").order("sort"));
 }
 
 /* ---------- photos (private bucket "photos", path "<patient_id>/<uuid>.<ext>") ---------- */

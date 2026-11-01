@@ -183,6 +183,20 @@ export async function book(p: {
   return row;
 }
 
+/** Open booking: holds 60 min (one bed) in the skin room; session + specialist are set on arrival (migration 0188). */
+export const OPEN_VISIT = "open-visit";
+export const OPEN_VISIT_ROOM = "650a6348-0a2a-4741-8224-9407a55458fa"; // skin room (3 beds)
+export const OPEN_VISIT_MIN = 60;
+export const isOpenVisit = (a: { service_key?: string | null }) => a.service_key === OPEN_VISIT;
+
+/** Arrival: set the session (service/level/specialist) of a not-yet-started appointment. `force` saves despite a busy
+ * specialist / full room (the session then starts once they are free). rpc assign_visit. */
+export async function assignVisit(id: string, service: string, level: string | null, specialist: string | null, force = false) {
+  const row = mustOk(await supabase.rpc("assign_visit", { p_appt: id, p_service: service, p_level: level ?? undefined, p_specialist: specialist ?? undefined, p_force: force }));
+  invalidate("appointments"); invalidate("queue");
+  return row;
+}
+
 /* ---------- patient ---------- */
 
 export async function listMine(patientId: string) {

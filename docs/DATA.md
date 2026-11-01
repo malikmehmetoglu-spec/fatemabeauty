@@ -43,6 +43,13 @@ honest empty state. The database is currently empty except for the owner account
   book_appointment_v2 staff path + appointments (calendar…), patients read/insert/update, medical tables + guard trigger
   (patients_medical), products/stock_batches/orders read. Edit via RPC `set_staff_permissions(p_staff, p_perms)` (admin/owner, audited).
   UI: AdminShell `canSee/pathOk/homeFor` and `useKiosk({ perm })` read effective perms.
+- Arrival workflow (migration 0188): open booking = service `open-visit` («جلسة غير محددة»: 60 min, skin room bed,
+  no specialist/price, not online; booking form toggle «تُحدَّد عند الوصول»). It is never «paid» (`appt_is_paid`,
+  `isPaid`) and cannot start. Reception: calendar card «تسجيل الوصول» → `ArrivalPanel` (session via RPC
+  `assign_visit(p_appt,p_service,p_level,p_specialist,p_force)` → embedded `create_invoice` → check-in → one print job
+  receipt + ticket). Call screen `/admin/calendar/reception/` (calendar perm). Start/finish transitions need
+  `queue` / `room_tablet` / `kiosk_desk` (trigger `appointment_rules`); `canRunSessions()` hides the buttons otherwise.
+  Perm `room_tablet` = shared room tablet `/kiosk/room/` («أنا: …» picker, start records `specialist_id`).
 
 ## Schema changes
 - Existing tables: see `supabase/migrations/*.sql` and `src/lib/supabase/database.types.ts`.

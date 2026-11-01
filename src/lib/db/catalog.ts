@@ -52,7 +52,7 @@ function byCategory(rows: Tables<"services">[], cats: Category[]) {
 /** Public: active services (RLS shows only active ones to visitors), prices in SYP, ordered by category. */
 export async function listServices(): Promise<Service[]> {
   const [rows, m, cats] = await Promise.all([
-    supabase.from("services").select("*").eq("active", true).order("sort").order("name").then(must), sypPrices(), listCategories(),
+    supabase.from("services").select("*").eq("active", true).neq("key", "open-visit").order("sort").order("name").then(must), sypPrices(), listCategories(),
   ]);
   return byCategory(rows ?? [], cats).map((r) => toClient(r, m));
 }

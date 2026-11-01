@@ -12,7 +12,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
-  bookingError, dateOfKey, endsAt, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
+  bookingError, dateOfKey, endsAt, isOpenVisit, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
   type Appointment, type Status, useSearch, weekday,
   callPatient as callOnTv,
 } from "@/lib/db/appointments";
@@ -26,6 +26,9 @@ import { AR_DAYS } from "@/lib/data";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import S from "./calendar.module.css";
+import { ArrivalPanel } from "./ArrivalPanel";
+import { canRunSessions } from "@/lib/permissions";
+import { isPaid } from "@/lib/db/levels";
 
 const HOUR = 88; // px per hour (15 min = 22px)
 const PAD = 12; // breathing room above the first hour line so its label is not clipped
@@ -90,12 +93,13 @@ function ApptCard({ a, by, mode, style, compact, narrow, px = 999, onOpen }: {
 }) {
   const vip = isVip(a);
   const range = `${timeOf(a)}–${clock(endsAt(a))}`;
-  const svc = [a.service?.short_name || a.service?.name, a.level?.name].filter(Boolean).join(" · ");
+  const open = isOpenVisit(a);
+  const svc = open ? "جلسة غير محددة" : [a.service?.short_name || a.service?.name, a.level?.name].filter(Boolean).join(" · ");
   const where = by === "room" ? a.specialist?.name : by === "specialist" ? a.room?.name : [a.room?.name, a.specialist?.name].filter(Boolean).join(" · ");
   const pay = payOf(a);
   const ext = a.extension_minutes ? ` (+${a.extension_minutes} د)` : "";
   const title = `${personName(a)} · ${range}${ext} · ${svc}${where ? ` · ${where}` : ""} · ${STATUS_LABEL[a.status]}${pay ? ` · ${pay.paid ? "مدفوع" : "غير مدفوع"}` : ""}`;
-  const cls = cx(S.card, vip && a.status !== "cancelled" && a.status !== "no_show" && S.cardVip, compact && S.compact, a.status === "cancelled" && S.struck,
+  const cls = cx(S.card, open && S.open, vip && a.status !== "cancelled" && a.status !== "no_show" && S.cardVip, compact && S.compact, a.status === "cancelled" && S.struck,
     (a.status === "done" || a.status === "cancelled") && S.dim, mode === "week" && S.wCard, mode === "agenda" && S.aCard);
   const nameLine = (
     <div className={S.line1}>
@@ -259,6 +263,7 @@ export function CalendarBody() {
               <Icon name={showCancelled ? "M5 12l5 5L20 7" : "M18 6L6 18M6 6l12 12"} size={14} color={C.accent} />الملغاة
             </button>
             <VipButton onClick={() => setVipOpen(true)} height={38} style={{ borderRadius: 12, fontSize: 13.5, padding: "0 14px", boxShadow: "0 6px 14px rgba(169,129,48,0.25)" }} />
+            <Link href={R.W_Reception} className={S.btn}><Icon name="bell" size={14} color={C.accent} />الاستقبال والنداء</Link>
             <Link href={R.W_BookingModal} className={S.primary}><Icon name="M12 5v14M5 12h14" size={16} color={C.white} stroke={2} />موعد جديد</Link>
           </div>
         </div>
@@ -412,14 +417,19 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmedNow, setConfirmedNow] = useState(false);
+  const [arrive, setArrive] = useState(false);
   const { staff } = useSession();
+  const runs = canRunSessions(staff);
   const centre = useQuery(["booking-requests", "centre"], getCentre);
-  useEffect(() => { setError(""); setConfirmedNow(false); }, [appt]);
+  useEffect(() => { setError(""); setConfirmedNow(false); setArrive(false); }, [appt]);
   if (!appt) return null;
+  if (arrive) return <ArrivalPanel appt={appt} onClose={() => { setArrive(false); onClose(); }} />;
   const a: Appointment = confirmedNow ? { ...appt, status: "confirmed" } : appt;
   const can = canConfirm(staff);
   const phone = a.patient?.phone || a.walk_in_phone;
   async function go(to: Status) {
+    // arrival = the guided panel (session → payment → receipt + ticket)
+    if (to === "checked_in" && (a.status === "confirmed" || a.status === "pending")) { setArrive(true); return; }
     if ((to === "cancelled" || to === "no_show") && !window.confirm(to === "cancelled" ? "إلغاء هذا الموعد؟" : "تسجيل أنها لم تحضر؟")) return;
     setBusy(true); setError("");
     try {
@@ -435,9 +445,9 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   );
   return (
     <Modal open onClose={onClose} title={personName(a)} width={520}
-      footer={<>{(NEXT[a.status] ?? []).filter((n) => (can || a.status !== "pending") && (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
+      footer={<>{(NEXT[a.status] ?? []).filter((n) => (runs || (n.to !== "in_session" && n.to !== "done")) && (n.to !== "in_session" || !isOpenVisit(a)) && (can || a.status !== "pending") && (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
         ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
-        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}{a.status === "checked_in" && <GhostButton icon="bell" onClick={async () => { if (busy) return; setBusy(true); setError(""); try { await callOnTv(a.id); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); } }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>}</>}>
+        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}{a.status === "checked_in" && (isOpenVisit(a) || !isPaid(a)) && <GhostButton icon="receipt" onClick={() => setArrive(true)}>{isOpenVisit(a) ? "تحديد الجلسة والدفع" : "الدفع والتذكرة"}</GhostButton>}{a.status === "checked_in" && <GhostButton icon="bell" onClick={async () => { if (busy) return; setBusy(true); setError(""); try { await callOnTv(a.id); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); } }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
         {isVip(a) && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 14, background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}`, color: GOLD_DEEP, fontSize: 12.5, fontWeight: 700 }}><VipStar size={13} />VIP</span>}
@@ -446,7 +456,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
         {!a.patient && a.walk_in_phone && <span className="latin" style={{ fontSize: 12.5, color: C.sub2 }}>{a.walk_in_phone}</span>}
       </div>
       <div>
-        {row("الجلسة", `${a.service?.name ?? ""} · ${a.minutes} د`)}
+        {row("الجلسة", isOpenVisit(a) ? "جلسة غير محددة — تُحدَّد عند الوصول" : `${a.service?.name ?? ""} · ${a.minutes} د`)}
         {row("الموعد", `${arDate(new Date(a.starts_at))} · ${timeOf(a)}`)}
         {row("الغرفة", a.room?.name ?? "—")}
         {row("الأخصائية", a.specialist?.name ?? "—")}

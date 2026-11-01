@@ -158,3 +158,6 @@
   .wday { min-height: 0; }
   .wEmptyDay { display: none; }
 }
+
+/* open booking «جلسة غير محددة» (service open-visit): dashed outline */
+.open { border: 1.5px dashed #9E7BB8 !important; background-image: repeating-linear-gradient(135deg, rgba(158,123,184,0.07) 0 6px, transparent 6px 12px) !important; }

@@ -19,7 +19,7 @@ export type TicketData = {
   queue_no: number | null; first: string; service: string; level: string | null; specialist: string | null; starts_at: string; promo: string;
 };
 
-async function loadTicket(id: string): Promise<TicketData> {
+export async function loadTicket(id: string): Promise<TicketData> {
   const [a, p] = await Promise.all([
     supabase.from("appointments").select("queue_no, starts_at, walk_in_name, patients(name), services(name), service_levels(name, level), staff:specialist_id(name)").eq("id", id).maybeSingle(),
     supabase.from("settings").select("value").eq("key", "ticket_promo").maybeSingle(),

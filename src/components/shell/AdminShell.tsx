@@ -116,6 +116,8 @@ const pathOk = (w: Who, path: string) => {
 };
 /** First page this staff member may open — used as her landing page. */
 export const homeFor = (w: Who) => {
+  // the shared room-tablet account lands on its tablet screen
+  if (!full(w.role) && permsOf(w).has("room_tablet") && !anyOf(w, ["calendar", "queue", "kiosk_desk"])) return R.T_Room;
   for (const [, sec, href] of NAV) {
     if (!canSee(w, sec)) continue;
     if (pathOk(w, href)) return href;

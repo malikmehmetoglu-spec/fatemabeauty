@@ -3353,6 +3353,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      assign_visit: {
+        Args: { p_appt: string; p_service: string; p_level?: string; p_specialist?: string; p_force?: boolean }
+        Returns: {
+          called_at: string | null
+          cancel_reason: string | null
+          checked_in_at: string | null
+          confirm_channels: Json
+          confirm_sent_at: string | null
+          created_at: string
+          created_by: string | null
+          eligibility: Json | null
+          eligibility_at: string | null
+          extension_minutes: number
+          finished_at: string | null
+          id: string
+          level_id: string | null
+          minutes: number
+          note: string | null
+          patient_id: string | null
+          patient_package_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          price: number
+          queue_day: string | null
+          queue_no: number | null
+          room_id: string | null
+          service_key: string
+          source: string
+          specialist_id: string | null
+          start_override_at: string | null
+          start_override_by: string | null
+          start_override_reason: string | null
+          started_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          vip: boolean
+          walk_in_name: string | null
+          walk_in_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       override_start_without_payment: {
         Args: { p_appt: string; p_reason: string }
         Returns: {

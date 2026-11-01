@@ -86,10 +86,10 @@ export async function levelFor(service: string, patientId?: string | null): Prom
 
 /* ---------- payment gate ---------- */
 
-type PayFields = { price: number | null; patient_package_id: string | null; start_override_at?: string | null; invoices?: { paid: boolean; void: boolean }[] | null };
+type PayFields = { service_key?: string | null; price: number | null; patient_package_id: string | null; start_override_at?: string | null; invoices?: { paid: boolean; void: boolean }[] | null };
 /** Paid = a non-void linked invoice fully paid, a package session, a free session, or an admin override. */
-export const isPaid = (a: PayFields) =>
-  !a.price || !!a.patient_package_id || !!a.start_override_at || (a.invoices ?? []).some((i) => i.paid && !i.void);
+export const isPaid = (a: PayFields) => a.service_key !== "open-visit" && (
+  !a.price || !!a.patient_package_id || !!a.start_override_at || (a.invoices ?? []).some((i) => i.paid && !i.void));
 
 export async function overrideStart(appt: string, reason: string) {
   ok(await supabase.rpc("override_start_without_payment", { p_appt: appt, p_reason: reason }));

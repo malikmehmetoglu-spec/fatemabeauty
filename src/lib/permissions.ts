@@ -7,7 +7,7 @@ import type { Tables } from "@/lib/supabase/client";
 export type Perm =
   | "dashboard" | "calendar" | "queue" | "patients" | "patients_medical" | "kiosk_desk"
   | "cashier" | "finance" | "written_consults_payments" | "package_requests"
-  | "inventory" | "devices" | "store" | "staff" | "marketing" | "reports" | "settings" | "mira";
+  | "inventory" | "devices" | "store" | "staff" | "marketing" | "reports" | "settings" | "mira" | "room_tablet";
 
 export type PermGroup = "العمل اليومي" | "المال" | "الإدارة";
 
@@ -17,6 +17,7 @@ export const PERMS: { key: Perm; label: string; hint: string; group: PermGroup }
   { key: "patients", label: "العميلات", hint: "الملفات وبيانات التواصل", group: "العمل اليومي" },
   { key: "patients_medical", label: "السجل الطبي", hint: "الحالات والملاحظات والصور", group: "العمل اليومي" },
   { key: "kiosk_desk", label: "تابلت الاستقبال", hint: "الاستقبال وتسجيل الحضور وتجهيز الجلسة", group: "العمل اليومي" },
+  { key: "room_tablet", label: "تابلت الغرفة", hint: "حساب مشترك في غرفة العلاج: بدء الجلسات وإنهاؤها", group: "العمل اليومي" },
   { key: "dashboard", label: "لوحة القيادة", hint: "ملخص اليوم والأرقام", group: "العمل اليومي" },
   { key: "cashier", label: "الكاشير", hint: "إصدار الفواتير وقبض الدفعات والصندوق", group: "المال" },
   { key: "finance", label: "المالية الكاملة", hint: "الذمم والمصاريف والعمولات والتقارير المالية", group: "المال" },
@@ -51,3 +52,6 @@ export function permsOf(s: PermStaff | null | undefined): Set<Perm> {
   if (s.role === "owner") return new Set(ALL);
   return new Set((isCustom(s) ? s.permissions as Perm[] : ROLE_DEFAULTS[s.role]));
 }
+
+/** May start / finish sessions (mirrors the check in private.appointment_rules, migration 0188). */
+export const canRunSessions = (s: PermStaff | null | undefined) => { const p = permsOf(s); return p.has("queue") || p.has("room_tablet") || p.has("kiosk_desk"); };
