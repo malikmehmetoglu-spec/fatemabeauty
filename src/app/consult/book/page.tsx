@@ -46,12 +46,12 @@ export default function ConsultBookPage() {
     return out;
   }, [hours, wdays]);
 
-  // free times from the server: the consultant's working hours, overlaps; every max(minutes, 30) min, at least 1 h ahead
+  // free times from the server: the consultant's working hours, overlaps; every max(minutes, 15) min, at least 1 h ahead
   const dk = days[day] ? dayKey(days[day]) : null;
   const { data: free } = useQuery(["consult", "slots", svc?.key, dk], () => appSlots(dk!, svc!.key, null), { enabled: !!svc && !!dk });
   const times = useMemo(() => {
     if (!svc || !dk || !free) return [];
-    const step = Math.max(svc.minutes, 30);
+    const step = Math.max(svc.minutes, 15);
     return free.filter((t) => toMin(t) % step === 0 && new Date(atDamascus(dk, t)).getTime() > Date.now() + 60 * 6e4);
   }, [svc, dk, free]);
 
