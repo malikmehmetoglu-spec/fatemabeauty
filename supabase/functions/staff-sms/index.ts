@@ -2,7 +2,7 @@
 // Edge Function «staff-sms» (verify_jwt = true).
 // Staff (owner / admin / reception) send a booking confirmation or apology by SMS through the clinic's Android phone
 // running «SMS Gateway for Android» (sms-gate.app, same API and secrets as send-sms).
-//   body: { appointment_id, kind: "confirm" | "apology", text, dry_run?: boolean }
+//   body: { appointment_id, kind: "confirm" | "apology" | "reminder", text, dry_run?: boolean }
 // The phone number is read from the appointment (patient phone or walk-in phone), never from the caller.
 // Every attempt is written to public.sms_log; a successful send stamps appointments.confirm_channels.<kind>.sms.
 // Limit: one successful SMS per appointment and kind every 10 minutes.
@@ -33,7 +33,8 @@ Deno.serve(async (req) => {
     if (!me || !["owner", "admin", "reception"].includes(me.role)) return json({ error: "إرسال الرسائل للمالكة والإدارة والاستقبال فقط" }, 403);
 
     const body = await req.json().catch(() => ({}));
-    const kind = body?.kind === "apology" ? "apology" : "confirm";
+    const kind = body?.kind === "apology" ? "apology" : body?.kind === "reminder" ? "reminder" : "confirm";
+    const logKind = kind === "reminder" ? "other" : kind; // sms_log.kind allows confirm|apology|other
     const text = String(body?.text ?? "").trim();
     const dry = body?.dry_run === true;
     if (!text) return json({ error: "نص الرسالة فارغ" }, 400);
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
       .select("id, status, patient_id, walk_in_phone, patient:patients(phone)").eq("id", body?.appointment_id ?? "").maybeSingle();
     if (!a) return json({ error: "الموعد غير موجود" }, 404);
     if (kind === "confirm" && !["confirmed", "checked_in"].includes(a.status)) return json({ error: "الموعد غير مؤكد" }, 409);
+    if (kind === "reminder" && !["pending", "confirmed"].includes(a.status)) return json({ error: "التذكير للمواعيد القادمة فقط" }, 409);
     if (kind === "apology" && a.status !== "cancelled") return json({ error: "الموعد غير ملغى" }, 409);
     const phone = sy(a.patient?.phone || a.walk_in_phone);
     if (!phone) return json({ error: "لا يوجد رقم هاتف سوري صالح لهذه المراجِعة" }, 400);
@@ -53,11 +55,11 @@ Deno.serve(async (req) => {
 
     const since = new Date(Date.now() - 10 * 60e3).toISOString();
     const { count } = await admin.from("sms_log").select("id", { count: "exact", head: true })
-      .eq("appointment_id", a.id).eq("kind", kind).in("status", ["sent", "dry_run"]).gte("created_at", since);
+      .eq("appointment_id", a.id).eq("kind", logKind).in("status", ["sent", "dry_run"]).gte("created_at", since);
     if ((count ?? 0) > 0) return json({ error: "أُرسلت رسالة SMS لهذا الموعد قبل أقل من 10 دقائق — انتظري قليلاً قبل الإعادة", code: "rate_limited" }, 429);
 
     const log = (status: string, error: string | null = null) => admin.from("sms_log").insert({
-      appointment_id: a.id, patient_id: a.patient_id, phone, kind, body: text, status, error, sent_by: me.id,
+      appointment_id: a.id, patient_id: a.patient_id, phone, kind: logKind, body: text, status, error, sent_by: me.id,
     });
 
     if (!dry) {
@@ -80,7 +82,7 @@ Deno.serve(async (req) => {
       }
     }
     await log(dry ? "dry_run" : "sent");
-    if (!dry) await admin.rpc("mark_confirm_channel", { p_id: a.id, p_channel: "sms", p_kind: kind });
+    if (!dry && kind !== "reminder") await admin.rpc("mark_confirm_channel", { p_id: a.id, p_channel: "sms", p_kind: kind });
     return json({ ok: true, dry_run: dry, phone });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

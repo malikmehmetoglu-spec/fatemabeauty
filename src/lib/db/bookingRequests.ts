@@ -151,7 +151,7 @@ export const smsApologyText = (a: Appointment) =>
   fitSms((s) => `Fatema Beauty: نعتذر، تعذّر تثبيت موعد ${s} يوم ${shortWhen(a.starts_at)}. تواصلي معنا لموعد آخر.`, a.service?.name ?? "الجلسة");
 
 /** Sends an SMS through the «staff-sms» Edge Function (phone is taken from the appointment on the server). */
-export async function sendSms(id: string, kind: ConfirmKind, text: string, dryRun = false) {
+export async function sendSms(id: string, kind: ConfirmKind | "reminder", text: string, dryRun = false) {
   const { data, error } = await supabase.functions.invoke("staff-sms", { body: { appointment_id: id, kind, text, dry_run: dryRun } });
   if (error) {
     let msg = "تعذّر إرسال الرسالة.";

@@ -278,7 +278,7 @@ function PrintStep({ a, inv, onClose, onEnsureCheckIn }: { a: Appointment; inv: 
         {inv && <GhostButton icon="print" onClick={() => print({ inv: null, t: t.data ?? null })}>التذكرة فقط</GhostButton>}
         <GhostButton onClick={onClose}>تم</GhostButton>
       </div>
-      <div style={{ fontSize: 12.5, color: C.sub2 }}>تنتظر في الصالة؛ نادي رقمها من «الاستقبال والنداء» عندما تفرغ الأخصائية.</div>
+      <div style={{ fontSize: 12.5, color: C.sub2 }}>تنتظر في الصالة؛ نادي رقمها من «شاشة الاستقبال» عندما تفرغ الأخصائية.</div>
       {job && typeof document !== "undefined" && createPortal(
         <div data-print-receipt="">
           <style>{"@media print { @page { size: 80mm auto; margin: 0; } }"}</style>

@@ -23,12 +23,13 @@ import { AdminInstall } from "@/components/pwa/AdminInstall";
 import { permsOf, type Perm } from "@/lib/permissions";
 
 export type AdminSection =
-  | "مرايتي" | "لوحة القيادة" | "المواعيد" | "الأدوار" | "العميلات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
+  | "مرايتي" | "لوحة القيادة" | "الاستقبال" | "المواعيد" | "الأدوار" | "العميلات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
   | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
   ["heart", "مرايتي", R.W_Maraiti],
   ["dash", "لوحة القيادة", R.W_Dashboard],
+  ["bell", "الاستقبال", R.W_Reception],
   ["cal", "المواعيد", R.W_Calendar],
   ["tv", "الأدوار", R.W_Queue],
   ["users", "العميلات", R.W_Patients],
@@ -56,6 +57,7 @@ type Who = { role: Role; permissions?: string[] | null; is_consultant?: boolean 
 const SECTION_PERMS: Record<AdminSection, Perm[] | null> = {
   "مرايتي": null, // SELF_ONLY
   "لوحة القيادة": ["dashboard"],
+  "الاستقبال": ["calendar"],
   "المواعيد": ["calendar"],
   "الأدوار": ["queue"],
   "العميلات": ["patients", "patients_medical"],
@@ -118,8 +120,10 @@ const pathOk = (w: Who, path: string) => {
 export const homeFor = (w: Who) => {
   // the shared room-tablet account lands on its tablet screen
   if (!full(w.role) && permsOf(w).has("room_tablet") && !anyOf(w, ["calendar", "queue", "kiosk_desk"])) return R.T_Room;
+  // reception (calendar, but no queue / room tablet / dashboard) lands on «شاشة الاستقبال»
+  if (!full(w.role) && anyOf(w, ["calendar"]) && !anyOf(w, ["queue", "room_tablet", "dashboard"])) return R.W_Reception;
   for (const [, sec, href] of NAV) {
-    if (!canSee(w, sec)) continue;
+    if (sec === "الاستقبال" || !canSee(w, sec)) continue;
     if (pathOk(w, href)) return href;
     const sub = SUB[sec]?.find(([, h]) => pathOk(w, h));
     if (sub) return sub[1];
