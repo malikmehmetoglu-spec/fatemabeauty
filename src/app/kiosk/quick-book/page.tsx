@@ -10,10 +10,9 @@ import { initials } from "@/lib/data";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import { listToday, quickBook, searchPatients, type PatientHit } from "@/lib/db/queue";
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
-import { DEFAULT_HOURS, getHours, provides, serviceProviders, weekday } from "@/lib/db/appointments";
+import { DEFAULT_HOURS, getHours, overlapHint, provides, serviceProviders, weekday, type Busy } from "@/lib/db/appointments";
 import { useQuery } from "@/lib/db/query";
 import { atDamascus, clock, dayKey } from "@/lib/format";
-import { consultWarnings } from "@/lib/db/consultTime";
 import { css } from "../css";
 import { BG, C, SH, SHB, SH_SOFT, ICON_FILL } from "@/lib/tokens";
 import { DatePill, KC, KioskNav, kioskError, useKiosk } from "../kiosk";
@@ -74,6 +73,9 @@ export default function Page() {
   const DUR = lvl?.minutes ?? s?.minutes ?? 30;
   const busyList = today.filter((a) => a.status !== "no_show" && (s?.room_id ? a.room_id === s.room_id : p ? a.specialist_id === p.id : false));
   const B: [number, number][] = busyList.map((a) => { const m = toMin(clock(a.starts_at)); return [m, m + a.minutes + (a.extension_minutes ?? 0)]; });
+  const roomCap = (s?.room_id ? rooms.find((r) => r.id === s.room_id)?.capacity : null) ?? 1;
+  const BUSY: Busy[] = today.filter((a) => !["no_show", "cancelled", "done"].includes(a.status))
+    .map((a) => ({ starts_at: a.starts_at, ends_at: new Date(new Date(a.starts_at).getTime() + (a.minutes + (a.extension_minutes ?? 0)) * 60000).toISOString(), room_id: a.room_id, specialist_id: a.specialist_id }));
   const WD = weekday(dayKey());
   // working windows today: the chosen specialist's «أوقات الدوام» (or the default hours without a schedule),
   // otherwise everyone's hours together. The timeline spans them (default 10:00–18:00 when nobody works).
@@ -87,19 +89,25 @@ export default function Page() {
   const ticks = Array.from({ length: 5 }, (_, i) => fmt(Math.round((D0 + (DL * i) / 4) / 15) * 15));
   // outside working hours: still bookable by staff, but flagged
   const cs = (s ? slotsFor(B, DUR, NOW, D0, END, Math.max(5, clinic.slot || 15)) : [])
-    .map((c) => ({ ...c, off: !wins.some((w) => w.from <= c.t && w.to >= c.t + DUR) }));
+    .map((c) => {
+      // staff: every time is pickable — an overlap is an amber hint («الغرفة ممتلئة» / «الأخصائية مشغولة حتى …»), never a block
+      const s0 = new Date(atDamascus(dayKey(), fmt(c.t))).getTime();
+      const hint = overlapHint(s0, s0 + DUR * 60000, BUSY, s?.room_id ?? null, p?.id ?? null, roomCap);
+      return { ...c, hint, fits: !hint, off: !wins.some((w) => w.from <= c.t && w.to >= c.t + DUR) };
+    });
   let slot = st.slot;
-  if (slot === null || !cs.some((c) => c.t === slot && c.fits)) { const f = cs.find((c) => c.fits && !c.off) ?? cs.find((c) => c.fits); slot = f ? f.t : null; }
-  const slotOff = slot !== null && !!cs.find((c) => c.t === slot)?.off;
+  if (slot === null || !cs.some((c) => c.t === slot)) { const f = cs.find((c) => c.fits && !c.off) ?? cs.find((c) => c.fits) ?? cs[0]; slot = f ? f.t : null; }
+  const slotC = slot !== null ? cs.find((c) => c.t === slot) : undefined;
+  const slotOff = !!slotC?.off;
+  const slotWarn = [slotC?.hint, slotOff && (p ? "خارج دوام الأخصائية" : "خارج أوقات الدوام")].filter(Boolean).join(" · ");
   const cells = cs.map((c) => {
     const on = c.t === slot;
     let style = "height:54px;border-radius:18px;font-family:var(--font-rubik),sans-serif;font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;";
     if (on) style += SEL + ";font-weight:700";
-    else if (c.fits && c.off) style += "background:#FFF9EF;border:1.5px dashed #E8B86A;color:#9A6A1E";
+    else if (!c.fits) style += "background:#FFF9EF;border:1.5px solid #E8B86A;color:#9A6A1E";
+    else if (c.off) style += "background:#FFF9EF;border:1.5px dashed #E8B86A;color:#9A6A1E";
     else if (c.fits) style += "background:#FFFFFF;border:1px solid #EADCF0;color:#35213D;box-shadow:0 4px 12px rgba(123,70,135,0.06)";
-    else if (c.taken) style += "background:#F0EDF0;border:1px solid #F0EDF0;color:#B7ACB9;text-decoration:line-through";
-    else style += "background:transparent;border:1.5px dashed #E0D2E3;color:#AF9EB3";
-    return { label: fmt(c.t), style: css(style), aria: fmt(c.t) + (c.fits ? (c.off ? " — خارج دوام الأخصائية" : "") : " — غير متاح"), pick: () => { if (c.fits) setSt({ ...st, slot: c.t }); } };
+    return { label: fmt(c.t), style: css(style), aria: fmt(c.t) + (c.hint ? " — " + c.hint : "") + (c.off ? " — خارج دوام الأخصائية" : ""), pick: () => setSt({ ...st, slot: c.t }) };
   });
   const svcs = SV.map((x, i) => ({ name: x.name, pick: () => setSt({ ...st, svc: i, sp: -1, slot: null }),
     style: css("height:56px;padding:0 20px;border-radius:28px;font-size:16px;font-weight:600;font-family:inherit;display:flex;align-items:center;white-space:nowrap;" +
@@ -127,9 +135,7 @@ export default function Page() {
   const book = async () => {
     if (!s || slot === null) return;
     if (pat && !pat.phone) { setErr("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
-    if (slotOff && !confirm(p ? `خارج دوام الأخصائية: ${p.name} لا تداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟` : "خارج أوقات الدوام: لا أحد من الفريق يداوم في هذا الوقت. تأكيد الحجز رغم ذلك؟")) return;
-    const cw = s.is_consultation && p ? await consultWarnings(s.key, atDamascus(dayKey(), fmt(slot)), p.id, DUR) : [];
-    if (cw.length && !confirm(`${cw.join("\n")}\n\nتأكيد الحجز رغم ذلك؟`)) return;
+    // staff booking is never blocked: off-duty / overlaps are shown as one amber line, no confirm chain
     setBusy(true); setErr(null);
     try {
       await quickBook({ name: pat ? pat.name : newName, phone: pat ? (pat.phone ?? "") : term, patientId: pat?.id, service: s, day: dayKey(), time: fmt(slot), specialistId: p?.id ?? null, level: lvl?.id ?? null });
@@ -312,7 +318,7 @@ export default function Page() {
                 </div>
                 <div style={{ fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sum.sp} · {sum.room} · {sum.price}
                 </div>
-                {slotOff && <div role="alert" style={{ fontSize: 13, fontWeight: 700, color: "#9A6A1E" }}>{p ? "خارج دوام الأخصائية" : "خارج أوقات الدوام"}</div>}
+                {slotWarn && <div role="status" style={{ fontSize: 13, fontWeight: 700, color: "#9A6A1E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{slotWarn} — يمكنكِ الحجز رغم ذلك</div>}
               </div>
               <button type="button" onClick={book} disabled={!canBook || busy} style={{ opacity: canBook && !busy ? 1 : 0.55, fontFamily: "inherit", height: 60, padding: "0 24px", borderRadius: 30, border: "none", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

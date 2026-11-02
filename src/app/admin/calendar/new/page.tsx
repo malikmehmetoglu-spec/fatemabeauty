@@ -9,10 +9,10 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listServices, listSpecialists, priceLabel } from "@/lib/db/catalog";
 import {
-  book, bookingError, busyRanges, OPEN_VISIT, OPEN_VISIT_MIN, OPEN_VISIT_ROOM, createPatient, freeSlots, getHours, provides, searchPatients, serviceProviders, useSearch, type PatientHit,
+  book, bookingError, busyRanges, OPEN_VISIT, OPEN_VISIT_MIN, OPEN_VISIT_ROOM, createPatient, staffSlots, overlapHint, getHours, provides, searchPatients, serviceProviders, useSearch, type PatientHit,
 } from "@/lib/db/appointments";
 import { getPatient } from "@/lib/db/patients";
-import { dayWindows, listStaffHours, rangesOn, worksAt } from "@/lib/db/staff";
+import { listStaffHours, worksAt } from "@/lib/db/staff";
 import { weekday } from "@/lib/db/appointments";
 import { atDamascus, clock, dayKey } from "@/lib/format";
 import { consultWarnings } from "@/lib/db/consultTime";
@@ -25,7 +25,6 @@ import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 import { levelPrice } from "../../settings/services/levels";
 
 type Mode = "existing" | "new" | "walkin";
-const hm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
 export default function BookingModalPage() {
   const router = useRouter();
@@ -100,17 +99,12 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   useEffect(() => { setTime(""); }, [lvMin, openV]);
 
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
-  // candidate times: the chosen specialist's own hours, or the union of everyone's hours (default hours without a schedule)
+  const roomCap = (rooms.data ?? []).find((r) => r.id === effRoom)?.capacity ?? 1;
+  // staff: EVERY time within the opening hours (every 15 min) — overlaps are an amber hint, never a block
   const slots = useMemo(() => {
     if (!svc || !hours.data || !busyQ.data || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return [];
-    const rows = staffHours.data ?? [], wd = weekday(day);
-    // without a chosen specialist: the hours of those who provide this service (fallback: everyone)
-    const doers = prov.data && !openV ? Object.keys(prov.data.map).filter((id) => provides(prov.data, id, svc.key)) : [];
-    const ids = doers.length ? doers : [...new Set([...(team.data ?? []).map((t) => t.id), ...rows.map((r) => r.staff_id)])];
-    const wins = effSp ? rangesOn(rows, effSp, wd, hours.data) ?? [] : dayWindows(rows, ids, wd, hours.data);
-    const all = wins.flatMap((w) => freeSlots({ ...hours.data!, days: [0, 1, 2, 3, 4, 5, 6], from: hm(w.from), to: hm(w.to) }, day, lvMin, busyQ.data!, effRoom || null, effSp || null, (rooms.data ?? []).find((r) => r.id === effRoom)?.capacity ?? 1));
-    return [...new Set(all)].sort();
-  }, [svc, lvMin, hours.data, busyQ.data, day, effRoom, rooms.data, effSp, staffHours.data, team.data, prov.data, openV]);
+    return staffSlots(hours.data, day, lvMin, busyQ.data, effRoom || null, effSp || null, roomCap);
+  }, [svc, lvMin, hours.data, busyQ.data, day, effRoom, roomCap, effSp]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !effSp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
@@ -119,6 +113,19 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
   // the chosen specialist does not provide this service («الخدمات التي تقدّمها») — warn, do not block
   const notProvider = !openV && !!sp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
+  const [cw, setCw] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true; setCw([]);
+    const walk = mode === "walkin", t = walk ? clock() : time;
+    if (openV || !svc?.is_consultation || !sp || !/^\d{2}:\d{2}$/.test(t)) return;
+    consultWarnings(svc.key, atDamascus(walk ? dayKey() : day, t), sp, lvMin).then((w) => { if (live) setCw(w); }, () => {});
+    return () => { live = false; };
+  }, [openV, svc?.key, svc?.is_consultation, sp, time, day, lvMin, mode]);
+  const pickT = mode === "walkin" ? clock() : time;
+  const overlap = /^\d{2}:\d{2}$/.test(pickT) && busyQ.data
+    ? (() => { const s0 = new Date(atDamascus(mode === "walkin" ? dayKey() : day, pickT)).getTime(); return overlapHint(s0, s0 + lvMin * 60000, busyQ.data!, effRoom || null, effSp || null, roomCap); })()
+    : null;
+  const warning = [notProvider && `${spName} لا تقدّم هذه الخدمة`, offDuty && `خارج دوام ${spName}`, overlap, ...cw].filter(Boolean).join(" · ");
   const teamSorted = [...(team.data ?? [])].sort((a, b) => Number(!provides(prov.data, a.id, svc?.key)) - Number(!provides(prov.data, b.id, svc?.key)));
 
   async function submit() {
@@ -132,11 +139,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     const okPhone = (v?: string | null) => /^(\+?963|0)?9\d{8}$/.test((v ?? "").replace(/[\s-]/g, ""));
     if (mode !== "existing" && !okPhone(phone)) { setError("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
     if (mode === "existing" && patient && !patient.phone) { setError("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
-    if (notProvider && !confirm(`${spName} لا تقدّم خدمة «${svc.short_name}» حسب «الخدمات التي تقدّمها». الحجز رغم ذلك؟`)) return;
-    if (offDuty && !confirm(`خارج دوام الأخصائية: ${spName} لا تداوم في هذا الوقت حسب «أوقات الدوام». الحجز رغم ذلك؟`)) return;
-    // consultations: «قالب الاستشارات», rest between consultations and the daily cap — warnings only for staff
-    const cw = !openV && svc.is_consultation && sp ? await consultWarnings(svc.key, atDamascus(walk ? dayKey() : day, t), sp, lvMin) : [];
-    if (cw.length && !confirm(`${cw.join("\n")}\n\nالحجز رغم ذلك؟`)) return;
+    // staff bookings are never blocked: not-provider / off-duty / overlap / consultation rules are one warning line
     setBusy(true);
     try {
       let pid = patient?.id ?? null;
@@ -251,27 +254,27 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
                 <TextInput label="الوقت" type="time" dir="ltr" value={time} onChange={setTime} hint="أو اختاري من الأوقات المتاحة" />
               </div>
               {busyQ.loading ? <Loading label="نحسب الأوقات المتاحة…" style={{ padding: 8 }} /> : (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 132, overflowY: "auto" }}>
-                  {slots.length === 0 ? <span style={{ fontSize: 13, color: C.sub2 }}>لا أوقات فارغة ضمن ساعات الدوام لهذا اليوم.</span>
-                    : slots.map((t) => {
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 168, overflowY: "auto" }}>
+                  {slots.length === 0 ? <span style={{ fontSize: 13, color: C.sub2 }}>لا أوقات ضمن ساعات الدوام لهذا اليوم.</span>
+                    : slots.map(({ t, hint }) => {
                       const off = !onDuty(t, day);
-                      return <Chip key={t} height={34} selected={time === t} onClick={() => setTime(t)} style={off && time !== t ? { background: "#FFF9EF", border: "1.5px dashed #E8B86A", color: "#9A6A1E" } : undefined}><span className="latin" title={off ? "خارج دوام الأخصائية" : undefined}>{t}</span></Chip>;
+                      const amber = (off || hint) && time !== t;
+                      const tip = [hint, off && "خارج دوام الأخصائية"].filter(Boolean).join(" · ") || undefined;
+                      return <Chip key={t} height={34} selected={time === t} onClick={() => setTime(t)} style={amber ? { background: "#FFF9EF", border: `1.5px ${hint ? "solid" : "dashed"} #E8B86A`, color: "#9A6A1E" } : undefined}><span className="latin" title={tip}>{t}</span></Chip>;
                     })}
                 </div>
               )}
             </div>
           )}
-          {effSp && slots.some((t) => !onDuty(t, day)) && mode !== "walkin" && (
+          {mode !== "walkin" && slots.some((x) => x.hint) && (
+            <div style={{ fontSize: 12.5, color: C.sub2 }}>الأوقات ذات الإطار الذهبي متداخلة (الغرفة ممتلئة أو الأخصائية مشغولة) — يمكن اختيارها والحجز رغم ذلك.</div>
+          )}
+          {effSp && slots.some(({ t }) => !onDuty(t, day)) && mode !== "walkin" && (
             <div style={{ fontSize: 12.5, color: C.sub2 }}>الأوقات المنقّطة باللون الذهبي خارج دوام {spName}.</div>
           )}
-          {notProvider && (
-            <div role="alert" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>
-              <Icon name="alert" size={16} color="#8A5A12" />{spName} لا تقدّم هذه الخدمة حسب «الخدمات التي تقدّمها». يمكنكِ الحجز رغم ذلك بعد التأكيد.
-            </div>
-          )}
-          {offDuty && (
-            <div role="alert" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>
-              <Icon name="clock" size={16} color="#8A5A12" />خارج دوام الأخصائية — {spName} لا تداوم في هذا الوقت. يمكنكِ الحجز رغم ذلك بعد التأكيد.
+          {warning && (
+            <div role="status" style={{ borderRadius: 16, padding: "10px 14px", background: "#FCF1DE", color: "#8A5A12", fontSize: 13.5, fontWeight: 700, display: "flex", gap: 8, alignItems: "center", lineHeight: 1.6 }}>
+              <Icon name="alert" size={16} color="#8A5A12" /><span style={{ minWidth: 0 }}>{warning} — يمكنكِ الحجز رغم ذلك.</span>
             </div>
           )}
           {error && <ErrorNote>{error}</ErrorNote>}

@@ -172,7 +172,7 @@ function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boole
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
         {conflict
           ? <SubmitButton busy={busy} onClick={() => save(true)}>حفظ والمتابعة رغم ذلك</SubmitButton>
-          : <SubmitButton busy={busy} disabled={!svcKey || !sp} onClick={() => save(false)}>حفظ الجلسة والمتابعة إلى الدفع</SubmitButton>}
+          : <SubmitButton busy={busy} disabled={!svcKey || !sp} onClick={() => save(true)}>حفظ الجلسة والمتابعة إلى الدفع</SubmitButton>}
       </div>
     </div>
   );

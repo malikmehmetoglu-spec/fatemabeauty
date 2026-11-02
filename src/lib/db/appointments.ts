@@ -155,6 +155,42 @@ export function freeSlots(h: Hours, key: string, minutes: number, busy: Busy[], 
   return out;
 }
 
+/** A start time for STAFF booking: every time is selectable; `hint` (amber) says why it overlaps. */
+export type StaffSlot = { t: string; hint: string | null };
+
+/**
+ * Staff booking (calendar/new, quick-book, arrival, drag): ALL start times of the day within the window (every `step`
+ * minutes) — none is blocked. Overlaps only produce a soft hint: «الغرفة ممتلئة» / «الأخصائية مشغولة حتى hh:mm».
+ * The server does not block staff either (0190); the public link / patient app keep the strict rules.
+ */
+export function staffSlots(h: Hours, key: string, minutes: number, busy: Busy[], roomId: string | null, specialistId: string | null, roomCapacity = 1, step = 15): StaffSlot[] {
+  if (!isOpen(h, key)) return [];
+  const now = Date.now();
+  const out: StaffSlot[] = [];
+  for (let t = toMin(h.from); t + Math.min(minutes, 15) <= toMin(h.to); t += step) {
+    const s = new Date(atDamascus(key, toHHMM(t))).getTime();
+    const e = s + minutes * 60000;
+    if (s + 15 * 60000 <= now) continue; // past (the current quarter stays, for walk-ins)
+    out.push({ t: toHHMM(t), hint: overlapHint(s, e, busy, roomId, specialistId, roomCapacity) });
+  }
+  return out;
+}
+
+/** The amber hint for a visit [s, e) (ms), or null when the room and the specialist are free. */
+export function overlapHint(s: number, e: number, busy: Busy[], roomId: string | null, specialistId: string | null, roomCapacity = 1, ignoreId?: string): string | null {
+  const over = busy.filter((b) => (!ignoreId || (b as Busy & { id?: string }).id !== ignoreId) && new Date(b.starts_at).getTime() < e && new Date(b.ends_at).getTime() > s);
+  if (specialistId) {
+    const mine = over.filter((b) => b.specialist_id === specialistId);
+    if (mine.length) return `الأخصائية مشغولة حتى ${clock(new Date(Math.max(...mine.map((b) => new Date(b.ends_at).getTime()))).toISOString())}`;
+  }
+  if (roomId) {
+    const inRoom = over.filter((b) => b.room_id === roomId).map((b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()]);
+    const points = [s, ...inRoom.map(([a]) => a).filter((a) => a > s)];
+    if (points.some((p) => inRoom.filter(([a, z]) => a <= p && z > p).length >= Math.max(1, roomCapacity))) return "الغرفة ممتلئة";
+  }
+  return null;
+}
+
 /**
  * Patient app: free start times ("HH:MM") computed by the server (rpc app_slots) — same rules as the public link and
  * book_appointment: opening hours, slot grid, room/specialist overlaps and the specialist's working hours («أوقات الدوام»).
