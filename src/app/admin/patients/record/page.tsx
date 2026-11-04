@@ -53,7 +53,6 @@ function Record() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 {p.vip && <VipStar size={22} />}<span style={{ fontSize: 22, fontWeight: 700, color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
                 <span style={PILL_DANGER} className="latin">ملف {p.file_no}</span>
-                {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}
                 {tier && <span style={{ ...PILL_GRAY, background: "linear-gradient(145deg,#FFFFFF,#CFCBD6)", color: "#4A4452" }}>العضوية {tier.name}</span>}
               </div>
               <div style={{ display: "flex", gap: 18, fontSize: 13, color: C.sub, marginTop: 4, flexWrap: "wrap" }}>

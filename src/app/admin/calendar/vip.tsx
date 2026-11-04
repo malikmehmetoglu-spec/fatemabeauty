@@ -12,6 +12,7 @@ import { useQuery } from "@/lib/db/query";
 import { listServices } from "@/lib/db/catalog";
 import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 import { createPatient } from "@/lib/db/appointments";
+import { BirthDateSelect, GenderPick, isoBirth } from "../patients/basicInfo";
 import { getCentre } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
 import { atDamascus, clock, dayKey, money } from "@/lib/format";
@@ -131,6 +132,8 @@ export function VipBookingDialog({ open, onClose, initialClient }: { open: boole
   const [hits, setHits] = useState<VipClient[] | null>(null);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newGender, setNewGender] = useState<"female" | "male">("female");
+  const [newDob, setNewDob] = useState("");
   const [svc, setSvc] = useState<string>("");
   const [lvPick, setLvPick] = useState<string | null>(null);
   const [slotPick, setSlotPick] = useState<string | null>(null);
@@ -168,9 +171,10 @@ export function VipBookingDialog({ open, onClose, initialClient }: { open: boole
     try { setHits(await searchClients(term)); } catch (e) { setErr(vipError(e)); }
   };
   const create = async () => {
+    if (!/^(\+?963|0)?9\d{8}$/.test(newPhone.replace(/[\s-]/g, ""))) { setErr("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
     setBusy(true); setErr(null);
     try {
-      const p = await createPatient(newName, newPhone);
+      const p = await createPatient(newName, newPhone, { gender: newGender, birth_date: isoBirth(newDob) || null });
       if (!p) throw new Error("no patient");
       setClient({ id: p.id, name: p.name, phone: p.phone, file_no: p.file_no, vip: false }); setHits(null);
     } catch (e) { setErr(vipError(e)); }
@@ -280,8 +284,10 @@ export function VipBookingDialog({ open, onClose, initialClient }: { open: boole
               <span style={{ fontSize: 13.5, color: C.sub }}>لا يوجد ملف بهذا البحث — افتحي ملفاً جديداً:</span>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 8 }}>
                 <input aria-label="اسم العميلة" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="الاسم" style={input} />
-                <input aria-label="رقم الهاتف" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="رقم الهاتف (اختياري)" dir="ltr" style={{ ...input, textAlign: "right" }} />
+                <input aria-label="رقم الهاتف" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="رقم الهاتف (إلزامي)" dir="ltr" style={{ ...input, textAlign: "right" }} />
               </div>
+              <GenderPick value={newGender} onChange={setNewGender} />
+              <BirthDateSelect value={newDob} onChange={setNewDob} label="تاريخ الميلاد (اختياري)" />
               <div style={actions}><GhostButton onClick={() => newName.trim().length >= 2 && !busy && create()} icon="plus">فتح ملف جديد</GhostButton></div>
             </div>
           )}
