@@ -204,7 +204,7 @@ ${ctxText ? `\nآخر البطاقات التي أرسلتِها لها (إذا 
           const ci = intake.data?.[0];
           const bal = (inv.data ?? []).filter((x) => !x.void && !x.paid).reduce((s, x) => s + Math.max(0, x.total - (x.amount_paid ?? 0)), 0);
           out.push([
-            `العميلة: ${p.name} | patient_id ${p.id} | ملف ${p.file_no ?? "-"} | ${p.phone ?? ""}${p.skin_type ? ` | بشرة ${p.skin_type}` : ""}${p.vip ? " | VIP" : ""}${p.pregnant ? " | حامل" : ""}${p.breastfeeding ? " | مرضعة" : ""}`,
+            `العميلة: ${p.name} | patient_id ${p.id} | ملف ${p.file_no ?? "-"} | ${p.phone ?? ""}${p.gender === "male" ? " | ذكر" : " | أنثى"}${p.birth_date ? ` | العمر ${Math.floor((Date.now() - new Date(p.birth_date).getTime()) / 31557600000)} سنة` : ""}${p.city ? ` | ${p.city}` : ""}${p.skin_type ? ` | بشرة ${p.skin_type}` : ""}${p.vip ? " | VIP" : ""}${p.pregnant ? " | حامل" : ""}${p.breastfeeding ? " | مرضعة" : ""}`,
             p.notes ? `ملاحظات الملف: ${p.notes}` : "",
             `حالات: ${(cond.data ?? []).map((c) => `${c.name} (${c.kind})`).join("، ") || "لا يوجد"}`,
             ci ? `نموذج الاستشارة: المشكلة ${ci.concern ?? "-"} | منذ ${ci.since ?? "-"} | جرّبت ${ci.tried ?? "-"} | أدوية ${ci.medications ?? "-"} | تحسّس ${ci.allergies ?? "-"} | حامل ${ci.pregnant ? "نعم" : "لا"} | هدفها ${ci.goals ?? "-"}` : "نموذج الاستشارة: لا يوجد",

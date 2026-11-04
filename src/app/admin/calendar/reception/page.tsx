@@ -1,4 +1,5 @@
 "use client";
+import { BirthDateSelect, GenderPick, isoBirth } from "../../patients/basicInfo";
 
 /**
  * «شاشة الاستقبال» — Lubna's landing page (permission: المواعيد).
@@ -325,6 +326,8 @@ function ReprintDialog({ a, onClose }: { a: Appointment; onClose: () => void }) 
 function WalkInDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (a: Appointment) => void }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState<"female" | "male">("female");
+  const [dob, setDob] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   async function save() {
@@ -335,7 +338,7 @@ function WalkInDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (a
     try {
       const core = digits.replace(/\D/g, "").replace(/^(963|0)/, "");
       const found = (await searchPatients(core)).find((p) => (p.phone ?? "").replace(/\D/g, "").endsWith(core));
-      const pid = found?.id ?? (await createPatient(name, phone))?.id ?? null;
+      const pid = found?.id ?? (await createPatient(name, phone, { gender, birth_date: isoBirth(dob) || null }))?.id ?? null;
       const row = await book({ service: OPEN_VISIT, day: dayKey(), time: clock(), specialist: null, room: OPEN_VISIT_ROOM, patient: pid, source: "walk_in", level: null });
       const id = (Array.isArray(row) ? row[0] : row as { id?: string } | null)?.id;
       const a = id ? await getAppointment(id) : null;
@@ -349,6 +352,8 @@ function WalkInDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (a
       <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.6 }}>تُفتح زيارة الآن، ثم تحدّدين الجلسة والأخصائية وتدفع المراجِعة وتُطبع التذكرة.</div>
       <TextInput label="اسم المراجِعة" value={name} onChange={setName} required />
       <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} placeholder="09xxxxxxxx" dir="ltr" type="tel" required />
+      <GenderPick value={gender} onChange={setGender} />
+      <BirthDateSelect value={dob} onChange={setDob} label="تاريخ الميلاد (اختياري)" />
       {err && <ErrorNote>{err}</ErrorNote>}
     </Modal>
   );

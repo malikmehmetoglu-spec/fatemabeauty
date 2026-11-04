@@ -17,6 +17,7 @@ import t from "../adminPages.module.css";
 import { WaIconLink } from "../calendar/whatsapp";
 import { EditPatient } from "./EditPatient";
 import css from "./patients.module.css";
+import { ageOf, BirthDateSelect, GenderMark, GenderPick, isoBirth } from "./basicInfo";
 import { arErr, Bar, chip, displayName, fileHref, Initials, PLUS, primaryBtn } from "./kit";
 
 const FILTERS = ["الكل", "باقة نشطة", "رصيد مستحق", "لديها حساسية", "لم تزر منذ 45 يوماً", "من رابط الحجز"];
@@ -122,7 +123,7 @@ function Patients() {
                     <div style={{ ...cell, flex: 0.55 }}><span className="latin" style={{ fontWeight: 700, color: C.accent }}>{p.file_no}</span></div>
                     <div style={{ ...cell, flex: 1.45 }}>
                       <Initials name={p.name} />
-                      {p.vip && <VipStar size={14} />}<span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span>
+                      {p.vip && <VipStar size={14} />}<span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{displayName(p.name)}</span><AgeGender p={p} />
                     </div>
                     <div style={{ ...cell, flex: 1.05 }}><span dir="ltr" className="latin" style={{ color: C.sub, unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                     <div style={{ ...cell, flex: 0.8 }}><span style={{ color: C.sub, whiteSpace: "nowrap" }}>{lastVisit(p)}</span></div>
@@ -151,7 +152,7 @@ function Patients() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <Initials name={p.name} size={40} />
                       <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{p.vip && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{displayName(p.name)}</div>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: p.name ? C.ink : C.muted }}>{p.vip && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{displayName(p.name)} <AgeGender p={p} /></div>
                         <div style={{ fontSize: 12, color: C.sub2 }}>ملف <span className="latin" style={{ color: C.accent, fontWeight: 700 }}>{p.file_no}</span> · <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{maskPhone(p.phone)}</span></div>
                       </div>
                       <RowActions p={p} canEdit={canEdit} canBill={!contactOnly} canDelete={canDelete} onEdit={() => setEditing(p)} onDelete={() => setRemoving(p)} compact />
@@ -190,6 +191,7 @@ function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: ()
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"female" | "male">("female");
   const [skin, setSkin] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -198,14 +200,16 @@ function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: ()
     setErr("");
     if (!name.trim()) { setErr("اكتبي اسم المراجعة."); return; }
     const digits = phone.replace(/\D/g, "");
-    if (phone && digits.length < 9) { setErr("رقم الهاتف غير مكتمل."); return; }
+    if (digits.length < 9) { setErr("اكتبي رقم الهاتف كاملاً."); return; }
+    const birth = isoBirth(dob);
+    if (birth === null) { setErr("أكملي تاريخ الميلاد أو اتركيه فارغاً."); return; }
     setBusy(true);
     try {
       const p = await createPatient({
-        name: name.trim(), phone: digits ? `+963${digits.replace(/^(963|0)/, "")}` : null,
-        ...(contactOnly ? { birth_date: null, skin_type: null, notes: null } : { birth_date: dob || null, skin_type: skin || null, notes: notes.trim() || null }),
+        name: name.trim(), phone: digits ? `+963${digits.replace(/^(963|0)/, "")}` : null, gender, birth_date: birth || null,
+        ...(contactOnly ? { skin_type: null, notes: null } : { skin_type: skin || null, notes: notes.trim() || null }),
       });
-      onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");
+      onClose(); setName(""); setPhone(""); setDob(""); setGender("female"); setSkin(""); setNotes("");
       if (p && !contactOnly) window.location.href = fileHref(R.W_Record, "id", p.id);
     } catch (e) { setErr(arErr(e)); }
     setBusy(false);
@@ -214,9 +218,10 @@ function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: ()
     <Modal open={open} onClose={onClose} title="فتح ملف مراجعة" footer={<><SubmitButton onClick={save} busy={busy}>حفظ الملف</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
       <TextInput label="الاسم الكامل" value={name} onChange={setName} required />
       <div className={t.two}>
-        <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09xx xxx xxx" hint="تربط الملف بحسابها عند تسجيل الدخول بهذا الرقم" />
-        {!contactOnly && <TextInput label="تاريخ الميلاد" value={dob} onChange={setDob} type="date" />}
+        <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" placeholder="09xx xxx xxx" hint="تربط الملف بحسابها عند تسجيل الدخول بهذا الرقم" required />
+        <GenderPick value={gender} onChange={setGender} />
       </div>
+      <BirthDateSelect value={dob} onChange={setDob} label="تاريخ الميلاد (اختياري)" />
       {!contactOnly && <>
       <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
       <TextArea label="ملاحظات" value={notes} onChange={setNotes} />
@@ -226,13 +231,18 @@ function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: ()
   );
 }
 
+function AgeGender({ p }: { p: PatientRow }) {
+  const a = ageOf(p.birth_date);
+  return <span style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 11.5, fontWeight: 500, color: C.sub2, whiteSpace: "nowrap", flexShrink: 0 }}><GenderMark gender={p.gender} />{a != null && <span><span className="latin">{a}</span> سنة</span>}</span>;
+}
+
 function Tags({ p, hideEmpty }: { p: PatientRow; hideEmpty?: boolean }) {
   const allergies = p.conditions.filter((c) => c.kind === "allergy");
   const none = !allergies.length && !p.pregnant && !p.breastfeeding && !p.skin_type && p.source !== "public";
   return (
     <>
       {allergies.map((c) => <Tag key={c.name} kind="pink">حساسية: {c.name}</Tag>)}
-      {p.pregnant && <Tag kind="amber">حامل</Tag>}
+      {p.gender !== "male" && p.pregnant && <Tag kind="amber">حامل</Tag>}
       {p.breastfeeding && <Tag kind="amber">مرضع</Tag>}
       {p.skin_type && <Tag kind="gray">{p.skin_type}</Tag>}
       {p.source === "public" && <Tag kind="pink">من رابط الحجز</Tag>}

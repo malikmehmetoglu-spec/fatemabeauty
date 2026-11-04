@@ -1509,6 +1509,13 @@ export type Database = {
       patients: {
         Row: {
           birth_date: string | null
+          address: string | null
+          city: string | null
+          emergency_phone: string | null
+          marital_status: string | null
+          occupation: string | null
+          referral: string | null
+          gender: string
           breastfeeding: boolean
           created_at: string
           file_no: number
@@ -1527,6 +1534,13 @@ export type Database = {
         }
         Insert: {
           birth_date?: string | null
+          address?: string | null
+          city?: string | null
+          emergency_phone?: string | null
+          marital_status?: string | null
+          occupation?: string | null
+          referral?: string | null
+          gender?: string
           breastfeeding?: boolean
           created_at?: string
           file_no?: number
@@ -1545,6 +1559,13 @@ export type Database = {
         }
         Update: {
           birth_date?: string | null
+          address?: string | null
+          city?: string | null
+          emergency_phone?: string | null
+          marital_status?: string | null
+          occupation?: string | null
+          referral?: string | null
+          gender?: string
           breastfeeding?: boolean
           created_at?: string
           file_no?: number

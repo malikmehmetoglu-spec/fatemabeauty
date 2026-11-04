@@ -18,6 +18,7 @@ import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
 import { useSession } from "@/lib/supabase/session";
 import { PatientLevels } from "../levels";
+import { ageOf, GENDER_LABEL, maritalLabel, sourceLabel } from "../basicInfo";
 import { RecordIntake } from "../../my-day/IntakePanel";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
@@ -63,8 +64,8 @@ function Record() {
               <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                 <span style={PILL_GRAY}>نوع البشرة: {p.skin_type ?? "غير محدد"}</span>
                 <span style={PILL_GRAY}><span className="latin">{p.points}</span>&nbsp;نقطة</span>
-                {p.pregnant && <span style={PILL_DANGER}>حامل</span>}
-                {p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
+                {p.gender !== "male" && p.pregnant && <span style={PILL_DANGER}>حامل</span>}
+                {p.gender !== "male" && p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
               </div>
               <div style={{ marginTop: 10 }}><VipToggleRow patient={p} onChanged={() => invalidate("patients")} /></div>
             </div>
@@ -79,6 +80,8 @@ function Record() {
           {p.notes && <div style={{ marginTop: 12, fontSize: 13, color: C.sub, background: "#FAF5FB", borderRadius: 14, padding: "8px 12px" }}>{p.notes}</div>}
         </Panel>
 
+        <BasicInfo p={p} onEdit={() => setEditing(true)} />
+
         <RecordIntake patientId={p.id} />
 
         <div className={t.split}>
@@ -92,6 +95,43 @@ function Record() {
       </div>
       {editing && <EditPatient p={p} onClose={() => setEditing(false)} contactOnly={contactOnly} />}
     </Shell>
+  );
+}
+
+function BasicInfo({ p, onEdit }: { p: Patient; onEdit: () => void }) {
+  const { data: visits } = useQuery(["clinical", "visits", p.id], () => listVisits(p.id));
+  const done = (visits ?? []).filter((v) => v.status === "done");
+  const age = ageOf(p.birth_date);
+  const add = <button type="button" onClick={onEdit} style={{ border: "none", background: "transparent", padding: 0, color: C.accent, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>أضيفي</button>;
+  const val = (v: React.ReactNode, ltr?: boolean) => v == null || v === "" ? <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><span style={{ color: C.muted }}>—</span>{add}</span> : ltr ? <span dir="ltr" className="latin" style={{ unicodeBidi: "isolate" }}>{v}</span> : v;
+  const place = [p.city, p.address].filter(Boolean).join(" — ");
+  const rows: [string, React.ReactNode][] = [
+    ["الاسم", val(p.name)],
+    ["رقم الملف", <span key="f" className="latin">{p.file_no}</span>],
+    ["الهاتف", val(p.phone, true)],
+    ["الجنس", GENDER_LABEL[p.gender] ?? "أنثى"],
+    ["تاريخ الميلاد", val(p.birth_date ? <>{arDate(new Date(p.birth_date), { day: false, year: true })}{age != null && <span style={{ color: C.sub }}> · <span className="latin">{age}</span> سنة</span>}</> : null)],
+    ["الحالة الاجتماعية", val(maritalLabel(p.marital_status, p.gender))],
+    ["المدينة / العنوان", val(place || null)],
+    ["المهنة", val(p.occupation)],
+    ["رقم للطوارئ", val(p.emergency_phone, true)],
+    ["كيف عرفت بنا", val(p.referral)],
+    ["مصدر الملف", sourceLabel(p.source)],
+    ["تاريخ فتح الملف", arDate(new Date(p.created_at), { year: true })],
+    ["الزيارات", visits == null ? "…" : done.length ? <><span className="latin">{done.length}</span> · آخرها {arDate(new Date(done[0].starts_at), { year: true })}</> : "لا زيارات مكتملة"],
+    ["VIP", p.vip ? "نعم" : "لا"],
+  ];
+  return (
+    <Panel title="المعلومات الأساسية" sub="بيانات الملف غير الطبية">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "10px 18px" }}>
+        {rows.map(([k, v]) => (
+          <div key={k} style={{ minWidth: 0, lineHeight: 1.5, borderBottom: "1px solid #F1E8F4", paddingBottom: 8 }}>
+            <div style={{ fontSize: 12, color: C.sub2 }}>{k}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, overflowWrap: "anywhere" }}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 

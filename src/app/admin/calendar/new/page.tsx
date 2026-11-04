@@ -1,4 +1,5 @@
 "use client";
+import { BirthDateSelect, GenderPick, isoBirth } from "../../patients/basicInfo";
 
 /** W_BookingModal.dc.html — new appointment over the calendar: existing patient, new patient record, or walk-in (live). */
 import { useRouter } from "next/navigation";
@@ -53,6 +54,8 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const [patient, setPatient] = useState<PatientHit | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState<"female" | "male">("female");
+  const [dob, setDob] = useState("");
   const [checkIn, setCheckIn] = useState(true);
   // «تُحدَّد عند الوصول»: no service / specialist — holds 60 min (one bed) in the skin room
   const [later, setLater] = useState(false);
@@ -144,7 +147,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     try {
       let pid = patient?.id ?? null;
       if (mode === "new") {
-        const created = await createPatient(name, phone);
+        const created = await createPatient(name, phone, { gender, birth_date: isoBirth(dob) || null });
         pid = created?.id ?? null;
         // keep the new file selected so a retry after a booking error does not open a second file
         if (created) { setPatient(created); setMode("existing"); }
@@ -208,6 +211,12 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
             <div className={css.grid2}>
               <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
               <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
+            </div>
+          )}
+          {mode === "new" && (
+            <div className={css.grid2}>
+              <GenderPick value={gender} onChange={setGender} />
+              <BirthDateSelect value={dob} onChange={setDob} label="تاريخ الميلاد (اختياري)" />
             </div>
           )}
 

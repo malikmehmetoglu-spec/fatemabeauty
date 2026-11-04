@@ -311,10 +311,10 @@ export async function searchPatients(q: string): Promise<PatientHit[]> {
 }
 
 /** Opens a patient record at reception (staff only). Phone is stored as +963… so the app login links to it. */
-export async function createPatient(name: string, phone: string) {
+export async function createPatient(name: string, phone: string, extra?: { gender?: "female" | "male"; birth_date?: string | null }) {
   const digits = phone.replace(/\D/g, "");
   const ph = !digits ? null : "+" + (digits.startsWith("963") ? digits : "963" + digits.replace(/^0/, ""));
-  const row = must(await supabase.from("patients").insert({ name: name.trim(), phone: ph }).select("id,name,phone,file_no").single());
+  const row = must(await supabase.from("patients").insert({ name: name.trim(), phone: ph, ...(extra?.gender ? { gender: extra.gender } : {}), ...(extra?.birth_date ? { birth_date: extra.birth_date } : {}) }).select("id,name,phone,file_no").single());
   invalidate("patients");
   return row;
 }

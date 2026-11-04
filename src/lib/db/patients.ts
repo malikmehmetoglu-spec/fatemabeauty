@@ -56,13 +56,13 @@ export async function getPatient(id: string) {
 }
 
 /** Staff opens a file at reception. */
-export async function createPatient(input: { name: string; phone: string | null; birth_date: string | null; skin_type: string | null; notes: string | null }) {
+export async function createPatient(input: { name: string; phone: string | null; birth_date: string | null; skin_type: string | null; notes: string | null; gender?: "female" | "male" }) {
   const row = must(await supabase.from("patients").insert(input).select().single());
   invalidate("patients");
   return row;
 }
 
-export async function updatePatient(id: string, patch: Partial<Pick<Patient, "name" | "phone" | "birth_date" | "skin_type" | "pregnant" | "breastfeeding" | "notes" | "lang">> & { notify?: Json }) {
+export async function updatePatient(id: string, patch: Partial<Pick<Patient, "name" | "phone" | "birth_date" | "skin_type" | "pregnant" | "breastfeeding" | "notes" | "lang" | "gender" | "city" | "address" | "occupation" | "referral" | "emergency_phone" | "marital_status">> & { notify?: Json }) {
   const row = must(await supabase.from("patients").update(patch).eq("id", id).select().single());
   invalidate("patients"); invalidate("me");
   return row;
