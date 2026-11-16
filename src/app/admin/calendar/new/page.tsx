@@ -15,7 +15,7 @@ import {
 import { getPatient } from "@/lib/db/patients";
 import { listStaffHours, worksAt } from "@/lib/db/staff";
 import { weekday } from "@/lib/db/appointments";
-import { atDamascus, clock, dayKey } from "@/lib/format";
+import { arDate, atDamascus, clock, dayKey } from "@/lib/format";
 import { consultWarnings } from "@/lib/db/consultTime";
 import { C, ICON_FILL } from "@/lib/tokens";
 import { CalendarBody } from "../CalendarBoard";
@@ -24,6 +24,11 @@ import { VipBookingDialog, VipButton } from "../vip";
 import css from "../appts.module.css";
 import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 import { levelPrice } from "../../settings/services/levels";
+import { addDays } from "../followUpDate";
+import { isOpen } from "@/lib/db/appointments";
+
+const FOLLOW_UP = "follow-up";
+const FU_DAYS = [15, 30, 40, 60];
 
 type Mode = "book" | "walkin";
 const digitsOf = (v: string) => v.replace(/\D/g, "").replace(/^(963|0)/, "");
@@ -118,6 +123,24 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     if (!svc || !hours.data || !busyQ.data || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return [];
     return staffSlots(hours.data, day, lvMin, busyQ.data, effRoom || null, effSp || null, roomCap);
   }, [svc, lvMin, hours.data, busyQ.data, day, effRoom, roomCap, effSp]);
+  // «مراجعة بعد N يوم»: service = follow-up with the consultant, day = first open day ≥ today+N, time = first free slot
+  const [fu, setFu] = useState<{ n: number; pending: boolean } | null>(null);
+  const nextOpen = (k: string) => { let d = k; for (let i = 0; i < 30 && hours.data && !isOpen(hours.data, d); i++) d = addDays(d, 1); return d; };
+  function pickFollowUp(n: number) {
+    const consultant = (team.data ?? []).find((t) => (t as { is_consultant?: boolean }).is_consultant);
+    setLater(false); setError("");
+    setSvcKey(FOLLOW_UP);
+    if (consultant) setSp(consultant.id);
+    setDay(nextOpen(addDays(dayKey(), n)));
+    setFu({ n, pending: true });
+  }
+  useEffect(() => {
+    if (!fu?.pending || svc?.key !== FOLLOW_UP || busyQ.loading || !busyQ.data || !hours.data) return;
+    const free = slots.find((x) => !x.hint);
+    if (free) { setTime(free.t); setFu({ n: fu.n, pending: false }); }
+    else if (day < addDays(dayKey(), fu.n + 21)) setDay(nextOpen(addDays(day, 1)));
+    else setFu({ n: fu.n, pending: false });
+  }, [fu, svc?.key, slots, busyQ.loading, busyQ.data, hours.data, day]);
   const toM = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
   /** Does the chosen specialist work (her «أوقات الدوام», or the default hours without a schedule) for the whole visit at time t? */
   const onDuty = (t: string, d: string) => !effSp || !svc || !hours.data || !/^\d{2}:\d{2}$/.test(t) || !/^\d{4}-\d{2}-\d{2}$/.test(d) ||
@@ -228,6 +251,27 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
                 </div>
               )}
             </>
+          )}
+
+          {mode === "book" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>حجز مراجعة بعد:</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {FU_DAYS.map((n) => {
+                  const on = fu?.n === n && svc?.key === FOLLOW_UP;
+                  return (
+                    <button key={n} type="button" onClick={() => pickFollowUp(n)}
+                      style={{ flex: "1 1 0", minWidth: 64, height: 42, borderRadius: 21, border: `1px solid ${C.accent}`, background: on ? C.accent : C.white, color: on ? C.white : C.accent, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      <span className="latin">{n}</span> يوم
+                    </button>
+                  );
+                })}
+              </div>
+              {fu && svc?.key === FOLLOW_UP && !fu.pending && (
+                time ? <div style={{ fontSize: 13, fontWeight: 700, color: "#2F6E4A" }}>اختير تلقائياً: {arDate(new Date(atDamascus(day, time)), { year: false })} · الساعة <span className="latin">{time}</span> — اضغطي «حجز الموعد».</div>
+                  : <div style={{ fontSize: 13, color: C.danger }}>لا يوجد وقت فارغ قريب، اختاري الوقت يدوياً.</div>
+              )}
+            </div>
           )}
 
           {mode !== "walkin" && (
