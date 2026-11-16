@@ -6,7 +6,7 @@ import { ErrorNote, GhostButton, Modal, Select, SubmitButton, TextArea, TextInpu
 import { SKIN_TYPES, updatePatient, type Patient } from "@/lib/db/patients";
 import t from "../adminPages.module.css";
 import { arErr } from "./kit";
-import { BirthDateSelect, GenderPick, isoBirth, MARITAL_LABEL, maritalLabel } from "./basicInfo";
+import { BirthDateSelect, isoBirth, MARITAL_LABEL, maritalLabel } from "./basicInfo";
 
 /** Same shape createPatient stores (+963…), so the patient's app login still matches the file. */
 function normPhone(v: string) {
@@ -21,7 +21,6 @@ export function EditPatient({ p, onClose, contactOnly }: { p: EditP; onClose: ()
   const [name, setName] = useState(p.name);
   const [phone, setPhone] = useState(p.phone ?? "");
   const [dob, setDob] = useState(p.birth_date ?? "");
-  const [gender, setGender] = useState<"female" | "male">(p.gender === "male" ? "male" : "female");
   const [marital, setMarital] = useState(p.marital_status ?? "");
   const [city, setCity] = useState(p.city ?? "");
   const [address, setAddress] = useState(p.address ?? "");
@@ -43,13 +42,13 @@ export function EditPatient({ p, onClose, contactOnly }: { p: EditP; onClose: ()
     if (birth === null) { setErr("أكملي تاريخ الميلاد (اليوم والشهر والسنة) أو اتركيه فارغاً."); return; }
     setBusy(true);
     const basic = {
-      name: name.trim(), phone: normPhone(phone), birth_date: birth || null, gender,
+      name: name.trim(), phone: normPhone(phone), birth_date: birth || null, gender: "female",
       marital_status: marital || null, city: city.trim() || null, address: address.trim() || null,
       occupation: job.trim() || null, emergency_phone: normPhone(emerg), referral: ref.trim() || null,
     };
     try {
       await updatePatient(p.id, contactOnly ? basic
-        : { ...basic, skin_type: skin || null, notes: notes.trim() || null, pregnant: gender === "male" ? false : preg, breastfeeding: gender === "male" ? false : bf });
+        : { ...basic, skin_type: skin || null, notes: notes.trim() || null, pregnant: preg, breastfeeding: bf });
       onClose();
     } catch (e) { setErr(arErr(e)); }
     setBusy(false);
@@ -57,13 +56,10 @@ export function EditPatient({ p, onClose, contactOnly }: { p: EditP; onClose: ()
   return (
     <Modal open onClose={onClose} title={`تعديل ملف ${p.file_no}`} footer={<><SubmitButton onClick={save} busy={busy}>حفظ</SubmitButton><GhostButton onClick={onClose}>إلغاء</GhostButton></>}>
       <TextInput label="الاسم" value={name} onChange={setName} />
-      <div className={t.two}>
-        <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" />
-        <GenderPick value={gender} onChange={setGender} />
-      </div>
+      <TextInput label="الهاتف" value={phone} onChange={setPhone} dir="ltr" />
       <div className={t.two}>
         <BirthDateSelect value={dob} onChange={setDob} />
-        <Select label="الحالة الاجتماعية" value={marital} onChange={setMarital} options={[{ value: "", label: "غير محدد" }, ...Object.keys(MARITAL_LABEL).map((k) => ({ value: k, label: maritalLabel(k, gender) ?? k }))]} />
+        <Select label="الحالة الاجتماعية" value={marital} onChange={setMarital} options={[{ value: "", label: "غير محدد" }, ...Object.keys(MARITAL_LABEL).map((k) => ({ value: k, label: maritalLabel(k, "female") ?? k }))]} />
       </div>
       <div className={t.two}>
         <TextInput label="المدينة" value={city} onChange={setCity} />
@@ -76,7 +72,7 @@ export function EditPatient({ p, onClose, contactOnly }: { p: EditP; onClose: ()
       </div>
       {!contactOnly && <>
       <Select label="نوع البشرة" value={skin} onChange={setSkin} options={[{ value: "", label: "غير محدد" }, ...SKIN_TYPES.map((s) => ({ value: s, label: s }))]} />
-      {gender === "female" && <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+      {<div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={preg} onChange={setPreg} label="حامل" />حامل</label>
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5 }}><Toggle on={bf} onChange={setBf} label="مرضع" />مرضع</label>
       </div>}

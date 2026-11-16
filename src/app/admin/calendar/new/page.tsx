@@ -1,7 +1,7 @@
 "use client";
-import { BirthDateSelect, GenderPick, isoBirth } from "../../patients/basicInfo";
+import { BirthDateSelect, isoBirth } from "../../patients/basicInfo";
 
-/** W_BookingModal.dc.html — new appointment over the calendar: existing patient, new patient record, or walk-in (live). */
+/** W_BookingModal.dc.html — new appointment over the calendar. One form for every client: typing a name/phone suggests existing files; a matching phone selects the file automatically, otherwise a new file is opened on save. Or walk-in (live). */
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell";
@@ -25,7 +25,8 @@ import css from "../appts.module.css";
 import { levelsOf, listLevels, patientLevels } from "@/lib/db/levels";
 import { levelPrice } from "../../settings/services/levels";
 
-type Mode = "existing" | "new" | "walkin";
+type Mode = "book" | "walkin";
+const digitsOf = (v: string) => v.replace(/\D/g, "").replace(/^(963|0)/, "");
 
 export default function BookingModalPage() {
   const router = useRouter();
@@ -48,13 +49,11 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const prov = useQuery(["appointments", "providers"], serviceProviders);
   const levels = useQuery(["levels", "all"], listLevels);
 
-  const [mode, setMode] = useState<Mode>("existing");
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<PatientHit[]>([]);
+  const [mode, setMode] = useState<Mode>("book");
+    const [hits, setHits] = useState<PatientHit[]>([]);
   const [patient, setPatient] = useState<PatientHit | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [gender, setGender] = useState<"female" | "male">("female");
   const [dob, setDob] = useState("");
   const [checkIn, setCheckIn] = useState(true);
   // «تُحدَّد عند الوصول»: no service / specialist — holds 60 min (one bed) in the skin room
@@ -73,25 +72,36 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   useEffect(() => {
     if (!preId) return;
     let live = true;
-    getPatient(preId).then((p) => { if (live && p) { setMode("existing"); setPatient({ id: p.id, name: p.name, phone: p.phone, file_no: p.file_no }); } }).catch(() => {});
+    getPatient(preId).then((p) => { if (live && p) { setMode("book"); setPatient({ id: p.id, name: p.name, phone: p.phone, file_no: p.file_no }); } }).catch(() => {});
     return () => { live = false; };
   }, [preId]);
 
+  // suggestions from what is typed: the phone (4+ digits) wins over the name
   useEffect(() => {
-    if (mode !== "existing" || patient) return;
+    if (mode !== "book" || patient) return;
+    const core = digitsOf(phone);
+    const term = core.length >= 4 ? core : name.trim();
+    if (term.length < 2) { setHits([]); return; }
     let live = true;
-    const t = setTimeout(() => { searchPatients(q).then((r) => live && setHits(r)).catch(() => live && setHits([])); }, 250);
+    const t = setTimeout(() => {
+      searchPatients(term).then((r) => {
+        if (!live) return;
+        // full phone of an existing file → select it automatically
+        const exact = core.length >= 9 ? r.find((h) => digitsOf(h.phone ?? "") === core) : undefined;
+        if (exact) { setPatient(exact); setHits([]); } else setHits(r.slice(0, 5));
+      }).catch(() => live && setHits([]));
+    }, 250);
     return () => { live = false; clearTimeout(t); };
-  }, [q, mode, patient]);
+  }, [name, phone, mode, patient]);
 
   const svc = (services.data ?? []).find((s) => s.key === svcKey) ?? services.data?.[0] ?? null;
   useEffect(() => { if (svc && !svcKey) setSvcKey(svc.key); }, [svc, svcKey]);
   useEffect(() => { setRoom(svc?.room_id ?? ""); setTime(""); }, [svc?.key, svc?.room_id]);
 
   // «مستوى الجلسة»: default = the level set in her file for this service, else level 1
-  const pLevels = useQuery(["levels", "patient", patient?.id], () => patientLevels(patient!.id), { enabled: mode === "existing" && !!patient });
+  const pLevels = useQuery(["levels", "patient", patient?.id], () => patientLevels(patient!.id), { enabled: mode === "book" && !!patient });
   const svcLevels = levelsOf(levels.data, svc?.key);
-  const assigned = mode === "existing" ? (pLevels.data ?? []).find((x) => x.service_key === svc?.key)?.level_id : null;
+  const assigned = mode === "book" ? (pLevels.data ?? []).find((x) => x.service_key === svc?.key)?.level_id : null;
   const [lvPick, setLvPick] = useState("");
   useEffect(() => { setLvPick(""); }, [svc?.key, patient?.id]);
   const lvl = svcLevels.find((l) => l.id === lvPick) ?? svcLevels.find((l) => l.id === assigned) ?? svcLevels[0] ?? null;
@@ -137,20 +147,22 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     const walk = mode === "walkin";
     const t = walk ? clock() : time;
     if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
-    if (mode === "existing" && !patient) { setError("ابحثي عن المراجِعة واختاريها."); return; }
-    if (mode !== "existing" && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
+    if (!patient && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
     const okPhone = (v?: string | null) => /^(\+?963|0)?9\d{8}$/.test((v ?? "").replace(/[\s-]/g, ""));
-    if (mode !== "existing" && !okPhone(phone)) { setError("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
-    if (mode === "existing" && patient && !patient.phone) { setError("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
+    if (!patient && !okPhone(phone)) { setError("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
+    if (patient && !patient.phone) { setError("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
     // staff bookings are never blocked: not-provider / off-duty / overlap / consultation rules are one warning line
     setBusy(true);
     try {
       let pid = patient?.id ?? null;
-      if (mode === "new") {
-        const created = await createPatient(name, phone, { gender, birth_date: isoBirth(dob) || null });
-        pid = created?.id ?? null;
-        // keep the new file selected so a retry after a booking error does not open a second file
-        if (created) { setPatient(created); setMode("existing"); }
+      if (!walk && !patient) {
+        // existing file with this phone? use it; otherwise open a new file automatically
+        const core = digitsOf(phone);
+        const found = (await searchPatients(core)).find((h) => digitsOf(h.phone ?? "") === core);
+        const chosen = found ?? await createPatient(name, phone, { birth_date: isoBirth(dob) || null });
+        pid = chosen?.id ?? null;
+        // keep it selected so a retry after a booking error does not open a second file
+        if (chosen) setPatient(chosen);
       }
       if (openV) {
         await book({ service: OPEN_VISIT, day, time: t, specialist: null, room: OPEN_VISIT_ROOM, patient: pid, source: "reception", level: null });
@@ -165,7 +177,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
-      setError(/patients_phone_key|duplicate key.*phone/.test(m) ? "يوجد ملف بهذا الرقم — ابحثي عنه في «لها ملف»." : bookingError(e));
+      setError(/patients_phone_key|duplicate key.*phone/.test(m) ? "يوجد ملف بهذا الرقم — اختاريه من الاقتراحات." : bookingError(e));
     } finally { setBusy(false); }
   }
 
@@ -182,42 +194,40 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
             <VipButton onClick={onVip} height={42} />
           </div>
           <Segment label="نوع الحجز" value={mode} onChange={(v) => { setMode(v); setError(""); }}
-            options={[{ value: "existing", label: "لها ملف" }, { value: "new", label: "ملف جديد" }, { value: "walkin", label: "حضور مباشر" }]} />
+            options={[{ value: "book", label: "موعد" }, { value: "walkin", label: "حضور مباشر" }]} />
 
-          {mode === "existing" && (patient ? (
+          {patient ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 18, padding: "10px 14px", background: C.tint2 }}>
               <span style={{ width: 40, height: 40, borderRadius: 20, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="users" size={18} /></span>
               <div style={{ flex: 1, lineHeight: 1.35 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700 }}>{patient.name || "بدون اسم"}</div>
-                <div style={{ fontSize: 12.5, color: C.sub2 }}>ملف {patient.file_no}{patient.phone ? <> · <span className="latin" dir="ltr">{patient.phone}</span></> : null}</div>
+                <div style={{ fontSize: 12.5, color: C.sub2 }}>لها ملف {patient.file_no}{patient.phone ? <> · <span className="latin" dir="ltr">{patient.phone}</span></> : null}</div>
               </div>
-              <button type="button" onClick={() => setPatient(null)} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700, fontSize: 13, minHeight: 36, padding: "0 8px" }}>تغيير</button>
+              <button type="button" onClick={() => { setPatient(null); setName(""); setPhone(""); }} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700, fontSize: 13, minHeight: 36, padding: "0 8px" }}>تغيير</button>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <TextInput label="ابحثي بالاسم أو رقم الهاتف أو رقم الملف" value={q} onChange={setQ} placeholder="حرفان على الأقل" />
-              {hits.map((h) => (
-                <button key={h.id} type="button" onClick={() => setPatient(h)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderRadius: 14, padding: "9px 14px", border: "1px solid #EADCF0", background: C.white, fontSize: 14, textAlign: "right" }}>
-                  <b>{h.name || "بدون اسم"}</b><span style={{ fontSize: 12.5, color: C.sub2 }}>ملف {h.file_no}{h.phone ? ` · ${h.phone}` : ""}</span>
-                </button>
-              ))}
-              {q.trim().length >= 2 && hits.length === 0 && (
-                <div style={{ fontSize: 13, color: C.sub2 }}>لا نتائج. <button type="button" onClick={() => { setMode("new"); setName(/\d/.test(q) ? "" : q); setPhone(/\d/.test(q) ? q : ""); }} style={{ border: "none", background: "none", color: C.accent, fontWeight: 700 }}>فتح ملف جديد</button></div>
+            <>
+              <div className={css.grid2}>
+                <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
+                <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" />
+              </div>
+              {mode === "book" && hits.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ fontSize: 12.5, color: C.sub2 }}>لها ملف؟ اضغطي على اسمها:</div>
+                  {hits.map((h) => (
+                    <button key={h.id} type="button" onClick={() => { setPatient(h); setHits([]); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderRadius: 14, padding: "9px 14px", border: "1px solid #EADCF0", background: C.white, fontSize: 14, textAlign: "right" }}>
+                      <b>{h.name || "بدون اسم"}</b><span style={{ fontSize: 12.5, color: C.sub2 }}>ملف {h.file_no}{h.phone ? <> · <span className="latin" dir="ltr">{h.phone}</span></> : ""}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </div>
-          ))}
-
-          {mode !== "existing" && (
-            <div className={css.grid2}>
-              <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
-              <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" hint={mode === "new" ? "يرتبط الملف بحسابها عند الدخول للتطبيق بهذا الرقم" : undefined} />
-            </div>
-          )}
-          {mode === "new" && (
-            <div className={css.grid2}>
-              <GenderPick value={gender} onChange={setGender} />
-              <BirthDateSelect value={dob} onChange={setDob} label="تاريخ الميلاد (اختياري)" />
-            </div>
+              {mode === "book" && (
+                <div className={css.grid2}>
+                  <BirthDateSelect value={dob} onChange={setDob} label="تاريخ الميلاد (اختياري)" />
+                  <div style={{ alignSelf: "end", fontSize: 12.5, color: C.sub2, lineHeight: 1.6, paddingBottom: 6 }}>إن لم يكن لها ملف يُفتح ملفها تلقائياً عند الحجز.</div>
+                </div>
+              )}
+            </>
           )}
 
           {mode !== "walkin" && (

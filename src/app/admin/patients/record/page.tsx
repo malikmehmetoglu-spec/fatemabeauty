@@ -18,7 +18,7 @@ import { WaIconLink } from "../../calendar/whatsapp";
 import { EditPatient } from "../EditPatient";
 import { useSession } from "@/lib/supabase/session";
 import { PatientLevels } from "../levels";
-import { ageOf, GENDER_LABEL, maritalLabel, sourceLabel } from "../basicInfo";
+import { ageOf, maritalLabel, sourceLabel } from "../basicInfo";
 import { RecordIntake } from "../../my-day/IntakePanel";
 import { arErr, Bar, BackLink, chip, displayName, fileHref, Initials, outlineBtn, Panel, PILL_DANGER, PILL_GRAY, PLUS } from "../kit";
 
@@ -63,8 +63,8 @@ function Record() {
               <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                 <span style={PILL_GRAY}>نوع البشرة: {p.skin_type ?? "غير محدد"}</span>
                 <span style={PILL_GRAY}><span className="latin">{p.points}</span>&nbsp;نقطة</span>
-                {p.gender !== "male" && p.pregnant && <span style={PILL_DANGER}>حامل</span>}
-                {p.gender !== "male" && p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
+                {p.pregnant && <span style={PILL_DANGER}>حامل</span>}
+                {p.breastfeeding && <span style={PILL_DANGER}>مرضع</span>}
               </div>
               <div style={{ marginTop: 10 }}><VipToggleRow patient={p} onChanged={() => invalidate("patients")} /></div>
             </div>
@@ -108,9 +108,8 @@ function BasicInfo({ p, onEdit }: { p: Patient; onEdit: () => void }) {
     ["الاسم", val(p.name)],
     ["رقم الملف", <span key="f" className="latin">{p.file_no}</span>],
     ["الهاتف", val(p.phone, true)],
-    ["الجنس", GENDER_LABEL[p.gender] ?? "أنثى"],
     ["تاريخ الميلاد", val(p.birth_date ? <>{arDate(new Date(p.birth_date), { day: false, year: true })}{age != null && <span style={{ color: C.sub }}> · <span className="latin">{age}</span> سنة</span>}</> : null)],
-    ["الحالة الاجتماعية", val(maritalLabel(p.marital_status, p.gender))],
+    ["الحالة الاجتماعية", val(maritalLabel(p.marital_status, "female"))],
     ["المدينة / العنوان", val(place || null)],
     ["المهنة", val(p.occupation)],
     ["رقم للطوارئ", val(p.emergency_phone, true)],
