@@ -3,6 +3,7 @@
 /** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new.
  *  Day view: time grid with one column per room or specialist (overlaps laid out side by side in lanes, card height = duration);
  *  phones get an hour-grouped agenda instead. Week view: 7 day columns of compact cards. */
+import { FollowUpPicker } from "./followUp";
 import { openTicket } from "@/components/ticket/QueueTicket";
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
 import Link from "next/link";
@@ -482,6 +483,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
           {(a.status === "in_session" || a.status === "done") && <Link href={`${R.W_SessionNote}?appointment=${a.id}&patient=${a.patient_id}`} style={{ color: C.accent }}>ملاحظة الجلسة</Link>}
         </div>
       )}
+      {(a.status === "in_session" || a.status === "done") && a.patient_id && a.service_key !== "follow-up" && <FollowUpPicker patientId={a.patient_id} />}
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
   );

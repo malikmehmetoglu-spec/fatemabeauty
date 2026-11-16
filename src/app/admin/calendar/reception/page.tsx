@@ -32,6 +32,7 @@ import { ReceiptSheet } from "../../finance/InvoicePrint";
 import { ArrivalPanel } from "../ArrivalPanel";
 import { AppointmentDialog } from "../CalendarBoard";
 import { isVip, VipStar } from "../vip";
+import { FollowUpPicker } from "../followUp";
 
 type Lane = "coming" | "pay" | "call" | "session" | "done";
 const LANES: { k: Lane; t: string; icon: string; empty: string }[] = [
@@ -271,6 +272,7 @@ function ApptCard({ a, lane, now, busy, smsAt, onArrive, onRemind, onCall, onRep
         {lane === "session" && <Badge c="#9C2F5C" bg="#F8E3EB"><Icon name="clock" size={13} color="#9C2F5C" />منذ <Timer from={a.started_at} /> · تنتهي <span className="latin">{clock(endsAt(a))}</span></Badge>}
         {lane === "done" && a.finished_at && <Badge c={C.okDeep} bg="#E3F3EA">انتهت <span className="latin">{clock(a.finished_at)}</span></Badge>}
       </div>
+      {(lane === "done" || lane === "session") && a.patient_id && a.service_key !== "follow-up" && <FollowUpPicker patientId={a.patient_id} />}
       {lane !== "done" && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {lane === "coming" && <>
