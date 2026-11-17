@@ -247,3 +247,27 @@ export async function applyStocktake(counts: { key: string; counted: number; cur
   invalidate("products");
   return changed;
 }
+
+/* ---------- categories (dropdown, managed from the product form) ---------- */
+export async function listCategories(): Promise<string[]> {
+  return (must(await supabase.from("product_categories").select("name").order("sort").order("name")) ?? []).map((r) => r.name);
+}
+export async function addCategory(name: string) {
+  must(await supabase.from("product_categories").upsert({ name: name.trim() }, { onConflict: "name", ignoreDuplicates: true }));
+  invalidate("product-categories");
+}
+
+/** Item with this barcode (active or not), excluding `exceptKey`. */
+export async function productByBarcode(code: string, exceptKey?: string) {
+  let q = supabase.from("products").select("key,name,active").eq("barcode", code.trim()).limit(1);
+  if (exceptKey) q = q.neq("key", exceptKey);
+  return (must(await q) ?? [])[0] ?? null;
+}
+
+/** Size is a number + ml/g; stored as text («50 مل») for the store, plus size_unit. */
+export const SIZE_UNIT_LABEL: Record<string, string> = { ml: "مل", g: "غ" };
+export function parseSize(size: string, unit?: string | null): { n: string; unit: "ml" | "g" } {
+  const n = (size.match(/[\d.,]+/)?.[0] ?? "").replace(",", ".");
+  const u = unit === "g" || /(غ|غرام|g)\s*$/i.test(size) ? "g" : "ml";
+  return { n, unit: u };
+}

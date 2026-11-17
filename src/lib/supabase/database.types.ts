@@ -1682,10 +1682,30 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          name: string
+          sort: number
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          sort?: number
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          sort?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
+          barcode: string | null
           category: string
+          company: string
           cost: number | null
           created_at: string
           description: string
@@ -1694,20 +1714,25 @@ export type Database = {
           kind: string
           min_stock: number
           name: string
+          name_ar: string
           price: number | null
           recommended: boolean
           show_in_store: boolean
           size: string
+          size_unit: string
           sku: string | null
           sort: number
           stock: number
+          supplier: string | null
           unit: string
           updated_at: string
           usage: string
         }
         Insert: {
           active?: boolean
+          barcode?: string | null
           category?: string
+          company?: string
           cost?: number | null
           created_at?: string
           description?: string
@@ -1716,20 +1741,25 @@ export type Database = {
           kind?: string
           min_stock?: number
           name: string
+          name_ar?: string
           price?: number | null
           recommended?: boolean
           show_in_store?: boolean
           size?: string
+          size_unit?: string
           sku?: string | null
           sort?: number
           stock?: number
+          supplier?: string | null
           unit?: string
           updated_at?: string
           usage?: string
         }
         Update: {
           active?: boolean
+          barcode?: string | null
           category?: string
+          company?: string
           cost?: number | null
           created_at?: string
           description?: string
@@ -1738,13 +1768,16 @@ export type Database = {
           kind?: string
           min_stock?: number
           name?: string
+          name_ar?: string
           price?: number | null
           recommended?: boolean
           show_in_store?: boolean
           size?: string
+          size_unit?: string
           sku?: string | null
           sort?: number
           stock?: number
+          supplier?: string | null
           unit?: string
           updated_at?: string
           usage?: string

@@ -465,14 +465,22 @@ function ItemSearch({ sellables, onAdd, stockOf }: { sellables?: Sellables; onAd
     ...sellables.services.map((x) => ({ x, cat: sellables.categories.find((c) => c.key === x.category_id)?.name ?? "" }))
       .filter(({ x, cat }) => x.name.includes(s) || cat.includes(s))
       .map(({ x, cat }) => ({ kind: "service" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price, meta: x.price_unknown ? "السعر غير محدد — حدّدي سعر الصرف من المالية" : `${cat || "خدمة"} · ${x.minutes} دقيقة`, disabled: x.price_unknown })),
-    ...sellables.products.filter((x) => x.name.includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price ?? 0, meta: `منتج · المتوفر ${stockOf(x.key)} ${x.unit}`, disabled: stockOf(x.key) <= 0 })),
+    ...sellables.products.filter((x) => x.barcode === s || x.name.toLowerCase().includes(s.toLowerCase()) || (x.name_ar ?? "").includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name + (x.name_ar ? ` — ${x.name_ar}` : ""), unit_price: x.price ?? 0, meta: `منتج · المتوفر ${stockOf(x.key)} ${x.unit}`, disabled: stockOf(x.key) <= 0 })),
     ...sellables.packages.filter((x) => x.name.includes(s)).map((x) => ({ kind: "package" as const, ref: x.id, qty: 1, label: x.name, unit_price: x.price, meta: `باقة · ${x.sessions} جلسات` })),
   ].slice(0, 8);
   return (
     <div style={{ position: "relative" }}>
       <label style={{ height: 44, borderRadius: 22, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 8, padding: "0 14px" }}>
         <Icon name="search" color={C.muted} size={17} />
-        <input aria-label="إضافة بند" value={q} onChange={(e) => setQ(e.target.value)} placeholder="أضيفي خدمة أو منتجاً من المتجر أو باقة" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13, color: C.ink }} />
+        <input aria-label="إضافة بند" value={q} onChange={(e) => setQ(e.target.value)} placeholder="امسحي باركود المنتج، أو ابحثي عن خدمة أو منتج أو باقة"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            // barcode scanners type the code then Enter: add that product at once
+            const p = sellables?.products.find((x) => x.barcode && x.barcode === s);
+            const h = p ? hits.find((x) => x.kind === "product" && x.ref === p.key) : hits.length === 1 ? hits[0] : undefined;
+            if (h && !h.disabled) { onAdd({ kind: h.kind, ref: h.ref, qty: 1, label: h.label, unit_price: h.unit_price } as CartLine); setQ(""); }
+          }} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13, color: C.ink }} />
       </label>
       {s && (
         <div style={{ position: "absolute", insetInline: 0, top: 50, zIndex: 20, borderRadius: 20, background: C.white, boxShadow: SH, border: "1px solid #F0E6F3", padding: 6, maxHeight: 300, overflowY: "auto" }}>

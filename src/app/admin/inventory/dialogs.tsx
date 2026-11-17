@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNote, Modal, NumberInput, Segment, Select, SubmitButton, TextArea, TextInput, Toggle, Icon } from "@/components/ui";
 import {
   adjustStock, archiveProduct, KIND_LABEL, listLocations, listStockByLocation, productImage, qtyAt, receiveStock, saveProductWithImage, stockError,
-  transferStock, UNITS, wasteStock, type LocationKind, type Product, type StockLocation,
+  transferStock, wasteStock, listCategories, addCategory, productByBarcode, parseSize, SIZE_UNIT_LABEL, type LocationKind, type Product, type StockLocation,
 } from "@/lib/db/products";
 import { useQuery } from "@/lib/db/query";
 import { dayKey } from "@/lib/format";
@@ -43,24 +43,32 @@ export function LocationSelect({ label = "الموقع", value, onChange, locati
 /** Grid that wraps to fewer columns on narrow screens (dialogs open full width on phones). */
 const grid = (min: number) => ({ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: 12 }) as const;
 
-/** Add or edit an inventory item. New items can start with an opening quantity + expiry. */
+/** Add or edit an inventory item — the SAME form for both (edit shows current stock instead of the opening quantity). */
 export function ProductDialog({ open, product, onClose }: { open: boolean; product: Product | null; onClose: () => void }) {
   const [f, setF] = useState(blank());
   const L = useLocations();
+  const cats = useQuery(["product-categories"], listCategories);
+  const [newCat, setNewCat] = useState<string | null>(null);
   const [loc, setLoc] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const barcodeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setError(""); setFile(null); setLoc("");
-    setF(product ? {
-      name: product.name, kind: product.kind as "retail" | "consumable", category: product.category, size: product.size, unit: product.unit,
-      sku: product.sku ?? "", price: str(product.price), cost: str(product.cost), min: str(Number(product.min_stock)),
-      show: product.show_in_store, recommended: product.recommended, description: product.description, usage: product.usage,
-      qty: "", expires: "", supplier: "",
-    } : blank());
+    setError(""); setFile(null); setLoc(""); setNewCat(null);
+    if (product) {
+      const sz = parseSize(product.size, product.size_unit);
+      setF({
+        name: product.name, name_ar: product.name_ar ?? "", kind: product.kind as "retail" | "consumable", category: product.category,
+        sizeN: sz.n, sizeUnit: sz.unit, barcode: product.barcode ?? "", company: product.company ?? "", supplier: product.supplier ?? "",
+        sku: product.sku ?? "", price: str(product.price), cost: str(product.cost), min: str(Number(product.min_stock)),
+        show: product.show_in_store, recommended: product.recommended, description: product.description, usage: product.usage,
+        qty: "", expires: "",
+      });
+    } else setF(blank());
+    setTimeout(() => barcodeRef.current?.focus(), 150);
   }, [open, product]);
 
   const set = <K extends keyof ReturnType<typeof blank>>(k: K, v: ReturnType<typeof blank>[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -68,9 +76,24 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
   useEffect(() => () => { if (blobUrl) URL.revokeObjectURL(blobUrl); }, [blobUrl]);
   const preview = blobUrl ?? (product ? productImage(product) : null);
 
+  const catList = cats.data ?? [];
+  const catOptions = [
+    { value: "", label: "اختاري الفئة" },
+    ...(f.category && !catList.includes(f.category) ? [{ value: f.category, label: f.category }] : []),
+    ...catList.map((c) => ({ value: c, label: c })),
+    { value: "__new", label: "+ إضافة فئة جديدة" },
+  ];
+  async function saveNewCat() {
+    const n = (newCat ?? "").trim();
+    if (!n) return;
+    try { await addCategory(n); await cats.refresh(); set("category", n); setNewCat(null); } catch (e) { setError(errText(e)); }
+  }
+
   async function submit() {
     setError("");
-    if (!f.name.trim()) { setError("اكتبي اسم الصنف."); return; }
+    if (!f.name.trim()) { setError("اكتبي اسم المستحضر."); return; }
+    if (!f.company.trim()) { setError("اكتبي اسم الشركة."); return; }
+    if (f.sizeN.trim() && !/^\d+(\.\d+)?$/.test(f.sizeN.trim())) { setError("الحجم رقم فقط (مثلاً 50)."); return; }
     if (f.kind === "retail" && badMoney(f.price)) { setError("سعر البيع رقم صحيح موجب بالليرة (بلا فواصل أو كسور)."); return; }
     if (badMoney(f.cost)) { setError("سعر الكلفة رقم صحيح موجب بالليرة."); return; }
     if (badQty(f.min)) { setError("الحد الأدنى للتنبيه رقم موجب."); return; }
@@ -79,18 +102,26 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
     if (!product && f.expires && f.expires < dayKey()) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
     if (file && !file.type.startsWith("image/")) { setError("اختاري ملف صورة."); return; }
     if (file && file.size > 5 * 1024 * 1024) { setError("حجم الصورة أكبر من 5 ميغابايت."); return; }
+    const code = f.barcode.trim();
     setBusy(true);
     try {
+      if (code) {
+        const dup = await productByBarcode(code, product?.key);
+        if (dup) { setError(`هذا الباركود مسجّل للصنف «${dup.name}»${dup.active ? "" : " (مُزال)"}.`); setBusy(false); return; }
+      }
+      const sizeN = f.sizeN.trim();
       await saveProductWithImage({
-        key: product?.key, name: f.name.trim(), kind: f.kind, category: f.category.trim(), size: f.size.trim(), unit: f.unit,
+        key: product?.key, name: f.name.trim(), name_ar: f.name_ar.trim(), kind: f.kind, category: f.category.trim(),
+        size: sizeN ? `${sizeN} ${SIZE_UNIT_LABEL[f.sizeUnit]}` : "", size_unit: f.sizeUnit, unit: "قطعة",
+        barcode: code || null, company: f.company.trim(), supplier: f.supplier.trim() || null,
         sku: f.sku.trim() || null, price: f.kind === "retail" ? num(f.price) : null, cost: num(f.cost), min_stock: num(f.min) ?? 0,
         show_in_store: f.kind === "retail" ? f.show : false, recommended: f.kind === "retail" && f.recommended,
         description: f.description.trim(), usage: f.usage.trim(),
-      }, file, product?.image_path ?? null, product ? undefined : { qty: num(f.qty) ?? 0, expires: f.expires || null, cost: num(f.cost), supplier: f.supplier || null, location: loc || L.def?.id || null });
+      }, file, product?.image_path ?? null, product ? undefined : { qty: num(f.qty) ?? 0, expires: f.expires || null, cost: num(f.cost), supplier: f.supplier.trim() || null, location: loc || L.def?.id || null });
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
-      setError(m.startsWith("أُضيف الصنف") || m.startsWith("اختاري") || m.startsWith("حجم") ? m : errText(e));
+      setError(/products_barcode_key/.test(m) ? "هذا الباركود مسجّل لصنف آخر." : m.startsWith("أُضيف الصنف") || m.startsWith("اختاري") || m.startsWith("حجم") ? m : errText(e));
     } finally { setBusy(false); }
   }
 
@@ -101,8 +132,9 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
   }
 
   const row = grid(200);
+  const inputBox = { width: "100%", height: 46, borderRadius: 23, border: `1px solid ${C.border}`, background: "#FAF7FB", padding: "0 16px", fontSize: 15, fontFamily: "inherit", boxSizing: "border-box" } as const;
   return (
-    <Modal open={open} onClose={onClose} title={product ? "تعديل صنف" : "إضافة صنف إلى المخزون"} width={640}
+    <Modal open={open} onClose={onClose} title={product ? "تعديل صنف" : "إضافة صنف"} width={680}
       footer={<>
         <SubmitButton onClick={submit} busy={busy}>{product ? "حفظ التعديلات" : "إضافة الصنف"}</SubmitButton>
         {product && <button type="button" onClick={archive} style={{ border: "none", background: "none", color: C.danger, fontSize: 14, fontWeight: 600, marginInlineStart: "auto" }}>إزالة الصنف</button>}
@@ -112,25 +144,60 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         <span style={{ fontSize: 12.5, color: C.sub2 }}>{f.kind === "retail" ? "يظهر في المتجر تلقائياً" : "لا يظهر في المتجر"}</span>
       </div>
 
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>الباركود</span>
+        <div style={{ position: "relative" }}>
+          <input ref={barcodeRef} value={f.barcode} dir="ltr" aria-label="الباركود" placeholder="امسحي المنتج بجهاز الباركود أو اكتبي الرقم"
+            onChange={(e) => set("barcode", e.target.value.replace(/\s+/g, ""))}
+            onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+            style={{ ...inputBox, paddingInlineEnd: 44, textAlign: "left", letterSpacing: 1 }} className="latin" />
+          <span style={{ position: "absolute", top: 13, right: 16, color: C.accent, fontSize: 15 }} aria-hidden>▥</span>
+        </div>
+      </div>
+
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <label style={{ width: 96, height: 96, borderRadius: 22, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", fontSize: 11.5, color: C.accent, fontWeight: 600 }}>
+        <label style={{ width: 104, height: 104, borderRadius: 22, flexShrink: 0, background: ICON_FILL, overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", fontSize: 11.5, color: C.accent, fontWeight: 600 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {preview ? <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <><Icon name="image" size={24} />صورة</>}
           <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden aria-label="صورة الصنف" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
-        <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          <TextInput label="اسم الصنف" required value={f.name} onChange={(v) => set("name", v)} placeholder="مثلاً: واقي شمس SPF 50" />
-          <div style={row}>
-            <TextInput label="الفئة" value={f.category} onChange={(v) => set("category", v)} placeholder="السيرومات، الحماية…" />
-            <TextInput label="الحجم" value={f.size} onChange={(v) => set("size", v)} placeholder="50 مل" />
+        <div style={{ flex: "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          <TextInput label="اسم المستحضر (بالإنجليزية)" required value={f.name} onChange={(v) => set("name", v)} dir="ltr" placeholder="e.g. Hydrating Serum" />
+          <TextInput label="الوصف بالعربية" value={f.name_ar} onChange={(v) => set("name_ar", v)} placeholder="مثلاً: سيروم مرطّب بحمض الهيالورونيك" />
+        </div>
+      </div>
+
+      <div style={row}>
+        <TextInput label="الشركة" required value={f.company} onChange={(v) => set("company", v)} />
+        <TextInput label="المورّد (اختياري)" value={f.supplier} onChange={(v) => set("supplier", v)} />
+      </div>
+
+      <div style={row}>
+        {newCat == null ? (
+          <Select label="الفئة" value={f.category} onChange={(v) => { if (v === "__new") setNewCat(""); else set("category", v); }} options={catOptions} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>فئة جديدة</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input autoFocus value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="اسم الفئة"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveNewCat(); } }} style={{ ...inputBox, flex: 1, minWidth: 0 }} />
+              <button type="button" onClick={saveNewCat} style={{ height: 46, padding: "0 16px", borderRadius: 23, border: "none", background: C.accent, color: C.white, fontWeight: 700, fontFamily: "inherit", flexShrink: 0 }}>إضافة</button>
+              <button type="button" onClick={() => setNewCat(null)} style={{ height: 46, padding: "0 10px", border: "none", background: "none", color: C.sub, fontFamily: "inherit", flexShrink: 0 }}>إلغاء</button>
+            </div>
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>الحجم</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input value={f.sizeN} onChange={(e) => set("sizeN", e.target.value)} inputMode="decimal" dir="ltr" placeholder="50" aria-label="الحجم" style={{ ...inputBox, flex: 1, minWidth: 0 }} className="latin" />
+            <Segment label="وحدة الحجم" value={f.sizeUnit} onChange={(v) => set("sizeUnit", v)} options={[{ value: "ml", label: "مل" }, { value: "g", label: "غرام" }]} />
           </div>
         </div>
       </div>
 
       <div style={grid(160)}>
-        <Select label="وحدة العدّ" value={f.unit} onChange={(v) => set("unit", v)} options={UNITS.map((u) => ({ value: u, label: u }))} />
-        <NumberInput label="الحد الأدنى للتنبيه" value={f.min} onChange={(v) => set("min", v)} placeholder="0" />
-        <TextInput label="رمز الصنف (اختياري)" value={f.sku} onChange={(v) => set("sku", v)} dir="ltr" />
+        <NumberInput label="الحد الأدنى للتنبيه (قطعة)" value={f.min} onChange={(v) => set("min", v)} placeholder="0" />
+        <TextInput label="رمز داخلي (اختياري)" value={f.sku} onChange={(v) => set("sku", v)} dir="ltr" />
       </div>
 
       <div style={row}>
@@ -156,17 +223,20 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         </div>
       )}
 
-      {!product && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: `1px solid ${C.line}`, paddingTop: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>الكمية الموجودة الآن (اختياري)</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: `1px solid ${C.line}`, paddingTop: 14 }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>الكمية {product ? "الحالية" : "الموجودة الآن (اختياري)"}</div>
+        {product ? (
+          <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>
+            <b className="latin" style={{ color: C.ink }}>{Number(product.stock ?? 0)}</b> قطعة. لزيادتها استخدمي «استلام»، ولتصحيحها «جرد».
+          </div>
+        ) : (
           <div style={grid(160)}>
-            <NumberInput label={`الكمية (${f.unit})`} value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
+            <NumberInput label="الكمية (قطعة)" value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
             <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={f.expires} onChange={(v) => set("expires", v)} />
-            <TextInput label="المورّد" value={f.supplier} onChange={(v) => set("supplier", v)} />
             <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={setLoc} locations={L.active} />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
@@ -175,12 +245,12 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
 
 function blank() {
   return {
-    name: "", kind: "retail" as "retail" | "consumable", category: "", size: "", unit: "قطعة", sku: "", price: "", cost: "", min: "",
-    show: true, recommended: false, description: "", usage: "", qty: "", expires: "", supplier: "",
+    name: "", name_ar: "", kind: "retail" as "retail" | "consumable", category: "", sizeN: "", sizeUnit: "ml" as "ml" | "g",
+    barcode: "", company: "", supplier: "", sku: "", price: "", cost: "", min: "",
+    show: true, recommended: false, description: "", usage: "", qty: "", expires: "",
   };
 }
 
-/** Receive goods: adds a batch (quantity + expiry) to the stock. */
 export function ReceiveDialog({ product, onClose, location }: { product: Product | null; onClose: () => void; location?: string | null }) {
   const L = useLocations();
   const [loc, setLoc] = useState("");

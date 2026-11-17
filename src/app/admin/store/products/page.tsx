@@ -90,7 +90,7 @@ export default function Page() {
                     {img ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="bottle" size={20} />}
                   </span>
                   <div style={{ lineHeight: 1.35, minWidth: 0, flex: 1 }}>
-                    <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14.5, fontWeight: 700, color: C.ink, textAlign: "right" }}>{p.name}</button>
+                    <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14.5, fontWeight: 700, color: C.ink, textAlign: "right" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{p.name}</span>{p.name_ar ? <span style={{ display: "block", fontSize: 12, fontWeight: 500, color: C.sub2 }}>{p.name_ar}</span> : null}</button>
                     <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size].filter(Boolean).join(" · ") || "—"}</div>
                   </div>
                   {p.price != null ? <b className="latin">{money(p.price)}</b> : <Tag kind="pink">بلا سعر</Tag>}
@@ -132,7 +132,7 @@ export default function Page() {
                   {img ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="bottle" size={20} />}
                 </span>
                 <div style={{ lineHeight: 1.35, minWidth: 0 }}>
-                  <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14, fontWeight: 700, color: C.ink, textAlign: "right" }}>{p.name}</button>
+                  <button type="button" onClick={() => setEditing(p)} style={{ border: "none", background: "none", padding: 0, fontSize: 14, fontWeight: 700, color: C.ink, textAlign: "right" }}><span dir="ltr" style={{ unicodeBidi: "isolate" }}>{p.name}</span>{p.name_ar ? <span style={{ display: "block", fontSize: 12, fontWeight: 500, color: C.sub2 }}>{p.name_ar}</span> : null}</button>
                   <div style={{ fontSize: 12, color: C.sub2 }}>{[p.category, p.size].filter(Boolean).join(" · ") || "—"}</div>
                 </div>
               </>,
