@@ -109,7 +109,7 @@ function TeamTable({ rows, me, services, assignments, canEdit, onEdit, onLogin, 
           {isCustom(s) && <span style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>صلاحيات مخصّصة</span>}
         </span>,
         s.role === "specialist" || s.is_consultant || assignments.some((a) => a.staff_id === s.id) ? (() => {
-          const keys = assignments.filter((a) => a.staff_id === s.id).map((a) => a.service_key);
+          const keys: string[] = [];
           return <span key="sv" title={keys.length ? services.filter((x) => keys.includes(x.key)).map((x) => x.short_name || x.name).join("، ") : "إن لم تُحدَّد خدمات تقدّم كل خدمات قسمها"}
             style={{ fontSize: 12.5, fontWeight: 600, color: keys.length ? C.accent : C.sub2 }}>{keys.length ? servicesSummary(keys, services) : s.is_consultant ? "كل الاستشارات" : "كل الخدمات"}</span>;
         })() : <span key="sv" style={{ color: C.muted }}>—</span>,
@@ -152,7 +152,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
   const [svcKeys, setSvcKeys] = useState<string[]>([]);
   const curKeys = member ? (asg.data ?? []).filter((a) => a.staff_id === member.id).map((a) => a.service_key).sort().join("|") : "";
   useEffect(() => { if (open) setSvcKeys(curKeys ? curKeys.split("|") : []); }, [open, curKeys]);
-  const showServices = role === "specialist" || consultant || svcKeys.length > 0;
+  const showServices = false; // 2026-11-17: كل الأخصائيات يقدّمن كل الخدمات — لا تخصيص
 
   const roleOpts: { value: Role; label: string }[] = (member?.role === "owner" ? ["owner"] as Role[] : (isOwner ? ["admin", "specialist", "reception", "accountant"] : ["specialist", "reception", "accountant", ...(member?.role === "admin" ? ["admin"] : [])]) as Role[])
     .map((r) => ({ value: r, label: ROLE_LABEL[r] }));
@@ -165,7 +165,7 @@ function StaffDialog({ open, member, isOwner, onClose }: { open: boolean; member
     try {
       const photo_url = file ? await uploadStaffPhoto(file) : member?.photo_url ?? null;
       const row = await saveStaff({ id: member?.id, name: name.trim(), title: title.trim(), role, phone: phone.trim() || null, photo_url, ...(file ? { photo_placeholder: false } : {}), is_consultant: consultant });
-      if (row && asg.data && svcKeys.slice().sort().join("|") !== curKeys) await setStaffServices(row.id, svcKeys, asg.data);
+      if (showServices && row && asg.data && svcKeys.slice().sort().join("|") !== curKeys) await setStaffServices(row.id, svcKeys, asg.data);
       if (row && (salN !== (curSalary?.base_salary ?? 0) || cur !== (curSalary?.salary_currency ?? "SYP"))) await saveSalary(row.id, salN, cur);
       onClose();
     } catch (e) { setError(errText(e)); } finally { setBusy(false); }

@@ -57,7 +57,7 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
         bookable_online: f.online, is_consultation: f.consult, is_online: service?.is_online ?? false, active: f.active, sort: Number(f.sort) || 0,
       });
       // a new service is provided automatically by members without assignments; only explicit changes are written
-      if (saved && who && prov.data && asg.data) {
+      const ASSIGN = false as boolean; if (ASSIGN && saved && who && prov.data && asg.data) {
         const provided = { ...prov.data.map };
         if (!service) for (const t of cands) if (!(asg.data.some((a) => a.staff_id === t.id)) && (f.consult ? t.is_consultant : t.role === "specialist" && !t.is_consultant)) provided[t.id] = [...(provided[t.id] ?? []), saved.key];
         await setServiceStaff(saved.key, who, asg.data, provided, cands.map((t) => t.id));
@@ -100,7 +100,7 @@ export function ServiceDialog({ open, service, rooms, devices, categories, rate,
         <Row title="خدمة استشارة" sub="تُحجز مع الاستشارية في رابط الحجز العام"><Toggle on={f.consult} onChange={(v) => set("consult", v)} label="خدمة استشارة" /></Row>
         <Row title="مفعّلة" sub="الخدمة الموقوفة لا تظهر للمراجعات"><Toggle on={f.active} onChange={(v) => set("active", v)} label="مفعّلة" /></Row>
       </div>
-      {cands.length > 0 && (
+      {false && cands.length > 0 && (
         <div style={{ borderRadius: 20, border: "1px solid #F0E4F3", background: "#FBF6FC", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ lineHeight: 1.45 }}>
             <div style={{ fontSize: 14.5, fontWeight: 700, color: C.ink }}>الأخصائيات اللواتي يقدّمنها</div>
