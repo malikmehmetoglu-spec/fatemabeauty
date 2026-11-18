@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNote, Modal, NumberInput, Segment, Select, SubmitButton, TextArea, TextInput, Toggle, Icon } from "@/components/ui";
 import {
-  adjustStock, archiveProduct, KIND_LABEL, listLocations, listStockByLocation, productImage, qtyAt, receiveStock, saveProductWithImage, stockError,
+  adjustStock, archiveProduct, listBatches, KIND_LABEL, listLocations, listStockByLocation, productImage, qtyAt, receiveStock, saveProductWithImage, stockError,
   transferStock, wasteStock, listCategories, addCategory, productByBarcode, parseSize, SIZE_UNIT_LABEL, type LocationKind, type Product, type StockLocation,
 } from "@/lib/db/products";
 import { useQuery } from "@/lib/db/query";
@@ -54,6 +54,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const barcodeRef = useRef<HTMLInputElement>(null);
+  const batches = useQuery(["products", "batches", product?.key], () => listBatches(product!.key), { enabled: open && !!product });
 
   useEffect(() => {
     if (!open) return;
@@ -230,6 +231,18 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         {product && (
           <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6 }}>
             في المخزون الآن <b className="latin" style={{ color: C.ink }}>{Number(product.stock ?? 0)}</b> قطعة — أي كمية تكتبينها هنا تُضاف إليها.
+          </div>
+        )}
+        {product && (batches.data ?? []).filter((b) => Number(b.qty_left) > 0).length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {(batches.data ?? []).filter((b) => Number(b.qty_left) > 0).map((b) => (
+              <div key={b.id} style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center", borderRadius: 14, padding: "8px 12px", background: C.tint2, fontSize: 13.5 }}>
+                <span><b className="latin">{Number(b.qty_left)}</b> قطعة</span>
+                <span style={{ color: b.expires_on && b.expires_on < dayKey() ? C.danger : C.ink }}>تنتهي: {b.expires_on ? <span className="latin" dir="ltr">{b.expires_on}</span> : "بلا تاريخ"}</span>
+                {b.location_id && <span style={{ color: C.sub2 }}>{L.active.find((l) => l.id === b.location_id)?.name ?? ""}</span>}
+                {b.supplier && <span style={{ color: C.sub2 }}>{b.supplier}</span>}
+              </div>
+            ))}
           </div>
         )}
         <div style={grid(160)}>
