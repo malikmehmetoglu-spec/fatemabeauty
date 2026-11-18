@@ -13,7 +13,7 @@ export type ProductInput = Partial<Omit<Product, "created_at" | "updated_at" | "
 
 export const UNITS = ["قطعة", "عبوة", "مل", "لتر", "غرام", "علبة", "زوج"];
 export const MOVE_LABEL: Record<string, string> = {
-  receive: "استلام", sale: "بيع في المركز", order: "طلب من المتجر", session: "استهلاك جلسة",
+  receive: "استلام", sale: "بيع في المركز", order: "طلب من الصيدلية", session: "استهلاك جلسة",
   adjust: "تعديل جرد", return: "مرتجع", waste: "تالف / منتهي", transfer: "نقل بين المواقع",
 };
 

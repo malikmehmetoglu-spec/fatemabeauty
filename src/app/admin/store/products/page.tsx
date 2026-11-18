@@ -49,7 +49,7 @@ export default function Page() {
   }
 
   return (
-    <AdminShell active="المتجر" title="المنتجات" subtitle="منتجات البيع من المخزون نفسه — تظهر في متجر التطبيق ما لم تُخفَ"
+    <AdminShell active="الصيدلية" title="المنتجات" subtitle="منتجات البيع من المخزون نفسه — تظهر في صيدلية التطبيق ما لم تُخفَ"
       actions={<>
         <Link href={R.W_Orders} style={{ height: 36, borderRadius: 18, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
           <Icon name="truck" color={C.accent} size={16} />الطلبات
@@ -58,8 +58,8 @@ export default function Page() {
       </>}>
       <div className="adm-row">
         <Kpi dark label="منتجات البيع" value={list.length} sub="في المخزون" icon="bag" />
-        <Kpi label="ظاهرة في المتجر" value={list.filter((p) => p.show_in_store).length} sub="تراها المراجِعات الآن" icon="eye" />
-        <Kpi label="توصية الأخصائية" value={list.filter((p) => p.recommended).length} sub="تظهر بشارة في المتجر" icon="sparkle" />
+        <Kpi label="ظاهرة في الصيدلية" value={list.filter((p) => p.show_in_store).length} sub="تراها المراجِعات الآن" icon="eye" />
+        <Kpi label="توصية الأخصائية" value={list.filter((p) => p.recommended).length} sub="تظهر بشارة في الصيدلية" icon="sparkle" />
         <Kpi label="نفدت الكمية" value={list.filter((p) => onl(p) <= 0).length} sub="تظهر «غير متوفر حالياً»" icon="alert" />
       </div>
 
@@ -74,7 +74,7 @@ export default function Page() {
       {err && <ErrorNote>{err}</ErrorNote>}
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المنتجات: {error}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="bag" title="لا منتجات للبيع بعد"
-          text="أضيفي منتجاً للبيع مع سعره وصورته وكميته؛ يظهر في متجر التطبيق تلقائياً ويُخصم من المخزون عند كل طلب."
+          text="أضيفي منتجاً للبيع مع سعره وصورته وكميته؛ يظهر في صيدلية التطبيق تلقائياً ويُخصم من المخزون عند كل طلب."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة منتج</GhostButton>} />
       ) : shown.length === 0 ? <EmptyState compact icon="search" title="لا منتجات تطابق هذا الاختيار" /> : (
         <>
@@ -102,7 +102,7 @@ export default function Page() {
                     {stock <= 0 ? <Tag kind="pink">نفد</Tag> : isLow(p) && <Tag kind="amber">منخفض</Tag>}
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto", fontSize: 12.5, color: C.sub2 }}>
-                    في المتجر <Toggle on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busy !== p.key && run(p.key, () => setShowInStore(p.key, !p.show_in_store))} />
+                    في الصيدلية <Toggle on={p.show_in_store} label={`إظهار ${p.name} في الصيدلية`} onChange={() => busy !== p.key && run(p.key, () => setShowInStore(p.key, !p.show_in_store))} />
                   </span>
                 </div>
                 <div className={css.actions}>
@@ -119,7 +119,7 @@ export default function Page() {
         </div>
         <div className={css.table}>
         <DataTable minWidth={880}
-          headers={["المنتج", "السعر", "الكمية", "في المتجر", "توصية", ""]}
+          headers={["المنتج", "السعر", "الكمية", "في الصيدلية", "توصية", ""]}
           widths={[2.6, 1, 1.3, 0.8, 0.7, 1.4]}
           rowHeight={64}
           rows={shown.map((p) => {
@@ -142,7 +142,7 @@ export default function Page() {
                 <span style={{ fontSize: 12, color: C.sub2 }}>{p.unit}</span>
                 {stock <= 0 ? <Tag kind="pink">نفد</Tag> : isLow(p) && <Tag kind="amber">منخفض</Tag>}
               </span>,
-              <Toggle key="v" on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busy !== p.key && run(p.key, () => setShowInStore(p.key, !p.show_in_store))} />,
+              <Toggle key="v" on={p.show_in_store} label={`إظهار ${p.name} في الصيدلية`} onChange={() => busy !== p.key && run(p.key, () => setShowInStore(p.key, !p.show_in_store))} />,
               <button key="r" type="button" aria-pressed={p.recommended} title="توصية الأخصائية" onClick={() => busy !== p.key && run(p.key, () => setRecommended(p.key, !p.recommended))} style={{
                 width: 34, height: 34, borderRadius: 17, display: "flex", alignItems: "center", justifyContent: "center",
                 border: `1px solid ${p.recommended ? "#FFFFFF" : "#EADCF0"}`, background: p.recommended ? "linear-gradient(160deg,#FFF3DC,#F6D9A0)" : C.white,

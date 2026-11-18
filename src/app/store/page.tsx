@@ -1,6 +1,6 @@
 "use client";
 
-/** P_Store.dc.html — store (root tab «المتجر»). Live: visible retail items of the centre's inventory. */
+/** P_Store.dc.html — store (root tab «الصيدلية»). Live: visible retail items of the centre's inventory. */
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PhoneScreen } from "@/components/shell";
@@ -52,11 +52,11 @@ function PhoneStore() {
   const addRecommended = () => recommended.forEach((p) => { if (!cart[p.key]) cartStore.add(p.key); });
 
   return (
-    <PhoneScreen tab="المتجر" gap={12} wide>
+    <PhoneScreen tab="الصيدلية" gap={12} wide>
       <div className={css.top}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", gap: 16 }}>
         <div style={{ lineHeight: 1.25 }}>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.ink }}>المتجر</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.ink }}>الصيدلية</h1>
           <div style={{ fontSize: 12.5, color: C.sub2, display: "flex", alignItems: "center", gap: 5 }}>
             <Icon name="truck" color={C.accentMid} size={15} />توصيل للمنزل أو استلام من المركز
           </div>
@@ -83,7 +83,7 @@ function PhoneStore() {
 
       <div className={css.search} style={{ position: "relative", display: "flex", alignItems: "center", height: 46, borderRadius: 23, background: C.white, border: `1px solid ${C.borderSoft}`, boxShadow: SH_SOFT, padding: "0 16px", gap: 8 }}>
         <Icon name="search" color={C.muted} size={18} />
-        <label htmlFor="q" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>ابحثي في المتجر</label>
+        <label htmlFor="q" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>ابحثي في الصيدلية</label>
         <input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحثي عن غسول، سيروم، واقي شمس"
           style={{ border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.ink, flex: 1, minWidth: 0, height: "100%" }} />
       </div>
@@ -133,8 +133,8 @@ function PhoneStore() {
 
       <section style={{ display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
         <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.ink }}>{query ? "نتائج البحث" : cat === "الكل" ? "منتجات العناية" : cat}</h2>
-        {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المتجر: {error}</ErrorNote> : products.length === 0 ? (
-          <EmptyState icon="bag" title="المتجر قيد التجهيز"
+        {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الصيدلية: {error}</ErrorNote> : products.length === 0 ? (
+          <EmptyState icon="bag" title="الصيدلية قيد التجهيز"
             text="ستظهر هنا منتجات العناية التي يعتمدها المركز فور إضافتها. يمكنكِ السؤال عن أي منتج عبر المحادثة."
             action={<Link href={R.P_Chat} style={{ color: C.accent, fontWeight: 700, fontSize: 14 }}>راسلي المركز</Link>} />
         ) : shown.length === 0 && <div style={{ fontSize: 13, color: C.sub2 }}>لا توجد منتجات مطابقة</div>}

@@ -27,7 +27,7 @@ export function stepIndex(o: Pick<OrderFull, "status" | "delivery">) {
 function Crumbs({ here, mid }: { here: string; mid?: boolean }) {
   return (
     <nav aria-label="مسار الصفحة" className={d.crumbs}>
-      <Link href={R.P_Store}>المتجر</Link><Icon name="fwd" color={C.muted} size={14} />
+      <Link href={R.P_Store}>الصيدلية</Link><Icon name="fwd" color={C.muted} size={14} />
       {mid && <><Link href={R.P_OrderTrack}>طلباتي</Link><Icon name="fwd" color={C.muted} size={14} /></>}
       <span aria-current="page">{here}</span>
     </nav>
@@ -73,12 +73,12 @@ export function Timeline({ o, big = false }: { o: Pick<OrderFull, "status" | "de
 type Row = OrderFull;
 export function DeskOrderList({ data, loading, error }: { data?: Row[] | null; loading: boolean; error?: string | null }) {
   return (
-    <DeskShell title="طلباتي" sub={data?.length ? `${data.length === 1 ? "طلب واحد" : data.length === 2 ? "طلبان" : `${data.length} طلبات`} · تابعي حالة كل طلب خطوة بخطوة` : "كل طلباتكِ من المتجر وحالتها"}>
+    <DeskShell title="طلباتي" sub={data?.length ? `${data.length === 1 ? "طلب واحد" : data.length === 2 ? "طلبان" : `${data.length} طلبات`} · تابعي حالة كل طلب خطوة بخطوة` : "كل طلباتكِ من الصيدلية وحالتها"}>
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الطلبات: {error}</ErrorNote> : !data?.length ? (
         <div className={d.empty}>
           <Icon name="box" color={C.accentMid} size={34} />
           <h3>لا طلبات بعد</h3>
-          <p>حين تطلبين منتجات من المتجر ستظهر طلباتكِ هنا مع حالة كل طلب.</p>
+          <p>حين تطلبين منتجات من الصيدلية ستظهر طلباتكِ هنا مع حالة كل طلب.</p>
           <Link href={R.P_Store} className={d.btn}><Icon name="bag" color="#FFFFFF" size={18} />تسوّقي الآن</Link>
         </div>
       ) : (

@@ -29,11 +29,11 @@ function Router() {
   const s = useRequirePatient();
   const desk = useDesktop();
   if (desk === null) return <Blank />;
-  if (s.guest) return <PhoneScreen wide><TopBar title="طلباتي" back={R.P_Store} /><GuestCard icon="box" what="طلباتكِ من المتجر" /></PhoneScreen>;
+  if (s.guest) return <PhoneScreen wide><TopBar title="طلباتي" back={R.P_Store} /><GuestCard icon="box" what="طلباتكِ من الصيدلية" /></PhoneScreen>;
   if (desk && (s.loading || !s.patient)) {
     return s.loading || !s.staff ? <StoreChrome><Loading /></StoreChrome> : (
       <DeskShell title="طلباتي">
-        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات المتجر كلها في لوحة الإدارة." />
+        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات الصيدلية كلها في لوحة الإدارة." />
         <SecondaryButton href={R.W_Orders} icon="box" style={{ maxWidth: 320, margin: "18px auto 0" }}>لوحة الطلبات</SecondaryButton>
       </DeskShell>
     );
@@ -43,7 +43,7 @@ function Router() {
     return (
       <PhoneScreen wide>
         <TopBar title="طلباتي" back={R.P_Store} />
-        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات المتجر كلها في لوحة الإدارة." />
+        <EmptyState icon="box" title="طلبات المراجِعات" text="هذه الصفحة لحساب المراجِعة. طلبات الصيدلية كلها في لوحة الإدارة." />
         <SecondaryButton href={R.W_Orders} icon="box" style={{ marginTop: "auto" }}>لوحة الطلبات</SecondaryButton>
       </PhoneScreen>
     );
@@ -61,7 +61,7 @@ function MyOrders({ patientId }: { patientId: string }) {
       <TopBar title="طلباتي" back={R.P_Store} />
       <div className={css.narrow}>
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الطلبات: {error}</ErrorNote> : !data?.length ? (
-        <EmptyState icon="box" title="لا طلبات بعد" text="حين تطلبين منتجات من المتجر ستظهر طلباتكِ هنا مع حالة كل طلب." />
+        <EmptyState icon="box" title="لا طلبات بعد" text="حين تطلبين منتجات من الصيدلية ستظهر طلباتكِ هنا مع حالة كل طلب." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {data.map((o) => (
@@ -81,7 +81,7 @@ function MyOrders({ patientId }: { patientId: string }) {
           ))}
         </div>
       )}
-      <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>المتجر</SecondaryButton>
+      <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto", flexShrink: 0 }}>الصيدلية</SecondaryButton>
       </div>
     </PhoneScreen>
   );

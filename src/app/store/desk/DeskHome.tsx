@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Store home on tablets & desktop: hero slider (admin «واجهة المتجر»), category tiles, best sellers,
+ * Store home on tablets & desktop: hero slider (admin «واجهة الصيدلية»), category tiles, best sellers,
  * new arrivals, specialist picks, a routine band, then the full catalogue (categories + sort + grid).
  * Every section is data-driven and hidden when it has nothing real to show.
  */
@@ -164,7 +164,7 @@ export function DeskHome() {
       )}
 
       {showRows && newest.length >= 2 && (
-        <Row id="new" title="وصل حديثاً" sub="أحدث ما أضافته أخصائيات المركز إلى المتجر.">{newest.map((p) => <ProductCard key={p.key} p={p} />)}</Row>
+        <Row id="new" title="وصل حديثاً" sub="أحدث ما أضافته أخصائيات المركز إلى الصيدلية.">{newest.map((p) => <ProductCard key={p.key} p={p} />)}</Row>
       )}
 
       <div ref={shopRef} className={d.shop} style={browsing ? undefined : { marginTop: 32 }}>
@@ -221,12 +221,12 @@ export function DeskHome() {
               <h2 id="all-h" className={d.h2}>{title}</h2>
               {!loading && products.length > 0 && <span className={d.resultCount}><span className="latin">{shown.length}</span> {shown.length === 1 ? "منتج" : "منتجات"}</span>}
             </div>
-            {loading ? <div className={d.note}>جارٍ تحميل المتجر…</div>
-              : error ? <div className={d.empty}><h3>تعذّر تحميل المتجر</h3><p>{error}</p></div>
+            {loading ? <div className={d.note}>جارٍ تحميل الصيدلية…</div>
+              : error ? <div className={d.empty}><h3>تعذّر تحميل الصيدلية</h3><p>{error}</p></div>
               : products.length === 0 ? (
                 <div className={d.empty}>
                   <Icon name="bag" color={C.accentMid} size={36} />
-                  <h3>المتجر قيد التجهيز</h3>
+                  <h3>الصيدلية قيد التجهيز</h3>
                   <p>ستظهر هنا منتجات العناية التي يعتمدها المركز فور إضافتها. يمكنكِ السؤال عن أي منتج عبر المحادثة.</p>
                   <Link href={R.P_Chat} className={d.linkBtn}>راسلي المركز</Link>
                 </div>

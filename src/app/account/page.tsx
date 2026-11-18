@@ -54,7 +54,7 @@ export default function AccountPage() {
           <div style={box}>
             <Row icon="sparkle" title="الخدمات والأسعار" href={R.P_Services} />
             <Row icon="gift" title="الباقات وبطاقات الهدايا" href={R.Packages} />
-            <Row icon="bag" title="المتجر" href={R.P_Store} />
+            <Row icon="bag" title="الصيدلية" href={R.P_Store} />
             <Row icon="help" title="المساعدة والأسئلة الشائعة" href={R.P_Help} last />
           </div>
         </>

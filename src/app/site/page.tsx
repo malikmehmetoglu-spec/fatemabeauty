@@ -57,7 +57,7 @@ export default function SitePage() {
           <nav className={s.navLinks} aria-label="أقسام الصفحة">
             <a className={s.navLink} href="#services">الخدمات</a>
             <a className={s.navLink} href="#how">كيف نعمل</a>
-            <Link className={s.navLink} href={store(R.P_Store)}>المتجر</Link>
+            <Link className={s.navLink} href={store(R.P_Store)}>الصيدلية</Link>
             <Link className={s.navCta} href={app(R.Login)}>
               <Icon name="cal" color="#FFFFFF" size={18} stroke={1.9} />احجزي
             </Link>
@@ -193,7 +193,7 @@ export default function SitePage() {
 
             <div className={s.storeCard}>
               <div>
-                <h2 className={s.h2}>متجر <em>فاطمة بيوتي</em></h2>
+                <h2 className={s.h2}>صيدلية <em>فاطمة بيوتي</em></h2>
                 <p className={s.sub}>منتجات تختارها الأخصائية لروتينكِ اليومي، تستلمينها في زيارتكِ أو تصلكِ إلى البيت.</p>
               </div>
               {products.length > 0 && <div className={s.products}>
@@ -209,7 +209,7 @@ export default function SitePage() {
                 ))}
               </div>}
               <Link className={s.btnGhost} href={store(R.P_Store)} style={{ alignSelf: "flex-start" }}>
-                <Icon name="bag" color={C.accent} size={19} stroke={1.9} />ادخلي المتجر
+                <Icon name="bag" color={C.accent} size={19} stroke={1.9} />ادخلي الصيدلية
               </Link>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function SitePage() {
           <nav className={s.footLinks} aria-label="روابط">
             <Link href={app(R.Login)}>الحجز</Link>
             <Link href={app(R.P_Services)}>الخدمات والأسعار</Link>
-            <Link href={store(R.P_Store)}>المتجر</Link>
+            <Link href={store(R.P_Store)}>الصيدلية</Link>
             <Link href={app(R.P_Help)}>المساعدة</Link>
           </nav>
           <span className={s.copy}>© {new Date().getFullYear()} Fatema Beauty — Skin Care Center</span>

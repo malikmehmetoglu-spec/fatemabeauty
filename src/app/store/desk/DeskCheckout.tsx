@@ -21,8 +21,8 @@ export function DeskCheckout() {
       <div className={d.empty} style={{ marginTop: 56 }}>
         <Icon name="bag" color={C.accentMid} size={38} />
         <h3>لا شيء لإتمام الطلب</h3>
-        <p>سلتكِ فارغة. أضيفي منتجات من المتجر ثم عودي لإتمام الطلب.</p>
-        <Link href={R.P_Store} className={d.btn} style={{ marginTop: 8 }}><Icon name="bag" color="#FFFFFF" size={19} />تصفّحي المتجر</Link>
+        <p>سلتكِ فارغة. أضيفي منتجات من الصيدلية ثم عودي لإتمام الطلب.</p>
+        <Link href={R.P_Store} className={d.btn} style={{ marginTop: 8 }}><Icon name="bag" color="#FFFFFF" size={19} />تصفّحي الصيدلية</Link>
       </div>
     </StoreChrome>
   );
@@ -95,7 +95,7 @@ export function DeskCheckout() {
               <button type="button" className={d.btn} onClick={login}><Icon name="user" color="#FFFFFF" size={19} />تسجيل الدخول للمتابعة</button>
             </>
           ) : !session.patient ? (
-            <div className={d.low}>هذا الحساب حساب موظفة. الطلب من المتجر متاح لحسابات المراجِعات فقط.</div>
+            <div className={d.low}>هذا الحساب حساب موظفة. الطلب من الصيدلية متاح لحسابات المراجِعات فقط.</div>
           ) : (
             <button type="button" className={d.btn} onClick={submit} disabled={busy || !canOrder}>{busy ? "جارٍ إرسال الطلب…" : !canOrder ? "عدّلي السلة أولاً" : "تأكيد الطلب"}</button>
           )}

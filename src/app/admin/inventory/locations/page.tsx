@@ -2,7 +2,7 @@
 
 /**
  * المواقع — where the stock is kept: مستودع / محل / مركز (live, Supabase).
- * Each batch of stock belongs to one location. Locations flagged «تغذّي المتجر الإلكتروني» feed the online store;
+ * Each batch of stock belongs to one location. Locations flagged «تغذّي الصيدلية الإلكترونية» feed the online store;
  * the default centre location is where cashier sales and session materials are taken from unless another is chosen.
  */
 import Link from "next/link";
@@ -50,7 +50,7 @@ export default function Page() {
       actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة موقع</GhostButton>}>
       <div className="adm-row">
         <Kpi dark label="المواقع الفعّالة" value={L.active.length} sub={L.all.length > L.active.length ? `و${L.all.length - L.active.length} موقوف` : "كل المواقع فعّالة"} icon="map" />
-        <Kpi label="تغذّي المتجر الإلكتروني" value={online.length} sub={online.map((l) => l.name).join(" · ") || "لا شيء — المتجر يظهر «غير متوفر»"} icon="bag" />
+        <Kpi label="تغذّي الصيدلية الإلكترونية" value={online.length} sub={online.map((l) => l.name).join(" · ") || "لا شيء — الصيدلية تظهر «غير متوفر»"} icon="bag" />
         <Kpi label="الموقع الافتراضي للمركز" value={L.def?.name ?? "—"} sub="الكاشير ومواد الجلسات تُخصم منه" icon="home" />
       </div>
 
@@ -84,7 +84,7 @@ export default function Page() {
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {l.is_default_center && <Tag kind="plum">الموقع الافتراضي للمركز</Tag>}
-                  {l.sells_online ? <Tag kind="green">تغذّي المتجر الإلكتروني</Tag> : <Tag kind="gray">لا تظهر كمياته في المتجر</Tag>}
+                  {l.sells_online ? <Tag kind="green">تغذّي الصيدلية الإلكترونية</Tag> : <Tag kind="gray">لا تظهر كمياته في الصيدلية</Tag>}
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <Stat label="أصناف فيه" value={st.items} />
@@ -112,7 +112,7 @@ export default function Page() {
       )}
 
       <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.9, background: "rgba(255,255,255,0.6)", borderRadius: 18, padding: "12px 16px" }}>
-        <b>كيف تعمل المواقع؟</b> كل استلام يُسجَّل في موقع. المتجر الإلكتروني يعرض ويبيع فقط من المواقع التي «تغذّي المتجر».
+        <b>كيف تعمل المواقع؟</b> كل استلام يُسجَّل في موقع. الصيدلية الإلكترونية يعرض ويبيع فقط من المواقع التي «تغذّي الصيدلية».
         الكاشير ومواد الجلسات تُخصم من الموقع الافتراضي للمركز (ويمكن اختيار موقع آخر في الكاشير). الجرد يتم لكل موقع على حدة،
         والنقل بين المواقع لا يغيّر المجموع الكلي ويحافظ على تواريخ الانتهاء.
       </div>
@@ -172,8 +172,8 @@ function LocationDialog({ open, loc, count, onClose }: { open: boolean; loc: Sto
       <TextArea label="العنوان أو ملاحظة (اختياري)" value={note} onChange={setNote} rows={2} />
       <div style={{ display: "flex", flexDirection: "column", gap: 10, borderRadius: 18, padding: "12px 14px", background: C.tint2 }}>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 14, fontWeight: 600 }}>
-          <span>تغذّي المتجر الإلكتروني<span style={{ display: "block", fontSize: 12, fontWeight: 400, color: C.sub2 }}>كمياته تظهر في المتجر وتُصرف منها الطلبات</span></span>
-          <Toggle on={online} onChange={setOnline} label="تغذّي المتجر الإلكتروني" />
+          <span>تغذّي الصيدلية الإلكترونية<span style={{ display: "block", fontSize: 12, fontWeight: 400, color: C.sub2 }}>كمياته تظهر في الصيدلية وتُصرف منها الطلبات</span></span>
+          <Toggle on={online} onChange={setOnline} label="تغذّي الصيدلية الإلكترونية" />
         </label>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 14, fontWeight: 600 }}>
           <span>الموقع الافتراضي للمركز<span style={{ display: "block", fontSize: 12, fontWeight: 400, color: C.sub2 }}>{loc?.is_default_center ? "لتغييره اجعلي موقعاً آخر هو الافتراضي" : "الكاشير ومواد الجلسات تُخصم منه"}</span></span>

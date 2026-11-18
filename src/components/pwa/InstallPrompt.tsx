@@ -32,12 +32,12 @@ export function InstallPrompt({ style, app = "patient" }: { style?: CSSPropertie
   };
 
   return (
-    <div role="region" aria-label={store ? "تثبيت تطبيق المتجر" : "تثبيت التطبيق"} style={{ ...GLASS, background: "rgba(255,255,255,0.82)", boxShadow: SH, borderRadius: 24, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, position: "relative", ...style }}>
+    <div role="region" aria-label={store ? "تثبيت تطبيق الصيدلية" : "تثبيت التطبيق"} style={{ ...GLASS, background: "rgba(255,255,255,0.82)", boxShadow: SH, borderRadius: 24, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, position: "relative", ...style }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={store ? "/icons/store-192.png" : "/icons/icon-192.png"} alt="" width={44} height={44} style={{ borderRadius: 12, flexShrink: 0, boxShadow: "0 4px 10px rgba(123,70,135,0.25)" }} />
         <div style={{ flexGrow: 1, lineHeight: 1.35, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700 }}>{store ? "ثبّتي تطبيق المتجر" : "ثبّتي التطبيق"}</div>
+          <div style={{ fontSize: 14.5, fontWeight: 700 }}>{store ? "ثبّتي تطبيق الصيدلية" : "ثبّتي التطبيق"}</div>
           <div style={{ fontSize: 12, color: C.sub2 }}>{store ? "تسوّقي وتابعي طلباتكِ بلمسة من شاشتكِ" : "يفتح أسرع، ويعمل حتى مع ضعف الإنترنت"}</div>
         </div>
         <button type="button" onClick={onClick} style={{ ...DARK, border: "none", height: 38, padding: "0 16px", borderRadius: 19, fontSize: 13.5, fontWeight: 600, flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
@@ -49,7 +49,7 @@ export function InstallPrompt({ style, app = "patient" }: { style?: CSSPropertie
   );
 }
 
-/** Compact «ثبّتي تطبيق المتجر» pill for the desktop store header; hidden once the store app is installed. */
+/** Compact «ثبّتي تطبيق الصيدلية» pill for the desktop store header; hidden once the store app is installed. */
 export function StoreInstallButton({ className }: { className?: string }) {
   const { ready, installed, ios, install } = useInstall("store");
   const [help, setHelp] = useState(false);
@@ -60,12 +60,12 @@ export function StoreInstallButton({ className }: { className?: string }) {
   };
   return (
     <div style={{ position: "relative" }}>
-      <button type="button" onClick={onClick} className={className} aria-expanded={help} aria-label="ثبّتي تطبيق المتجر" title="ثبّتي تطبيق المتجر"
+      <button type="button" onClick={onClick} className={className} aria-expanded={help} aria-label="ثبّتي تطبيق الصيدلية" title="ثبّتي تطبيق الصيدلية"
         style={{ height: 44, padding: "0 16px 0 12px", borderRadius: 22, border: "1px solid rgba(201,162,102,0.55)", cursor: "pointer",
           background: "linear-gradient(135deg,#5E3068,#4A2352)", color: "#F3DFB4", fontFamily: "var(--font-rubik)", fontSize: 13.5, fontWeight: 600,
           display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", boxShadow: "0 6px 14px rgba(74,35,82,0.25)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/store-192.png" alt="" width={26} height={26} style={{ borderRadius: 8 }} /><span>ثبّتي تطبيق المتجر</span>
+        <img src="/icons/store-192.png" alt="" width={26} height={26} style={{ borderRadius: 8 }} /><span>ثبّتي تطبيق الصيدلية</span>
       </button>
       {help && (
         <div role="note" style={{ position: "absolute", top: 52, insetInlineEnd: 0, width: 300, zIndex: 50, background: "#FFFFFF", borderRadius: 20, boxShadow: SH, padding: "12px 14px", color: C.ink }}>

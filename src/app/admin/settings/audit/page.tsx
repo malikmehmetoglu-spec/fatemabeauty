@@ -22,7 +22,7 @@ const parseTarget = (t: string | null): [string, string] => {
   return i < 0 ? [v, ""] : [v.slice(0, i), v.slice(i + 1)];
 };
 const FIELD: Record<string, string> = {
-  name: "الاسم", active: "التفعيل", status: "الحالة", stock: "الكمية", price: "السعر", cost: "التكلفة", show_in_store: "الظهور في المتجر",
+  name: "الاسم", active: "التفعيل", status: "الحالة", stock: "الكمية", price: "السعر", cost: "التكلفة", show_in_store: "الظهور في الصيدلية",
   recommended: "التوصية", starts_at: "الموعد", ends_at: "نهاية الموعد", room_id: "الغرفة", staff_id: "الأخصائية", service_id: "الخدمة",
   phone: "الهاتف", notes: "الملاحظات", note: "الملاحظة", role: "الدور", title: "المسمى", total: "الإجمالي", amount_paid: "المدفوع",
   discount: "الخصم", min_stock: "الحد الأدنى", category: "الفئة", description: "الوصف", photo_url: "الصورة", image_path: "الصورة",

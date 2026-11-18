@@ -72,14 +72,14 @@ export function StoreChrome({ children, active = "store", search, onSearch }: {
       <div className={d.halo} aria-hidden />
       <header className={d.header}>
         <div className={`${d.wrap} ${d.headRow}`}>
-          <Link href={R.P_Store} aria-label="متجر فاطمة بيوتي — الصفحة الأولى"><Logo height={54} /></Link>
+          <Link href={R.P_Store} aria-label="صيدلية فاطمة بيوتي — الصفحة الأولى"><Logo height={54} /></Link>
           <div className={d.headTools}>
             <form role="search" className={d.search} onSubmit={(e) => {
               e.preventDefault();
               if (!onSearch) router.push(`${R.P_Store}?q=${encodeURIComponent(local.trim())}`);
             }}>
               <Icon name="search" color={C.muted} size={18} />
-              <label htmlFor="store-q" className={d.srOnly}>ابحثي في المتجر</label>
+              <label htmlFor="store-q" className={d.srOnly}>ابحثي في الصيدلية</label>
               <input id="store-q" type="search" value={value} placeholder="ابحثي عن غسول، سيروم، واقي شمس"
                 onChange={(e) => (onSearch ? onSearch(e.target.value) : setLocal(e.target.value))} />
             </form>
@@ -138,7 +138,7 @@ function CartDrawer() {
             <div className={d.empty} style={{ marginTop: 24, border: "none", background: "transparent" }}>
               <Icon name="bag" color={C.accentMid} size={34} />
               <h3>سلتكِ فارغة</h3>
-              <p>أضيفي منتجات العناية من المتجر وستظهر هنا مع أسعارها المحدّثة.</p>
+              <p>أضيفي منتجات العناية من الصيدلية وستظهر هنا مع أسعارها المحدّثة.</p>
               <button type="button" className={d.linkBtn} onClick={drawer.close}>تابعي التسوّق</button>
             </div>
           ) : loading && !data ? <div className={d.note} style={{ padding: "24px 0" }}>جارٍ تحميل السلة…</div> : lines.map(({ p, qty, line, problem }) => {
@@ -205,7 +205,7 @@ function Footer() {
           <p className={d.footAbout}>منتجات عناية تختارها أخصائيات المركز لروتينكِ اليومي، تستلمينها في زيارتكِ أو تصلكِ إلى البيت.</p>
         </div>
         <div>
-          <h2 className={d.footTitle}>المتجر</h2>
+          <h2 className={d.footTitle}>الصيدلية</h2>
           <ul className={d.footLinks}>
             <li><Link href={R.P_Store}>كل المنتجات</Link></li>
             <li><Link href={R.P_Cart}>السلة</Link></li>

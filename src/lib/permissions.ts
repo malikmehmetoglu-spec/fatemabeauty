@@ -26,7 +26,7 @@ export const PERMS: { key: Perm; label: string; hint: string; group: PermGroup }
   { key: "staff", label: "فريق العمل", hint: "الموظفات والدوام والرواتب", group: "الإدارة" },
   { key: "inventory", label: "المخزون", hint: "المخزون والمشتريات والجرد", group: "الإدارة" },
   { key: "devices", label: "الأجهزة", hint: "سجل الأجهزة وصيانتها", group: "الإدارة" },
-  { key: "store", label: "المتجر", hint: "المنتجات والطلبات", group: "الإدارة" },
+  { key: "store", label: "الصيدلية", hint: "المنتجات والطلبات", group: "الإدارة" },
   { key: "marketing", label: "التسويق والولاء", hint: "العروض وتثبيت التطبيق", group: "الإدارة" },
   { key: "reports", label: "التقارير", hint: "تقارير المركز", group: "الإدارة" },
   { key: "mira", label: "ميرا", hint: "محادثات المساعدة الذكية", group: "الإدارة" },

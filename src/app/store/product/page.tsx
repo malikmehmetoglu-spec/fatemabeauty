@@ -26,7 +26,7 @@ function ProductLoader() {
   const desk = useDesktop();
   if (desk === null) return <Blank />;
   if (desk) {
-    if (!key || (!loading && !error && !data)) return <DeskProductState title="المنتج غير موجود" text="ربما أُزيل من المتجر. تصفّحي المنتجات المتوفرة الآن." />;
+    if (!key || (!loading && !error && !data)) return <DeskProductState title="المنتج غير موجود" text="ربما أُزيل من الصيدلية. تصفّحي المنتجات المتوفرة الآن." />;
     if (error) return <DeskProductState title="تعذّر تحميل المنتج" text={error} />;
     if (loading || !data) return <DeskLoading />;
     return <DeskProduct p={data} />;
@@ -35,8 +35,8 @@ function ProductLoader() {
     return (
       <PhoneScreen wide>
         <TopBar title="تفاصيل المنتج" back={R.P_Store} />
-        <EmptyState icon="bag" title="المنتج غير موجود" text="ربما أُزيل من المتجر. تصفّحي المنتجات المتوفرة الآن." />
-        <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto" }}>العودة إلى المتجر</SecondaryButton>
+        <EmptyState icon="bag" title="المنتج غير موجود" text="ربما أُزيل من الصيدلية. تصفّحي المنتجات المتوفرة الآن." />
+        <SecondaryButton href={R.P_Store} icon="bag" style={{ marginTop: "auto" }}>العودة إلى الصيدلية</SecondaryButton>
       </PhoneScreen>
     );
   }

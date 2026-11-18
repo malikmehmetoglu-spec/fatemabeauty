@@ -42,7 +42,7 @@ export default function Page() {
   }
 
   return (
-    <AdminShell active="المتجر" title="الطلبات والتوصيل" subtitle="طلبات متجر التطبيق — توصيل للمنزل أو استلام من المركز"
+    <AdminShell active="الصيدلية" title="الطلبات والتوصيل" subtitle="طلبات صيدلية التطبيق — توصيل للمنزل أو استلام من المركز"
       actions={<Link href={R.W_Products} style={{ height: 36, borderRadius: 18, padding: "0 16px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, background: C.white, color: C.accent, boxShadow: "0 6px 18px rgba(123,70,135,0.12)" }}>
         <Icon name="bag" color={C.accent} size={16} />المنتجات
       </Link>}>
@@ -62,7 +62,7 @@ export default function Page() {
 
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الطلبات: {error}</ErrorNote> : all.length === 0 ? (
         <EmptyState icon="bag" title="لا طلبات بعد"
-          text="حين تطلب مراجِعة منتجات من متجر التطبيق يظهر طلبها هنا فوراً، وتُخصم الكميات من المخزون. تأكّدي أن المنتجات ظاهرة في المتجر ولها أسعار."
+          text="حين تطلب مراجِعة منتجات من صيدلية التطبيق يظهر طلبها هنا فوراً، وتُخصم الكميات من المخزون. تأكّدي أن المنتجات ظاهرة في الصيدلية ولها أسعار."
           action={<Link href={R.W_Products} style={{ color: C.accent, fontWeight: 700 }}>إدارة المنتجات</Link>} />
       ) : f === "cancelled" ? (
         list.length === 0 ? <EmptyState compact icon="check" title="لا طلبات ملغاة" /> : (

@@ -19,7 +19,7 @@ type Row = {
 };
 
 const CHANNEL: Record<string, string> = { web: "من المتصفح", play_store: "Google Play", app_store: "App Store" };
-const APP: Record<string, string> = { patient: "العميلات", store: "المتجر" };
+const APP: Record<string, string> = { patient: "العميلات", store: "الصيدلية" };
 const PLATFORM: Record<string, string> = { android: "أندرويد", ios: "آيفون", desktop: "حاسوب", other: "جهاز آخر" };
 const DAY = 864e5;
 
@@ -74,7 +74,7 @@ export default function InstallsPage() {
   const maxDay = Math.max(1, ...stats.days.map((d) => d.n));
 
   return (
-    <AdminShell active="تثبيت التطبيق" title="تثبيت التطبيق" subtitle="من ثبّتت تطبيق العميلات أو تطبيق المتجر، ومن أين، ومتى فتحته آخر مرة">
+    <AdminShell active="تثبيت التطبيق" title="تثبيت التطبيق" subtitle="من ثبّتت تطبيق العميلات أو تطبيق الصيدلية، ومن أين، ومتى فتحته آخر مرة">
       <div className="adm-row" style={{ display: "flex", gap: 14 }}>
         <Kpi dark label="إجمالي التثبيتات" value={stats.total} sub={`${stats.week} هذا الأسبوع`} icon="download" />
         <Kpi label="مراجِعات ثبّتن التطبيق" value={`${pct}%`} sub={`${stats.linked} من ${patientsCount} مراجِعة`} icon="users" />
@@ -111,7 +111,7 @@ export default function InstallsPage() {
         <span style={{ fontSize: 13, color: C.sub2, fontWeight: 600 }}>التطبيق:</span>
         <Chip selected={appF === "all"} onClick={() => setAppF("all")}>الكل · {(rows ?? []).length}</Chip>
         <Chip selected={appF === "patient"} onClick={() => setAppF("patient")}>العميلات · {appCount("patient")}</Chip>
-        <Chip selected={appF === "store"} onClick={() => setAppF("store")}>المتجر · {appCount("store")}</Chip>
+        <Chip selected={appF === "store"} onClick={() => setAppF("store")}>الصيدلية · {appCount("store")}</Chip>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -128,7 +128,7 @@ export default function InstallsPage() {
         <div style={{ ...CARD, borderRadius: 26, padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
           <span style={{ width: 64, height: 64, borderRadius: 32, background: "linear-gradient(145deg, #F6EEF9, #E6D3EE)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="download" size={28} /></span>
           <div style={{ fontSize: 17, fontWeight: 700 }}>لا توجد تثبيتات بعد</div>
-          <div style={{ fontSize: 13.5, color: C.sub, maxWidth: 420, lineHeight: 1.8 }}>ستظهر هنا كل مراجِعة تثبّت التطبيق من المتصفح أو من المتجرين، ويُربط اسمها تلقائياً عند تسجيل دخولها.</div>
+          <div style={{ fontSize: 13.5, color: C.sub, maxWidth: 420, lineHeight: 1.8 }}>ستظهر هنا كل مراجِعة تثبّت التطبيق من المتصفح أو من الصيدليةين، ويُربط اسمها تلقائياً عند تسجيل دخولها.</div>
         </div>
       ) : (
         <DataTable

@@ -77,7 +77,7 @@ export function orderError(e: unknown) {
   const out = /out of stock: (.*)/.exec(m);
   if (out) return `الكمية المتوفرة من «${out[1]}» لا تكفي. خفّفي الكمية أو احذفيه من السلة.`;
   const un = /unavailable: (.*)/.exec(m);
-  if (un) return `«${un[1]}» لم يعد متاحاً في المتجر.`;
+  if (un) return `«${un[1]}» لم يعد متاحاً في الصيدلية.`;
   if (/sign in/.test(m)) return "سجّلي الدخول بحساب المراجِعة أولاً.";
   if (/empty order/.test(m)) return "سلتكِ فارغة.";
   if (/address required/.test(m)) return "اكتبي عنوان التوصيل.";

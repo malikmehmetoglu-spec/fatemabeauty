@@ -1,6 +1,6 @@
 "use client";
 
-/** Store front: hero slides (admin «واجهة المتجر») and best-seller ranking. */
+/** Store front: hero slides (admin «واجهة الصيدلية») and best-seller ranking. */
 import { supabase, type Tables } from "@/lib/supabase/client";
 import { invalidate, must } from "./query";
 

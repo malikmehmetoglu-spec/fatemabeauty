@@ -24,7 +24,7 @@ import { permsOf, type Perm } from "@/lib/permissions";
 
 export type AdminSection =
   | "مرايتي" | "لوحة القيادة" | "الاستقبال" | "المواعيد" | "الأدوار" | "العميلات" | "ميرا" | "جدولي" | "يوم فاطمة" | "الاستشارات المكتوبة" | "المالية" | "المخزون والأجهزة"
-  | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "المتجر" | "التقارير" | "الإعدادات";
+  | "فريق العمل" | "التسويق والولاء" | "تثبيت التطبيق" | "الصيدلية" | "التقارير" | "الإعدادات";
 
 const NAV: [string, AdminSection, string][] = [
   ["heart", "مرايتي", R.W_Maraiti],
@@ -42,7 +42,7 @@ const NAV: [string, AdminSection, string][] = [
   ["badge", "فريق العمل", R.W_Staff],
   ["megaphone", "التسويق والولاء", R.W_Offers],
   ["download", "تثبيت التطبيق", R.W_Installs],
-  ["bag", "المتجر", R.W_Products],
+  ["bag", "الصيدلية", R.W_Products],
   ["chart", "التقارير", R.W_Reports],
   ["settings", "الإعدادات", R.W_Services],
 ];
@@ -70,7 +70,7 @@ const SECTION_PERMS: Record<AdminSection, Perm[] | null> = {
   "فريق العمل": ["staff"],
   "التسويق والولاء": ["marketing"],
   "تثبيت التطبيق": ["marketing"],
-  "المتجر": ["store"],
+  "الصيدلية": ["store"],
   "التقارير": ["reports"],
   "الإعدادات": ["settings"],
 };
@@ -249,7 +249,7 @@ export function AdminShell({ active, title, subtitle, actions, children, overlay
 const SUB: Partial<Record<AdminSection, [string, string][]>> = {
   "المواعيد": [["التقويم", R.W_Calendar], ["طلبات الحجز", R.W_BookingRequests]],
   "المالية": [["الكاشير", R.W_Cashier], ["الفواتير", R.W_Invoices], ["الاستشارات المكتوبة", R.W_WcPayments], ["طلبات الباقات", R.W_PkgRequests], ["الذمم والأقساط", R.W_Receivables], ["المصاريف", R.W_Expenses], ["التقارير المالية", R.W_FinanceReports]],
-  "المتجر": [["المنتجات", R.W_Products], ["الطلبات والتوصيل", R.W_Orders], ["واجهة المتجر", "/admin/store/storefront/"]],
+  "الصيدلية": [["المنتجات", R.W_Products], ["الطلبات والتوصيل", R.W_Orders], ["واجهة الصيدلية", "/admin/store/storefront/"]],
   "المخزون والأجهزة": [["المخزون", R.W_Inventory], ["المشتريات", R.W_Purchases], ["الجرد", R.W_Stocktake], ["المواقع", "/admin/inventory/locations/"], ["الأجهزة", R.W_Devices]],
   "الإعدادات": [["الخدمات", R.W_Services], ["الغرف والأجهزة", R.W_Rooms], ["الأدوار والصلاحيات", R.W_Roles], ["السياسات", R.W_Policies], ["النداء", R.W_CallSettings], ["سجل العمليات", R.W_Audit]],
 };

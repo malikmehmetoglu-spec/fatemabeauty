@@ -32,8 +32,8 @@ function PhoneCheckout() {
   if (empty) return (
     <PhoneScreen>
       <TopBar title="الدفع والتوصيل" back={R.P_Cart} />
-      <EmptyState icon="bag" title="لا شيء لإتمام الطلب" text="سلتكِ فارغة. أضيفي منتجات من المتجر ثم عودي لإتمام الطلب."
-        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</PrimaryButton>} />
+      <EmptyState icon="bag" title="لا شيء لإتمام الطلب" text="سلتكِ فارغة. أضيفي منتجات من الصيدلية ثم عودي لإتمام الطلب."
+        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي الصيدلية</PrimaryButton>} />
     </PhoneScreen>
   );
 
@@ -122,14 +122,14 @@ function PhoneCheckout() {
       {error && <ErrorNote>{error}</ErrorNote>}
       <div className={css.pin} style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
       {keys.length === 0 ? (
-        <SecondaryButton href={R.P_Store} icon="bag" style={{ flexShrink: 0 }}>سلتكِ فارغة · تصفّحي المتجر</SecondaryButton>
+        <SecondaryButton href={R.P_Store} icon="bag" style={{ flexShrink: 0 }}>سلتكِ فارغة · تصفّحي الصيدلية</SecondaryButton>
       ) : session.loading || loading ? <Loading /> : !session.session ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ fontSize: 12.5, color: C.sub2, textAlign: "center" }}>سجّلي الدخول برقم هاتفكِ لإرسال الطلب، ثم تعودين إلى هذه الصفحة.</div>
           <PrimaryButton icon="user" onClick={login} style={{ flexShrink: 0 }}>تسجيل الدخول للمتابعة</PrimaryButton>
         </div>
       ) : !session.patient ? (
-        <ErrorNote>هذا الحساب حساب موظفة. الطلب من المتجر متاح لحسابات المراجِعات فقط.</ErrorNote>
+        <ErrorNote>هذا الحساب حساب موظفة. الطلب من الصيدلية متاح لحسابات المراجِعات فقط.</ErrorNote>
       ) : (
         <PrimaryButton onClick={submit} disabled={busy || !canOrder} style={{ flexShrink: 0 }}>{busy ? "جارٍ إرسال الطلب…" : !canOrder ? "عدّلي السلة أولاً" : "تأكيد الطلب"}</PrimaryButton>
       )}

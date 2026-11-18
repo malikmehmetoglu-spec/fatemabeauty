@@ -22,7 +22,7 @@ export function DeskProductState({ title, text }: { title: string; text: string 
         <Icon name="bag" color={C.accentMid} size={36} />
         <h3>{title}</h3>
         <p>{text}</p>
-        <Link href={R.P_Store} className={d.linkBtn}>العودة إلى المتجر</Link>
+        <Link href={R.P_Store} className={d.linkBtn}>العودة إلى الصيدلية</Link>
       </div>
     </StoreChrome>
   );
@@ -68,7 +68,7 @@ export function DeskProduct({ p }: { p: Product }) {
   return (
     <StoreChrome active="product">
       <nav className={d.crumbs} aria-label="مسار التصفح">
-        <Link href={R.P_Store}>المتجر</Link>
+        <Link href={R.P_Store}>الصيدلية</Link>
         <Icon name="chev" size={14} color={C.muted} />
         {p.category && <><Link href={`${R.P_Store}?cat=${encodeURIComponent(p.category.trim())}`}>{p.category}</Link><Icon name="chev" size={14} color={C.muted} /></>}
         <span aria-current="page">{p.name}</span>

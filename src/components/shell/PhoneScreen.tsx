@@ -21,10 +21,10 @@ export function Blobs({ width = 390 }: { width?: number }) {
   );
 }
 
-export type TabLabel = "الرئيسية" | "مواعيدي" | "رحلتي" | "المتجر" | "حسابي";
+export type TabLabel = "الرئيسية" | "مواعيدي" | "رحلتي" | "الصيدلية" | "حسابي";
 const TABS: [string, TabLabel, string][] = [
   ["home", "الرئيسية", R.Main], ["cal", "مواعيدي", R.P_Appointments], ["sparkle", "رحلتي", R.Journey],
-  ["bag", "المتجر", R.P_Store], ["user", "حسابي", R.Account],
+  ["bag", "الصيدلية", R.P_Store], ["user", "حسابي", R.Account],
 ];
 
 /** Floating glass tab bar for the five root phone screens. */
@@ -99,7 +99,7 @@ function AuthBrand({ store }: { store: boolean }) {
     ? [["bag", "منتجات مختارة بعناية", "تنصحكِ بها فاطمة طيبة لبشرتكِ"], ["truck", "توصيل أو استلام من المركز", "والدفع نقداً عند الاستلام"], ["box", "طلباتكِ في مكان واحد", "تابعي حالة كل طلب خطوة بخطوة"]]
     : [["cal", "احجزي جلستكِ بسهولة", "اختاري الخدمة والوقت المناسب لكِ"], ["clock", "تابعي دوركِ مباشرة", "اعرفي متى يحين موعدكِ يوم الزيارة"], ["sparkle", "رحلة بشرتكِ", "جلساتكِ وروتينكِ ونصائح فريقنا"]];
   return (
-    <aside className={ps.brand} aria-label={store ? "متجر فاطمة بيوتي" : "تطبيق فاطمة بيوتي"}>
+    <aside className={ps.brand} aria-label={store ? "صيدلية فاطمة بيوتي" : "تطبيق فاطمة بيوتي"}>
       <div className={ps.brandGlowA} aria-hidden /><div className={ps.brandGlowB} aria-hidden />
       <svg className={ps.brandRings} viewBox="0 0 560 560" aria-hidden>
         <circle cx="280" cy="280" r="270" fill="none" stroke={ring} strokeWidth="1.5" />
@@ -108,7 +108,7 @@ function AuthBrand({ store }: { store: boolean }) {
       </svg>
       <div className={ps.brandTop}>
         <Logo height={132} />
-        <div className={ps.brandKicker}>{store ? "متجر فاطمة بيوتي" : "مركز فاطمة بيوتي للعناية بالبشرة"}</div>
+        <div className={ps.brandKicker}>{store ? "صيدلية فاطمة بيوتي" : "مركز فاطمة بيوتي للعناية بالبشرة"}</div>
         <p className={ps.brandLine}>عناية تليق ببشرتكِ<br />وخبرة تمنحكِ إشراقة تدوم</p>
       </div>
       <ul className={ps.brandFeats}>
@@ -127,7 +127,7 @@ const SIDE: [string, TabLabel, string, string[]][] = [
   ["home", "الرئيسية", R.Main, ["/home"]],
   ["cal", "مواعيدي", R.P_Appointments, ["/appointments", "/booking", "/queue", "/checkin", "/waitlist", "/review", "/survey"]],
   ["sparkle", "رحلتي", R.Journey, ["/journey", "/routine", "/prescriptions"]],
-  ["bag", "المتجر", R.P_Store, ["/store", "/cart", "/checkout", "/orders"]],
+  ["bag", "الصيدلية", R.P_Store, ["/store", "/cart", "/checkout", "/orders"]],
   ["user", "حسابي", R.Account, ["/account", "/profile", "/settings", "/payments", "/packages", "/notifications", "/help", "/gift", "/consent"]],
 ];
 
@@ -187,7 +187,7 @@ export function PhoneScreen({
         maxWidth: wide ? 1180 : 480, background, color: C.ink, gap,
         padding: padding ?? `${top} 20px ${bottom}`, ...style,
       }}>
-        {auth && store && <Link href={R.P_Store} className={ps.backStore}><Icon name="back" color={C.accent} size={16} />العودة إلى المتجر</Link>}
+        {auth && store && <Link href={R.P_Store} className={ps.backStore}><Icon name="back" color={C.accent} size={16} />العودة إلى الصيدلية</Link>}
         {blobs && <Blobs />}
         {children}
         {overlay}

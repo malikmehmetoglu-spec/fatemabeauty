@@ -120,7 +120,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
     if (f.kind === "retail" && badMoney(f.price)) { setError("سعر البيع رقم صحيح موجب بالليرة (بلا فواصل أو كسور)."); return; }
     if (badMoney(f.cost)) { setError("سعر الكلفة رقم صحيح موجب بالليرة."); return; }
     if (badQty(f.min)) { setError("الحد الأدنى للتنبيه رقم موجب."); return; }
-    if (f.kind === "retail" && f.show && num(f.price) == null) { setError("منتج البيع الظاهر في المتجر يحتاج سعراً، أو أخفيه من المتجر."); return; }
+    if (f.kind === "retail" && f.show && num(f.price) == null) { setError("منتج البيع الظاهر في الصيدلية يحتاج سعراً، أو أخفيه من الصيدلية."); return; }
     if (badQty(f.qty)) { setError("الكمية رقم موجب."); return; }
     if (f.expires && f.expires < dayKey() && (!product || f.expires !== orig?.exp)) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
     if (file && !file.type.startsWith("image/")) { setError("اختاري ملف صورة."); return; }
@@ -155,7 +155,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
   }
 
   async function archive() {
-    if (!product || !confirm(`إزالة «${product.name}» من المخزون والمتجر؟ يبقى سجلّه في الطلبات السابقة.`)) return;
+    if (!product || !confirm(`إزالة «${product.name}» من المخزون والصيدلية؟ يبقى سجلّه في الطلبات السابقة.`)) return;
     setBusy(true);
     try { await archiveProduct(product.key); onClose(); } catch (e) { setError(errText(e)); } finally { setBusy(false); }
   }
@@ -170,7 +170,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
       </>}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <Segment label="نوع الصنف" value={f.kind} onChange={(v) => set("kind", v)} options={[{ value: "retail", label: "منتج للبيع" }, { value: "consumable", label: "مادة للجلسات" }]} />
-        <span style={{ fontSize: 12.5, color: C.sub2 }}>{f.kind === "retail" ? "يظهر في المتجر تلقائياً" : "لا يظهر في المتجر"}</span>
+        <span style={{ fontSize: 12.5, color: C.sub2 }}>{f.kind === "retail" ? "يظهر في الصيدلية تلقائياً" : "لا يظهر في الصيدلية"}</span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -237,17 +237,17 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
       {f.kind === "retail" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, borderRadius: 18, padding: "12px 14px", background: C.tint2 }}>
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 14, fontWeight: 600 }}>
-            إظهار في المتجر <Toggle on={f.show} onChange={(v) => set("show", v)} label="إظهار في المتجر" />
+            إظهار في الصيدلية <Toggle on={f.show} onChange={(v) => set("show", v)} label="إظهار في الصيدلية" />
           </label>
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 14, fontWeight: 600 }}>
-            توصية الأخصائية (يظهر بشارة في المتجر) <Toggle on={f.recommended} onChange={(v) => set("recommended", v)} label="توصية الأخصائية" />
+            توصية الأخصائية (يظهر بشارة في الصيدلية) <Toggle on={f.recommended} onChange={(v) => set("recommended", v)} label="توصية الأخصائية" />
           </label>
         </div>
       )}
 
       {f.kind === "retail" && (
         <div style={row}>
-          <TextArea label="الوصف في المتجر" value={f.description} onChange={(v) => set("description", v)} rows={3} />
+          <TextArea label="الوصف في الصيدلية" value={f.description} onChange={(v) => set("description", v)} rows={3} />
           <TextArea label="طريقة الاستخدام" value={f.usage} onChange={(v) => set("usage", v)} rows={3} />
         </div>
       )}

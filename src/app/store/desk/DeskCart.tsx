@@ -46,8 +46,8 @@ export function DeskCart() {
       <div className={d.empty} style={{ marginTop: 56 }}>
         <Icon name="bag" color={C.accentMid} size={38} />
         <h3>سلتكِ فارغة</h3>
-        <p>أضيفي منتجات العناية من المتجر، وستظهر هنا مع أسعارها المحدّثة.</p>
-        <Link href={R.P_Store} className={d.btn} style={{ marginTop: 8 }}><Icon name="bag" color="#FFFFFF" size={19} />تصفّحي المتجر</Link>
+        <p>أضيفي منتجات العناية من الصيدلية، وستظهر هنا مع أسعارها المحدّثة.</p>
+        <Link href={R.P_Store} className={d.btn} style={{ marginTop: 8 }}><Icon name="bag" color="#FFFFFF" size={19} />تصفّحي الصيدلية</Link>
       </div>
     </StoreChrome>
   );

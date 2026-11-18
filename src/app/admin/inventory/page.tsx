@@ -87,14 +87,14 @@ export default function InventoryPage() {
   };
 
   return (
-    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={L.multi ? "الكميات في كل المواقع: المستودع والمحل والمركز — منتجات البيع تظهر في المتجر من المواقع التي تغذّيه" : "كل ما في المركز: منتجات البيع تظهر في المتجر تلقائياً، ومواد الجلسات لا تظهر"}
+    <AdminShell active="المخزون والأجهزة" title="المخزون" subtitle={L.multi ? "الكميات في كل المواقع: المستودع والمحل والمركز — منتجات البيع تظهر في الصيدلية من المواقع التي تغذّيه" : "كل ما في المركز: منتجات البيع تظهر في الصيدلية تلقائياً، ومواد الجلسات لا تظهر"}
       actions={<>
         {L.multi && <GhostButton icon="refresh" onClick={() => router.push("/admin/inventory/locations/")}>نقل بين المواقع</GhostButton>}
         <GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>
       </>}>
       <div className="adm-row">
         <Kpi dark label="الأصناف" value={stats.total} sub={`${stats.retail} للبيع · ${stats.total - stats.retail} للجلسات`} icon="box" />
-        <Kpi label="ظاهرة في المتجر" value={stats.inStore} sub={`من ${stats.retail} منتج بيع`} icon="bag" />
+        <Kpi label="ظاهرة في الصيدلية" value={stats.inStore} sub={`من ${stats.retail} منتج بيع`} icon="bag" />
         <Kpi label="تحتاج إعادة طلب" value={stats.low} sub="وصلت إلى الحد الأدنى أو أقل" icon="alert" />
         <Kpi label="قيمة المخزون" value={money(stats.value)} sub={locName ? `في «${locName}» بسعر الكلفة` : "بسعر الكلفة المسجّل"} icon="wallet" />
       </div>
@@ -138,7 +138,7 @@ export default function InventoryPage() {
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        {([["all", "الكل"], ["retail", "منتجات البيع"], ["consumable", "مواد الجلسات"], ["low", "تحتاج إعادة طلب"], ["hidden", "مخفية من المتجر"]] as [Filter, string][]).map(([k, t]) => (
+        {([["all", "الكل"], ["retail", "منتجات البيع"], ["consumable", "مواد الجلسات"], ["low", "تحتاج إعادة طلب"], ["hidden", "مخفية من الصيدلية"]] as [Filter, string][]).map(([k, t]) => (
           <Chip key={k} selected={filter === k} onClick={() => setFilter(k)}>{t}</Chip>
         ))}
         <input aria-label="بحث في المخزون" placeholder="ابحثي بالاسم أو الفئة أو الرمز" value={q} onChange={(e) => setQ(e.target.value)}
@@ -147,7 +147,7 @@ export default function InventoryPage() {
 
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل المخزون: {error}</ErrorNote> : list.length === 0 ? (
         <EmptyState icon="box" title="المخزون فارغ"
-          text="أضيفي أول صنف: منتج للبيع (يظهر في المتجر تلقائياً) أو مادة تُستهلك في الجلسات. يمكنكِ إدخال الكمية الأولى وتاريخ الصلاحية مباشرة."
+          text="أضيفي أول صنف: منتج للبيع (يظهر في الصيدلية تلقائياً) أو مادة تُستهلك في الجلسات. يمكنكِ إدخال الكمية الأولى وتاريخ الصلاحية مباشرة."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة صنف</GhostButton>} />
       ) : shown.length === 0 ? (
         <EmptyState compact icon="search" title="لا أصناف تطابق هذا الاختيار" />
@@ -179,7 +179,7 @@ export default function InventoryPage() {
                   {p.kind === "retail" && <span>{p.price != null ? money(p.price) : <span style={{ color: C.muted }}>بلا سعر</span>}</span>}
                   {p.kind === "retail" && (
                     <span style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto", fontSize: 12.5, color: C.sub2 }}>
-                      في المتجر <Toggle on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busyKey !== p.key && toggleStore(p)} />
+                      في الصيدلية <Toggle on={p.show_in_store} label={`إظهار ${p.name} في الصيدلية`} onChange={() => busyKey !== p.key && toggleStore(p)} />
                     </span>
                   )}
                 </div>
@@ -197,7 +197,7 @@ export default function InventoryPage() {
         </div>
         <div className={css.table}>
         <DataTable minWidth={1040}
-          headers={["الصنف", "النوع", "الكمية", "سعر البيع", "في المتجر", ""]}
+          headers={["الصنف", "النوع", "الكمية", "سعر البيع", "في الصيدلية", ""]}
           widths={[2.1, 0.7, 2, 0.9, 0.7, 3.1]}
           rowHeight={L.multi && !loc ? 76 : 64}
           rows={shown.map((p) => {
@@ -225,7 +225,7 @@ export default function InventoryPage() {
               </span>,
               p.kind === "retail" ? (p.price != null ? money(p.price) : <span style={{ color: C.muted }}>بلا سعر</span>) : <span style={{ color: C.muted }}>—</span>,
               p.kind === "retail"
-                ? <Toggle key="t" on={p.show_in_store} label={`إظهار ${p.name} في المتجر`} onChange={() => busyKey !== p.key && toggleStore(p)} />
+                ? <Toggle key="t" on={p.show_in_store} label={`إظهار ${p.name} في الصيدلية`} onChange={() => busyKey !== p.key && toggleStore(p)} />
                 : <span style={{ fontSize: 12, color: C.muted }}>لا يظهر</span>,
               <span key="a" style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginInlineStart: "auto" }}>
                 <RowBtn icon="plus" label="استلام" onClick={() => setReceiving(p)} />

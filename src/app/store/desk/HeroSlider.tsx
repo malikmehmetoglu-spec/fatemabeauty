@@ -2,7 +2,7 @@
 
 /**
  * Desktop store hero: the mauve text panel (right, RTL) and the image slider (left) change together.
- * Slides come from admin «واجهة المتجر»; with none, the static logo hero is shown.
+ * Slides come from admin «واجهة الصيدلية»; with none, the static logo hero is shown.
  * Autoplay 6s, pauses on hover / focus / hidden tab, off under prefers-reduced-motion.
  */
 import Link from "next/link";
@@ -69,7 +69,7 @@ function Slider({ slides, onInternal }: { slides: Slide[]; onInternal: (href: st
   };
 
   return (
-    <section className={d.hero} aria-roledescription="carousel" aria-label="عروض المتجر" onKeyDown={onKey}
+    <section className={d.hero} aria-roledescription="carousel" aria-label="عروض الصيدلية" onKeyDown={onKey}
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setPaused(false); }}>
       <div className={d.heroText}>
@@ -125,7 +125,7 @@ function StaticHero({ hasPicks }: { hasPicks: boolean }) {
     <section className={d.hero} aria-labelledby="hero-h">
       <div className={d.heroText}>
         <div className={d.heroSlideText} style={{ position: "static", opacity: 1, transform: "none" }}>
-          <span className={d.heroKicker}>متجر فاطمة بيوتي</span>
+          <span className={d.heroKicker}>صيدلية فاطمة بيوتي</span>
           <h1 id="hero-h" className={d.heroTitle}>روتين بشرتكِ،{"\n"}كما تختاره أخصائيتكِ</h1>
           <p className={d.heroLead}>منتجات عناية معتمدة في المركز، تصلكِ إلى البيت أو تستلمينها في زيارتكِ القادمة.</p>
           <div className={d.heroCtas}>

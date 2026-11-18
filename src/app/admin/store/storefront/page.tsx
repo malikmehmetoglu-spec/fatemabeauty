@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * واجهة المتجر — hero slides of the desktop store home. Staff (admin / reception) add, edit, reorder,
+ * واجهة الصيدلية — hero slides of the desktop store home. Staff (admin / reception) add, edit, reorder,
  * hide and delete slides; each slide has an image, a short line, a title, a text and up to two buttons.
  */
 import { arError } from "@/lib/arError";
@@ -37,12 +37,12 @@ export default function Page() {
   };
 
   return (
-    <AdminShell active="المتجر" title="واجهة المتجر" subtitle="شرائح الصفحة الأولى للمتجر على الحاسوب — الصورة والنص يتبدّلان معاً"
+    <AdminShell active="الصيدلية" title="واجهة الصيدلية" subtitle="شرائح الصفحة الأولى للصيدلية على الحاسوب — الصورة والنص يتبدّلان معاً"
       actions={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة شريحة</GhostButton>}>
       {err && <ErrorNote>{err}</ErrorNote>}
       {loading ? <Loading /> : error ? <ErrorNote>تعذّر تحميل الشرائح: {error}</ErrorNote> : slides.length === 0 ? (
         <EmptyState icon="image" title="لا شرائح بعد"
-          text="أضيفي شريحة بصورة وعنوان وزر؛ تظهر في أعلى المتجر وتتبدّل تلقائياً. بدون شرائح يظهر الغلاف الثابت بالشعار."
+          text="أضيفي شريحة بصورة وعنوان وزر؛ تظهر في أعلى الصيدلية وتتبدّل تلقائياً. بدون شرائح يظهر الغلاف الثابت بالشعار."
           action={<GhostButton icon="plus" onClick={() => setEditing("new")}>إضافة شريحة</GhostButton>} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -80,7 +80,7 @@ export default function Page() {
           <GhostButton onClick={() => setRemoving(null)}>إلغاء</GhostButton>
           <SubmitButton busy={busy} onClick={() => removing && run(async () => { await deleteSlide(removing); setRemoving(null); })} style={{ background: C.danger }}>حذف نهائياً</SubmitButton>
         </>}>
-        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.8, color: C.sub }}>ستُحذف الشريحة «{removing?.title}» وصورتها من المتجر. لإيقافها مؤقتاً استخدمي زر الإظهار بدل الحذف.</p>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.8, color: C.sub }}>ستُحذف الشريحة «{removing?.title}» وصورتها من الصيدلية. لإيقافها مؤقتاً استخدمي زر الإظهار بدل الحذف.</p>
       </Modal>
     </AdminShell>
   );
@@ -128,7 +128,7 @@ function LinkPicker({ title, label, href, onLabel, onHref, optional }: {
 
   const kinds: { value: LinkKind; label: string }[] = [
     ...(optional ? [{ value: "none" as LinkKind, label: "بلا زر" }] : []),
-    { value: "store", label: "المتجر" }, { value: "product", label: "منتج" }, { value: "category", label: "قسم" },
+    { value: "store", label: "الصيدلية" }, { value: "product", label: "منتج" }, { value: "category", label: "قسم" },
     { value: "book", label: "حجز موعد" }, { value: "custom", label: "رابط آخر" },
   ];
   return (
@@ -201,7 +201,7 @@ function SlideDialog({ slide, nextSort, onClose }: { slide: Slide | null; nextSo
         <LinkPicker title="الزر الأساسي" label={cta} href={ctaHref} onLabel={setCta} onHref={setCtaHref} />
         <LinkPicker title="الزر الثاني (اختياري)" label={cta2} href={cta2Href} onLabel={setCta2} onHref={setCta2Href} optional />
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: C.sub }}>
-          <Toggle on={active} onChange={setActive} label="إظهار الشريحة في المتجر" />{active ? "ظاهرة في المتجر" : "مخفية عن المتجر"}
+          <Toggle on={active} onChange={setActive} label="إظهار الشريحة في الصيدلية" />{active ? "ظاهرة في الصيدلية" : "مخفية عن الصيدلية"}
         </div>
         {err && <ErrorNote>{err}</ErrorNote>}
       </div>

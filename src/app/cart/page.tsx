@@ -36,8 +36,8 @@ function PhoneCart() {
   if (keys.length === 0 || (data && !error && lines.length === 0)) return (
     <PhoneScreen>
       <TopBar title="السلة" back={R.P_Store} />
-      <EmptyState icon="bag" title="سلتكِ فارغة" text="أضيفي منتجات العناية من المتجر، وستظهر هنا مع أسعارها المحدّثة."
-        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</PrimaryButton>} />
+      <EmptyState icon="bag" title="سلتكِ فارغة" text="أضيفي منتجات العناية من الصيدلية، وستظهر هنا مع أسعارها المحدّثة."
+        action={<PrimaryButton href={R.P_Store} icon="bag">تصفّحي الصيدلية</PrimaryButton>} />
     </PhoneScreen>
   );
 
@@ -96,7 +96,7 @@ function PhoneCart() {
       <div className={css.pin} style={{ marginTop: "auto", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         {lines.length > 0
           ? <PrimaryButton href={canOrder ? R.P_Checkout : undefined} disabled={!canOrder}>متابعة الدفع</PrimaryButton>
-          : <SecondaryButton href={R.P_Store} icon="bag">تصفّحي المتجر</SecondaryButton>}
+          : <SecondaryButton href={R.P_Store} icon="bag">تصفّحي الصيدلية</SecondaryButton>}
       </div>
       </div>
       </div>
