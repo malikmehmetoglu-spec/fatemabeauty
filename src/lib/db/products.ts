@@ -271,3 +271,9 @@ export function parseSize(size: string, unit?: string | null): { n: string; unit
   const u = unit === "g" || /(غ|غرام|g)\s*$/i.test(size) ? "g" : "ml";
   return { n, unit: u };
 }
+
+/** Edit form: new expiry for the open batches of a product at one location. rpc set_batches_expiry (migration 0195). */
+export async function setBatchesExpiry(key: string, location: string | null, expires: string) {
+  must(await supabase.rpc("set_batches_expiry" as never, { p_product: key, p_location: location, p_expires: expires } as never));
+  invalidate("products");
+}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNote, Modal, NumberInput, Segment, Select, SubmitButton, TextArea, TextInput, Toggle, Icon } from "@/components/ui";
 import {
-  adjustStock, archiveProduct, listBatches, KIND_LABEL, listLocations, listStockByLocation, productImage, qtyAt, receiveStock, saveProductWithImage, stockError,
+  adjustStock, archiveProduct, listBatches, setBatchesExpiry, KIND_LABEL, listLocations, listStockByLocation, productImage, qtyAt, receiveStock, saveProductWithImage, stockError,
   transferStock, wasteStock, listCategories, addCategory, productByBarcode, parseSize, SIZE_UNIT_LABEL, type LocationKind, type Product, type StockLocation,
 } from "@/lib/db/products";
 import { useQuery } from "@/lib/db/query";
@@ -55,10 +55,31 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
   const [error, setError] = useState("");
   const barcodeRef = useRef<HTMLInputElement>(null);
   const batches = useQuery(["products", "batches", product?.key], () => listBatches(product!.key), { enabled: open && !!product });
+  const openB = (batches.data ?? []).filter((b) => Number(b.qty_left) > 0);
+  /** quantity + earliest expiry at one location (edit mode) */
+  const atLoc = (id: string | null) => {
+    const bs = openB.filter((b) => (b.location_id ?? null) === id);
+    const exp = bs.map((b) => b.expires_on).filter(Boolean).sort()[0] ?? "";
+    return { qty: String(bs.reduce((n, b) => n + Number(b.qty_left), 0)), exp };
+  };
+  const [orig, setOrig] = useState<{ loc: string; qty: string; exp: string } | null>(null);
+  useEffect(() => {
+    if (!open || !product || !batches.data || orig) return;
+    const l0 = openB[0]?.location_id ?? L.def?.id ?? "";
+    const v = atLoc(l0 || null);
+    setLoc(l0); setF((x) => ({ ...x, qty: v.qty, expires: v.exp })); setOrig({ loc: l0, ...v });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, product, batches.data, orig]);
+  function pickLoc(id: string) {
+    setLoc(id);
+    if (!product) return;
+    const v = atLoc(id || null);
+    setF((x) => ({ ...x, qty: v.qty, expires: v.exp })); setOrig({ loc: id, ...v });
+  }
 
   useEffect(() => {
     if (!open) return;
-    setError(""); setFile(null); setLoc(""); setNewCat(null);
+    setError(""); setFile(null); setLoc(""); setNewCat(null); setOrig(null);
     if (product) {
       const sz = parseSize(product.size, product.size_unit);
       setF({
@@ -100,7 +121,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
     if (badQty(f.min)) { setError("الحد الأدنى للتنبيه رقم موجب."); return; }
     if (f.kind === "retail" && f.show && num(f.price) == null) { setError("منتج البيع الظاهر في المتجر يحتاج سعراً، أو أخفيه من المتجر."); return; }
     if (badQty(f.qty)) { setError("الكمية رقم موجب."); return; }
-    if (f.expires && f.expires < dayKey()) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
+    if (f.expires && f.expires < dayKey() && (!product || f.expires !== orig?.exp)) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
     if (file && !file.type.startsWith("image/")) { setError("اختاري ملف صورة."); return; }
     if (file && file.size > 5 * 1024 * 1024) { setError("حجم الصورة أكبر من 5 ميغابايت."); return; }
     const code = f.barcode.trim();
@@ -119,8 +140,12 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         show_in_store: f.kind === "retail" ? f.show : false, recommended: f.kind === "retail" && f.recommended,
         description: f.description.trim(), usage: f.usage.trim(),
       }, file, product?.image_path ?? null, product ? undefined : { qty: num(f.qty) ?? 0, expires: f.expires || null, cost: num(f.cost), supplier: f.supplier.trim() || null, location: loc || L.def?.id || null });
-      if (product && (num(f.qty) ?? 0) > 0)
-        await receiveStock(product.key, num(f.qty)!, f.expires || null, num(f.cost), f.supplier.trim() || null, loc || L.def?.id || null);
+      if (product && orig) {
+        const where = loc || L.def?.id || null;
+        const q = num(f.qty) ?? 0;
+        if (String(q) !== String(Number(orig.qty))) await adjustStock(product.key, q, "تعديل من نموذج الصنف", where);
+        if (f.expires && f.expires !== orig.exp) await setBatchesExpiry(product.key, where, f.expires);
+      }
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
@@ -228,12 +253,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: `1px solid ${C.line}`, paddingTop: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>الكمية الموجودة الآن (اختياري)</div>
-        {product && (
-          <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6 }}>
-            في المخزون الآن <b className="latin" style={{ color: C.ink }}>{Number(product.stock ?? 0)}</b> قطعة — أي كمية تكتبينها هنا تُضاف إليها.
-          </div>
-        )}
-        {product && (batches.data ?? []).filter((b) => Number(b.qty_left) > 0).length > 0 && (
+        {product && openB.length > 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {(batches.data ?? []).filter((b) => Number(b.qty_left) > 0).map((b) => (
               <div key={b.id} style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center", borderRadius: 14, padding: "8px 12px", background: C.tint2, fontSize: 13.5 }}>
@@ -248,7 +268,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         <div style={grid(160)}>
           <NumberInput label="الكمية (قطعة)" value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
           <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={f.expires} onChange={(v) => set("expires", v)} />
-          <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={setLoc} locations={L.active} />
+          <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={pickLoc} locations={L.active} />
         </div>
       </div>
 
