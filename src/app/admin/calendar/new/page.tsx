@@ -70,6 +70,8 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const [time, setTime] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // «خدمات إضافية في نفس الموعد»: each extra service is booked right after the previous one (same specialist)
+  const [extras, setExtras] = useState<{ svc: string; lv: string }[]>([]);
 
   // opened from a patient file: «موعد جديد» passes ?patient=<id>
   const search = useSearch();
@@ -192,11 +194,25 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
         onClose();
         return;
       }
-      await book({
+      const first = await book({
         service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
         walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,
         source: walk ? "walk_in" : "reception", checkIn: walk && checkIn, level: lvl?.id ?? null,
       });
+      // extra services in the same visit: chained back-to-back after the first one
+      const d0 = walk ? dayKey() : day;
+      let at = toM(t) + lvMin;
+      const fp = pid ?? (first as { patient_id?: string | null } | null)?.patient_id ?? null;
+      for (const x of extras) {
+        const xs = (services.data ?? []).find((s) => s.key === x.svc);
+        if (!xs) continue;
+        const xl = levelsOf(levels.data, xs.key).find((l) => l.id === x.lv) ?? levelsOf(levels.data, xs.key)[0] ?? null;
+        const hhmm = `${String(Math.floor(at / 60)).padStart(2, "0")}:${String(at % 60).padStart(2, "0")}`;
+        await book({ service: xs.key, day: d0, time: hhmm, specialist: sp || null, room: xs.room_id ?? null, patient: fp,
+          walkInName: walk && !fp ? name : undefined, walkInPhone: walk && !fp ? phone : undefined,
+          source: walk ? "walk_in" : "reception", level: xl?.id ?? null });
+        at += xl?.minutes ?? xs.minutes ?? 30;
+      }
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
@@ -302,6 +318,32 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
               </div>
             </div>
           )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: C.tint2 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: C.ink }}>خدمات إضافية في نفس الموعد</div>
+            {extras.map((x, i) => {
+              const xl = levelsOf(levels.data, x.svc);
+              return (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                  <div style={{ flex: "2 1 220px", minWidth: 0 }}>
+                    <Select label={`الخدمة ${i + 2}`} value={x.svc} onChange={(v) => setExtras(extras.map((e, j) => j === i ? { svc: v, lv: "" } : e))}
+                      options={(services.data ?? []).filter((s) => s.key !== OPEN_VISIT).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
+                  </div>
+                  {xl.length > 1 && (
+                    <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+                      <Select label="المستوى" value={x.lv || xl[0].id} onChange={(v) => setExtras(extras.map((e, j) => j === i ? { ...e, lv: v } : e))}
+                        options={xl.map((l) => ({ value: l.id, label: `${l.name} · ${l.minutes} د · ${levelPrice(l)}` }))} />
+                    </div>
+                  )}
+                  <button type="button" onClick={() => setExtras(extras.filter((_, j) => j !== i))} aria-label="حذف الخدمة"
+                    style={{ height: 46, padding: "0 12px", border: "none", background: "none", color: C.danger, fontWeight: 700, fontFamily: "inherit" }}>حذف</button>
+                </div>
+              );
+            })}
+            <button type="button" onClick={() => setExtras([...extras, { svc: (services.data ?? []).find((s) => s.key !== svc?.key && s.key !== OPEN_VISIT)?.key ?? svc?.key ?? "", lv: "" }])}
+              style={{ alignSelf: "flex-start", height: 40, padding: "0 16px", borderRadius: 20, border: `1px dashed ${C.accent}`, background: C.white, color: C.accent, fontWeight: 700, fontSize: 13.5, fontFamily: "inherit" }}>+ إضافة خدمة أخرى</button>
+            {extras.length > 0 && <div style={{ fontSize: 12.5, color: C.sub2, lineHeight: 1.6 }}>تُحجز كل خدمة مباشرة بعد التي قبلها، مع الأخصائية نفسها.</div>}
+          </div>
 
           </>)}
 
