@@ -98,8 +98,8 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
     if (badMoney(f.cost)) { setError("سعر الكلفة رقم صحيح موجب بالليرة."); return; }
     if (badQty(f.min)) { setError("الحد الأدنى للتنبيه رقم موجب."); return; }
     if (f.kind === "retail" && f.show && num(f.price) == null) { setError("منتج البيع الظاهر في المتجر يحتاج سعراً، أو أخفيه من المتجر."); return; }
-    if (!product && badQty(f.qty)) { setError("الكمية الأولى رقم موجب."); return; }
-    if (!product && f.expires && f.expires < dayKey()) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
+    if (badQty(f.qty)) { setError("الكمية رقم موجب."); return; }
+    if (f.expires && f.expires < dayKey()) { setError("تاريخ الانتهاء مضى — لا يمكن إدخال كمية منتهية."); return; }
     if (file && !file.type.startsWith("image/")) { setError("اختاري ملف صورة."); return; }
     if (file && file.size > 5 * 1024 * 1024) { setError("حجم الصورة أكبر من 5 ميغابايت."); return; }
     const code = f.barcode.trim();
@@ -118,6 +118,8 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         show_in_store: f.kind === "retail" ? f.show : false, recommended: f.kind === "retail" && f.recommended,
         description: f.description.trim(), usage: f.usage.trim(),
       }, file, product?.image_path ?? null, product ? undefined : { qty: num(f.qty) ?? 0, expires: f.expires || null, cost: num(f.cost), supplier: f.supplier.trim() || null, location: loc || L.def?.id || null });
+      if (product && (num(f.qty) ?? 0) > 0)
+        await receiveStock(product.key, num(f.qty)!, f.expires || null, num(f.cost), f.supplier.trim() || null, loc || L.def?.id || null);
       onClose();
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
@@ -224,18 +226,17 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: `1px solid ${C.line}`, paddingTop: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>الكمية {product ? "الحالية" : "الموجودة الآن (اختياري)"}</div>
-        {product ? (
-          <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.7 }}>
-            <b className="latin" style={{ color: C.ink }}>{Number(product.stock ?? 0)}</b> قطعة. لزيادتها استخدمي «استلام»، ولتصحيحها «جرد».
-          </div>
-        ) : (
-          <div style={grid(160)}>
-            <NumberInput label="الكمية (قطعة)" value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
-            <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={f.expires} onChange={(v) => set("expires", v)} />
-            <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={setLoc} locations={L.active} />
+        <div style={{ fontSize: 14, fontWeight: 700 }}>الكمية الموجودة الآن (اختياري)</div>
+        {product && (
+          <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6 }}>
+            في المخزون الآن <b className="latin" style={{ color: C.ink }}>{Number(product.stock ?? 0)}</b> قطعة — أي كمية تكتبينها هنا تُضاف إليها.
           </div>
         )}
+        <div style={grid(160)}>
+          <NumberInput label="الكمية (قطعة)" value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
+          <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={f.expires} onChange={(v) => set("expires", v)} />
+          <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={setLoc} locations={L.active} />
+        </div>
       </div>
 
       {error && <ErrorNote>{error}</ErrorNote>}
