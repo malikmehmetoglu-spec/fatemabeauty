@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/products";
 import { useQuery } from "@/lib/db/query";
 import { dayKey } from "@/lib/format";
+import { AR_MONTHS } from "@/lib/data";
 import { C, ICON_FILL } from "@/lib/tokens";
 
 const num = (s: string) => (s.trim() === "" ? null : Number(s));
@@ -258,7 +259,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
             {(batches.data ?? []).filter((b) => Number(b.qty_left) > 0).map((b) => (
               <div key={b.id} style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center", borderRadius: 14, padding: "8px 12px", background: C.tint2, fontSize: 13.5 }}>
                 <span><b className="latin">{Number(b.qty_left)}</b> قطعة</span>
-                <span style={{ color: b.expires_on && b.expires_on < dayKey() ? C.danger : C.ink }}>تنتهي: {b.expires_on ? <span className="latin" dir="ltr">{b.expires_on}</span> : "بلا تاريخ"}</span>
+                <span style={{ color: b.expires_on && b.expires_on < dayKey() ? C.danger : C.ink }}>تنتهي: {b.expires_on ? <span className="latin" dir="ltr">{monthLabel(b.expires_on)}</span> : "بلا تاريخ"}</span>
                 {b.location_id && <span style={{ color: C.sub2 }}>{L.active.find((l) => l.id === b.location_id)?.name ?? ""}</span>}
                 {b.supplier && <span style={{ color: C.sub2 }}>{b.supplier}</span>}
               </div>
@@ -267,7 +268,7 @@ export function ProductDialog({ open, product, onClose }: { open: boolean; produ
         )}
         <div style={grid(160)}>
           <NumberInput label="الكمية (قطعة)" value={f.qty} onChange={(v) => set("qty", v)} placeholder="0" />
-          <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={f.expires} onChange={(v) => set("expires", v)} />
+          <ExpiryMonth value={f.expires} onChange={(v) => set("expires", v)} />
           <LocationSelect label="أين توجد؟" value={loc || L.def?.id || ""} onChange={pickLoc} locations={L.active} />
         </div>
       </div>
@@ -309,7 +310,7 @@ export function ReceiveDialog({ product, onClose, location }: { product: Product
       <div style={grid(180)}>
         <LocationSelect label="الاستلام إلى" value={where} onChange={setLoc} locations={L.active} qtyOf={product ? (id) => qtyAt(L.map, product, id) : undefined} unit={product?.unit} />
         <NumberInput label={`الكمية (${product?.unit ?? ""})`} required value={qty} onChange={setQty} />
-        <TextInput label="تاريخ الانتهاء" type="date" dir="ltr" value={expires} onChange={setExpires} />
+        <ExpiryMonth value={expires} onChange={setExpires} />
         <NumberInput label="كلفة الوحدة" value={cost} onChange={setCost} suffix="ل.س" />
         <TextInput label="المورّد" value={supplier} onChange={setSupplier} />
       </div>
@@ -370,7 +371,7 @@ export function WasteDialog({ batch, onClose }: { batch: { id: string; product_k
   return (
     <Modal open={!!batch} onClose={onClose} title={`إتلاف — ${batch?.name ?? ""}`} width={460}
       footer={<SubmitButton onClick={submit} busy={busy}>إتلاف وخصم من المخزون</SubmitButton>}>
-      <div style={{ fontSize: 13.5, color: C.sub }}>{batch?.location ? <>في «{batch.location}» · </> : null}دفعة تنتهي {batch?.expires_on ?? "—"} · المتبقي منها <b className="latin">{Number(batch?.qty_left ?? 0)}</b> {batch?.unit}. تُسجَّل الحركة «تالف / منتهي».</div>
+      <div style={{ fontSize: 13.5, color: C.sub }}>{batch?.location ? <>في «{batch.location}» · </> : null}دفعة تنتهي {batch?.expires_on ? monthLabel(batch.expires_on) : "—"} · المتبقي منها <b className="latin">{Number(batch?.qty_left ?? 0)}</b> {batch?.unit}. تُسجَّل الحركة «تالف / منتهي».</div>
       <div style={grid(160)}>
         <NumberInput label={`الكمية (${batch?.unit ?? ""})`} value={qty} onChange={setQty} />
         <TextInput label="السبب" value={note} onChange={setNote} placeholder="منتهي الصلاحية، تالف…" />
@@ -456,5 +457,35 @@ export function TransferDialog({ product, onClose, from: from0 }: { product: Pro
       )}
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
+  );
+}
+
+/** "YYYY-MM-DD" → "MM/YYYY" (expiry is month + year only). */
+export const monthLabel = (d: string) => `${d.slice(5, 7)}/${d.slice(0, 4)}`;
+
+/** Expiry = month + year only; stored as the last day of that month (still valid during the month). */
+export function ExpiryMonth({ value, onChange, label = "تاريخ الانتهاء (شهر/سنة)" }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const [m, setM] = useState(value ? value.slice(5, 7) : "");
+  const [y, setY] = useState(value ? value.slice(0, 4) : "");
+  useEffect(() => { setM(value ? value.slice(5, 7) : ""); setY(value ? value.slice(0, 4) : ""); }, [value]);
+  function emit(mm: string, yy: string) {
+    setM(mm); setY(yy);
+    if (!mm && !yy) { onChange(""); return; }
+    if (!mm || !yy) return;
+    const last = new Date(Date.UTC(Number(yy), Number(mm), 0)).getUTCDate();
+    onChange(`${yy}-${mm}-${String(last).padStart(2, "0")}`);
+  }
+  const y0 = new Date().getFullYear();
+  const years = Array.from({ length: 12 }, (_, i) => String(y0 - 1 + i));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>{label}</span>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: "1 1 0", minWidth: 0 }}><Select label="" value={m} onChange={(v) => emit(v, y)}
+          options={[{ value: "", label: "الشهر" }, ...AR_MONTHS.map((n, i) => ({ value: String(i + 1).padStart(2, "0"), label: `${i + 1} · ${n}` }))]} /></div>
+        <div style={{ flex: "1 1 0", minWidth: 0 }}><Select label="" value={y} onChange={(v) => emit(m, v)}
+          options={[{ value: "", label: "السنة" }, ...years.map((v) => ({ value: v, label: v }))]} /></div>
+      </div>
+    </div>
   );
 }
