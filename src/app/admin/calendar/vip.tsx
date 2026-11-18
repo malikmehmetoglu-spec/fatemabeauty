@@ -4,6 +4,7 @@
  * VIP: gold star, «حجز VIP» button, per-room reserve chips and the booking dialog (nearest free time today, ×1.7 price,
  * optional check-in) with the admin-only «إدخال فوق موعد قائم» override. Used by the admin calendar, kiosk desk / quick-book and queue.
  */
+import { phoneOk, PHONE_ERR } from "@/lib/phone";
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { ErrorNote, GhostButton, Loading, Modal, Toggle } from "@/components/ui";
@@ -170,7 +171,7 @@ export function VipBookingDialog({ open, onClose, initialClient }: { open: boole
     try { setHits(await searchClients(term)); } catch (e) { setErr(vipError(e)); }
   };
   const create = async () => {
-    if (!/^(\+?963|0)?9\d{8}$/.test(newPhone.replace(/[\s-]/g, ""))) { setErr("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
+    if (!phoneOk(newPhone)) { setErr(PHONE_ERR); return; }
     setBusy(true); setErr(null);
     try {
       const p = await createPatient(newName, newPhone, { birth_date: isoBirth(newDob) || null });

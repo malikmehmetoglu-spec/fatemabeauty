@@ -4,6 +4,7 @@
  * Reception tablet + waiting-room TV — check-in, queue, calls, walk-ins, cashier, consents, photos, eligibility.
  * Queue numbers are assigned by the database trigger when an appointment becomes `checked_in`.
  */
+import { normPhone as normPhoneAny } from "@/lib/phone";
 import { useEffect, useRef, useState } from "react";
 import { supabase, type Tables } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/database.types";
@@ -52,6 +53,7 @@ export const endTime = (a: Pick<QueueAppt, "starts_at" | "started_at" | "minutes
 export function normPhone(raw: string) {
   const d = raw.replace(/[^\d]/g, "");
   if (!d) return "";
+  const n = normPhoneAny(raw); if (n) return n;
   if (d.startsWith("00")) return "+" + d.slice(2);
   if (d.startsWith("963")) return "+" + d;
   if (d.startsWith("0")) return "+963" + d.slice(1);

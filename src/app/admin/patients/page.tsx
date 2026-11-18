@@ -1,5 +1,6 @@
 "use client";
 
+import { normPhone, PHONE_ERR } from "@/lib/phone";
 import Link from "next/link";
 import { useCanSetVip, VipStar, VipStarButton } from "../calendar/vip";
 import { useRouter } from "next/navigation";
@@ -199,13 +200,13 @@ function AddPatient({ open, onClose, contactOnly }: { open: boolean; onClose: ()
     setErr("");
     if (!name.trim()) { setErr("اكتبي اسم المراجعة."); return; }
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 9) { setErr("اكتبي رقم الهاتف كاملاً."); return; }
+    if (digits.length < 9 || !normPhone(phone)) { setErr(PHONE_ERR); return; }
     const birth = isoBirth(dob);
     if (birth === null) { setErr("أكملي تاريخ الميلاد أو اتركيه فارغاً."); return; }
     setBusy(true);
     try {
       const p = await createPatient({
-        name: name.trim(), phone: digits ? `+963${digits.replace(/^(963|0)/, "")}` : null, gender: "female", birth_date: birth || null,
+        name: name.trim(), phone: normPhone(phone), gender: "female", birth_date: birth || null,
         ...(contactOnly ? { skin_type: null, notes: null } : { skin_type: skin || null, notes: notes.trim() || null }),
       });
       onClose(); setName(""); setPhone(""); setDob(""); setSkin(""); setNotes("");

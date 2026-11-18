@@ -17,7 +17,7 @@ export const SKIN_TYPES = ["دهنية", "جافة", "مختلطة", "عادية
 export function maskPhone(p?: string | null) {
   if (!p) return "—";
   const d = p.replace(/\D/g, "");
-  return `+963 9•• ••• •${d.slice(-2)}`;
+  return p.startsWith("+963") ? `+963 9•• ••• •${d.slice(-2)}` : `+${d.slice(0, 2)}•• ••• •${d.slice(-2)}`;
 }
 
 export type PatientRow = Patient & {

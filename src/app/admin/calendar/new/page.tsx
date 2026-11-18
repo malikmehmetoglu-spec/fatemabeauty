@@ -1,4 +1,5 @@
 "use client";
+import { phoneOk, PHONE_ERR } from "@/lib/phone";
 import { BirthDateSelect, isoBirth } from "../../patients/basicInfo";
 
 /** W_BookingModal.dc.html — new appointment over the calendar. One form for every client: typing a name/phone suggests existing files; a matching phone selects the file automatically, otherwise a new file is opened on save. Or walk-in (live). */
@@ -173,8 +174,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
     const t = walk ? clock() : time;
     if (!walk && !/^\d{2}:\d{2}$/.test(t)) { setError("اختاري الوقت."); return; }
     if (!patient && !name.trim()) { setError("اكتبي اسم المراجِعة."); return; }
-    const okPhone = (v?: string | null) => /^(\+?963|0)?9\d{8}$/.test((v ?? "").replace(/[\s-]/g, ""));
-    if (!patient && !okPhone(phone)) { setError("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
+    if (!patient && !phoneOk(phone)) { setError(PHONE_ERR); return; }
     if (patient && !patient.phone) { setError("هذه المراجِعة بلا رقم هاتف. أضيفي رقمها في ملفها أولاً، فالرقم إلزامي للحجز."); return; }
     // staff bookings are never blocked: not-provider / off-duty / overlap / consultation rules are one warning line
     setBusy(true);
@@ -248,7 +248,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
             <>
               <div className={css.grid2}>
                 <TextInput label="اسم المراجِعة" required value={name} onChange={setName} />
-                <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09…" />
+                <TextInput label="رقم الهاتف (إلزامي)" value={phone} onChange={setPhone} dir="ltr" placeholder="09… أو +90…" hint="رقم أجنبي؟ اكتبيه بالرمز الدولي" />
               </div>
               {mode === "book" && hits.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

@@ -1,4 +1,5 @@
 "use client";
+import { phoneOk, PHONE_ERR } from "@/lib/phone";
 import { BirthDateSelect, isoBirth } from "../../patients/basicInfo";
 
 /**
@@ -55,7 +56,7 @@ const laneOf = (a: Appointment): Lane | null => {
   return null; // cancelled / no-show
 };
 const phoneOf = (a: Appointment) => a.patient?.phone || a.walk_in_phone || "";
-const showPhone = (p: string) => p.replace(/^\+963/, "0");
+const showPhone = (p: string) => p.startsWith("+963") ? p.replace(/^\+963/, "0") : p;
 const minsSince = (iso: string | null, now: number) => (iso ? Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000)) : 0);
 
 function useNow(ms: number) {
@@ -334,7 +335,7 @@ function WalkInDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (a
   async function save() {
     const digits = phone.replace(/[\s-]/g, "");
     if (!name.trim()) { setErr("اكتبي اسم المراجِعة."); return; }
-    if (!/^(\+?963|0)?9\d{8}$/.test(digits)) { setErr("رقم الهاتف إلزامي: اكتبي رقماً صحيحاً يبدأ بـ 09."); return; }
+    if (!phoneOk(digits)) { setErr(PHONE_ERR); return; }
     setBusy(true); setErr("");
     try {
       const core = digits.replace(/\D/g, "").replace(/^(963|0)/, "");

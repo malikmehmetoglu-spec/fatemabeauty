@@ -1,6 +1,7 @@
 "use client";
 
 /** «تعديل البيانات» — the patient-file edit dialog, shared by the record page and the patients list. */
+import { normPhone as normPhoneAny } from "@/lib/phone";
 import { useState } from "react";
 import { ErrorNote, GhostButton, Modal, Select, SubmitButton, TextArea, TextInput, Toggle } from "@/components/ui";
 import { SKIN_TYPES, updatePatient, type Patient } from "@/lib/db/patients";
@@ -12,7 +13,7 @@ import { BirthDateSelect, isoBirth, MARITAL_LABEL, maritalLabel } from "./basicI
 function normPhone(v: string) {
   const d = v.replace(/\D/g, "");
   if (!d) return null;
-  return v.trim().startsWith("+") && !d.startsWith("963") ? `+${d}` : `+963${d.replace(/^(963|0)/, "")}`;
+  return normPhoneAny(v) ?? (v.trim().startsWith("+") && !d.startsWith("963") ? `+${d}` : `+963${d.replace(/^(963|0)/, "")}`);
 }
 
 /** `contactOnly` («خدمة العملاء»): basic info only — the database refuses medical fields from that role. */
