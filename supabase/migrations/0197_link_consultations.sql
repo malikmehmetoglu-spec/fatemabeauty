@@ -1,0 +1,1 @@
+-- Applied 2026-11-19 via MCP: services.link_price (consultation 750, follow-up 250); public link accepts consultations that have a link price (level 1, consultant auto-assigned, price = link_price); public_booking_info exposes link_price / is_online. See conversation; full function bodies live in the database.

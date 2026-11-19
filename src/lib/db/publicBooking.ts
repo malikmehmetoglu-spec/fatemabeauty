@@ -13,7 +13,7 @@ import { staffPhoto } from "./staff";
 /** `price` is already in SYP (dollar prices converted server-side); null = «السعر عند الاستفسار». */
 /** A session level («عادية / مكثّفة / علاجية مطوّلة»); `price` in SYP (server-converted). */
 export type PubLevel = { id: string; level: number; name: string; minutes: number; price: number };
-export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null; levels?: PubLevel[] };
+export type PubService = { key: string; name: string; short_name: string; description: string; price: number | null; price_from: boolean; minutes: number; is_consultation: boolean; category_id: string | null; is_online?: boolean; link_price?: number | null; levels?: PubLevel[] };
 /** Levels the client chooses from (consultations never have levels). */
 export const levelsOfService = (x: PubService | null | undefined): PubLevel[] => (x && !x.is_consultation ? x.levels ?? [] : []);
 /** 45 → «45 دقيقة», 60 → «ساعة», 90 → «ساعة ونصف», 120 → «ساعتان», 180 → «3 ساعات». */

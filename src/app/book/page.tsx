@@ -3,7 +3,7 @@
 /**
  * Public booking link — https://fatema.beauty/book/ and https://book.fatema.beauty/ (for Instagram).
  * No login: visitors only reach rpc public_booking_info / public_slots_level / public_book_level.
- * The link sells SESSIONS only: no consultations (consultation, follow-up, online-consultation, hair-consultation),
+ * The link sells sessions + «استشارة» / «مراجعة» with فاطمة طيبة at their link prices (migration 0197);
  * no specialist choice (the server auto-assigns an available specialist; reception can reassign) and only
  * levels 1–2. Bookings land directly as «مؤكد» (source 'public') and the server texts an Arabic SMS confirmation.
  * The server enforces the same rules (migration 0187).
@@ -31,14 +31,19 @@ const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
 const dayLabel = (k: string) => { const d = dateOf(k); return `${AR_DAYS[weekday(k)]} ${d.getUTCDate()} ${AR_MONTHS[d.getUTCMonth()]}`; };
 const hourOf = (iso: string) => Number(clock(iso).slice(0, 2));
-/** Link-only catalogue: sessions only, levels 1–2, no specialist / consultant choice (admin and the app keep everything). */
+/** Link-only catalogue: sessions (levels 1–2, specialist auto-assigned) + the consultations that have a link price
+ *  («استشارة» 750، «مراجعة» 250 — with the consultant, level 1 only; migration 0197). */
 const LINK_HIDDEN = new Set(["hair-consultation"]);
 function linkInfo(i: PubInfo): PubInfo {
   return {
     ...i,
-    services: i.services.filter((x) => !x.is_consultation && !LINK_HIDDEN.has(x.key))
-      .map((x) => ({ ...x, levels: (x.levels ?? []).filter((l) => l.level <= 2) })),
-    specialists: [], consultant: null,
+    services: i.services
+      .filter((x) => !LINK_HIDDEN.has(x.key) && (!x.is_consultation || (x.link_price != null && !x.is_online)))
+      .map((x) => x.is_consultation
+        ? { ...x, price: Number(x.link_price), price_from: false,
+            levels: (x.levels ?? []).filter((l) => l.level === 1).map((l) => ({ ...l, price: Number(x.link_price) })) }
+        : { ...x, levels: (x.levels ?? []).filter((l) => l.level <= 2) }),
+    specialists: [],
   };
 }
 
