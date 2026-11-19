@@ -33,6 +33,9 @@ export function waPhone(phone?: string | null) {
 }
 
 /** Arabic plain-text summary of one invoice for WhatsApp. */
+/** Closing lines of every invoice (printed + WhatsApp). */
+const THANKS = ["Thank You", "لأنك خليتينا جزء من يومك وأسعدتينا بجيتك", "منتمنالك يوم حلو متلك"];
+
 export function waText(inv: InvoiceRow, extras: PrintExtras = {}) {
   const left = inv.void ? 0 : outstanding(inv);
   const lines = [
@@ -47,9 +50,8 @@ export function waText(inv: InvoiceRow, extras: PrintExtras = {}) {
     `الإجمالي: ${money(inv.total)}`,
     `المدفوع: ${money(paidOf(inv))} (${methodsOf(inv)})`,
     ...(left > 0 ? [`المتبقي: ${money(left)}${inv.due_on ? ` · يستحق ${inv.due_on}` : ""}`] : []),
-    ...(extras.staff ? [`الموظفة: ${extras.staff}`] : []),
     "",
-    "شكراً لزيارتكِ",
+    ...THANKS,
   ];
   return lines.join("\n");
 }
@@ -70,8 +72,6 @@ export function ReceiptSheet({ inv, extras = {} }: { inv: InvoiceRow; extras?: P
       <div style={{ textAlign: "center" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={LOGO} alt="Fatema Beauty" style={{ height: 54, margin: "0 auto 4px", display: "block" }} />
-        <div style={{ fontSize: "13pt", fontWeight: 700 }}>مركز فاطمة بيوتي</div>
-        <div style={{ fontSize: "9pt" }}>Fatema Beauty — Skin Care Center</div>
       </div>
       <div className={css.dash} />
       {row("رقم الفاتورة", <span dir="ltr">{inv.no}</span>, true)}
@@ -89,10 +89,12 @@ export function ReceiptSheet({ inv, extras = {} }: { inv: InvoiceRow; extras?: P
       {extras.received != null && row("المستلم", money(extras.received))}
       {extras.change != null && extras.change > 0 && row("الباقي للمراجِعة", money(extras.change))}
       {left > 0 && row(`المتبقي${inv.due_on ? ` (يستحق ${inv.due_on})` : ""}`, money(left), true)}
-      {extras.staff && row("الموظفة", extras.staff)}
       {inv.note && <div style={{ marginTop: 6, fontSize: "9pt" }}>{inv.note}</div>}
       <div className={css.dash} />
-      <div style={{ textAlign: "center" }}>شكراً لزيارتكِ</div>
+      <div style={{ textAlign: "center", lineHeight: 1.7 }}>
+        <div className="latin" style={{ fontWeight: 700 }}>Thank You</div>
+        {THANKS.slice(1).map((t) => <div key={t}>{t}</div>)}
+      </div>
     </div>
   );
 }
