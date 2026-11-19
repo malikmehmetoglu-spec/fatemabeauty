@@ -5,7 +5,7 @@ import { normPhone } from "@/lib/phone";
 import { useEffect, useState } from "react";
 import { supabase, type Tables, type Database } from "@/lib/supabase/client";
 import { atDamascus, clock, dayKey, dayRange } from "@/lib/format";
-import { invalidate, must } from "./query";
+import { invalidate, must, revalidate } from "./query";
 
 export type Status = Database["public"]["Enums"]["appointment_status"];
 export type Appointment = Tables<"appointments"> & {
@@ -396,8 +396,8 @@ export const dateOfKey = (k: string) => new Date(`${k}T12:00:00+03:00`);
 export function useLiveAppointments(channel: string) {
   const [, tick] = useState(0);
   useEffect(() => {
-    const ch = supabase.channel(channel).on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => invalidate("appointments")).subscribe();
-    const t = setInterval(() => { invalidate("appointments"); tick((n) => n + 1); }, 30000);
+    const ch = supabase.channel(channel).on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => revalidate("appointments")).subscribe();
+    const t = setInterval(() => { revalidate("appointments"); tick((n) => n + 1); }, 30000);
     return () => { clearInterval(t); supabase.removeChannel(ch); };
   }, [channel]);
 }

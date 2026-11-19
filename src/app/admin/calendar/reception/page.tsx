@@ -16,7 +16,7 @@ import Link from "next/link";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, GhostButton, Icon, Loading, Modal, SubmitButton, TextInput } from "@/components/ui";
 import { R } from "@/lib/routes";
-import { invalidate, useQuery } from "@/lib/db/query";
+import { invalidate, revalidate, useQuery } from "@/lib/db/query";
 import {
   book, bookingError, callPatient, createPatient, endsAt, getAppointment, isOpenVisit, listRange, OPEN_VISIT, OPEN_VISIT_ROOM,
   personName, searchPatients, setStatus, timeOf, useLiveAppointments, type Appointment,
@@ -86,7 +86,7 @@ async function todayReminders(): Promise<Record<string, string>> {
 
 export default function ReceptionPage() {
   useLiveAppointments("reception-screen");
-  useEffect(() => { const t = setInterval(() => { invalidate("appointments"); invalidate("reception"); }, 15000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => { revalidate("appointments"); revalidate("reception"); }, 15000); return () => clearInterval(t); }, []);
   const today = dayKey();
   const q = useQuery(["appointments", "day", today], () => listRange(today));
   const sms = useQuery(["reception", "sms", today], todayReminders);
@@ -125,7 +125,7 @@ export default function ReceptionPage() {
     const at = sms.data?.[a.id];
     if (at && !confirm(`أُرسل تذكير لـ${personName(a)} اليوم الساعة ${clock(at)}. إرسال تذكير آخر؟`)) return;
     if (!at && !confirm(`إرسال تذكير SMS إلى ${personName(a)}؟\n\n«${reminderText(a)}»`)) return;
-    run(a.id, async () => { await sendSms(a.id, "reminder", reminderText(a)); invalidate("reception"); }, `أُرسل التذكير إلى ${personName(a)}.`);
+    run(a.id, async () => { await sendSms(a.id, "reminder", reminderText(a)); revalidate("reception"); }, `أُرسل التذكير إلى ${personName(a)}.`);
   };
   const noShow = (a: Appointment) => {
     if (!confirm(`تسجيل «لم تحضر» لموعد ${personName(a)} الساعة ${timeOf(a)}؟`)) return;
@@ -134,7 +134,11 @@ export default function ReceptionPage() {
   /** «خروج من المركز»: closes the visit from reception (checked_in → in_session → done) while the specialists' screen is not in use. */
   const leave = (a: Appointment) => {
     if (!confirm(`إنهاء زيارة ${personName(a)} وتسجيل خروجها من المركز؟`)) return;
-    run(a.id, async () => { if (a.status === "checked_in") await setStatus(a.id, "in_session"); await setStatus(a.id, "done"); invalidate("reception"); }, `انتهت زيارة ${personName(a)}.`);
+    run(a.id, async () => {
+      const { error } = await supabase.rpc("finish_visit" as never, { p_id: a.id } as never);
+      if (error) throw new Error(/not allowed/.test(error.message) ? "لا تملكين صلاحية إنهاء الزيارة." : error.message);
+      revalidate("appointments"); revalidate("reception");
+    }, `انتهت زيارة ${personName(a)}.`);
   };
   const call = (a: Appointment) => run(a.id, () => callPatient(a.id), `نُودي الرقم ${a.queue_no ?? ""} — ${personName(a)}.`);
 

@@ -1,0 +1,2 @@
+-- 2026-11-19 (applied via MCP): public.finish_visit(id) — «خروج من المركز» for admin/reception: checked_in/in_session → done.
+-- private.appointment_rules honours app.leave_ok='1' (set only inside finish_visit) for the session start/finish permission check.
