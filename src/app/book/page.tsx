@@ -358,21 +358,6 @@ export default function PublicBookingPage() {
                       </>
                     )}
                     {svcCat?.not_for_pregnant && <PregnancyNotice style={{ marginTop: 14 }} />}
-                    {kind === "session" && service && people.length > 0 && (
-                      <>
-                        <div className={s.subHead}>مع من تفضّلين؟</div>
-                        <div className={s.people}>
-                          <button type="button" className={`${s.person} ${specialist === null ? s.personOn : ""}`} onClick={() => pickSpecialist(null)}>
-                            <span className={s.ava}><Icon name="users" size={19} color={C.accent} /></span><span className={s.personName}>أي أخصائية متاحة</span>
-                          </button>
-                          {people.map((p) => (
-                            <button key={p.id} type="button" className={`${s.person} ${specialist === p.id ? s.personOn : ""}`} onClick={() => pickSpecialist(p.id)}>
-                              <Ava p={p} /><span className={s.personName}>{p.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
                     {noProvider && (
                       <div className={s.note} style={{ marginTop: 18 }}>
                         لا تتوفّر أخصائية لهذه الجلسة حالياً. اختاري جلسة أخرى{contact ? " أو تواصلي معنا لنرتّب موعدكِ" : ""}.
