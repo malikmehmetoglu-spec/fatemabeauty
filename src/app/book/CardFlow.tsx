@@ -530,7 +530,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         <div className={s.bar}>
           {ready && !c.result && step > 0
             ? <button type="button" className={s.backBtn} onClick={back} aria-label="رجوع إلى الخطوة السابقة"><Icon name="back" size={20} color={C.accent} /></button>
-            : <a href={c.siteHref} className={s.backBtn} aria-label="موقع المركز"><Icon name="home" size={19} color={C.accent} /></a>}
+            : <span className={s.backBtn} aria-hidden style={{ visibility: "hidden" }} />}
           <a href={c.siteHref} aria-label="فاطمة بيوتي" className={s.logo}><Logo height={40} /></a>
           {c.now && <span className={s.clock} aria-label={`الآن في دمشق ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
         </div>
