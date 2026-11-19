@@ -45,7 +45,10 @@ export function EditAppointmentDialog({ appt, onClose }: { appt: Appointment | n
       if (error) throw error;
       invalidate("appointments"); invalidate("reception"); invalidate("booking-requests");
       onClose();
-    } catch (e) { setErr(/not allowed/.test(String((e as Error)?.message)) ? "تعديل المواعيد للإدارة والاستقبال." : bookingError(e)); }
+    } catch (e) {
+      const m = String((e as { message?: string })?.message ?? "");
+      setErr(/not allowed/.test(m) ? "تعديل المواعيد للإدارة والاستقبال." : /[\u0600-\u06FF]/.test(m) ? m.replace(/^.*?:\s*(?=[\u0600-\u06FF])/, "") : bookingError(e));
+    }
     finally { setBusy(false); }
   }
 
