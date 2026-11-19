@@ -14,7 +14,7 @@ import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listRooms, listSpecialists } from "@/lib/db/catalog";
 import {
-  bookingError, dateOfKey, endsAt, isOpenVisit, getHours, listRange, personName, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
+  bookingError, dateOfKey, endsAt, isOpenVisit, getHours, listRange, personName, searchUpcoming, setStatus, STATUS_KIND, STATUS_LABEL, timeOf,
   type Appointment, type Status, useSearch, weekday,
   callPatient as callOnTv,
 } from "@/lib/db/appointments";
@@ -240,6 +240,7 @@ export function CalendarBody() {
             <span className={S.dateTitle}>{dateLabel}</span>
             <input type="date" className={S.dateInput} aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr" />
           </div>
+          <ApptSearch onPick={(a) => { setDay(dayKey(new Date(a.starts_at))); setView("day"); setOpen(a); }} />
           <span className={S.grow} />
           <div className={S.group}>
             <div className={S.seg} role="group" aria-label="العرض">
@@ -494,5 +495,44 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
       {(a.status === "in_session" || a.status === "done") && a.patient_id && a.service_key !== "follow-up" && <FollowUpPicker patientId={a.patient_id} />}
       {error && <ErrorNote>{error}</ErrorNote>}
     </Modal>
+  );
+}
+
+/** Search today's and upcoming appointments by name, phone or file number. */
+function ApptSearch({ onPick }: { onPick: (a: Appointment) => void }) {
+  const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
+  useEffect(() => { const t = setTimeout(() => setTerm(q.trim()), 300); return () => clearTimeout(t); }, [q]);
+  const res = useQuery(["appointments", "search", term], () => searchUpcoming(term), { enabled: term.length >= 2 });
+  const hits = term.length >= 2 ? res.data ?? [] : [];
+  const today = dayKey();
+  return (
+    <div style={{ position: "relative", width: 280, maxWidth: "100%" }}>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحثي عن موعد بالاسم أو الهاتف" aria-label="بحث عن موعد"
+        style={{ height: 38, width: "100%", borderRadius: 12, border: "1px solid #EADCF0", background: C.white, padding: "0 12px", paddingInlineStart: 36, fontSize: 13.5, color: C.ink, outline: "none" }} />
+      <span style={{ position: "absolute", top: 10, right: 12 }}><Icon name="search" size={16} color={C.muted} /></span>
+      {term.length >= 2 && (
+        <div style={{ position: "absolute", top: 44, insetInlineStart: 0, width: 340, maxWidth: "90vw", maxHeight: 360, overflowY: "auto", scrollbarWidth: "none", zIndex: 40, background: C.white, border: "1px solid #EADCF0", borderRadius: 16, boxShadow: "0 14px 34px rgba(80,40,90,0.16)", padding: 6 }}>
+          {res.loading && !res.data ? <div style={{ padding: 12, fontSize: 13, color: C.sub }}>جارٍ البحث…</div>
+            : !hits.length ? <div style={{ padding: 12, fontSize: 13, color: C.sub }}>لا مواعيد اليوم أو قادمة بهذا الاسم.</div>
+            : hits.map((a) => {
+              const k = dayKey(new Date(a.starts_at));
+              return (
+                <button key={a.id} type="button" onClick={() => { onPick(a); setQ(""); setTerm(""); }}
+                  style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "9px 10px", border: 0, borderRadius: 12, background: "transparent", cursor: "pointer", textAlign: "start" }}>
+                  <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                    <b style={{ fontSize: 13.5, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</b>
+                    <span style={{ fontSize: 12, color: C.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.service?.short_name || a.service?.name}{a.specialist ? ` · ${a.specialist.name}` : ""}</span>
+                  </span>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                    <b style={{ fontSize: 12.5, color: C.accent }}>{k === today ? "اليوم" : arDate(dateOfKey(k), { day: false })}</b>
+                    <span className="latin" style={{ fontSize: 12, color: C.sub }}>{clock(a.starts_at)}</span>
+                  </span>
+                </button>
+              );
+            })}
+        </div>
+      )}
+    </div>
   );
 }

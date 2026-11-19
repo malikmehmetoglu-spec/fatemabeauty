@@ -269,6 +269,21 @@ export async function listRange(fromKey: string, toKey: string = fromKey) {
     .order("starts_at")) as unknown as Appointment[];
 }
 
+/** Name / phone / file-number search over today's and upcoming appointments (not cancelled), soonest first. */
+export async function searchUpcoming(q: string): Promise<Appointment[]> {
+  const t = q.trim().replace(/\s+/g, " ").replace(/[%,()*]/g, "");
+  if (t.length < 2) return [];
+  const digits = t.replace(/\D/g, "").replace(/^(00963|963|0)/, "");
+  const ors = [`name.ilike.%${t}%`];
+  if (/^\d+$/.test(t)) ors.push(`file_no.eq.${t}`);
+  if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`);
+  const pats = must(await supabase.from("patients").select("id").or(ors.join(",")).limit(200)) ?? [];
+  const ids = pats.map((p) => p.id);
+  const or = [`walk_in_name.ilike.%${t}%`, ...(ids.length ? [`patient_id.in.(${ids.join(",")})`] : [])].join(",");
+  return must(await supabase.from("appointments").select(SEL).gte("starts_at", dayRange(dayKey()).from).neq("status", "cancelled")
+    .or(or).order("starts_at").limit(30)) as unknown as Appointment[];
+}
+
 /** Today's checked-in queue (and those in session / finished). Queue numbers are random labels: ordered by check-in time, never by number. */
 export async function listTodayQueue() {
   const r = dayRange();
