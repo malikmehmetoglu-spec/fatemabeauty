@@ -93,6 +93,22 @@ function Patients() {
     <AdminShell active="العميلات" title="العميلات" subtitle="الملفات الصحية وسجلّ الزيارات والباقات"
       actions={<button type="button" onClick={() => setAdding(true)} style={primaryBtn}><Icon name={PLUS} size={19} color={C.white} stroke={1.9} />مراجعة جديدة</button>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
+        {!!data?.length && (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {[
+              { label: "عدد العميلات الكلي", value: data.length, icon: "users" as const },
+              { label: "من رابط الحجز", value: data.filter((p) => p.source === "public").length, icon: "cal" as const },
+            ].map((x) => (
+              <div key={x.label} style={{ flex: "1 1 200px", display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 22, background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+                <span style={{ width: 40, height: 40, borderRadius: 20, background: "#F6EEF8", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name={x.icon} size={18} color={C.accent} /></span>
+                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <b className="latin" style={{ fontSize: 22, color: C.ink, lineHeight: 1.1 }}>{x.value.toLocaleString("en-US")}</b>
+                  <span style={{ fontSize: 13, color: C.sub }}>{x.label}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
             <label htmlFor="ps" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>بحث</label>
