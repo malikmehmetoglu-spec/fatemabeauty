@@ -36,6 +36,12 @@ export async function listRecentConfirmed() {
     .order("starts_at").limit(40)) as unknown as Appointment[];
 }
 
+/** «رسائل المواعيد» queues: every upcoming confirmed / pending visit (not walk-ins), soonest first. */
+export async function listUpcomingForMessages() {
+  return must(await supabase.from("appointments").select(SEL).in("status", ["confirmed", "pending"]).neq("source", "walk_in")
+    .gte("starts_at", new Date().toISOString()).order("starts_at").limit(400)) as unknown as Appointment[];
+}
+
 export async function approveBooking(id: string) {
   const { error } = await supabase.rpc("approve_booking", { p_id: id });
   if (error) throw error;

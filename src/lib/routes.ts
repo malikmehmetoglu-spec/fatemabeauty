@@ -76,6 +76,7 @@ export const R = {
   W_Calendar: "/admin/calendar/",
   W_BookingModal: "/admin/calendar/new/",
   W_BookingRequests: "/admin/calendar/requests/",
+  W_ApptMessages: "/admin/calendar/messages/",
   W_Reception: "/admin/calendar/reception/",
   W_Waitlist: "/admin/waitlist/",
   W_Queue: "/admin/queue/",

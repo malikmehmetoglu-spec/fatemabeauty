@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       }
     }
     await log(dry ? "dry_run" : "sent");
-    if (!dry && kind !== "reminder") await admin.rpc("mark_confirm_channel", { p_id: a.id, p_channel: "sms", p_kind: kind });
+    if (!dry) await admin.rpc("mark_confirm_channel", { p_id: a.id, p_channel: "sms", p_kind: kind });
     return json({ ok: true, dry_run: dry, phone });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
