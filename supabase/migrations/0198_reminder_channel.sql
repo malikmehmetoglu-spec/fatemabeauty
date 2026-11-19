@@ -1,0 +1,3 @@
+-- 2026-11-19 (applied via MCP): kind 'reminder' accepted by public.mark_confirm_channel and public.send_app_confirmation
+-- (reminder = upcoming pending/confirmed appointment; app notification «تذكير بموعدكِ» + chat message asking to confirm attendance).
+-- Full bodies: see database (pg_get_functiondef).

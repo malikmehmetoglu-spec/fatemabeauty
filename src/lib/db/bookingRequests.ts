@@ -94,7 +94,7 @@ export function confirmText(a: Appointment, c: Centre) {
   const nm = firstName(a.patient?.name || a.walk_in_name);
   return [
     `مرحباً ${nm}،`.replace(" ،", "،"),
-    "يسعدنا تأكيد موعدكِ في مركز Fatema Beauty",
+    "تم استلام طلب حجزكِ، ويسعدنا تأكيد موعدكِ في مركز Fatema Beauty",
     "",
     `الخدمة: ${a.service?.name ?? ""}`,
     ...(a.specialist ? [`مع: ${a.specialist.name}`] : []),
@@ -103,6 +103,24 @@ export function confirmText(a: Appointment, c: Centre) {
     "",
     "نرجو الحضور قبل الموعد بـ 10 دقائق.",
     "لتعديل الموعد أو إلغائه يكفي الرد على هذه الرسالة.",
+    "بانتظاركِ",
+  ].join("\n");
+}
+
+/** Reminder before the visit: asks her to confirm attendance or tell us if she cancels / changes. */
+export function reminderText(a: Appointment, c: Centre) {
+  const nm = firstName(a.patient?.name || a.walk_in_name);
+  return [
+    `مرحباً ${nm}،`.replace(" ،", "،"),
+    "نذكّركِ بموعدكِ في مركز Fatema Beauty",
+    "",
+    `الخدمة: ${a.service?.name ?? ""}`,
+    ...(a.specialist ? [`مع: ${a.specialist.name}`] : []),
+    `الموعد: ${when(a.starts_at)} (بتوقيت دمشق)`,
+    ...contactLines(c),
+    "",
+    "نرجو تأكيد حضوركِ بالرد على هذه الرسالة،",
+    "وفي حال رغبتِ بالإلغاء أو تغيير الموعد يرجى إخبارنا مسبقاً ليتسنّى لنا منح الموعد لعميلة أخرى.",
     "بانتظاركِ",
   ].join("\n");
 }
@@ -122,7 +140,7 @@ export const greetText = (name?: string | null) => `مرحباً ${firstName(nam
 
 /* ---------- SMS & in-app (three confirmation channels) ---------- */
 
-export type ConfirmKind = "confirm" | "apology";
+export type ConfirmKind = "confirm" | "apology" | "reminder";
 export type Channel = "whatsapp" | "sms" | "app";
 /** {whatsapp?: iso, sms?: iso, app?: iso} for this kind, from appointments.confirm_channels. */
 export function sentChannels(a: Pick<Appointment, "confirm_channels" | "confirm_sent_at">, kind: ConfirmKind): Partial<Record<Channel, string>> {
@@ -146,12 +164,14 @@ function fitSms(build: (svc: string) => string, svc: string) {
   return out.length > SMS_MAX ? out.slice(0, SMS_MAX) : out;
 }
 export const smsConfirmText = (a: Appointment) =>
-  fitSms((s) => `Fatema Beauty: تم تأكيد موعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو الحضور قبل 10 دقائق.`, a.service?.name ?? "الجلسة");
+  fitSms((s) => `Fatema Beauty: تم استلام حجزكِ وتأكيد موعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو الحضور قبل 10 دقائق.`, a.service?.name ?? "الجلسة");
+export const smsReminderText = (a: Appointment) =>
+  fitSms((s) => `Fatema Beauty: تذكير بموعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو تأكيد الحضور أو إخبارنا بالإلغاء بالرد.`, a.service?.name ?? "الجلسة");
 export const smsApologyText = (a: Appointment) =>
   fitSms((s) => `Fatema Beauty: نعتذر، تعذّر تثبيت موعد ${s} يوم ${shortWhen(a.starts_at)}. تواصلي معنا لموعد آخر.`, a.service?.name ?? "الجلسة");
 
 /** Sends an SMS through the «staff-sms» Edge Function (phone is taken from the appointment on the server). */
-export async function sendSms(id: string, kind: ConfirmKind | "reminder", text: string, dryRun = false) {
+export async function sendSms(id: string, kind: ConfirmKind, text: string, dryRun = false) {
   const { data, error } = await supabase.functions.invoke("staff-sms", { body: { appointment_id: id, kind, text, dry_run: dryRun } });
   if (error) {
     let msg = "تعذّر إرسال الرسالة.";

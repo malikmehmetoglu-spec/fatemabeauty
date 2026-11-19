@@ -17,7 +17,7 @@ import {
   type Appointment, type Status, useSearch, weekday,
   callPatient as callOnTv,
 } from "@/lib/db/appointments";
-import { apologyText, approveBooking, canConfirm, confirmText, getCentre, pendingCount, smsApologyText, smsConfirmText } from "@/lib/db/bookingRequests";
+import { apologyText, approveBooking, canConfirm, confirmText, getCentre, pendingCount, reminderText, smsApologyText, smsConfirmText, smsReminderText } from "@/lib/db/bookingRequests";
 import { useSession } from "@/lib/supabase/session";
 import { SendChannels } from "./channels";
 import { isVip, VipBookingDialog, VipButton, VipStar } from "./vip";
@@ -469,7 +469,12 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
       {a.status === "confirmed" && can && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: confirmedNow ? "#EAF7EF" : "#F8F2FA" }}>
           {confirmedNow && <b style={{ fontSize: 13.5, color: "#2F6E4A" }}>تم تأكيد الموعد — أرسلي التأكيد لها الآن.</b>}
-          <SendChannels appt={a} kind="confirm" phone={phone} waText={confirmText(a, centre.data ?? {})} smsText={smsConfirmText(a)} label="إرسال التأكيد عبر" />
+          <SendChannels appt={a} kind="confirm" phone={phone} waText={confirmText(a, centre.data ?? {})} smsText={smsConfirmText(a)} label="1 · رسالة تأكيد الحجز عبر" />
+        </div>
+      )}
+      {(a.status === "confirmed" || a.status === "pending") && can && new Date(a.starts_at).getTime() > Date.now() && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: "#F2F4FB" }}>
+          <SendChannels appt={a} kind="reminder" phone={phone} waText={reminderText(a, centre.data ?? {})} smsText={smsReminderText(a)} label="2 · تذكير بالموعد (طلب تأكيد الحضور) عبر" />
         </div>
       )}
       {a.status === "cancelled" && can && (a.patient_id || phone) && (
