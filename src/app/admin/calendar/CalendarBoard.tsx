@@ -148,6 +148,7 @@ export function CalendarBody() {
   const [view, setView] = useState<"day" | "week">("day");
   const [by, setBy] = useState<"room" | "specialist">("room");
   const [showCancelled, setShowCancelled] = useState(false);
+  const [f, setF] = useState<Filters>(NO_FILTERS);
   const [open, setOpen] = useState<Appointment | null>(null);
   const [vipOpen, setVipOpen] = useState(false);
   const [, tick] = useState(0);
@@ -173,7 +174,8 @@ export function CalendarBody() {
     if (a) { setOpen(a); setOpened(id); }
   }, [sp, appts.data, opened]);
 
-  const list = useMemo(() => (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled"), [appts.data, showCancelled]);
+  const all = useMemo(() => (appts.data ?? []).filter((a) => showCancelled || a.status !== "cancelled"), [appts.data, showCancelled]);
+  const list = useMemo(() => all.filter((a) => passes(a, f)), [all, f]);
   const keyOf = (a: Appointment) => (by === "room" ? a.room_id : a.specialist_id);
   const cols: Col[] = useMemo(() => {
     const base: Col[] = by === "room" ? (rooms.data ?? []).map((r) => ({ id: r.id, name: r.name, beds: r.capacity })) : (team.data ?? []).map((s) => ({ id: s.id, name: s.name }));
@@ -271,6 +273,8 @@ export function CalendarBody() {
           </div>
         </div>
       </div>
+
+      <FilterBar all={all} shown={list.length} f={f} setF={setF} />
 
       {(pend.data ?? 0) > 0 && (
         <Link href={R.W_BookingRequests} className={S.banner}>
@@ -532,6 +536,60 @@ function ApptSearch({ onPick }: { onPick: (a: Appointment) => void }) {
               );
             })}
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- filters ---------------- */
+type Filters = { service: string; specialist: string; status: string; source: string; vip: boolean; unpaid: boolean };
+const NO_FILTERS: Filters = { service: "", specialist: "", status: "", source: "", vip: false, unpaid: false };
+const SOURCE_LABEL: Record<string, string> = { public: "رابط الحجز", app: "التطبيق", reception: "الاستقبال", walk_in: "حضور مباشر", admin: "الإدارة" };
+function passes(a: Appointment, f: Filters) {
+  if (f.service && a.service_key !== f.service) return false;
+  if (f.specialist === "none" ? !!a.specialist_id : f.specialist && a.specialist_id !== f.specialist) return false;
+  if (f.status && a.status !== f.status) return false;
+  if (f.source && (a.source ?? "") !== f.source) return false;
+  if (f.vip && !a.patient?.vip) return false;
+  if (f.unpaid && (isPaid(a) || a.status === "cancelled" || a.status === "no_show")) return false;
+  return true;
+}
+
+function FilterBar({ all, shown, f, setF }: { all: Appointment[]; shown: number; f: Filters; setF: (f: Filters) => void }) {
+  const opts = <K extends string>(pairs: [K, string][]) => [...new Map(pairs).entries()].sort((x, y) => x[1].localeCompare(y[1], "ar"));
+  const services = opts(all.filter((a) => a.service_key).map((a) => [a.service_key!, a.service?.short_name || a.service?.name || a.service_key!]));
+  const people = opts(all.filter((a) => a.specialist_id).map((a) => [a.specialist_id!, a.specialist?.name || "—"]));
+  const statuses = opts(all.map((a) => [a.status, STATUS_LABEL[a.status]]));
+  const sources = opts(all.filter((a) => a.source).map((a) => [a.source!, SOURCE_LABEL[a.source!] ?? a.source!]));
+  const active = Object.entries(f).filter(([, v]) => v).length;
+  const sel: CSSProperties = { height: 36, borderRadius: 12, border: "1px solid #EADCF0", background: C.white, padding: "0 10px", fontSize: 13, color: C.ink, maxWidth: 190 };
+  const on = (v: unknown): CSSProperties => (v ? { borderColor: C.accent, background: "#F6EEF8", fontWeight: 600 } : {});
+  const chip = (k: "vip" | "unpaid", label: string) => (
+    <button type="button" aria-pressed={f[k]} onClick={() => setF({ ...f, [k]: !f[k] })}
+      style={{ ...sel, cursor: "pointer", ...on(f[k]) }}>{label}</button>
+  );
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "4px 0 12px" }}>
+      <Icon name="M3 5h18M6 12h12M10 19h4" size={16} color={C.accent} />
+      <select style={{ ...sel, ...on(f.service) }} value={f.service} onChange={(e) => setF({ ...f, service: e.target.value })} aria-label="نوع الجلسة">
+        <option value="">كل الجلسات</option>{services.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+      </select>
+      <select style={{ ...sel, ...on(f.specialist) }} value={f.specialist} onChange={(e) => setF({ ...f, specialist: e.target.value })} aria-label="الأخصائية">
+        <option value="">كل الأخصائيات</option><option value="none">بدون أخصائية</option>{people.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+      </select>
+      <select style={{ ...sel, ...on(f.status) }} value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} aria-label="الحالة">
+        <option value="">كل الحالات</option>{statuses.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+      </select>
+      <select style={{ ...sel, ...on(f.source) }} value={f.source} onChange={(e) => setF({ ...f, source: e.target.value })} aria-label="مصدر الحجز">
+        <option value="">كل المصادر</option>{sources.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+      </select>
+      {chip("vip", "VIP فقط")}
+      {chip("unpaid", "غير مدفوعة")}
+      {active > 0 && (
+        <>
+          <span style={{ fontSize: 13, color: C.sub }}><b className="latin">{shown}</b> من <span className="latin">{all.length}</span> موعداً</span>
+          <button type="button" onClick={() => setF(NO_FILTERS)} style={{ ...sel, cursor: "pointer", color: C.accent }}>مسح الفلاتر</button>
+        </>
       )}
     </div>
   );
