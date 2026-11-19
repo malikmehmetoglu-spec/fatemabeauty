@@ -3,6 +3,7 @@
 /** Day/week board of W_Calendar.dc.html (live, Supabase) — shared by /admin/calendar and /admin/calendar/new.
  *  Day view: time grid with one column per room or specialist (overlaps laid out side by side in lanes, card height = duration);
  *  phones get an hour-grouped agenda instead. Week view: 7 day columns of compact cards. */
+import { EditAppointmentDialog } from "./edit";
 import { FollowUpPicker } from "./followUp";
 import { openTicket } from "@/components/ticket/QueueTicket";
 import { dayWindows, listStaffHours, rangesOn } from "@/lib/db/staff";
@@ -419,11 +420,13 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
   const [error, setError] = useState("");
   const [confirmedNow, setConfirmedNow] = useState(false);
   const [arrive, setArrive] = useState(false);
+  const [editing, setEditing] = useState(false);
   const { staff } = useSession();
   const runs = canRunSessions(staff);
   const centre = useQuery(["booking-requests", "centre"], getCentre);
-  useEffect(() => { setError(""); setConfirmedNow(false); setArrive(false); }, [appt]);
+  useEffect(() => { setError(""); setConfirmedNow(false); setArrive(false); setEditing(false); }, [appt]);
   if (!appt) return null;
+  if (editing) return <EditAppointmentDialog appt={appt} onClose={() => { setEditing(false); onClose(); }} />;
   if (arrive) return <ArrivalPanel appt={appt} onClose={() => { setArrive(false); onClose(); }} />;
   const a: Appointment = confirmedNow ? { ...appt, status: "confirmed" } : appt;
   const can = canConfirm(staff);
@@ -448,7 +451,7 @@ export function AppointmentDialog({ appt, onClose }: { appt: Appointment | null;
     <Modal open onClose={onClose} title={personName(a)} width={520}
       footer={<>{(NEXT[a.status] ?? []).filter((n) => (runs || (n.to !== "in_session" && n.to !== "done")) && (n.to !== "in_session" || !isOpenVisit(a)) && (can || a.status !== "pending") && (n.to !== "checked_in" || dayKey(new Date(a.starts_at)) === dayKey()) && (n.to !== "no_show" || new Date(a.starts_at).getTime() <= Date.now())).map((n, i) => i === 0 && n.to !== "cancelled" && n.to !== "no_show"
         ? <SubmitButton key={n.to} busy={busy} onClick={() => go(n.to)}>{n.label}</SubmitButton>
-        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}{a.status === "checked_in" && (isOpenVisit(a) || !isPaid(a)) && <GhostButton icon="receipt" onClick={() => setArrive(true)}>{isOpenVisit(a) ? "تحديد الجلسة والدفع" : "الدفع والتذكرة"}</GhostButton>}{a.status === "checked_in" && <GhostButton icon="bell" onClick={async () => { if (busy) return; setBusy(true); setError(""); try { await callOnTv(a.id); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); } }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>}</>}>
+        : <GhostButton key={n.to} color={n.to === "cancelled" || n.to === "no_show" ? C.danger : C.accent} onClick={() => !busy && go(n.to)}>{n.label}</GhostButton>)}{a.status === "checked_in" && (isOpenVisit(a) || !isPaid(a)) && <GhostButton icon="receipt" onClick={() => setArrive(true)}>{isOpenVisit(a) ? "تحديد الجلسة والدفع" : "الدفع والتذكرة"}</GhostButton>}{can && ["pending", "confirmed", "checked_in"].includes(a.status) && !isOpenVisit(a) && <GhostButton icon="edit" onClick={() => setEditing(true)}>تعديل الموعد</GhostButton>}{a.status === "checked_in" && <GhostButton icon="bell" onClick={async () => { if (busy) return; setBusy(true); setError(""); try { await callOnTv(a.id); onClose(); } catch (e) { setError(bookingError(e)); } finally { setBusy(false); } }}>{a.called_at ? "إعادة النداء" : "نداء"}</GhostButton>}</>}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
         {isVip(a) && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 12px", borderRadius: 14, background: GOLD_SOFT, border: `1px solid ${GOLD_LINE}`, color: GOLD_DEEP, fontSize: 12.5, fontWeight: 700 }}><VipStar size={13} />VIP</span>}

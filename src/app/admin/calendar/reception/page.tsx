@@ -131,12 +131,17 @@ export default function ReceptionPage() {
     if (!confirm(`تسجيل «لم تحضر» لموعد ${personName(a)} الساعة ${timeOf(a)}؟`)) return;
     run(a.id, () => setStatus(a.id, "no_show"));
   };
+  /** «خروج من المركز»: closes the visit from reception (checked_in → in_session → done) while the specialists' screen is not in use. */
+  const leave = (a: Appointment) => {
+    if (!confirm(`إنهاء زيارة ${personName(a)} وتسجيل خروجها من المركز؟`)) return;
+    run(a.id, async () => { if (a.status === "checked_in") await setStatus(a.id, "in_session"); await setStatus(a.id, "done"); invalidate("reception"); }, `انتهت زيارة ${personName(a)}.`);
+  };
   const call = (a: Appointment) => run(a.id, () => callPatient(a.id), `نُودي الرقم ${a.queue_no ?? ""} — ${personName(a)}.`);
 
   const card = (a: Appointment, lane: Lane) => (
     <ApptCard key={a.id} a={a} lane={lane} now={now} busy={busy === a.id} smsAt={sms.data?.[a.id] ?? null}
       onArrive={() => setArrive(a)} onRemind={() => remind(a)} onCall={() => call(a)} onReprint={() => setReprint(a)}
-      onNoShow={() => noShow(a)} onDetails={() => setDetails(a)} />
+      onNoShow={() => noShow(a)} onDetails={() => setDetails(a)} onLeave={() => leave(a)} />
   );
   const laneBody = (l: Lane) => {
     const items = lanes[l];
@@ -234,9 +239,9 @@ function Btn({ icon, children, primary = false, onClick, busy, danger }: { icon:
   );
 }
 
-function ApptCard({ a, lane, now, busy, smsAt, onArrive, onRemind, onCall, onReprint, onNoShow, onDetails }: {
+function ApptCard({ a, lane, now, busy, smsAt, onArrive, onRemind, onCall, onReprint, onNoShow, onDetails, onLeave }: {
   a: Appointment; lane: Lane; now: number; busy: boolean; smsAt: string | null;
-  onArrive: () => void; onRemind: () => void; onCall: () => void; onReprint: () => void; onNoShow: () => void; onDetails: () => void;
+  onArrive: () => void; onRemind: () => void; onCall: () => void; onReprint: () => void; onNoShow: () => void; onDetails: () => void; onLeave: () => void;
 }) {
   const isLate = late(a, now);
   const phone = phoneOf(a);
@@ -285,8 +290,12 @@ function ApptCard({ a, lane, now, busy, smsAt, onArrive, onRemind, onCall, onRep
           {lane === "call" && <>
             <Btn primary icon="bell" busy={busy} onClick={onCall}>{a.called_at ? "إعادة النداء" : "نداء"}</Btn>
             <Btn icon="print" busy={busy} onClick={onReprint}>طباعة مجدداً</Btn>
+            <Btn icon="check" busy={busy} onClick={onLeave}>خروج من المركز</Btn>
           </>}
-          {lane === "session" && <Btn icon="print" busy={busy} onClick={onReprint}>طباعة مجدداً</Btn>}
+          {lane === "session" && <>
+            <Btn icon="print" busy={busy} onClick={onReprint}>طباعة مجدداً</Btn>
+            <Btn icon="check" busy={busy} onClick={onLeave}>خروج من المركز</Btn>
+          </>}
         </div>
       )}
     </article>

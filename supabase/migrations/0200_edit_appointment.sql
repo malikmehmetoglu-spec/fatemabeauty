@@ -1,0 +1,3 @@
+-- 2026-11-19 (applied via MCP): public.edit_appointment(id, starts, service, level, specialist, note, walk_in_name, walk_in_phone)
+-- admin/reception edit an upcoming (pending/confirmed/checked_in) appointment; price & minutes recomputed when service/level change
+-- (VIP ×1.7); refuses specialist overlap; booking-rules trigger (0199) still applies. Full body: pg_get_functiondef.
