@@ -11,11 +11,11 @@
  */
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { Chip, ErrorNote, GhostButton, Icon, Loading, Modal, SubmitButton } from "@/components/ui";
+import { Chip, ErrorNote, GhostButton, Icon, Loading, Modal, Select, SubmitButton } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
 import { listServices, listSpecialists } from "@/lib/db/catalog";
 import {
-  assignVisit, endsAt, getAppointment, isOpenVisit, listRange, personName, provides, serviceProviders, setStatus, timeOf, type Appointment,
+  assignVisit, book, endsAt, getAppointment, isOpenVisit, listRange, personName, provides, serviceProviders, setStatus, timeOf, type Appointment,
 } from "@/lib/db/appointments";
 import { isPaid, levelsOf, listLevels } from "@/lib/db/levels";
 import {
@@ -54,6 +54,9 @@ export function ArrivalPanel({ appt, onClose }: { appt: Appointment; onClose: ()
   const needSession = isOpenVisit(a) || !a.specialist_id;
   const [step, setStep] = useState<Step>(needSession ? 1 : isPaid(a) ? 3 : 2);
   const [inv, setInv] = useState<InvoiceRow | null>(null);
+  const [moreInv, setMoreInv] = useState<InvoiceRow[]>([]);
+  /** extra sessions added on arrival (booked back-to-back after the first, same specialist) */
+  const [extras, setExtras] = useState<Appointment[]>([]);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -74,16 +77,23 @@ export function ArrivalPanel({ appt, onClose }: { appt: Appointment; onClose: ()
           );
         })}
       </div>
-      {step === 1 && <SessionStep a={a} busy={busy} setBusy={setBusy} onDone={async () => { const x = await refresh(); setStep(isPaid(x) ? 3 : 2); if (isPaid(x)) await checkIn(x); }} />}
+      {step === 1 && <SessionStep a={a} busy={busy} setBusy={setBusy} onDone={async (ids) => {
+        const xs = (await Promise.all(ids.map((id) => getAppointment(id)))).filter(Boolean) as Appointment[];
+        setExtras(xs);
+        const x = await refresh();
+        const allPaid = isPaid(x) && xs.every(isPaid);
+        setStep(allPaid ? 3 : 2);
+        if (allPaid) { await checkIn(x); for (const e of xs) await checkIn(e); }
+      }} />}
       {step === 2 && (canPay
-        ? <PayStep a={a} isAdmin={isAdmin} onIssued={async (i) => { setInv(i); setErr(""); try { await checkIn(await refresh()); } catch (e) { setErr(financeError(e)); } setStep(3); }} />
+        ? <PayStep a={a} extras={extras} isAdmin={isAdmin} onIssued={async (i, more) => { setInv(i); setMoreInv(more); setErr(""); try { await checkIn(await refresh()); for (const e of extras) await checkIn(e); } catch (e) { setErr(financeError(e)); } setStep(3); }} />
         : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={warn}><Icon name="lock" size={17} color="#8A5A12" />لا تملكين صلاحية الكاشير. سجّلي الوصول الآن، ثم تُدفع الجلسة من الكاشير قبل البدء.</div>
-            <SubmitButton busy={busy} onClick={async () => { setBusy(true); setErr(""); try { await checkIn(a); setStep(3); } catch (e) { setErr(financeError(e)); } finally { setBusy(false); } }}>تسجيل الوصول وطباعة التذكرة</SubmitButton>
+            <SubmitButton busy={busy} onClick={async () => { setBusy(true); setErr(""); try { await checkIn(a); for (const e of extras) await checkIn(e); setStep(3); } catch (e) { setErr(financeError(e)); } finally { setBusy(false); } }}>تسجيل الوصول وطباعة التذكرة</SubmitButton>
           </div>
         ))}
-      {step === 3 && <PrintStep a={a} inv={inv} onClose={onClose} onEnsureCheckIn={async () => { await checkIn(a); }} />}
+      {step === 3 && <PrintStep a={a} inv={inv} more={moreInv} onClose={onClose} onEnsureCheckIn={async () => { await checkIn(a); }} />}
       {err && <ErrorNote>{err}</ErrorNote>}
     </Modal>
   );
@@ -91,7 +101,7 @@ export function ArrivalPanel({ appt, onClose }: { appt: Appointment; onClose: ()
 
 /* ---------- 1. session ---------- */
 
-function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boolean; setBusy: (b: boolean) => void; onDone: () => Promise<void> }) {
+function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boolean; setBusy: (b: boolean) => void; onDone: (extraIds: string[]) => Promise<void> }) {
   const services = useQuery(["catalog", "services"], listServices);
   const levels = useQuery(["levels", "all"], listLevels);
   const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
@@ -102,6 +112,7 @@ function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boole
   const [sp, setSp] = useState(a.specialist_id ?? "");
   const [err, setErr] = useState("");
   const [conflict, setConflict] = useState(false);
+  const [more, setMore] = useState<{ svc: string; lv: string }[]>([]);
   useEffect(() => { setLv(""); setConflict(false); }, [svcKey]);
   useEffect(() => { setConflict(false); }, [sp, lv]);
 
@@ -114,7 +125,25 @@ function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boole
     if (!svcKey) { setErr("اختاري الجلسة."); return; }
     if (!sp) { setErr("اختاري الأخصائية."); return; }
     setBusy(true); setErr("");
-    try { await assignVisit(a.id, svcKey, lvl?.id ?? null, sp, force); await onDone(); }
+    try {
+      await assignVisit(a.id, svcKey, lvl?.id ?? null, sp, force);
+      // extra sessions: back-to-back after the first one, same specialist, same client
+      const ids: string[] = [];
+      const main = await getAppointment(a.id);
+      let at = new Date(main ? endsAt(main) : Date.now());
+      for (const x of more) {
+        const xs = (services.data ?? []).find((s) => s.key === x.svc);
+        if (!xs) continue;
+        const xl = levelsOf(levels.data, xs.key).find((l) => l.id === x.lv) ?? levelsOf(levels.data, xs.key)[0] ?? null;
+        const row = await book({ service: xs.key, day: dayKey(at), time: clock(at.toISOString()), specialist: sp, room: xs.room_id ?? null,
+          patient: a.patient_id ?? null, walkInName: a.patient_id ? undefined : a.walk_in_name ?? undefined, walkInPhone: a.patient_id ? undefined : a.walk_in_phone ?? undefined,
+          source: "walk_in", level: xl?.id ?? null });
+        const id = (Array.isArray(row) ? row[0] : row as { id?: string } | null)?.id;
+        if (id) ids.push(id);
+        at = new Date(at.getTime() + (xl?.minutes ?? xs.minutes ?? 30) * 60000);
+      }
+      await onDone(ids);
+    }
     catch (e) { const m = (e as Error)?.message ?? ""; if (/حُجز للتو/.test(m)) setConflict(true); else setErr(m); }
     finally { setBusy(false); }
   }
@@ -163,6 +192,33 @@ function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boole
           )}
         </div>
       )}
+      {svcKey && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, borderRadius: 18, padding: "12px 14px", background: C.tint2 }}>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>جلسات إضافية في نفس الزيارة</div>
+          {more.map((x, i) => {
+            const xl = levelsOf(levels.data, x.svc);
+            return (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: "2 1 220px", minWidth: 0 }}>
+                  <Select label={`الجلسة ${i + 2}`} value={x.svc} onChange={(v) => setMore(more.map((e, j) => j === i ? { svc: v, lv: "" } : e))}
+                    options={(services.data ?? []).filter((s) => !s.is_online && s.key !== "open-visit").map((s) => ({ value: s.key, label: s.short_name }))} />
+                </div>
+                {xl.length > 1 && (
+                  <div style={{ flex: "1 1 170px", minWidth: 0 }}>
+                    <Select label="المستوى" value={x.lv || xl[0].id} onChange={(v) => setMore(more.map((e, j) => j === i ? { ...e, lv: v } : e))}
+                      options={xl.map((l) => ({ value: l.id, label: `${l.name} · ${l.minutes} د · ${levelPrice(l)}` }))} />
+                  </div>
+                )}
+                <button type="button" onClick={() => setMore(more.filter((_, j) => j !== i))}
+                  style={{ height: 46, padding: "0 12px", border: "none", background: "none", color: C.danger, fontWeight: 700, fontFamily: "inherit" }}>حذف</button>
+              </div>
+            );
+          })}
+          <button type="button" onClick={() => setMore([...more, { svc: (services.data ?? []).find((s) => s.key !== svcKey && !s.is_online && s.key !== "open-visit")?.key ?? svcKey, lv: "" }])}
+            style={{ alignSelf: "flex-start", height: 40, padding: "0 16px", borderRadius: 20, border: `1px dashed ${C.accent}`, background: C.white, color: C.accent, fontWeight: 700, fontSize: 13.5, fontFamily: "inherit" }}>+ إضافة جلسة أخرى</button>
+          {more.length > 0 && <div style={{ fontSize: 12.5, color: C.sub2 }}>تُحجز كل جلسة بعد التي قبلها مع الأخصائية نفسها، وتُدفع كلها في الخطوة التالية.</div>}
+        </div>
+      )}
       {conflict && (
         <div style={warn}><Icon name="clock" size={17} color="#8A5A12" />
           <span>لا يوجد وقت فارغ الآن لهذه الأخصائية أو لا يوجد سرير فارغ في الغرفة. يمكن الحفظ رغم ذلك، وتبدأ الجلسة لاحقاً عند فراغها.</span>
@@ -181,7 +237,7 @@ function SessionStep({ a, busy, setBusy, onDone }: { a: Appointment; busy: boole
 /* ---------- 2. payment ---------- */
 
 type Mode = "cash" | "card" | "package";
-function PayStep({ a, isAdmin, onIssued }: { a: Appointment; isAdmin: boolean; onIssued: (inv: InvoiceRow | null) => void }) {
+function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras?: Appointment[]; isAdmin: boolean; onIssued: (inv: InvoiceRow | null, more: InvoiceRow[]) => void }) {
   const policies = useQuery(["finance", "policies"], getPolicies);
   const pkgs = useQuery(["patients", "packages", a.patient_id], () => listPatientPackages(a.patient_id as string), { enabled: !!a.patient_id });
   const usable = (pkgs.data ?? []).filter((p) => p.sessions_used < p.sessions_total && p.packages?.service_key === a.service_key);
@@ -199,15 +255,27 @@ function PayStep({ a, isAdmin, onIssued }: { a: Appointment; isAdmin: boolean; o
   const maxPct = policies.data?.maxDiscount ?? 0;
   const pcts = [0, 5, 10, 15, 20].filter((p) => isAdmin || p <= maxPct);
   const dAmt = offer ? offerDiscount(offer, lines) : Math.round((sub * pct) / 100);
-  const total = sub - dAmt;
+  const xtra = extras.filter((x) => !isPaid(x));
+  const lineOf = (x: Appointment): CartLine => ({ kind: "service", ref: x.service_key, qty: 1, label: (x.service?.name ?? "جلسة") + (x.level && x.level.level > 1 ? ` — ${x.level.name}` : ""), unit_price: x.price || 0 });
+  const xDisc = (x: Appointment) => offer ? 0 : Math.round(((x.price || 0) * pct) / 100);
+  const xTotal = xtra.reduce((n, x) => n + (x.price || 0) - xDisc(x), 0);
+  const total = sub - dAmt + xTotal;
   const payments: { method: PayMethod; amount: number }[] = mode === "package" ? [{ method: "package", amount: 0 }, { method: "cash", amount: total }] : [{ method: mode, amount: total }];
 
   async function issue() {
     if (mode === "package" && !pkg) { setErr("اختاري الباقة."); return; }
     setBusy(true); setErr("");
     try {
-      const inv = await createInvoice({ patientId: a.patient_id, appointmentId: a.id, lines, discount: dAmt, offerCode: offer?.code ?? null, payments, patientPackageId: mode === "package" ? pkgId : null });
-      onIssued(inv ? await getInvoice(inv.id).catch(() => null) : null);
+      const mainPay = payments.map((p) => p.method === "package" ? p : { ...p, amount: p.amount - xTotal });
+      const inv = isPaid(a) ? null : await createInvoice({ patientId: a.patient_id, appointmentId: a.id, lines, discount: dAmt, offerCode: offer?.code ?? null, payments: mainPay, patientPackageId: mode === "package" ? pkgId : null, walkInName: a.patient_id ? null : a.walk_in_name });
+      const more: InvoiceRow[] = [];
+      for (const x of xtra) {
+        const amt = (x.price || 0) - xDisc(x);
+        const xi = await createInvoice({ patientId: x.patient_id, appointmentId: x.id, lines: [lineOf(x)], discount: xDisc(x), payments: [{ method: mode === "card" ? "card" : "cash", amount: amt }], walkInName: x.patient_id ? null : x.walk_in_name });
+        const full = xi ? await getInvoice(xi.id).catch(() => null) : null;
+        if (full) more.push(full);
+      }
+      onIssued(inv ? await getInvoice(inv.id).catch(() => null) : null, more);
     } catch (e) { setErr(financeError(e)); } finally { setBusy(false); }
   }
 
@@ -220,6 +288,15 @@ function PayStep({ a, isAdmin, onIssued }: { a: Appointment; isAdmin: boolean; o
         </div>
         <b className="latin" style={{ fontSize: 16 }}>{money(sub)}</b>
       </div>
+      {xtra.map((x) => (
+        <div key={x.id} style={{ ...box, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ lineHeight: 1.45 }}>
+            <b style={{ fontSize: 15 }}>{lineOf(x).label}</b>
+            <div style={{ fontSize: 12.5, color: C.sub2 }}><span className="latin">{x.minutes}</span> د · تبدأ <span className="latin">{timeOf(x)}</span> · {x.specialist?.name ?? "—"}</div>
+          </div>
+          <b className="latin" style={{ fontSize: 16 }}>{money(x.price || 0)}</b>
+        </div>
+      ))}
       <div>
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>طريقة الدفع</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -258,7 +335,7 @@ function PayStep({ a, isAdmin, onIssued }: { a: Appointment; isAdmin: boolean; o
 
 /* ---------- 3. print ---------- */
 
-function PrintStep({ a, inv, onClose, onEnsureCheckIn }: { a: Appointment; inv: InvoiceRow | null; onClose: () => void; onEnsureCheckIn: () => Promise<void> }) {
+function PrintStep({ a, inv, more = [], onClose, onEnsureCheckIn }: { a: Appointment; inv: InvoiceRow | null; more?: InvoiceRow[]; onClose: () => void; onEnsureCheckIn: () => Promise<void> }) {
   const [ready, setReady] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onEnsureCheckIn().catch(() => {}).finally(() => setReady(true)); }, []);
@@ -283,6 +360,7 @@ function PrintStep({ a, inv, onClose, onEnsureCheckIn }: { a: Appointment; inv: 
         <div data-print-receipt="">
           <style>{"@media print { @page { size: 80mm auto; margin: 0; } }"}</style>
           {job.inv && <ReceiptSheet inv={job.inv} extras={{ staff: staff?.name }} />}
+          {job.inv && more.map((m) => <div key={m.id} style={{ breakBefore: "page", pageBreakBefore: "always" }}><ReceiptSheet inv={m} /></div>)}
           {job.t && <div style={job.inv ? { breakBefore: "page", pageBreakBefore: "always" } : undefined}><TicketSheet t={job.t} print /></div>}
         </div>, document.body)}
     </div>
