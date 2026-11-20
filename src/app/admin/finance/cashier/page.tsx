@@ -28,6 +28,7 @@ import { locLabel, useLocations } from "../../inventory/dialogs";
 import { qtyAt } from "@/lib/db/products";
 import { getPatient } from "@/lib/db/patients";
 import css from "../finance.module.css";
+import SimplePos from "./SimplePos";
 import { ExtensionRequests, usePendingExtensions } from "../../queue/session-ui";
 
 type Who =
@@ -46,6 +47,12 @@ const STATUS_AR: Record<string, string> = { done: "انتهت", in_session: "ف�
 const avatar = (size: number): CSSProperties => ({ width: size, height: size, borderRadius: size / 2, flexShrink: 0, background: "linear-gradient(145deg, #EEDBF2, #DABBE1)", border: "2px solid #FFFFFF", boxShadow: "0 4px 10px rgba(150,100,170,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: C.accent });
 
 export default function Page() {
+  const { staff } = useSession();
+  const m = permsOf(staff);
+  return staff && m.has("pos") && !m.has("cashier") ? <SimplePos /> : <Cashier />;
+}
+
+function Cashier() {
   const { staff } = useSession();
   const isAdmin = staff?.role === "owner" || staff?.role === "admin";
   const mine = permsOf(staff);
