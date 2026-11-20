@@ -9,7 +9,7 @@ import { invalidate, must, revalidate } from "./query";
 
 export type Status = Database["public"]["Enums"]["appointment_status"];
 export type Appointment = Tables<"appointments"> & {
-  service: { name: string; short_name: string; minutes: number; is_consultation?: boolean } | null;
+  service: { name: string; short_name: string; minutes: number; is_consultation?: boolean; category_id?: string | null } | null;
   room: { name: string } | null;
   specialist: { id: string; name: string; title: string; photo_url: string | null } | null;
   patient: { id: string; name: string; file_no: number; phone: string | null; vip?: boolean } | null;
@@ -24,7 +24,7 @@ export type WaitEntry = Tables<"waitlist"> & {
 export type Hours = { days: number[]; from: string; to: string; slot: number };
 export type MyQueue = Database["public"]["Functions"]["my_queue"]["Returns"][number];
 
-const SEL = "*, service:services(name,short_name,minutes,is_consultation), room:rooms(name), specialist:staff(id,name,title,photo_url), patient:patients(id,name,file_no,phone,vip), level:service_levels(id,name,level), invoices(id,paid,void)";
+const SEL = "*, service:services(name,short_name,minutes,is_consultation,category_id), room:rooms(name), specialist:staff(id,name,title,photo_url), patient:patients(id,name,file_no,phone,vip), level:service_levels(id,name,level), invoices(id,paid,void)";
 
 export const STATUS_LABEL: Record<Status, string> = {
   pending: "بانتظار التأكيد", confirmed: "مؤكد", checked_in: "وصلت", in_session: "في الجلسة",

@@ -544,9 +544,12 @@ function ApptSearch({ onPick }: { onPick: (a: Appointment) => void }) {
 /* ---------------- filters ---------------- */
 type Filters = { service: string; specialist: string; status: string; source: string; vip: boolean; unpaid: boolean };
 const NO_FILTERS: Filters = { service: "", specialist: "", status: "", source: "", vip: false, unpaid: false };
+const GROUPS: [string, string][] = [["hair", "جلسات الشعر"], ["skin", "جلسات البشرة"], ["consult", "الاستشارات"]];
+const groupOf = (a: Appointment) => a.service?.is_consultation || a.service?.category_id === "consult" ? "consult"
+  : a.service?.category_id === "hair" ? "hair" : a.service_key === "open-visit" ? "" : "skin";
 const SOURCE_LABEL: Record<string, string> = { public: "رابط الحجز", app: "التطبيق", reception: "الاستقبال", walk_in: "حضور مباشر", admin: "الإدارة" };
 function passes(a: Appointment, f: Filters) {
-  if (f.service && a.service_key !== f.service) return false;
+  if (f.service && groupOf(a) !== f.service) return false;
   if (f.specialist === "none" ? !!a.specialist_id : f.specialist && a.specialist_id !== f.specialist) return false;
   if (f.status && a.status !== f.status) return false;
   if (f.source && (a.source ?? "") !== f.source) return false;
@@ -557,7 +560,6 @@ function passes(a: Appointment, f: Filters) {
 
 function FilterBar({ all, shown, f, setF }: { all: Appointment[]; shown: number; f: Filters; setF: (f: Filters) => void }) {
   const opts = <K extends string>(pairs: [K, string][]) => [...new Map(pairs).entries()].sort((x, y) => x[1].localeCompare(y[1], "ar"));
-  const services = opts(all.filter((a) => a.service_key).map((a) => [a.service_key!, a.service?.short_name || a.service?.name || a.service_key!]));
   const people = opts(all.filter((a) => a.specialist_id).map((a) => [a.specialist_id!, a.specialist?.name || "—"]));
   const statuses = opts(all.map((a) => [a.status, STATUS_LABEL[a.status]]));
   const sources = opts(all.filter((a) => a.source).map((a) => [a.source!, SOURCE_LABEL[a.source!] ?? a.source!]));
@@ -571,8 +573,8 @@ function FilterBar({ all, shown, f, setF }: { all: Appointment[]; shown: number;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "4px 0 12px" }}>
       <Icon name="M3 5h18M6 12h12M10 19h4" size={16} color={C.accent} />
-      <select style={{ ...sel, ...on(f.service) }} value={f.service} onChange={(e) => setF({ ...f, service: e.target.value })} aria-label="نوع الجلسة">
-        <option value="">كل الجلسات</option>{services.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+      <select style={{ ...sel, ...on(f.service) }} value={f.service} onChange={(e) => setF({ ...f, service: e.target.value })} aria-label="القسم">
+        <option value="">كل الأقسام</option>{GROUPS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
       </select>
       <select style={{ ...sel, ...on(f.specialist) }} value={f.specialist} onChange={(e) => setF({ ...f, specialist: e.target.value })} aria-label="الأخصائية">
         <option value="">كل الأخصائيات</option><option value="none">بدون أخصائية</option>{people.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
