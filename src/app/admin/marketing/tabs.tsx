@@ -6,6 +6,7 @@ import { R } from "@/lib/routes";
 import { C } from "@/lib/tokens";
 
 const TABS: [string, string][] = [
+  [R.W_Density, "كثافة الحجز"],
   [R.W_Offers, "العروض وأكواد الخصم"],
   [R.W_Loyalty, "النقاط والعضويات"],
   [R.W_Campaigns, "الحملات والرسائل"],

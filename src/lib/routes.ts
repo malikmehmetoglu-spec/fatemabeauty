@@ -107,6 +107,7 @@ export const R = {
   W_Loyalty: "/admin/marketing/loyalty/",
   W_Campaigns: "/admin/marketing/campaigns/",
   W_Reviews: "/admin/marketing/reviews/",
+  W_Density: "/admin/marketing/density/",
   W_Installs: "/admin/marketing/installs/",
   W_Products: "/admin/store/products/",
   W_Orders: "/admin/store/orders/",
