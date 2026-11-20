@@ -65,7 +65,7 @@ const SECTION_PERMS: Record<AdminSection, Perm[] | null> = {
   "جدولي": null, // personal: specialist/accountant by role (see MYDAY_ROLES)
   "يوم فاطمة": null, // CONSULT_ONLY
   "الاستشارات المكتوبة": null,
-  "المالية": ["cashier", "finance", "written_consults_payments", "package_requests"],
+  "المالية": ["cashier", "pos", "finance", "written_consults_payments", "package_requests"],
   "المخزون والأجهزة": ["inventory", "devices"],
   "فريق العمل": ["staff"],
   "التسويق والولاء": ["marketing"],
@@ -78,7 +78,7 @@ const MYDAY_ROLES: Role[] = ["owner", "admin", "specialist", "accountant"];
 
 /** Sub-pages limited further than their section (path prefix → permissions). Longest prefix wins. */
 const SUB_PERMS: [string, Perm[]][] = [
-  [R.W_Cashier, ["cashier"]],
+  [R.W_Cashier, ["cashier", "pos"]],
   [R.W_Invoices, ["cashier", "finance"]],
   [R.W_CashBox, ["cashier", "finance"]],
   [R.W_Receivables, ["finance"]],

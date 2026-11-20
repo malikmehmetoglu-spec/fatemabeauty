@@ -6,7 +6,7 @@ import type { Tables } from "@/lib/supabase/client";
 
 export type Perm =
   | "dashboard" | "calendar" | "queue" | "patients" | "patients_medical" | "kiosk_desk"
-  | "cashier" | "finance" | "written_consults_payments" | "package_requests"
+  | "cashier" | "pos" | "finance" | "written_consults_payments" | "package_requests"
   | "inventory" | "devices" | "store" | "staff" | "marketing" | "reports" | "settings" | "mira" | "room_tablet";
 
 export type PermGroup = "العمل اليومي" | "المال" | "الإدارة";
@@ -20,6 +20,7 @@ export const PERMS: { key: Perm; label: string; hint: string; group: PermGroup }
   { key: "room_tablet", label: "تابلت الغرفة", hint: "حساب مشترك في غرفة العلاج: بدء الجلسات وإنهاؤها", group: "العمل اليومي" },
   { key: "dashboard", label: "لوحة القيادة", hint: "ملخص اليوم والأرقام", group: "العمل اليومي" },
   { key: "cashier", label: "الكاشير", hint: "إصدار الفواتير وقبض الدفعات والصندوق", group: "المال" },
+  { key: "pos", label: "نقطة البيع", hint: "بيع الأدوية والمنتجات من المخزون فقط — دون خدمات أو خصم", group: "المال" },
   { key: "finance", label: "المالية الكاملة", hint: "الذمم والمصاريف والعمولات والتقارير المالية", group: "المال" },
   { key: "written_consults_payments", label: "دفعات الاستشارات المكتوبة", hint: "تأكيد دفع الاستشارات", group: "المال" },
   { key: "package_requests", label: "طلبات الباقات", hint: "تأكيد طلبات الباقات", group: "المال" },

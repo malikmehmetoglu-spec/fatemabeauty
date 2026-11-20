@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/finance";
 import { initials } from "@/lib/data";
 import { arDate, clock, dayRange, money } from "@/lib/format";
+import { permsOf } from "@/lib/permissions";
 import { useSession } from "@/lib/supabase/session";
 import { C, ICON_FILL, SELECTED, SH, SH_SOFT, SHB } from "@/lib/tokens";
 import { Amount, LATIN, OFF, PANEL } from "../parts";
@@ -47,8 +48,11 @@ const avatar = (size: number): CSSProperties => ({ width: size, height: size, bo
 export default function Page() {
   const { staff } = useSession();
   const isAdmin = staff?.role === "owner" || staff?.role === "admin";
+  const mine = permsOf(staff);
+  // «نقطة البيع»: products from stock only — no sessions, packages, discounts or deferred payment (enforced by the server too)
+  const posOnly = !!staff && mine.has("pos") && !mine.has("cashier");
   const today = dayRange();
-  const queue = useQuery(["queue", "cashier"], listCashierQueue);
+  const queue = useQuery(["queue", "cashier"], listCashierQueue, { enabled: !!staff && !posOnly });
   const policies = useQuery(["finance", "policies"], getPolicies);
   const sellables = useQuery(["finance", "sellables"], listSellables);
   const todays = useQuery(["invoices", "today", today.from], () => listInvoices(today.from, today.to));
@@ -167,7 +171,7 @@ export default function Page() {
   const receipt = useInvoicePrint();
 
   return (
-    <AdminShell active="المالية" title="الكاشير" subtitle={nowLabel} actions={
+    <AdminShell active="المالية" title={posOnly ? "نقطة البيع" : "الكاشير"} subtitle={nowLabel} actions={posOnly ? undefined :
       <Link href={R.W_Invoices} style={{ height: 46, borderRadius: 23, border: "1px solid #FFFFFF", background: C.white, boxShadow: SHB, color: C.accent, fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 16px", whiteSpace: "nowrap" }}>
         <Icon name="receipt" color={C.accent} size={17} stroke={1.9} />كل الفواتير
       </Link>}>
@@ -175,6 +179,7 @@ export default function Page() {
       <div className={css.cashier}>
         {/* ---------- left: who pays ---------- */}
         <div className={css.cWho} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 12 }}>
+          {!posOnly && <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>جلسات بانتظار الدفع</div>
             {!!ready.length && <span style={{ height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "#FBEAF1", color: C.danger, display: "inline-flex", alignItems: "center" }}>{ready.length} جاهزة</span>}
@@ -189,18 +194,19 @@ export default function Page() {
             </div>
           )}
           <div style={{ height: 1, background: C.line }} />
-          <PatientPicker onPick={(p) => reset(p.type === "patient" ? p : p)} />
+          </>}
+          {posOnly ? <WalkInPicker onPick={(name) => reset({ type: "walkin", name })} /> : <PatientPicker onPick={(p) => reset(p.type === "patient" ? p : p)} />}
           <div style={{ marginTop: "auto", borderTop: `1px solid ${C.line}`, paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, color: C.sub2 }}>
             <span>صدرت اليوم {todayList.length} فاتورة</span>
-            <Link href={R.W_Invoices} style={{ color: C.accentMid, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>كل الفواتير <Icon name="chev" color={C.accentMid} size={15} /></Link>
+            {!posOnly && <Link href={R.W_Invoices} style={{ color: C.accentMid, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>كل الفواتير <Icon name="chev" color={C.accentMid} size={15} /></Link>}
           </div>
         </div>
 
         {/* ---------- middle: invoice ---------- */}
         <div className={css.cBill} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
           {!who ? (
-            <EmptyState icon="receipt" title="اختاري من ستدفع" style={{ boxShadow: "none", border: "none", margin: "auto" }}
-              text="اختاري جلسة منتهية من القائمة، أو ابحثي عن ملف مراجعة، أو سجّلي بيعاً لزبونة بلا ملف. تُضاف الخدمة تلقائياً ويمكنكِ إضافة منتجات وباقات." />
+            <EmptyState icon="receipt" title={posOnly ? "بيع جديد" : "اختاري من ستدفع"} style={{ boxShadow: "none", border: "none", margin: "auto" }}
+              text={posOnly ? "اكتبي اسم الزبونة ثم أضيفي الأدوية والمنتجات من المخزون." : "اختاري جلسة منتهية من القائمة، أو ابحثي عن ملف مراجعة، أو سجّلي بيعاً لزبونة بلا ملف. تُضاف الخدمة تلقائياً ويمكنكِ إضافة منتجات وباقات."} />
           ) : (<>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <span style={avatar(54)}>{initials(whoName) || <Icon name="user" size={22} />}</span>
@@ -255,13 +261,13 @@ export default function Page() {
                 {lines.some((l) => l.kind === "product" && l.qty > stockOf(l.ref)) && <span style={{ color: C.danger, fontSize: 12 }}>الكمية في هذا الموقع لا تكفي</span>}
               </label>
             )}
-            <ItemSearch sellables={sellables.data} stockOf={stockOf} onAdd={(l) => {
+            <ItemSearch productsOnly={posOnly} sellables={sellables.data} stockOf={stockOf} onAdd={(l) => {
               const j = lines.findIndex((x) => x.kind === l.kind && x.ref === l.ref && l.kind !== "service");
               if (j >= 0 && l.kind === "product" && lines[j].qty >= stockOf(l.ref)) { setErr("لا توجد كمية إضافية من هذا المنتج في المخزون."); return; }
               setLines(j >= 0 ? lines.map((x, k) => (k === j ? { ...x, qty: x.qty + 1 } : x)) : [...lines, l]);
             }} />
 
-            <div>
+            {!posOnly && <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>الخصم</div>
                 <span style={{ fontSize: 12, color: C.sub2 }}>{offer ? "مطبَّق بكود خصم" : `بدون موافقة حتى ${maxPct}%`}</span>
@@ -284,13 +290,13 @@ export default function Page() {
                 </div>
               )}
               </>}
-            </div>
+            </div>}
             <div style={{ height: 1, background: C.line }} />
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>طريقة الدفع</div>
               <div className={css.modes}>
-                {MODES.map((m) => {
+                {MODES.filter((m) => !posOnly || m.k === "cash" || m.k === "card" || m.k === "split").map((m) => {
                   const on = mode === m.k;
                   const dis = m.k === "package" ? !usable.length : m.k === "deferred" ? !patientId : false;
                   return (
@@ -427,6 +433,22 @@ function ApptRow({ a, on, onClick }: { a: CashierAppt; on: boolean; onClick: () 
 }
 
 /** Search a patient file (name / file no. / phone) or start a walk-in sale. */
+function WalkInPicker({ onPick }: { onPick: (name: string) => void }) {
+  const [q, setQ] = useState("");
+  const go = () => { if (q.trim()) { onPick(q.trim()); setQ(""); } };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 16, fontWeight: 700 }}>بيع أدوية ومنتجات</div>
+      <div style={{ fontSize: 12.5, color: C.sub2 }}>اكتبي اسم الزبونة ثم اضغطي «بدء البيع».</div>
+      <label style={{ height: 42, borderRadius: 21, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 8, padding: "0 14px" }}>
+        <Icon name="user" color={C.muted} size={16} />
+        <input aria-label="اسم الزبونة" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") go(); }} placeholder="اسم الزبونة" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13, color: C.ink, minWidth: 0 }} />
+      </label>
+      <button type="button" disabled={!q.trim()} onClick={go} style={{ height: 40, borderRadius: 20, border: "none", background: C.accent, color: C.white, fontSize: 13.5, fontWeight: 700, opacity: q.trim() ? 1 : 0.5 }}>بدء البيع</button>
+    </div>
+  );
+}
+
 function PatientPicker({ onPick }: { onPick: (w: Who) => void }) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -458,15 +480,15 @@ function PatientPicker({ onPick }: { onPick: (w: Who) => void }) {
 }
 
 type Sellables = Awaited<ReturnType<typeof listSellables>>;
-function ItemSearch({ sellables, onAdd, stockOf }: { sellables?: Sellables; onAdd: (l: CartLine) => void; stockOf: (key?: string) => number }) {
+function ItemSearch({ sellables, onAdd, stockOf, productsOnly }: { sellables?: Sellables; onAdd: (l: CartLine) => void; stockOf: (key?: string) => number; productsOnly?: boolean }) {
   const [q, setQ] = useState("");
   const s = q.trim();
   const hits: (CartLine & { meta: string; disabled?: boolean })[] = !s || !sellables ? [] : [
-    ...sellables.services.map((x) => ({ x, cat: sellables.categories.find((c) => c.key === x.category_id)?.name ?? "" }))
+    ...(productsOnly ? [] : sellables.services).map((x) => ({ x, cat: sellables.categories.find((c) => c.key === x.category_id)?.name ?? "" }))
       .filter(({ x, cat }) => x.name.includes(s) || cat.includes(s))
       .map(({ x, cat }) => ({ kind: "service" as const, ref: x.key, qty: 1, label: x.name, unit_price: x.price, meta: x.price_unknown ? "السعر غير محدد — حدّدي سعر الصرف من المالية" : `${cat || "خدمة"} · ${x.minutes} دقيقة`, disabled: x.price_unknown })),
     ...sellables.products.filter((x) => x.barcode === s || x.name.toLowerCase().includes(s.toLowerCase()) || (x.name_ar ?? "").includes(s)).map((x) => ({ kind: "product" as const, ref: x.key, qty: 1, label: x.name + (x.name_ar ? ` — ${x.name_ar}` : ""), unit_price: x.price ?? 0, meta: `منتج · المتوفر ${stockOf(x.key)} ${x.unit}`, disabled: stockOf(x.key) <= 0 })),
-    ...sellables.packages.filter((x) => x.name.includes(s)).map((x) => ({ kind: "package" as const, ref: x.id, qty: 1, label: x.name, unit_price: x.price, meta: `باقة · ${x.sessions} جلسات` })),
+    ...(productsOnly ? [] : sellables.packages).filter((x) => x.name.includes(s)).map((x) => ({ kind: "package" as const, ref: x.id, qty: 1, label: x.name, unit_price: x.price, meta: `باقة · ${x.sessions} جلسات` })),
   ].slice(0, 8);
   return (
     <div style={{ position: "relative" }}>
