@@ -106,7 +106,12 @@ export function useInvoicePrint() {
     flushSync(() => setJob({ inv, extras }));
     window.print();
   };
-  const node = job && typeof document !== "undefined" ? createPortal(<ReceiptSheet inv={job.inv} extras={job.extras} />, document.body) : null;
+  const node = job && typeof document !== "undefined" ? createPortal(
+    <div data-print-receipt="">
+      {/* same 80mm roll as the arrival ticket / service invoice: no long page with blank paper */}
+      <style>{"@media print { @page { size: 80mm auto; margin: 0; } }"}</style>
+      <ReceiptSheet inv={job.inv} extras={job.extras} />
+    </div>, document.body) : null;
   return { print, node };
 }
 
