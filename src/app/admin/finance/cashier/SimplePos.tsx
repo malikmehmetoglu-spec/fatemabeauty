@@ -21,6 +21,10 @@ import css from "../finance.module.css";
 const GRAD = "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)";
 const STEP: CSSProperties = { width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: ICON_FILL, color: C.accent, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" };
 
+/** Privacy on the printed receipt: «فاطمة أحمد» → «فاطمة أ.»  ·  0912345678 → 09•••••678 */
+const maskName = (n: string) => { const [a, ...r] = n.trim().split(/\s+/); return [a, ...r.map((w) => w[0] + ".")].join(" "); };
+const maskPhone = (d: string) => d.length > 5 ? d.slice(0, 2) + "•".repeat(d.length - 5) + d.slice(-3) : d;
+
 function Title({ n, children }: { n: number; children: string }) {
   return <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 700 }}><span style={{ ...STEP, ...LATIN }}>{n}</span>{children}</div>;
 }
@@ -79,7 +83,8 @@ export default function SimplePos() {
       });
       if (inv) {
         const row = await getInvoice(inv.id).catch(() => ({ ...inv, patients: null, invoice_items: [], invoice_payments: [], appointments: null }) as InvoiceRow);
-        receipt.print(row as InvoiceRow, { staff: staff?.name });
+        const ph = digits.startsWith("0") ? digits : "0" + digits;
+        receipt.print({ ...(row as InvoiceRow), walk_in_name: maskName(name), note: `هاتف: ${maskPhone(ph)}` }, { staff: staff?.name });
         setDone(inv.no ? String(inv.no) : "");
       }
       setName(""); setPhone(""); setLines([]); setCard(false);
@@ -96,7 +101,7 @@ export default function SimplePos() {
             <TextInput label="الاسم" value={name} onChange={setName} placeholder="اسم الزبونة" />
             <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} placeholder="09xxxxxxxx" dir="ltr" type="tel" />
             <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 14, padding: "9px 12px", background: C.tint, color: "#74457F", fontSize: 12.5, fontWeight: 600 }}>
-              <Icon name="info" color={C.accentMid} size={17} /><span>يُكتب الرقم على الفاتورة للتواصل مع الزبونة.</span>
+              <Icon name="info" color={C.accentMid} size={17} /><span>يُحفظ الاسم والرقم كاملين في النظام، وتُطبع الفاتورة بأجزاء مخفية منهما.</span>
             </div>
           </div>
 
@@ -104,7 +109,7 @@ export default function SimplePos() {
           <div className={css.cBill} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
             <Title n={2}>المنتجات</Title>
             <label style={{ height: 50, borderRadius: 25, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 10, padding: "0 16px" }}>
-              <Icon name="search" color={C.muted} size={18} />
+              <Icon name="scan" color={C.accentMid} size={19} />
               <input aria-label="باركود المنتج" value={code} onChange={(e) => setCode(e.target.value)} placeholder="امسحي باركود المنتج هنا"
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCode(); } }}
                 style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15, color: C.ink, minWidth: 0 }} />
