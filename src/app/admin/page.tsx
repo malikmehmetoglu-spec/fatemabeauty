@@ -2,14 +2,14 @@
 
 /** W_Dashboard.dc.html — today's real KPIs (Damascus day). Everything is zero/empty when there is no data. */
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { AdminShell } from "@/components/shell";
 import { Icon, Loading, ErrorNote, Tag } from "@/components/ui";
 import { R } from "@/lib/routes";
 import { useQuery } from "@/lib/db/query";
 import { listDevices, listRooms } from "@/lib/db/catalog";
 import { isLow, listInventory } from "@/lib/db/products";
-import { getHours, listRange, personName, revenueToday, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments } from "@/lib/db/appointments";
+import { dateOfKey, getHours, listRange, personName, revenueToday, STATUS_KIND, STATUS_LABEL, timeOf, useLiveAppointments } from "@/lib/db/appointments";
 import { arDate, clock, dayKey, money } from "@/lib/format";
 import { useSession } from "@/lib/supabase/session";
 import css from "./calendar/appts.module.css";
@@ -35,9 +35,14 @@ function Head({ title, sub, right }: { title: string; sub?: string; right?: Reac
 export default function DashboardPage() {
   useLiveAppointments("dashboard");
   const { staff } = useSession();
-  const today = dayKey();
-  const appts = useQuery(["appointments", "range", today, today], () => listRange(today));
-  const revenue = useQuery(["appointments", "revenue", today], revenueToday);
+  const realToday = dayKey();
+  const [day, setDay] = useState(realToday);
+  const isToday = day === realToday, isPast = day < realToday;
+  const today = realToday;
+  const T = isToday ? "اليوم" : "هذا اليوم";
+  const shift = (n: number) => setDay(dayKey(new Date(dateOfKey(day).getTime() + n * 864e5)));
+  const appts = useQuery(["appointments", "range", day, day], () => listRange(day));
+  const revenue = useQuery(["appointments", "revenue", day], () => revenueToday(day));
   const rooms = useQuery(["catalog", "rooms"], () => listRooms());
   const hours = useQuery(["appointments", "hours"], getHours);
   const canStock = staff && ["owner", "admin"].includes(staff.role);
@@ -48,9 +53,9 @@ export default function DashboardPage() {
   const by = (s: string) => all.filter((a) => a.status === s);
   const done = by("done"), inSession = by("in_session"), checkedIn = by("checked_in"), noShow = by("no_show"), pending = by("pending");
   const upcoming = all.filter((a) => a.status === "confirmed" || a.status === "pending");
-  const nowMs = Date.now();
+  const nowMs = isToday ? Date.now() : isPast ? Infinity : 0;
   const due = all.filter((a) => new Date(a.starts_at).getTime() <= nowMs);
-  const nowM = toMin(clock());
+  const nowM = isToday ? toMin(clock()) : isPast ? 24 * 60 : -1;
 
   const h = hours.data;
   const openMin = h ? Math.max(0, toMin(h.to) - toMin(h.from)) : 0;
@@ -82,20 +87,20 @@ export default function DashboardPage() {
 
   const loading = appts.loading || hours.loading;
   return (
-    <AdminShell active="لوحة القيادة" title="لوحة القيادة" subtitle={arDate(new Date(), { year: true })}
-      actions={<Link href={R.W_BookingModal} style={NEW_BTN}><Icon name="M12 5v14M5 12h14" size={19} color={C.white} stroke={1.9} />موعد جديد</Link>}>
-      {appts.error && <ErrorNote>{arErr(appts.error, "تعذّر تحميل مواعيد اليوم. أعيدي تحميل الصفحة.")}</ErrorNote>}
+    <AdminShell active="لوحة القيادة" title="لوحة القيادة" subtitle={arDate(dateOfKey(day), { year: true })}
+      actions={<><DayPicker day={day} setDay={setDay} shift={shift} isToday={isToday} /><Link href={R.W_BookingModal} style={NEW_BTN}><Icon name="M12 5v14M5 12h14" size={19} color={C.white} stroke={1.9} />موعد جديد</Link></>}>
+      {appts.error && <ErrorNote>{arErr(appts.error, `تعذّر تحميل مواعيد ${T}. أعيدي تحميل الصفحة.`)}</ErrorNote>}
       {loading ? <Loading /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, flexGrow: 1 }}>
           <div className="adm-row" style={{ gap: 16 }}>
             <div style={{ borderRadius: 26, padding: "18px 20px", backgroundColor: C.accent, backgroundImage: "linear-gradient(145deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.20) 100%)", boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
-              <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>إيراد اليوم حتى الآن</div>
+              <div style={{ position: "relative", fontSize: 13, color: C.onDark }}>{isToday ? "إيراد اليوم حتى الآن" : "إيراد هذا اليوم"}</div>
               <div style={{ position: "relative", fontSize: 30, fontWeight: 700, lineHeight: 1.25, marginTop: 6 }}>{revenue.error ? "—" : money(revenue.data ?? 0)}</div>
-              <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>من فواتير اليوم{upcoming.length ? ` · المواعيد المتبقية ${money(upcoming.reduce((s, a) => s + a.price, 0))}` : ""}</div>
+              <div style={{ position: "relative", fontSize: 12, color: C.onDark }}>من فواتير {T}{upcoming.length ? ` · المواعيد المتبقية ${money(upcoming.reduce((s, a) => s + a.price, 0))}` : ""}</div>
             </div>
             <div style={{ ...CARD }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>مواعيد اليوم</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" /></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>مواعيد {T}</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" /></div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4 }}>{all.length}</div>
               <div style={{ fontSize: 12, color: C.sub2 }}>{done.length} انتهت · {inSession.length} في الجلسة · {checkedIn.length} وصلت · {upcoming.length} قادمة{noShow.length ? ` · ${noShow.length} لم تحضر` : ""}</div>
             </div>
@@ -112,7 +117,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div style={{ ...CARD }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>نسبة الغياب اليوم</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M10 14l4 4M14 14l-4 4" /></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><div style={{ fontSize: 13, color: C.sub2 }}>نسبة الغياب {T}</div><IconDot d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M10 14l4 4M14 14l-4 4" /></div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.25, marginTop: 4 }}>{due.length ? Math.round((noShow.length / due.length) * 100) : 0}%</div>
               <div style={{ fontSize: 12, color: C.sub2 }}>{due.length ? `${noShow.length} من ${apptCount(due.length)} مستحقة حتى الآن` : "لا مواعيد مستحقة بعد"}</div>
             </div>
@@ -120,7 +125,7 @@ export default function DashboardPage() {
 
           <div className={css.split}>
             <div style={{ ...CARD, flex: 1.55, minWidth: 0 }}>
-              <Head title="المواعيد حسب الساعة" sub={all.length ? `من ${timeOf(all[0])} حتى ${timeOf(all[all.length - 1])}` : "لا مواعيد اليوم بعد"}
+              <Head title="المواعيد حسب الساعة" sub={all.length ? `من ${timeOf(all[0])} حتى ${timeOf(all[all.length - 1])}` : `لا مواعيد ${T}`}
                 right={<div style={{ display: "flex", gap: 14, fontSize: 12, color: C.sub2 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 5, background: "linear-gradient(180deg,#C9A2D8,#7B4687)" }} />مضت</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: 5, background: C.accent }} />الساعة الحالية</span>
@@ -142,7 +147,7 @@ export default function DashboardPage() {
                   <Icon name="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 3l-4 4-4-4" size={16} color={C.accent} stroke={1.9} />فتح الأدوار
                 </Link>} />
               <div style={{ marginTop: 8 }}>
-                {nextList.length === 0 ? <div style={{ fontSize: 13, color: C.sub2, padding: "14px 0" }}>لا أحد في الانتظار ولا مواعيد قادمة اليوم.</div> : nextList.map((a) => (
+                {nextList.length === 0 ? <div style={{ fontSize: 13, color: C.sub2, padding: "14px 0" }}>{isToday ? "لا أحد في الانتظار ولا مواعيد قادمة اليوم." : isPast ? "لا مواعيد متبقية — اليوم انتهى." : "لا مواعيد في هذا اليوم."}</div> : nextList.map((a) => (
                   <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "1px solid #EDE2F1" }}>
                     <span className="latin" style={{ width: 40, height: 40, borderRadius: 14, background: ICON_FILL, display: "flex", alignItems: "center", justifyContent: "center", fontSize: a.queue_no != null ? 15 : 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{a.queue_no ?? timeOf(a)}</span>
                     <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
@@ -158,10 +163,10 @@ export default function DashboardPage() {
 
           <div className={css.split}>
             <div style={{ ...CARD, padding: "14px 20px", flex: 1.55, minWidth: 0 }}>
-              <Head title="إيراد اليوم حسب الخدمة" sub={`من الجلسات المنتهية حتى ${clock()}`}
+              <Head title={`إيراد ${T} حسب الخدمة`} sub={isToday ? `من الجلسات المنتهية حتى ${clock()}` : "من الجلسات المنتهية"}
                 right={<span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "#FBEAF1", color: C.danger }}>المجموع {money(svcRows.reduce((s, r) => s + r.total, 0))}</span>} />
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
-                {svcRows.length === 0 ? <div style={{ fontSize: 13, color: C.sub2 }}>لم تنتهِ أي جلسة اليوم بعد.</div> : svcRows.map((r) => (
+                {svcRows.length === 0 ? <div style={{ fontSize: 13, color: C.sub2 }}>{`لم تنتهِ أي جلسة ${T}.`}</div> : svcRows.map((r) => (
                   <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 120, lineHeight: 1.3 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{r.name}</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{r.count === 1 ? "جلسة منجزة واحدة" : r.count === 2 ? "جلستان منجزتان" : `${r.count} جلسات منجزة`}</div></div>
                     <div style={{ flex: 1, height: 12, borderRadius: 6, background: "#ECE2EF", overflow: "hidden" }}><div style={{ width: `${Math.floor((r.total / svcMax) * 100)}%`, height: 12, borderRadius: 6, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} /></div>
@@ -175,7 +180,7 @@ export default function DashboardPage() {
               <div style={{ marginTop: 4 }}>
                 {low > 0 && <Alert href={R.W_Inventory} icon="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" title="مخزون منخفض" sub={`${low} أصناف بلغت حدّ إعادة الطلب`} tag="يحتاج طلب شراء" tone="amber" />}
                 {devDue.slice(0, 2).map((d) => <Alert key={d.id} href={R.W_Devices} icon="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z" title={d.in_maintenance ? "جهاز في الصيانة" : "صيانة جهاز مستحقة"} sub={d.name} tag={d.in_maintenance ? "متوقف" : "مستحقة"} tone="pink" />)}
-                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${apptCount(pending.length)} اليوم لم ${pending.length > 1 ? "تُؤكَّد" : "يُؤكَّد"} بعد`} tag={String(pending.length)} tone="gray" />}
+                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${apptCount(pending.length)} ${T} لم ${pending.length > 1 ? "تُؤكَّد" : "يُؤكَّد"} بعد`} tag={String(pending.length)} tone="gray" />}
                 {low === 0 && devDue.length === 0 && pending.length === 0 && <div style={{ fontSize: 13, color: C.sub2, padding: "14px 0", borderTop: "1px solid #EDE2F1" }}>لا تنبيهات الآن.</div>}
               </div>
             </div>
@@ -195,5 +200,17 @@ function Alert({ href, icon, title, sub, tag, tone }: { href: string; icon: stri
       <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", ...t }}>{tag}</span>
       <Icon name="M15 6l-6 6 6 6" size={16} color={C.muted} />
     </Link>
+  );
+}
+
+function DayPicker({ day, setDay, shift, isToday }: { day: string; setDay: (d: string) => void; shift: (n: number) => void; isToday: boolean }) {
+  const b: React.CSSProperties = { height: 40, minWidth: 40, borderRadius: 14, border: "1px solid #EADCF0", background: C.white, display: "inline-grid", placeItems: "center", cursor: "pointer", padding: "0 12px", fontSize: 13.5, color: C.accent, fontWeight: 600 };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button type="button" style={b} aria-label="اليوم السابق" onClick={() => shift(-1)}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
+      <button type="button" style={{ ...b, opacity: isToday ? 0.5 : 1 }} disabled={isToday} onClick={() => setDay(dayKey())}>اليوم</button>
+      <button type="button" style={b} aria-label="اليوم التالي" onClick={() => shift(1)}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
+      <input type="date" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr" aria-label="اختيار يوم" style={{ ...b, color: C.ink, fontWeight: 500 }} />
+    </div>
   );
 }

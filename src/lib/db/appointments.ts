@@ -342,8 +342,8 @@ export async function listMyDay(staffId: string) {
 }
 
 /** Sum of (non-void) invoices created today (Damascus). */
-export async function revenueToday() {
-  const r = dayRange();
+export async function revenueToday(day?: string) {
+  const r = dayRange(day);
   const rows = must(await supabase.from("invoices").select("total").eq("void", false).gte("created_at", r.from).lt("created_at", r.to)) ?? [];
   return rows.reduce((s, x) => s + (x.total ?? 0), 0);
 }
