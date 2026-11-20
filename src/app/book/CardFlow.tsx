@@ -498,7 +498,6 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         <div className={s.doneBtns}>
           {c.waLink && <a className={s.primary} href={c.waLink} target="_blank" rel="noreferrer"><Icon name="msg" color="#fff" size={19} />راسلينا على واتساب</a>}
           {c.info.centre?.phone && <a className={s.ghostBtn} href={`tel:${c.info.centre.phone}`}><Icon name="phone" color={C.accent} size={19} /><span className="latin" dir="ltr">{c.info.centre.phone}</span></a>}
-          {!c.contact && <a className={s.ghostBtn} href={c.siteHref}><Icon name="home" color={C.accent} size={19} />موقع المركز</a>}
         </div>
       </section>
     );
@@ -531,7 +530,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           {ready && !c.result && step > 0
             ? <button type="button" className={s.backBtn} onClick={back} aria-label="رجوع إلى الخطوة السابقة"><Icon name="back" size={20} color={C.accent} /></button>
             : <span className={s.backBtn} aria-hidden style={{ visibility: "hidden" }} />}
-          <a href={c.siteHref} aria-label="فاطمة بيوتي" className={s.logo}><Logo height={40} /></a>
+          <span aria-label="فاطمة بيوتي" className={s.logo}><Logo height={40} /></span>
           {c.now && <span className={s.clock} aria-label={`الآن في دمشق ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
         </div>
         {ready && !c.result && (

@@ -251,7 +251,7 @@ export default function PublicBookingPage() {
       <div className={s.halo2} aria-hidden />
       <div className={s.wrap} ref={refs.top}>
         <header className={s.nav}>
-          <a href={siteHref} aria-label="فاطمة بيوتي"><Logo height={54} /></a>
+          <span aria-label="فاطمة بيوتي"><Logo height={54} /></span>
           {now && <span className={s.clockChip}><Icon name="clock" size={17} color={C.accentMid} /><span>الآن في دمشق</span><b className="latin">{clock(now)}</b></span>}
         </header>
 
@@ -295,7 +295,6 @@ export default function PublicBookingPage() {
                 <div className={s.doneBtns}>
                   {waLink && <a className={s.btnPrimary} href={waLink} target="_blank" rel="noreferrer"><Icon name="msg" color="#fff" size={19} />راسلينا على واتساب</a>}
                   {info.centre?.phone && <a className={s.btnGhost} href={`tel:${info.centre.phone}`}><Icon name="phone" color={C.accent} size={19} /><span className="latin" dir="ltr">{info.centre.phone}</span></a>}
-                  {!contact && <a className={s.btnGhost} href={siteHref}><Icon name="home" color={C.accent} size={19} />موقع المركز</a>}
                 </div>
               </div>
             )}
@@ -455,7 +454,6 @@ export default function PublicBookingPage() {
 
         <footer className={s.foot}>
           <span>© {now?.getFullYear() ?? ""} Fatema Beauty — Skin Care Center</span>
-          <a href={siteHref}>موقع المركز</a>
         </footer>
       </div>
     </div>
