@@ -116,7 +116,8 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const openV = later && mode !== "walkin";
   const lvMin = openV ? OPEN_VISIT_MIN : lvl?.minutes ?? svc?.minutes ?? 30;
   const effRoom = openV ? OPEN_VISIT_ROOM : room;
-  const effSp = openV ? "" : sp;
+  // the specialist is chosen at arrival; only a walk-in (and a consultation's consultant) carries one now
+  const effSp = openV ? "" : mode === "walkin" || svc?.is_consultation ? sp : "";
   useEffect(() => { setTime(""); }, [lvMin, openV]);
 
   const busyQ = useQuery(["appointments", "busy", day, day], () => busyRanges(day), { enabled: /^\d{4}-\d{2}-\d{2}$/.test(day) });
@@ -151,7 +152,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
   const offDuty = !onDuty(mode === "walkin" ? clock() : time, mode === "walkin" ? dayKey() : day);
   const spName = (team.data ?? []).find((t) => t.id === sp)?.name ?? "";
   // the chosen specialist does not provide this service («الخدمات التي تقدّمها») — warn, do not block
-  const notProvider = !openV && !!sp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
+  const notProvider = !openV && !!effSp && !!svc && !!prov.data && !provides(prov.data, sp, svc.key);
   const [cw, setCw] = useState<string[]>([]);
   useEffect(() => {
     let live = true; setCw([]);
@@ -195,7 +196,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
         return;
       }
       const first = await book({
-        service: svc.key, day: walk ? dayKey() : day, time: t, specialist: sp || null, room: room || null, patient: pid,
+        service: svc.key, day: walk ? dayKey() : day, time: t, specialist: effSp || null, room: room || null, patient: pid,
         walkInName: walk ? name : undefined, walkInPhone: walk ? phone : undefined,
         source: walk ? "walk_in" : "reception", checkIn: walk && checkIn, level: lvl?.id ?? null,
       });
@@ -208,7 +209,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
         if (!xs) continue;
         const xl = levelsOf(levels.data, xs.key).find((l) => l.id === x.lv) ?? levelsOf(levels.data, xs.key)[0] ?? null;
         const hhmm = `${String(Math.floor(at / 60)).padStart(2, "0")}:${String(at % 60).padStart(2, "0")}`;
-        await book({ service: xs.key, day: d0, time: hhmm, specialist: sp || null, room: xs.room_id ?? null, patient: fp,
+        await book({ service: xs.key, day: d0, time: hhmm, specialist: effSp || null, room: xs.room_id ?? null, patient: fp,
           walkInName: walk && !fp ? name : undefined, walkInPhone: walk && !fp ? phone : undefined,
           source: walk ? "walk_in" : "reception", level: xl?.id ?? null });
         at += xl?.minutes ?? xs.minutes ?? 30;
@@ -302,7 +303,7 @@ function BookingDialog({ onClose, onVip }: { onClose: () => void; onVip: () => v
           ) : (<>
           <div className={css.grid3}>
             <Select label="الخدمة" value={svc?.key ?? ""} onChange={(v) => setSvcKey(v)} options={(services.data ?? []).map((s) => ({ value: s.key, label: `${s.short_name} · ${s.minutes} د · ${priceLabel(s)}` }))} />
-            <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...teamSorted.map((t) => ({ value: t.id, label: provides(prov.data, t.id, svc?.key) ? t.name : `${t.name} — لا تقدّم هذه الخدمة` }))]} />
+            {mode === "walkin" && <Select label="الأخصائية" value={sp} onChange={setSp} options={[{ value: "", label: "غير محدّدة" }, ...teamSorted.map((t) => ({ value: t.id, label: provides(prov.data, t.id, svc?.key) ? t.name : `${t.name} — لا تقدّم هذه الخدمة` }))]} />}
             <Select label="الغرفة" value={room} onChange={setRoom} options={[{ value: "", label: "بدون غرفة" }, ...(rooms.data ?? []).map((r) => ({ value: r.id, label: r.name }))]} />
           </div>
 
