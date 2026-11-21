@@ -16,6 +16,7 @@ import css from "./calendar/appts.module.css";
 import { C, SH, ICON_FILL } from "@/lib/tokens";
 import { NEW_BTN } from "./calendar/CalendarBoard";
 import { apptCount, arErr } from "./patients/kit";
+import { RecentBookings } from "./RecentBookings";
 
 const CARD = { borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" } as const;
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
@@ -161,6 +162,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          <RecentBookings />
+
           <div className={css.split}>
             <div style={{ ...CARD, padding: "14px 20px", flex: 1.55, minWidth: 0 }}>
               <Head title={`إيراد ${T} حسب الخدمة`} sub={isToday ? `من الجلسات المنتهية حتى ${clock()}` : "من الجلسات المنتهية"}
@@ -180,7 +183,7 @@ export default function DashboardPage() {
               <div style={{ marginTop: 4 }}>
                 {low > 0 && <Alert href={R.W_Inventory} icon="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" title="مخزون منخفض" sub={`${low} أصناف بلغت حدّ إعادة الطلب`} tag="يحتاج طلب شراء" tone="amber" />}
                 {devDue.slice(0, 2).map((d) => <Alert key={d.id} href={R.W_Devices} icon="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z" title={d.in_maintenance ? "جهاز في الصيانة" : "صيانة جهاز مستحقة"} sub={d.name} tag={d.in_maintenance ? "متوقف" : "مستحقة"} tone="pink" />)}
-                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${apptCount(pending.length)} ${T} لم ${pending.length > 1 ? "تُؤكَّد" : "يُؤكَّد"} بعد`} tag={String(pending.length)} tone="gray" />}
+                {pending.length > 0 && <Alert href={R.W_Calendar} icon="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM16 3v4M8 3v4M4 11h16M9 16l2 2 4-4" title="مواعيد بانتظار التأكيد" sub={`${apptCount(pending.length)} ${T} لم ${pending.length > 1 ? "تُؤكَّد" : "يُؤكَّد"} بعد`} tag={String(pending.length)} tone="gray" />}
                 {low === 0 && devDue.length === 0 && pending.length === 0 && <div style={{ fontSize: 13, color: C.sub2, padding: "14px 0", borderTop: "1px solid #EDE2F1" }}>لا تنبيهات الآن.</div>}
               </div>
             </div>
