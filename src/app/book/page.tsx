@@ -140,6 +140,7 @@ export default function PublicBookingPage() {
   const specialistParam = kind === "consult" ? info?.consultant?.id ?? null : specialist;
   // open weekdays follow the team's «أوقات الدوام»: a day is open when someone who does this service works it
   const [wdays, setWdays] = useState<{ key: string; days: number[] } | null>(null);
+  const [fullDays, setFullDays] = useState<Set<string>>(() => new Set());
   const wKey = service ? `${service.key}|${specialistParam ?? ""}` : "";
   useEffect(() => {
     if (!service) return;
@@ -161,6 +162,41 @@ export default function PublicBookingPage() {
     catch (e) { setSlotErr(publicError(e)); }
   }, [service, day, specialistParam, level?.id]);
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
+
+  // Background check: hide any open day that is completely booked (0 available slots)
+  useEffect(() => {
+    setFullDays(new Set());
+    if (!service || !days.length) return;
+    let cancelled = false;
+    const openList = days.filter((k) => openWd.includes(weekday(k)));
+    (async () => {
+      for (let i = 0; i < openList.length && !cancelled; i += 10) {
+        const batch = openList.slice(i, i + 10);
+        const res = await Promise.all(
+          batch.map(async (k) => {
+            try {
+              const list = await getPublicSlots(k, service.key, specialistParam, level?.id ?? null);
+              const tNow = Date.now();
+              const hasFree = list.some((x) => x.available && new Date(x.starts_at).getTime() > tNow);
+              return hasFree ? null : k;
+            } catch { return null; }
+          }),
+        );
+        if (cancelled) return;
+        const full = res.filter((x): x is string => !!x);
+        if (full.length) {
+          setFullDays((prev) => {
+            const next = new Set(prev);
+            full.forEach((k) => next.add(k));
+            return next;
+          });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [service?.key, specialistParam, level?.id, days.length, openWd.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const shownDays = useMemo(() => days.filter((k) => !fullDays.has(k)), [days, fullDays]);
 
   const visibleSlots = (slots ?? []).filter((x) => !now || new Date(x.starts_at).getTime() > now.getTime());
   const freeCount = visibleSlots.filter((x) => x.available).length;
@@ -240,7 +276,7 @@ export default function PublicBookingPage() {
   const cardView = <CardFlow ctx={{
     info, loadErr, load, now, kind, service, levels, level, hasLevels, minutes, priceText, pickLevel, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
     cards, curPubCat, consultCat, sessionCats, sessionServices, consultServices, kindServices, svcCat, people, noProvider, chosenPerson,
-    days, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
+    days: shownDays, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
     contact, waLink, siteHref,
   }} />;
   if (phoneCards) return cardView;
@@ -375,7 +411,7 @@ export default function PublicBookingPage() {
                     <section className={s.step} ref={refs[2]}>
                       <StepHead n={2} title="اختاري اليوم" sub="خلال الثلاثة أشهر القادمة" done={!!day && !!time} />
                       <div className={s.days}>
-                        {days.map((k) => {
+                        {shownDays.map((k) => {
                           const open = isOpen(k);
                           const d = dateOf(k);
                           return (
