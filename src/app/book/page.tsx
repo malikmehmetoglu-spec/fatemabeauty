@@ -141,6 +141,7 @@ export default function PublicBookingPage() {
   // open weekdays follow the team's «أوقات الدوام»: a day is open when someone who does this service works it
   const [wdays, setWdays] = useState<{ key: string; days: number[] } | null>(null);
   const [fullDays, setFullDays] = useState<Set<string>>(() => new Set());
+  const [daysChecking, setDaysChecking] = useState(false);
   const wKey = service ? `${service.key}|${specialistParam ?? ""}` : "";
   useEffect(() => {
     if (!service) return;
@@ -163,15 +164,17 @@ export default function PublicBookingPage() {
   }, [service, day, specialistParam, level?.id]);
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
-  // Background check: hide any open day that is completely booked (0 available slots)
+  // Background check: find all open days that are completely booked (0 available slots) in one clean pass
   useEffect(() => {
     setFullDays(new Set());
-    if (!service || !days.length) return;
+    if (!service || !days.length) { setDaysChecking(false); return; }
     let cancelled = false;
+    setDaysChecking(true);
     const openList = days.filter((k) => openWd.includes(weekday(k)));
     (async () => {
-      for (let i = 0; i < openList.length && !cancelled; i += 10) {
-        const batch = openList.slice(i, i + 10);
+      const allFull: string[] = [];
+      for (let i = 0; i < openList.length && !cancelled; i += 15) {
+        const batch = openList.slice(i, i + 15);
         const res = await Promise.all(
           batch.map(async (k) => {
             try {
@@ -183,14 +186,16 @@ export default function PublicBookingPage() {
           }),
         );
         if (cancelled) return;
-        const full = res.filter((x): x is string => !!x);
-        if (full.length) {
-          setFullDays((prev) => {
-            const next = new Set(prev);
-            full.forEach((k) => next.add(k));
-            return next;
-          });
-        }
+        for (const x of res) if (x) allFull.push(x);
+      }
+      if (cancelled) return;
+      const fullSet = new Set(allFull);
+      setFullDays(fullSet);
+      setDaysChecking(false);
+      if (day && fullSet.has(day)) {
+        const firstFree = days.find((k) => !fullSet.has(k) && openWd.includes(weekday(k))) ?? null;
+        setDay(firstFree);
+        setTime(null);
       }
     })();
     return () => { cancelled = true; };
@@ -276,7 +281,7 @@ export default function PublicBookingPage() {
   const cardView = <CardFlow ctx={{
     info, loadErr, load, now, kind, service, levels, level, hasLevels, minutes, priceText, pickLevel, specialist, day, time, slots, slotErr, name, setName, phone, setPhone, note, setNote, busy, err, setErr, result,
     cards, curPubCat, consultCat, sessionCats, sessionServices, consultServices, kindServices, svcCat, people, noProvider, chosenPerson,
-    days: shownDays, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
+    days: daysChecking ? [] : shownDays, isOpen, visibleSlots, freeCount, parts, pickCard, pickService, pickSpecialist, pickDay, pickTime, submit, downloadIcs, restart, fetchSlots,
     contact, waLink, siteHref,
   }} />;
   if (phoneCards) return cardView;
@@ -410,6 +415,9 @@ export default function PublicBookingPage() {
                   {service && !noProvider && (
                     <section className={s.step} ref={refs[2]}>
                       <StepHead n={2} title="اختاري اليوم" sub="خلال الثلاثة أشهر القادمة" done={!!day && !!time} />
+                      {daysChecking ? (
+                        <div className={s.stepSub}>جارٍ التحقق من الأيام المتاحة…</div>
+                      ) : (
                       <div className={s.days}>
                         {shownDays.map((k) => {
                           const open = isOpen(k);
@@ -423,6 +431,7 @@ export default function PublicBookingPage() {
                           );
                         })}
                       </div>
+                      )}
                     </section>
                   )}
 
