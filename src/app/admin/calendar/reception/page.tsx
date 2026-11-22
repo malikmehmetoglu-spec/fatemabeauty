@@ -46,7 +46,7 @@ const LANES: { k: Lane; t: string; icon: string; empty: string }[] = [
 const LATE_MIN = 10;
 const AMBER = { bg: "#FFF7EA", bd: "#F1D3A0", fg: "#8A5A12" };
 const REMINDER = "فاطمة بيوتي: نذكّركِ";
-const reminderText = (a: Appointment) => `${REMINDER} بموعدكِ اليوم الساعة ${timeOf(a)}. نرجو الحضور قبل 10 دقائق. بانتظاركِ.`;
+const reminderText = (a: Appointment) => `${REMINDER} بموعدكِ اليوم الساعة ${timeOf(a)}. العنوان: حمص, الدبلان, مقابل جامع الحسامي, بناء ابو الخير, الطابق الأول. نرجو الحضور قبل 10 دقائق. بانتظاركِ.`;
 
 const laneOf = (a: Appointment): Lane | null => {
   if (a.status === "pending" || a.status === "confirmed") return "coming";
