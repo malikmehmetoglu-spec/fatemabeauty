@@ -25,7 +25,7 @@ import { PregnancyNotice } from "@/app/services/PregnancyNotice";
 import CardFlow, { FlowPending, usePhoneCards } from "./CardFlow";
 
 type Kind = "session" | "consult";
-const DAYS_AHEAD = 14;
+const DAYS_AHEAD = 90;
 const PLACE = "فاطمة بيوتي — مركز العناية بالبشرة";
 const dateOf = (k: string) => new Date(`${k}T12:00:00+03:00`);
 const weekday = (k: string) => dateOf(k).getUTCDay();
@@ -373,7 +373,7 @@ export default function PublicBookingPage() {
                   {/* 2 — day */}
                   {service && !noProvider && (
                     <section className={s.step} ref={refs[2]}>
-                      <StepHead n={2} title="اختاري اليوم" sub="خلال الأسبوعين القادمين" done={!!day && !!time} />
+                      <StepHead n={2} title="اختاري اليوم" sub="خلال الثلاثة أشهر القادمة" done={!!day && !!time} />
                       <div className={s.days}>
                         {days.map((k) => {
                           const open = isOpen(k);

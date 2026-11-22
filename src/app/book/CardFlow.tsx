@@ -131,11 +131,13 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
   }, [c.err]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // swipe right (towards the start in RTL) = back
-  function onDown(e: React.PointerEvent) {     if (e.pointerType === "mouse" || step === 0) return;
+  function onDown(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" || step === 0) return;
     if ((e.target as HTMLElement).closest("[data-noswipe],input,textarea")) return;
     dragRef.current = { x: e.clientX, y: e.clientY, on: false, dx: 0 };
   }
-  function onMove(e: React.PointerEvent) {     const d = dragRef.current;
+  function onMove(e: React.PointerEvent) {
+    const d = dragRef.current;
     if (!d) return;
     const dx = e.clientX - d.x, dy = e.clientY - d.y;
     if (!d.on) {
@@ -146,7 +148,8 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
     setDrag(d.dx);
   }
   function onUp() {
-    const d = dragRef.current;     dragRef.current = null;
+    const d = dragRef.current;
+    dragRef.current = null;
     if (!d?.on) return;
     if (d.dx > 90) back(); else setDrag(0);
   }
@@ -311,7 +314,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       }
       case 4: return (
         <>
-          {head({ n: 4, title: "أي يوم يناسبكِ؟", sub: "خلال الأسبوعين القادمين — الأيام المغلقة باهتة." })}
+          {head({ n: 4, title: "أي يوم يناسبكِ؟", sub: "خلال الثلاثة أشهر القادمة — الأيام المغلقة باهتة." })}
           <div className={s.body}>
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
