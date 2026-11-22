@@ -244,6 +244,8 @@ function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras
   const [mode, setMode] = useState<Mode>("cash");
   const [pkgId, setPkgId] = useState<string | null>(null);
   const [pct, setPct] = useState(0);
+  const [discMode, setDiscMode] = useState<"pct" | "amt">("pct");
+  const [discAmt, setDiscAmt] = useState("");
   const [offer, setOffer] = useState<AppliedOffer | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -254,7 +256,8 @@ function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras
   const sub = lines[0].unit_price;
   const maxPct = policies.data?.maxDiscount ?? 0;
   const pcts = [0, 5, 10, 15, 20].filter((p) => isAdmin || p <= maxPct);
-  const dAmt = offer ? offerDiscount(offer, lines) : Math.round((sub * pct) / 100);
+  const dAmt = offer ? offerDiscount(offer, lines) : discMode === "pct" ? Math.round((sub * pct) / 100) : Math.min(sub, Math.max(0, Math.round(Number(discAmt) || 0)));
+  const needApproval = !offer && discMode === "amt" && dAmt > Math.round((sub * maxPct) / 100) && !isAdmin;
   const xtra = extras.filter((x) => !isPaid(x));
   const lineOf = (x: Appointment): CartLine => ({ kind: "service", ref: x.service_key, qty: 1, label: (x.service?.name ?? "جلسة") + (x.level && x.level.level > 1 ? ` — ${x.level.name}` : ""), unit_price: x.price || 0 });
   const xDisc = (x: Appointment) => offer ? 0 : Math.round(((x.price || 0) * pct) / 100);
@@ -264,6 +267,7 @@ function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras
 
   async function issue() {
     if (mode === "package" && !pkg) { setErr("اختاري الباقة."); return; }
+    if (needApproval) { setErr("الخصم يتجاوز الحد المسموح — يحتاج موافقة الإدارة."); return; }
     setBusy(true); setErr("");
     try {
       const mainPay = payments.map((p) => p.method === "package" ? p : { ...p, amount: p.amount - xTotal });
@@ -316,9 +320,14 @@ function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>الخصم</div>
           <OfferCodeField lines={lines} offer={offer} onChange={setOffer} />
-          {!offer && pcts.length > 1 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-              {pcts.map((p) => <Chip key={p} height={38} selected={pct === p} onClick={() => setPct(p)}>{p === 0 ? "بدون خصم" : `${p}%`}</Chip>)}
+          {!offer && (isAdmin || maxPct > 0) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, alignItems: "center" }}>
+              {pcts.map((p) => <Chip key={p} height={38} selected={discMode === "pct" && pct === p} onClick={() => { setDiscMode("pct"); setPct(p); }}>{p === 0 ? "بدون خصم" : `${p}%`}</Chip>)}
+              <Chip height={38} selected={discMode === "amt"} onClick={() => setDiscMode("amt")}>مبلغ ل.س</Chip>
+              {discMode === "amt" && (
+                <input type="number" min={0} max={sub} value={discAmt} onChange={(e) => setDiscAmt(e.target.value)} placeholder="المبلغ بالليرة"
+                  className="latin" dir="ltr" style={{ height: 38, width: 130, borderRadius: 19, border: `1px solid ${C.border}`, padding: "0 12px", fontSize: 14, outline: "none", textAlign: "center" }} />
+              )}
             </div>
           )}
         </div>
