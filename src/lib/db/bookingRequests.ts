@@ -86,10 +86,11 @@ export function waLink(phone: string | null | undefined, text: string) {
 
 const firstName = (n?: string | null) => (n ?? "").trim().replace(/\s+/g, " ");
 const when = (iso: string) => `${arDate(dateOfKey(dayKey(new Date(iso))), { year: true })} الساعة ${clock(iso)}`;
+const CENTRE_ADDRESS = "حمص, الدبلان, مقابل جامع الحسامي, بناء ابو الخير, الطابق الأول";
 const contactLines = (c: Centre) => {
   const out: string[] = [];
-  const where = c.address || c.location;
-  if (where) out.push(`العنوان: ${where}`);
+  const where = c.address || c.location || CENTRE_ADDRESS;
+  out.push(`العنوان: ${where}`);
   if (c.map_url) out.push(`الموقع على الخريطة: ${c.map_url}`);
   if (c.phone) out.push(`للتواصل: ${c.phone}`);
   return out;
@@ -156,7 +157,7 @@ export function sentChannels(a: Pick<Appointment, "confirm_channels" | "confirm_
   return out;
 }
 
-const SMS_MAX = 134; // two Arabic (UCS-2) segments of 67 characters
+const SMS_MAX = 201; // three Arabic (UCS-2) segments of 67 characters
 const shortWhen = (iso: string) => {
   const d = new Date(new Date(iso).toLocaleString("en-US", { timeZone: "Asia/Damascus" }));
   const day = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"][d.getDay()];
@@ -170,9 +171,9 @@ function fitSms(build: (svc: string) => string, svc: string) {
   return out.length > SMS_MAX ? out.slice(0, SMS_MAX) : out;
 }
 export const smsConfirmText = (a: Appointment) =>
-  fitSms((s) => `Fatema Beauty: تم استلام حجزكِ وتأكيد موعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو الحضور قبل 10 دقائق.`, a.service?.name ?? "الجلسة");
+  fitSms((s) => `Fatema Beauty: تم استلام حجزكِ وتأكيد موعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. العنوان: ${CENTRE_ADDRESS}. نرجو الحضور قبل 10 دقائق.`, a.service?.name ?? "الجلسة");
 export const smsReminderText = (a: Appointment) =>
-  fitSms((s) => `Fatema Beauty: تذكير بموعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. نرجو تأكيد الحضور أو إخبارنا بالإلغاء بالرد.`, a.service?.name ?? "الجلسة");
+  fitSms((s) => `Fatema Beauty: تذكير بموعدكِ لـ${s} يوم ${shortWhen(a.starts_at)}. العنوان: ${CENTRE_ADDRESS}. نرجو تأكيد الحضور بالرد.`, a.service?.name ?? "الجلسة");
 export const smsApologyText = (a: Appointment) =>
   fitSms((s) => `Fatema Beauty: نعتذر، تعذّر تثبيت موعد ${s} يوم ${shortWhen(a.starts_at)}. تواصلي معنا لموعد آخر.`, a.service?.name ?? "الجلسة");
 

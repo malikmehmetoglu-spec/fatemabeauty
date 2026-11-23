@@ -27,7 +27,7 @@ export function confirmText(service: string, startsAt: string) {
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   const part = h24 < 12 ? "صباحاً" : "مساءً";
   const svc = service.replace(/[A-Za-z()]+/g, "").replace(/\s+/g, " ").trim() || "العناية";
-  return `‏فاطمة بيوتي: تم تأكيد حجزكِ لجلسة ${svc} يوم ${wd} ${Number(p.day)}/${Number(p.month)} الساعة ${h12}:${p.minute} ${part}. الدفع في المركز قبل الجلسة. نتشرف بزيارتكِ.‏`;
+  return `‏فاطمة بيوتي: تم تأكيد حجزكِ لجلسة ${svc} يوم ${wd} ${Number(p.day)}/${Number(p.month)} الساعة ${h12}:${p.minute} ${part}. العنوان: حمص, الدبلان, مقابل جامع الحسامي, بناء ابو الخير, الطابق الأول. الدفع في المركز قبل الجلسة.‏`;
 }
 
 Deno.serve(async (req) => {
