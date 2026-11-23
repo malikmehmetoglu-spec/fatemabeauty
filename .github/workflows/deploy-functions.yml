@@ -32,5 +32,5 @@ jobs:
           fi
           for f in $fns; do
             [ -d "supabase/functions/$f" ] || continue
-            echo "::group::$f"; supabase functions deploy "$f" --project-ref "$PROJECT" --use-api; echo "::endgroup::"
+            echo "::group::$f"; supabase functions deploy "$f" --project-ref "$PROJECT" --use-api --yes; echo "::endgroup::"
           done
