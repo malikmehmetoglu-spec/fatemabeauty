@@ -146,6 +146,7 @@ function ApptCard({ a, by, mode, style, compact, narrow, px = 999, onOpen }: {
 export function CalendarBody() {
   const [day, setDay] = useState(dayKey());
   const [view, setView] = useState<"day" | "week">("day");
+  const [layout, setLayout] = useState<"list" | "grid">("list");
   const [by, setBy] = useState<"room" | "specialist">("room");
   const [showCancelled, setShowCancelled] = useState(false);
   const [f, setF] = useState<Filters>(NO_FILTERS);
@@ -240,6 +241,9 @@ export function CalendarBody() {
             <button type="button" className={S.btn} disabled={isToday} onClick={() => setDay(dayKey())}>اليوم</button>
             <button type="button" className={S.iconBtn} aria-label={view === "day" ? "اليوم التالي" : "الأسبوع التالي"} onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
             <span className={S.dateTitle}>{dateLabel}</span>
+            <span style={{ height: 28, padding: "0 10px", borderRadius: 14, background: "#F4EAF7", color: C.accent, fontSize: 12.5, fontWeight: 700, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
+              <span className="latin" style={{ marginInlineEnd: 4 }}>{list.length}</span>{list.length === 1 ? "موعد" : list.length === 2 ? "موعدان" : list.length <= 10 ? "مواعيد" : "موعداً"}
+            </span>
             <input type="date" className={S.dateInput} aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr" />
           </div>
           <ApptSearch onPick={(a) => { setDay(dayKey(new Date(a.starts_at))); setView("day"); setOpen(a); }} />
@@ -250,10 +254,18 @@ export function CalendarBody() {
               <button type="button" aria-pressed={view === "week"} onClick={() => setView("week")}>أسبوع</button>
             </div>
             {view === "day" && (
-              <div className={S.seg} role="group" aria-label="التقسيم">
-                <button type="button" aria-pressed={by === "room"} onClick={() => setBy("room")}>الغرف</button>
-                <button type="button" aria-pressed={by === "specialist"} onClick={() => setBy("specialist")}>الأخصائيات</button>
-              </div>
+              <>
+                <div className={S.seg} role="group" aria-label="نمط العرض">
+                  <button type="button" aria-pressed={layout === "list"} onClick={() => setLayout("list")}>قائمة</button>
+                  <button type="button" aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}>تقويم</button>
+                </div>
+                {layout === "grid" && (
+                  <div className={S.seg} role="group" aria-label="التقسيم">
+                    <button type="button" aria-pressed={by === "room"} onClick={() => setBy("room")}>الغرف</button>
+                    <button type="button" aria-pressed={by === "specialist"} onClick={() => setBy("specialist")}>الأخصائيات</button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -291,6 +303,32 @@ export function CalendarBody() {
       {loading ? <Loading /> : err ? <ErrorNote>{arErr(err, "تعذّر تحميل المواعيد. أعيدي تحميل الصفحة.")}</ErrorNote> : view === "week" ? (
         <WeekGrid from={from} list={list} onOpen={setOpen} onDay={(k) => { setDay(k); setView("day"); }}
           isOff={(k) => !!h && !staffHours.loading && dayWindows(rows, ids, weekday(k), h).length === 0} />
+      ) : layout === "list" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {list.length === 0 ? (
+            <EmptyState icon="cal" title="لا مواعيد في هذا اليوم" text="اختاري يوماً آخر أو أضيفي موعداً جديداً." />
+          ) : (
+            [...list].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((a) => (
+              <button key={a.id} type="button" onClick={() => setOpen(a)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 20, background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 4px 14px rgba(123,70,135,0.05)", textAlign: "right", width: "100%", cursor: "pointer", fontFamily: "inherit", color: C.ink }}>
+                <span className="latin" style={{ minWidth: 86, height: 36, borderRadius: 12, background: "#F4EAF7", color: C.accent, fontWeight: 700, fontSize: 13.5, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {timeOf(a)}–{clock(endsAt(a))}
+                </span>
+                <div style={{ flex: 1.3, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>{personName(a)}</span>{isVip(a) && <VipStar size={13} />}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: C.sub2 }}>{a.service?.name ?? a.service_key}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: C.sub2 }}>
+                  <div>{a.room?.name ?? "بدون غرفة"}</div>
+                  <div>{a.specialist?.name ?? "بدون أخصائية"}</div>
+                </div>
+                <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+              </button>
+            ))
+          )}
+        </div>
       ) : cols.length === 0 ? (
         <EmptyState icon="cal" title={by === "room" ? "لا غرف بعد" : "لا أخصائيات بعد"} text={by === "room" ? "أضيفي غرف المركز من الإعدادات لتظهر أعمدة التقويم." : "أضيفي فريق العمل لتظهر أعمدة الأخصائيات."}
           action={<Link href={by === "room" ? R.W_Rooms : R.W_Staff} style={{ color: C.accent, fontWeight: 700 }}>فتح الإعدادات</Link>} />
