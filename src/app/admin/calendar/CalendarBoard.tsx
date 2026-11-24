@@ -149,6 +149,7 @@ export function CalendarBody() {
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [by, setBy] = useState<"room" | "specialist">("room");
   const [showCancelled, setShowCancelled] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [f, setF] = useState<Filters>(NO_FILTERS);
   const [open, setOpen] = useState<Appointment | null>(null);
   const [vipOpen, setVipOpen] = useState(false);
@@ -232,61 +233,79 @@ export function CalendarBody() {
   const dateLabel = view === "day" ? arDate(dateOfKey(day), { year: true }) : `${arDate(dateOfKey(from), { day: false })} – ${arDate(dateOfKey(to), { day: false })}`;
   const legend = showCancelled ? [...LEGEND, "cancelled" as Status] : LEGEND;
 
+  const activeFilters = [f.service, f.specialist, f.source, f.vip, f.unpaid].filter(Boolean).length;
+  const statusCounts = useMemo(() => {
+    const m = new Map<Status, number>();
+    for (const a of all) m.set(a.status, (m.get(a.status) ?? 0) + 1);
+    return m;
+  }, [all]);
+
   return (
     <div className={S.root}>
-      <div className={S.bar}>
-        <div className={S.barRow}>
+      {/* 1. Streamlined single-row main toolbar */}
+      <div className={S.bar} style={{ gap: 10 }}>
+        <div className={S.barRow} style={{ gap: 10 }}>
           <div className={cx(S.group, S.navRow)}>
             <button type="button" className={S.iconBtn} aria-label={view === "day" ? "اليوم السابق" : "الأسبوع السابق"} onClick={() => setDay(shiftKey(day, view === "day" ? -1 : -7))}><Icon name="M9 6l6 6-6 6" size={16} color={C.accent} /></button>
             <button type="button" className={S.btn} disabled={isToday} onClick={() => setDay(dayKey())}>اليوم</button>
             <button type="button" className={S.iconBtn} aria-label={view === "day" ? "اليوم التالي" : "الأسبوع التالي"} onClick={() => setDay(shiftKey(day, view === "day" ? 1 : 7))}><Icon name="M15 6l-6 6 6 6" size={16} color={C.accent} /></button>
             <span className={S.dateTitle}>{dateLabel}</span>
-            <span style={{ height: 28, padding: "0 10px", borderRadius: 14, background: "#F4EAF7", color: C.accent, fontSize: 12.5, fontWeight: 700, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
-              <span className="latin" style={{ marginInlineEnd: 4 }}>{list.length}</span>{list.length === 1 ? "موعد" : list.length === 2 ? "موعدان" : list.length <= 10 ? "مواعيد" : "موعداً"}
-            </span>
             <input type="date" className={S.dateInput} aria-label="اختيار يوم" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} dir="ltr" />
           </div>
           <ApptSearch onPick={(a) => { setDay(dayKey(new Date(a.starts_at))); setView("day"); setOpen(a); }} />
           <span className={S.grow} />
           <div className={S.group}>
             <div className={S.seg} role="group" aria-label="العرض">
-              <button type="button" aria-pressed={view === "day"} onClick={() => setView("day")}>يوم</button>
+              <button type="button" aria-pressed={view === "day" && layout === "list"} onClick={() => { setView("day"); setLayout("list"); }}>قائمة</button>
+              <button type="button" aria-pressed={view === "day" && layout === "grid"} onClick={() => { setView("day"); setLayout("grid"); }}>تقويم</button>
               <button type="button" aria-pressed={view === "week"} onClick={() => setView("week")}>أسبوع</button>
             </div>
-            {view === "day" && (
-              <>
-                <div className={S.seg} role="group" aria-label="نمط العرض">
-                  <button type="button" aria-pressed={layout === "list"} onClick={() => setLayout("list")}>قائمة</button>
-                  <button type="button" aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}>تقويم</button>
-                </div>
-                {layout === "grid" && (
-                  <div className={S.seg} role="group" aria-label="التقسيم">
-                    <button type="button" aria-pressed={by === "room"} onClick={() => setBy("room")}>الغرف</button>
-                    <button type="button" aria-pressed={by === "specialist"} onClick={() => setBy("specialist")}>الأخصائيات</button>
-                  </div>
-                )}
-              </>
+            {view === "day" && layout === "grid" && (
+              <div className={S.seg} role="group" aria-label="التقسيم">
+                <button type="button" aria-pressed={by === "room"} onClick={() => setBy("room")}>الغرف</button>
+                <button type="button" aria-pressed={by === "specialist"} onClick={() => setBy("specialist")}>الأخصائيات</button>
+              </div>
             )}
-          </div>
-        </div>
-        <div className={S.barRow}>
-          <div className={S.legend} aria-label="دليل الألوان">
-            {legend.map((s) => <span key={s}><i className={S.sw} style={{ background: ST[s].bar }} />{STATUS_LABEL[s]}</span>)}
-            <span><VipStar size={12} />VIP</span>
-          </div>
-          <span className={S.grow} />
-          <div className={S.group}>
-            <button type="button" className={S.btn} aria-pressed={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>
-              <Icon name={showCancelled ? "M5 12l5 5L20 7" : "M18 6L6 18M6 6l12 12"} size={14} color={C.accent} />الملغاة
+            <button type="button" className={S.btn} aria-pressed={showFilters} onClick={() => setShowFilters(!showFilters)}
+              style={activeFilters > 0 ? { borderColor: C.accent, background: "#F6EEF8", color: C.accent, fontWeight: 700 } : undefined}>
+              <Icon name="M3 5h18M6 12h12M10 19h4" size={14} color={C.accent} />
+              تصفية{activeFilters > 0 ? ` (${activeFilters})` : ""}
             </button>
             <VipButton onClick={() => setVipOpen(true)} height={38} style={{ borderRadius: 12, fontSize: 13.5, padding: "0 14px", boxShadow: "0 6px 14px rgba(169,129,48,0.25)" }} />
-            <Link href={R.W_Reception} className={S.btn}><Icon name="bell" size={14} color={C.accent} />الاستقبال والنداء</Link>
+            <Link href={R.W_Reception} className={S.btn} title="الاستقبال والنداء"><Icon name="bell" size={14} color={C.accent} />الاستقبال</Link>
             <Link href={R.W_BookingModal} className={S.primary}><Icon name="M12 5v14M5 12h14" size={16} color={C.white} stroke={2} />موعد جديد</Link>
           </div>
         </div>
-      </div>
 
-      <FilterBar all={all} shown={list.length} f={f} setF={setF} />
+        {/* 2. Interactive Status Summary Strip (replaces legend + status dropdown) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 6, borderTop: "1px solid #F3EBF6" }}>
+          <button type="button" onClick={() => setF({ ...f, status: "" })}
+            style={{ height: 30, padding: "0 12px", borderRadius: 15, border: `1px solid ${!f.status ? C.accent : "#EADCF0"}`, background: !f.status ? C.accent : C.white, color: !f.status ? C.white : C.ink, fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span>الكل</span>
+            <span className="latin" style={{ opacity: 0.9 }}>{all.length}</span>
+          </button>
+          {legend.map((s) => {
+            const count = statusCounts.get(s) ?? 0;
+            const active = f.status === s;
+            return (
+              <button key={s} type="button" onClick={() => setF({ ...f, status: active ? "" : s })}
+                style={{ height: 30, padding: "0 10px", borderRadius: 15, border: `1px solid ${active ? ST[s].bar : "#EADCF0"}`, background: active ? ST[s].chipBg : C.white, color: active ? ST[s].chipFg : C.ink, fontSize: 12.5, fontWeight: active ? 700 : 500, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, opacity: count === 0 && !active ? 0.55 : 1 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 4, background: ST[s].bar }} />
+                <span>{STATUS_LABEL[s]}</span>
+                <span className="latin" style={{ fontWeight: 700, color: active ? ST[s].chipFg : C.sub2 }}>{count}</span>
+              </button>
+            );
+          })}
+          <span className={S.grow} />
+          <button type="button" onClick={() => setShowCancelled(!showCancelled)}
+            style={{ height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${showCancelled ? C.accent : "#EADCF0"}`, background: showCancelled ? "#F6EEF8" : "transparent", color: showCancelled ? C.accent : C.sub2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {showCancelled ? "✓ إظهار الملغاة" : "إظهار الملغاة"}
+          </button>
+        </div>
+
+        {/* 3. Collapsible secondary filters */}
+        {showFilters && <FilterBar all={all} shown={list.length} f={f} setF={setF} />}
+      </div>
 
       {(pend.data ?? 0) > 0 && (
         <Link href={R.W_BookingRequests} className={S.banner}>
@@ -304,38 +323,14 @@ export function CalendarBody() {
         <WeekGrid from={from} list={list} onOpen={setOpen} onDay={(k) => { setDay(k); setView("day"); }}
           isOff={(k) => !!h && !staffHours.loading && dayWindows(rows, ids, weekday(k), h).length === 0} />
       ) : layout === "list" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {list.length === 0 ? (
-            <EmptyState icon="cal" title="لا مواعيد في هذا اليوم" text="اختاري يوماً آخر أو أضيفي موعداً جديداً." />
-          ) : (
-            [...list].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((a) => (
-              <button key={a.id} type="button" onClick={() => setOpen(a)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 20, background: C.white, border: "1px solid #F0E6F3", boxShadow: "0 4px 14px rgba(123,70,135,0.05)", textAlign: "right", width: "100%", cursor: "pointer", fontFamily: "inherit", color: C.ink }}>
-                <span className="latin" style={{ minWidth: 86, height: 36, borderRadius: 12, background: "#F4EAF7", color: C.accent, fontWeight: 700, fontSize: 13.5, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {timeOf(a)}–{clock(endsAt(a))}
-                </span>
-                <div style={{ flex: 1.3, minWidth: 0 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>{personName(a)}</span>{isVip(a) && <VipStar size={13} />}
-                  </div>
-                  <div style={{ fontSize: 12.5, color: C.sub2 }}>{a.service?.name ?? a.service_key}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""}</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: C.sub2 }}>
-                  <div>{a.room?.name ?? "بدون غرفة"}</div>
-                  <div>{a.specialist?.name ?? "بدون أخصائية"}</div>
-                </div>
-                <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
-              </button>
-            ))
-          )}
-        </div>
+        <HourGroupedList list={list} isToday={isToday} nowM={nowM} onOpen={setOpen} />
       ) : cols.length === 0 ? (
         <EmptyState icon="cal" title={by === "room" ? "لا غرف بعد" : "لا أخصائيات بعد"} text={by === "room" ? "أضيفي غرف المركز من الإعدادات لتظهر أعمدة التقويم." : "أضيفي فريق العمل لتظهر أعمدة الأخصائيات."}
           action={<Link href={by === "room" ? R.W_Rooms : R.W_Staff} style={{ color: C.accent, fontWeight: 700 }}>فتح الإعدادات</Link>} />
       ) : (
         <>
           <div className={S.board} ref={boardRef}>
-            <div className={S.grid} style={{ gridTemplateColumns: `60px ${placedByCol.map((p) => `minmax(${Math.max(cols.length > 3 ? 160 : 190, Math.max(1, ...p.map((x) => x.lanes)) * 112)}px, ${Math.min(2, Math.max(1, ...p.map((x) => x.lanes)))}fr)`).join(" ")}` }}>
+            <div className={S.grid} style={{ gridTemplateColumns: `60px ${placedByCol.map((p) => `minmax(${Math.max(cols.length > 3 ? 170 : 200, Math.max(1, ...p.map((x) => x.lanes)) * 155)}px, ${Math.min(2, Math.max(1, ...p.map((x) => x.lanes)))}fr)`).join(" ")}` }}>
               <div className={S.corner} />
               {cols.map((c) => {
                 const n = list.filter((a) => inCol(c, a) && a.status !== "cancelled").length;
@@ -397,6 +392,81 @@ export function CalendarBody() {
 
       <AppointmentDialog appt={open} onClose={() => setOpen(null)} />
       <VipBookingDialog open={vipOpen} onClose={() => setVipOpen(false)} />
+    </div>
+  );
+}
+
+/** Clean hour-grouped list view for desktop & tablet. */
+function HourGroupedList({ list, isToday, nowM, onOpen }: { list: Appointment[]; isToday: boolean; nowM: number; onOpen: (a: Appointment) => void }) {
+  if (list.length === 0) return <EmptyState icon="cal" title="لا مواعيد في هذا اليوم" text="اختاري يوماً آخر أو أضيفي موعداً جديداً." />;
+  const sorted = [...list].sort((x, y) => x.starts_at.localeCompare(y.starts_at));
+  const groups = new Map<number, Appointment[]>();
+  for (const a of sorted) {
+    const k = Math.floor(toMin(timeOf(a)) / 60);
+    groups.set(k, [...(groups.get(k) ?? []), a]);
+  }
+  const keys = [...groups.keys()];
+  const nowHour = Math.floor(nowM / 60);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {keys.map((k) => {
+        const items = groups.get(k)!;
+        const isNowHour = isToday && k === nowHour;
+        return (
+          <section key={k} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 6px" }}>
+              <span className="latin" style={{ fontSize: 13.5, fontWeight: 800, color: isNowHour ? "#C8507F" : C.accent, background: isNowHour ? "#FDF1F6" : "#F4EAF7", padding: "3px 10px", borderRadius: 10 }}>
+                {hm(k * 60)}
+              </span>
+              {isNowHour && <span style={{ fontSize: 11.5, fontWeight: 700, color: "#C8507F" }}>● الآن ({hm(nowM)})</span>}
+              <span style={{ fontSize: 12, color: C.sub2, fontWeight: 600 }}>{apptCount(items.length)}</span>
+              <span style={{ flex: 1, height: 1, background: isNowHour ? "#F2CADB" : "#EFE6F2" }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 }}>
+              {items.map((a) => {
+                const st = ST[a.status];
+                const vip = isVip(a);
+                const pay = payOf(a);
+                const phone = a.patient?.phone || a.walk_in_phone;
+                const svc = isOpenVisit(a) ? "جلسة غير محددة" : [a.service?.name ?? a.service_key, a.level && a.level.level > 1 ? a.level.name : ""].filter(Boolean).join(" · ");
+                return (
+                  <button key={a.id} type="button" onClick={() => onOpen(a)}
+                    style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px 12px 14px", paddingInlineStart: 18, borderRadius: 16, background: vip ? "linear-gradient(160deg, #FFFDF7, #FBF4E2)" : C.white, border: `1px solid ${vip ? "#E8D3A0" : "#EDE3F1"}`, boxShadow: "0 2px 10px rgba(123,70,135,0.04)", textAlign: "right", cursor: "pointer", fontFamily: "inherit", color: C.ink, opacity: a.status === "done" || a.status === "cancelled" ? 0.72 : 1 }}>
+                    <span style={{ position: "absolute", top: 10, bottom: 10, insetInlineStart: 6, width: 4, borderRadius: 2, background: st.bar }} />
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                        {vip && <VipStar size={13} />}
+                        <span style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{personName(a)}</span>
+                        {a.patient?.file_no && <span className="latin" style={{ fontSize: 11.5, color: C.sub2 }}>#{a.patient.file_no}</span>}
+                      </div>
+                      <span className="latin" style={{ fontSize: 12.5, fontWeight: 700, color: C.accent, background: "#F6EEF8", padding: "2px 8px", borderRadius: 8, flexShrink: 0 }}>
+                        {timeOf(a)}–{clock(endsAt(a))}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: C.ink, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{svc}</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, color: C.sub2, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span>{a.room?.name ?? "بدون غرفة"}</span>
+                        <span>·</span>
+                        <span>{a.specialist?.name ?? "بدون أخصائية"}</span>
+                        {phone && <><span>·</span><span className="latin" dir="ltr">{phone}</span></>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {pay && (
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: pay.paid ? "#1F6A60" : "#8A5A12", background: pay.paid ? "#E6F6EF" : "#FCF1DE", padding: "2px 8px", borderRadius: 10 }}>
+                            {pay.paid ? "مدفوع" : "غير مدفوع"}
+                          </span>
+                        )}
+                        <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
