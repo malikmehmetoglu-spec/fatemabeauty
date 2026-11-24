@@ -13,7 +13,7 @@ import { useQuery } from "@/lib/db/query";
 import { listCommissionBase, listCommissionRules, monthKey, saveCommissionRule, type CommissionRule, type Staff } from "@/lib/db/staff";
 import { useSession } from "@/lib/supabase/session";
 import { AR_MONTHS } from "@/lib/data";
-import { arDate, dayKey, money } from "@/lib/format";
+import { arDate, clock, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
 import { RowBtn, StaffCell, errText, useTeam } from "@/app/admin/staff/team-ui";
 
@@ -123,19 +123,27 @@ export default function CommissionsPage() {
               <tr style={{ borderBottom: "2px solid #333", textAlign: "right" }}>
                 <th style={{ padding: "8px 4px" }}>#</th>
                 <th style={{ padding: "8px 4px" }}>التاريخ</th>
+                <th style={{ padding: "8px 4px" }}>التوقيت</th>
+                <th style={{ padding: "8px 4px" }}>اسم العميلة</th>
                 <th style={{ padding: "8px 4px" }}>قيمة الجلسة</th>
                 <th style={{ padding: "8px 4px" }}>العمولة ({printing.pct}%)</th>
               </tr>
             </thead>
             <tbody>
-              {printing.inv.map((i, idx) => (
-                <tr key={i.id} style={{ borderBottom: "1px solid #EEE" }}>
-                  <td style={{ padding: "6px 4px" }} className="latin">{idx + 1}</td>
-                  <td style={{ padding: "6px 4px" }}>{arDate(new Date(i.created_at), { year: true })}</td>
-                  <td style={{ padding: "6px 4px" }}>{money(i.total)}</td>
-                  <td style={{ padding: "6px 4px" }}>{money(Math.round((i.total * printing.pct) / 100))}</td>
-                </tr>
-              ))}
+              {printing.inv.map((i, idx) => {
+                const dt = i.appointments?.starts_at ?? i.created_at;
+                const client = i.appointments?.patients?.name || i.appointments?.walk_in_name || "—";
+                return (
+                  <tr key={i.id} style={{ borderBottom: "1px solid #EEE" }}>
+                    <td style={{ padding: "6px 4px" }} className="latin">{idx + 1}</td>
+                    <td style={{ padding: "6px 4px" }}>{arDate(new Date(dt), { year: true })}</td>
+                    <td style={{ padding: "6px 4px" }} className="latin">{clock(dt)}</td>
+                    <td style={{ padding: "6px 4px" }}>{client}</td>
+                    <td style={{ padding: "6px 4px" }}>{money(i.total)}</td>
+                    <td style={{ padding: "6px 4px" }}>{money(Math.round((i.total * printing.pct) / 100))}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>,

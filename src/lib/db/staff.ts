@@ -221,9 +221,9 @@ export async function saveCommissionRule(staff_id: string, percent: number, note
  * on the same invoice are not part of the specialist's session value.
  */
 export async function listCommissionBase(fromIso: string, toIso: string) {
-  const rows = must(await supabase.from("invoices").select("id, total, subtotal, created_at, appointments!inner(specialist_id), invoice_items(kind, qty, unit_price)")
+  const rows = must(await supabase.from("invoices").select("id, total, subtotal, created_at, appointments!inner(specialist_id, starts_at, walk_in_name, patients(name)), invoice_items(kind, qty, unit_price)")
     .eq("paid", true).eq("void", false).gte("created_at", fromIso).lt("created_at", toIso).not("appointments.specialist_id", "is", null)) as unknown as
-    { id: string; total: number; subtotal: number; created_at: string; appointments: { specialist_id: string }; invoice_items: { kind: string; qty: number; unit_price: number }[] }[];
+    { id: string; total: number; subtotal: number; created_at: string; appointments: { specialist_id: string; starts_at: string; walk_in_name: string | null; patients: { name: string } | null }; invoice_items: { kind: string; qty: number; unit_price: number }[] }[];
   return rows.map((i) => {
     const svc = (i.invoice_items ?? []).filter((x) => x.kind === "service").reduce((s, x) => s + x.qty * x.unit_price, 0);
     return { id: i.id, created_at: i.created_at, appointments: i.appointments, total: i.subtotal ? Math.round((svc * i.total) / i.subtotal) : 0 };
