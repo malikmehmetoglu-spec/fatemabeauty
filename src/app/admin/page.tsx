@@ -17,6 +17,7 @@ import { C, SH, ICON_FILL } from "@/lib/tokens";
 import { NEW_BTN } from "./calendar/CalendarBoard";
 import { apptCount, arErr } from "./patients/kit";
 import { RecentBookings } from "./RecentBookings";
+import { RevenueBreakdown } from "./RevenueBreakdown";
 
 const CARD = { borderRadius: 26, padding: "18px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, position: "relative" } as const;
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
@@ -77,11 +78,6 @@ export default function DashboardPage() {
 
   const queue = [...checkedIn].sort((a, b) => (a.checked_in_at ?? a.starts_at).localeCompare(b.checked_in_at ?? b.starts_at)).slice(0, 5);
   const nextList = queue.length ? queue : upcoming.filter((a) => new Date(a.starts_at).getTime() >= nowMs - 15 * 60000).slice(0, 5);
-
-  const bySvc = new Map<string, { name: string; count: number; total: number }>();
-  done.forEach((a) => { const k = a.service_key; const e = bySvc.get(k) ?? { name: a.service?.short_name ?? k, count: 0, total: 0 }; e.count++; e.total += a.price; bySvc.set(k, e); });
-  const svcRows = [...bySvc.values()].sort((a, b) => b.total - a.total);
-  const svcMax = Math.max(1, ...svcRows.map((r) => r.total));
 
   const low = (stock.data ?? []).filter(isLow).length;
   const devDue = (devices.data ?? []).filter((d) => d.in_maintenance || (d.next_service_at && d.next_service_at <= today));
@@ -165,19 +161,7 @@ export default function DashboardPage() {
           <RecentBookings />
 
           <div className={css.split}>
-            <div style={{ ...CARD, padding: "14px 20px", flex: 1.55, minWidth: 0 }}>
-              <Head title={`إيراد ${T} حسب الخدمة`} sub={isToday ? `من الجلسات المنتهية حتى ${clock()}` : "من الجلسات المنتهية"}
-                right={<span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: "#FBEAF1", color: C.danger }}>المجموع {money(svcRows.reduce((s, r) => s + r.total, 0))}</span>} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
-                {svcRows.length === 0 ? <div style={{ fontSize: 13, color: C.sub2 }}>{`لم تنتهِ أي جلسة ${T}.`}</div> : svcRows.map((r) => (
-                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 120, lineHeight: 1.3 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{r.name}</div><div style={{ fontSize: 11.5, color: C.sub2 }}>{r.count === 1 ? "جلسة منجزة واحدة" : r.count === 2 ? "جلستان منجزتان" : `${r.count} جلسات منجزة`}</div></div>
-                    <div style={{ flex: 1, height: 12, borderRadius: 6, background: "#ECE2EF", overflow: "hidden" }}><div style={{ width: `${Math.floor((r.total / svcMax) * 100)}%`, height: 12, borderRadius: 6, background: "linear-gradient(90deg,#C9A2D8,#7B4687)" }} /></div>
-                    <div style={{ width: 110, textAlign: "left", fontSize: 14, fontWeight: 700 }}>{money(r.total)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <RevenueBreakdown day={day} isToday={isToday} />
             <div style={{ ...CARD, padding: "14px 20px 8px", flex: 1, minWidth: 0 }}>
               <Head title="تنبيهات" />
               <div style={{ marginTop: 4 }}>
