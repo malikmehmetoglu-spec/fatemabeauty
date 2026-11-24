@@ -116,9 +116,9 @@ export default function PublicBookingPage() {
   // step-1 cards: the consultation category (consultant flow) + each other category (specialists flow)
   const consultCat = (info?.categories ?? []).find((c) => consultServices.some((x) => x.category_id === c.key)) ?? null;
   const cards: { kind: Kind; key: string; name: string; sub: string; icon: string; count: number; ready: boolean }[] = [
-    ...(consultServices.length && info?.consultant ? [{ kind: "consult" as const, key: consultCat?.key ?? "", name: consultCat?.name ?? "استشارة", sub: consultCat?.short_description ?? "", icon: consultCat?.icon ?? "face", count: consultServices.length, ready: consultReady }] : []),
     ...sessionCats.map((c) => ({ kind: "session" as const, key: c.key, name: c.name, sub: c.short_description, icon: c.icon, count: sessionServices.filter((x) => x.category_id === c.key).length, ready: true })),
     ...(otherSessions.length || !sessionCats.length ? [{ kind: "session" as const, key: "", name: sessionCats.length ? "جلسات أخرى" : "جلسة عناية", sub: "", icon: "sparkle", count: sessionCats.length ? otherSessions.length : sessionServices.length, ready: sessionServices.length > 0 }] : []),
+    ...(consultServices.length && info?.consultant ? [{ kind: "consult" as const, key: consultCat?.key ?? "", name: consultCat?.name ?? "استشارة", sub: consultCat?.short_description ?? "", icon: consultCat?.icon ?? "face", count: consultServices.length, ready: consultReady }] : []),
   ];
   const svcCat = (info?.categories ?? []).find((c) => c.key === (service?.category_id ?? (kind === "session" ? curPubCat : null))) ?? null;
   // only the specialists who provide the chosen service (from «الخدمات التي تقدّمها» in admin; empty there = all)
