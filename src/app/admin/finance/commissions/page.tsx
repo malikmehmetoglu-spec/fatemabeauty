@@ -102,8 +102,14 @@ export default function CommissionsPage() {
       <div style={{ fontSize: 12.5, color: C.sub2 }}>العمولة = النسبة (الافتراضي {DEFAULT_PCT}%) × صافي بنود الخدمات (بعد الخصم، بدون المنتجات والباقات) في الفواتير المدفوعة بالكامل وغير الملغاة خلال الفترة المحددة للمواعيد التي نفّذتها الأخصائية.</div>
       <RuleDialog target={editing} onClose={() => setEditing(null)} />
       {printing && typeof document !== "undefined" && createPortal(
-        <div data-print-receipt="" dir="rtl" style={{ padding: 24, fontFamily: "inherit", color: "#1A121D", background: "#fff" }}>
-          <style>{"@media print { @page { size: A4; margin: 16mm; } }"}</style>
+        <div data-print-commission="" dir="rtl" style={{ padding: 24, fontFamily: "inherit", color: "#1A121D", background: "#fff" }}>
+          <style>{`
+            @media print {
+              @page { size: A4; margin: 14mm; }
+              body > *:not([data-print-commission]) { display: none !important; }
+              [data-print-commission] { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            }
+          `}</style>
           <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Fatema Beauty — تقرير عمولة أخصائية</h2>
           <div style={{ fontSize: 13, color: "#555", marginBottom: 16 }}>الفترة: {rangeLabel} · تاريخ الطباعة: {arDate(new Date(), { year: true })}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, padding: 12, border: "1px solid #DDD", borderRadius: 10, marginBottom: 18 }}>
