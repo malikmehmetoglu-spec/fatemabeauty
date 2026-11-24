@@ -15,7 +15,7 @@ import { useSession } from "@/lib/supabase/session";
 import { AR_MONTHS } from "@/lib/data";
 import { arDate, dayKey, money } from "@/lib/format";
 import { C } from "@/lib/tokens";
-import { RowBtn, StaffCell, TeamTabs, errText, useTeam } from "@/app/admin/staff/team-ui";
+import { RowBtn, StaffCell, errText, useTeam } from "@/app/admin/staff/team-ui";
 
 const DEFAULT_PCT = 10;
 const monthLabel = (p: string) => `${AR_MONTHS[Number(p.slice(5)) - 1]} ${p.slice(0, 4)}`;
@@ -64,7 +64,7 @@ export default function CommissionsPage() {
   }
 
   return (
-    <AdminShell active="فريق العمل" title="العمولات" subtitle={`عمولات الأخصائيات على الجلسات المدفوعة · ${rangeLabel}`}
+    <AdminShell active="المالية" title="العمولات" subtitle={`عمولات الأخصائيات على الجلسات المدفوعة · ${rangeLabel}`}
       actions={<>
         <Chip height={38} selected={mode === "month"} onClick={() => setMode("month")}>شهري</Chip>
         <Chip height={38} selected={mode === "range"} onClick={() => setMode("range")}>حسب الأيام</Chip>
@@ -78,7 +78,6 @@ export default function CommissionsPage() {
             style={{ height: 38, borderRadius: 12, border: "1px solid #EADCF0", padding: "0 10px", fontSize: 13 }} />
         </>}
       </>}>
-      <TeamTabs />
       <div className="adm-row">
         <Kpi dark label="العمولات المستحقة" value={money(totalDue)} sub={rangeLabel} icon="percent" />
         <Kpi label="قيمة الجلسات المدفوعة" value={money(totalSales)} sub="صافي بنود الخدمات بعد الخصم" icon="receipt" />

@@ -22,7 +22,7 @@ export function TeamTabs() {
   const path = usePathname();
   const tabs: [string, string, string][] = [
     ["users", "الفريق", R.W_Staff], ["clock", "أوقات الدوام", R.W_Shifts], ["check", "الحضور والإجازات", R.W_Attendance],
-    ["wallet", "الرواتب", R.W_Payroll], ["chart", "العمولات", R.W_Commissions], ["shield", "الأدوار والصلاحيات", R.W_Roles],
+    ["wallet", "الرواتب", R.W_Payroll], ["shield", "الأدوار والصلاحيات", R.W_Roles],
   ];
   return (
     <nav aria-label="أقسام الفريق" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
