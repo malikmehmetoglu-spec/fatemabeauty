@@ -255,9 +255,9 @@ function PayStep({ a, extras = [], isAdmin, onIssued }: { a: Appointment; extras
   const lines: CartLine[] = [mode === "package" && pkg ? { ...base, unit_price: 0 } : base];
   const sub = lines[0].unit_price;
   const maxPct = policies.data?.maxDiscount ?? 0;
-  const pcts = [0, 5, 10, 15, 20].filter((p) => isAdmin || p <= maxPct);
+  const pcts = [0, 5, 10, 15, 20];
   const dAmt = offer ? offerDiscount(offer, lines) : discMode === "pct" ? Math.round((sub * pct) / 100) : Math.min(sub, Math.max(0, Math.round(Number(discAmt) || 0)));
-  const needApproval = !offer && discMode === "amt" && dAmt > Math.round((sub * maxPct) / 100) && !isAdmin;
+  const needApproval = false;
   const xtra = extras.filter((x) => !isPaid(x));
   const lineOf = (x: Appointment): CartLine => ({ kind: "service", ref: x.service_key, qty: 1, label: (x.service?.name ?? "جلسة") + (x.level && x.level.level > 1 ? ` — ${x.level.name}` : ""), unit_price: x.price || 0 });
   const xDisc = (x: Appointment) => offer ? 0 : Math.round(((x.price || 0) * pct) / 100);

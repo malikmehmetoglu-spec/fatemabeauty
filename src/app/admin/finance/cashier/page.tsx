@@ -130,8 +130,8 @@ function Cashier() {
   const dPct = sub ? Math.round((dAmt / sub) * 1000) / 10 : 0;
   const total = sub - dAmt;
   const maxPct = policies.data?.maxDiscount ?? 0;
-  const needApproval = !offer && dAmt > Math.round((sub * maxPct) / 100);
-  const blockedByApproval = needApproval && !isAdmin;
+  const needApproval = false;
+  const blockedByApproval = false;
 
   const payments = useMemo((): { method: PayMethod; amount: number }[] => {
     if (mode === "cash" || mode === "card") return [{ method: mode, amount: total }];
