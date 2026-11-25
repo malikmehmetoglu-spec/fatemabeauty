@@ -23,7 +23,7 @@ import { ExtendRequest, OverrideStartButton, SessionTimer, ToCashier, UnpaidTag,
 export default function MyDayPage() {
   useLiveAppointments("my-day");
   const { staff } = useSession();
-  const { data, loading, error } = useQuery(["appointments", "myday", staff?.id], () => listMyDay(staff!.id), { enabled: !!staff });
+  const { data, loading, error } = useQuery(["appointments", "myday", staff?.id, staff?.role], () => listMyDay(staff!.id, staff?.role === "owner"), { enabled: !!staff });
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const ext = usePendingExtensions("my-day-ext");

@@ -334,11 +334,16 @@ export async function createPatient(name: string, phone: string, extra?: { gende
   return row;
 }
 
-/** The staff record's appointments today (My day). */
-export async function listMyDay(staffId: string) {
+/** The staff record's appointments today (My day). Owners also see all consultations. */
+export async function listMyDay(staffId: string, includeConsultations = false) {
   const r = dayRange();
-  return must(await supabase.from("appointments").select(SEL).eq("specialist_id", staffId).gte("starts_at", r.from).lt("starts_at", r.to)
+  if (!includeConsultations) {
+    return must(await supabase.from("appointments").select(SEL).eq("specialist_id", staffId).gte("starts_at", r.from).lt("starts_at", r.to)
+      .neq("status", "cancelled").order("starts_at")) as unknown as Appointment[];
+  }
+  const rows = must(await supabase.from("appointments").select(SEL).gte("starts_at", r.from).lt("starts_at", r.to)
     .neq("status", "cancelled").order("starts_at")) as unknown as Appointment[];
+  return rows.filter((a) => a.specialist_id === staffId || a.service?.is_consultation);
 }
 
 /** Sum of (non-void) invoices created today (Damascus). */
@@ -416,4 +421,3 @@ export function useLiveAppointments(channel: string) {
     return () => { clearInterval(t); supabase.removeChannel(ch); };
   }, [channel]);
 }
-
