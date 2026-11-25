@@ -31,9 +31,12 @@ export default function MyDayPage() {
 
   const mine = (data ?? []).filter((a) => a.status !== "cancelled");
   const done = mine.filter((a) => a.status === "done").length;
+  const waiting = mine.filter((a) => a.status === "checked_in");
+  const upcoming = mine.filter((a) => a.status === "pending" || a.status === "confirmed");
+  const finished = mine.filter((a) => a.status === "done" || a.status === "no_show");
   const current = mine.find((a) => a.status === "in_session");
   const left = mine.filter((a) => ["pending", "confirmed", "checked_in"].includes(a.status));
-  const next = left.find((a) => a.status === "checked_in") ?? left[0];
+  const next = waiting[0] ?? upcoming[0];
 
   const consults = mine.filter((a) => a.service?.is_consultation && a.patient_id);
   const intake = useIntakeStatus(consults.map((a) => a.id));
@@ -58,10 +61,15 @@ export default function MyDayPage() {
         <div className={css.split} style={{ gap: 18, flexGrow: 1, minHeight: 0, alignItems: "stretch" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1.15, minWidth: 0 }}>
             <div className="adm-row">
-              {[["مواعيدي اليوم", mine.length], ["انتهت", done], ["متبقية", left.length]].map(([l, v]) => (
-                <div key={l} style={{ flex: 1, borderRadius: 22, padding: "14px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
-                  <div style={{ fontSize: 13, color: C.sub2 }}>{l}</div>
-                  <div className="latin" style={{ fontSize: 28, fontWeight: 700 }}>{v}</div>
+              {[
+                ["مواعيدي اليوم", mine.length, C.ink],
+                ["وصلت وتنتظر", waiting.length, "#1F6A60"],
+                ["لم تصل بعد", upcoming.length, "#8A5A12"],
+                ["انتهت", done, C.sub2],
+              ].map(([l, v, col]) => (
+                <div key={String(l)} style={{ flex: 1, borderRadius: 22, padding: "14px 16px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+                  <div style={{ fontSize: 12.5, color: C.sub2 }}>{l}</div>
+                  <div className="latin" style={{ fontSize: 26, fontWeight: 700, color: String(col) }}>{v}</div>
                 </div>
               ))}
             </div>
@@ -119,21 +127,34 @@ export default function MyDayPage() {
             {prep && <IntakePanel appointmentId={prep.id} />}
           </div>
 
-          <div style={{ flex: 1, minWidth: 0, borderRadius: 26, padding: "16px 20px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH, alignSelf: "flex-start" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>جدول اليوم</div>
-            {mine.map((a) => (
-              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderTop: "1px solid #EDE2F1", opacity: a.status === "done" || a.status === "no_show" ? 0.6 : 1 }}>
-                {a.status === "done" ? <DoneDot size={30} /> : <span className="latin" style={{ width: 30, height: 30, borderRadius: 15, background: a.status === "in_session" ? C.accent : ICON_FILL, flexShrink: 0 }} />}
-                <span className="latin" style={{ width: 48, fontSize: 13.5, fontWeight: 700 }}>{timeOf(a)}</span>
-                <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}</div>
-                  <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · {a.minutes + (a.extension_minutes ?? 0)} د · {a.room?.name ?? "بدون غرفة"}
-                    {["pending", "confirmed", "checked_in"].includes(a.status) && !isPaid(a) && <span style={{ color: "#A3621A", fontWeight: 700, whiteSpace: "nowrap" }}> · بانتظار الدفع</span>}</div>
-                  {a.service?.is_consultation && a.patient_id && intake.data && a.status !== "done" && a.status !== "no_show" && (
-                    <div style={{ marginTop: 5 }}><IntakeBadgeButton appointmentId={a.id} ready={!!intake.data[a.id]} reviewed={intake.data[a.id]?.reviewed} /></div>
-                  )}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, alignSelf: "flex-start" }}>
+            {[
+              { title: "وصلت وتنتظر", items: waiting, bg: "#E6F6EF", fg: "#1F6A60", empty: "لا توجد مراجِعة منتظرة الآن." },
+              { title: "لم تصل بعد", items: upcoming, bg: "#FCF1DE", fg: "#8A5A12", empty: "لا توجد مواعيد قادمة." },
+              ...(current || finished.length ? [{ title: "في الجلسة / منتهية", items: [...(current ? [current] : []), ...finished], bg: "#F4EAF7", fg: C.accent, empty: "" }] : []),
+            ].map((sec) => (
+              <div key={sec.title} style={{ borderRadius: 24, padding: "14px 18px", background: C.white, border: "1px solid #F0E6F3", boxShadow: SH }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: sec.items.length ? 6 : 0 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{sec.title}</span>
+                  <span className="latin" style={{ height: 24, padding: "0 10px", borderRadius: 12, background: sec.bg, color: sec.fg, fontSize: 12.5, fontWeight: 700, display: "inline-flex", alignItems: "center" }}>{sec.items.length}</span>
                 </div>
-                <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                {sec.items.length === 0 ? (
+                  <div style={{ fontSize: 12.5, color: C.sub2, paddingTop: 4 }}>{sec.empty}</div>
+                ) : sec.items.map((a) => (
+                  <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderTop: "1px solid #EDE2F1", opacity: a.status === "done" || a.status === "no_show" ? 0.6 : 1 }}>
+                    {a.status === "done" ? <DoneDot size={30} /> : <span className="latin" style={{ width: 30, height: 30, borderRadius: 15, background: a.status === "in_session" ? C.accent : ICON_FILL, flexShrink: 0 }} />}
+                    <span className="latin" style={{ width: 48, fontSize: 13.5, fontWeight: 700 }}>{timeOf(a)}</span>
+                    <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{isVip(a) && <VipStar size={14} style={{ marginInlineEnd: 5 }} />}{personName(a)}{a.queue_no != null && <span className="latin" style={{ fontSize: 12, color: C.accent, marginInlineStart: 6 }}>· دور {a.queue_no}</span>}</div>
+                      <div style={{ fontSize: 12, color: C.sub2 }}>{a.service?.short_name}{a.level && a.level.level > 1 ? ` · ${a.level.name}` : ""} · {a.minutes + (a.extension_minutes ?? 0)} د · {a.room?.name ?? "بدون غرفة"}
+                        {["pending", "confirmed", "checked_in"].includes(a.status) && !isPaid(a) && <span style={{ color: "#A3621A", fontWeight: 700, whiteSpace: "nowrap" }}> · بانتظار الدفع</span>}</div>
+                      {a.service?.is_consultation && a.patient_id && intake.data && a.status !== "done" && a.status !== "no_show" && (
+                        <div style={{ marginTop: 5 }}><IntakeBadgeButton appointmentId={a.id} ready={!!intake.data[a.id]} reviewed={intake.data[a.id]?.reviewed} /></div>
+                      )}
+                    </div>
+                    <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
