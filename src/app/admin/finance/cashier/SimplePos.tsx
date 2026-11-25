@@ -89,9 +89,9 @@ export default function SimplePos() {
   return (
     <AdminShell active="المالية" title="نقطة البيع" subtitle={`${arDate(new Date())} · ${clock()}`}>
       {sellables.loading && !sellables.data ? <Loading /> : (
-        <div className={css.cashier}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 18, alignItems: "start" }}>
           {/* ---------- products ---------- */}
-          <div className={css.cBill} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
             <Title n={1}>المنتجات</Title>
             <label style={{ height: 50, borderRadius: 25, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 10, padding: "0 16px" }}>
               <Icon name="scan" color={C.accentMid} size={19} />
@@ -129,7 +129,7 @@ export default function SimplePos() {
           </div>
 
           {/* ---------- total & sell ---------- */}
-          <div className={css.cSum} style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
             <div style={{ borderRadius: 28, padding: "20px 22px", backgroundColor: C.accent, backgroundImage: GRAD, boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", bottom: -80, right: -60, width: 240, height: 240, borderRadius: 120, background: "radial-gradient(circle, rgba(200,160,220,0.35) 0%, rgba(200,160,220,0) 70%)" }} />
               <div style={{ position: "relative", display: "flex", justifyContent: "space-between", fontSize: 13, color: C.onDark }}><span>عدد القطع</span><span style={LATIN}>{count}</span></div>
@@ -141,7 +141,7 @@ export default function SimplePos() {
             </div>
 
             <div style={{ ...PANEL, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <Title n={3}>طريقة الدفع</Title>
+              <Title n={2}>طريقة الدفع</Title>
               <div style={{ display: "flex", gap: 10 }}>
                 {[false, true].map((c) => {
                   const on = card === c;
