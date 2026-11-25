@@ -269,7 +269,7 @@ export default function PublicBookingPage() {
     ["sparkle", "الفئة", kind ? (kind === "consult" ? consultCat?.name ?? "استشارة" : sessionCats.find((c) => c.key === curPubCat)?.name ?? "جلسة عناية") : null],
     ["drop", "الخدمة", serviceText],
     ["cal", "اليوم", day && service ? dayLabel(day) : null],
-    ["clock", "الساعة", time ? `${clock(time)} بتوقيت دمشق` : null],
+    ["clock", "الساعة", time ? `${clock(time)} بتوقيت حمص` : null],
     ["wallet", "السعر", priceText],
   ];
 
@@ -293,14 +293,14 @@ export default function PublicBookingPage() {
       <div className={s.wrap} ref={refs.top}>
         <header className={s.nav}>
           <span aria-label="فاطمة بيوتي"><Logo height={54} /></span>
-          {now && <span className={s.clockChip}><Icon name="clock" size={17} color={C.accentMid} /><span>الآن في دمشق</span><b className="latin">{clock(now)}</b></span>}
+          {now && <span className={s.clockChip}><Icon name="clock" size={17} color={C.accentMid} /><span>الآن في حمص</span><b className="latin">{clock(now)}</b></span>}
         </header>
 
         {result ? (
           <section className={s.done} aria-live="polite">
             <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
             <h1 className={s.doneTitle}>تم تأكيد حجزكِ</h1>
-            <p className={s.doneText}>موعدكِ <b style={{ color: C.accent }}>{dayLabel(dayKey(new Date(result.starts_at)))}</b> الساعة <b className="latin" style={{ color: C.accent }}>{clock(result.starts_at)}</b> بتوقيت دمشق. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(result.phone || phone)}</b></p>
+            <p className={s.doneText}>موعدكِ <b style={{ color: C.accent }}>{dayLabel(dayKey(new Date(result.starts_at)))}</b> الساعة <b className="latin" style={{ color: C.accent }}>{clock(result.starts_at)}</b> بتوقيت حمص. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(result.phone || phone)}</b></p>
             <div className={`${s.miniSum} ${s.doneCard}`}>
               <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>مؤكد</span></div>
               <div className={s.miniRow}><span>الجلسة</span><span>{result.service}</span></div>
@@ -316,7 +316,7 @@ export default function PublicBookingPage() {
           <>
             <section className={s.hero}>
               <h1 className={s.h1}>احجزي <em>موعدكِ</em> في دقيقة</h1>
-              <p className={s.lead}>اختاري الجلسة ومستواها ثم اليوم والساعة — الأوقات المعروضة حقيقية ومحدّثة لحظة بلحظة بتوقيت دمشق، ويُثبَّت حجزكِ فوراً.</p>
+              <p className={s.lead}>اختاري الجلسة ومستواها ثم اليوم والساعة — الأوقات المعروضة حقيقية ومحدّثة لحظة بلحظة بتوقيت حمص، ويُثبَّت حجزكِ فوراً.</p>
             </section>
 
             {loadErr && (

@@ -314,7 +314,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
       }
       case 4: return (
         <>
-          {head({ n: 4, title: "أي يوم يناسبكِ؟", sub: "خلال الثلاثة أشهر القادمة — الأيام المغلقة باهتة." })}
+          {head({ n: 4, title: "أي يوم يناسبكِ؟" })}
           <div className={s.body}>
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
@@ -352,7 +352,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             )}
             <div className={s.dayHint}>
               <Icon name="info" size={16} color={C.accentMid} />
-              <span>نعرض الأيام التي تداوم فيها أخصائيات هذه الجلسة. الأوقات بتوقيت دمشق.</span>
+              <span>نعرض الأيام التي تداوم فيها أخصائيات هذه الجلسة. الأوقات بتوقيت حمص.</span>
             </div>
           </div>
           {c.day && c.isOpen(c.day) && (
@@ -422,7 +422,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
           ["drop", "الخدمة", c.service ? (skipLevel ? `${c.service.name} · ${durationLabel(c.minutes)}` : c.service.name) : null, skipSession ? 0 : 1],
           ...(!skipLevel && c.level ? [["history", "المستوى", `${c.level.name} · ${durationLabel(c.level.minutes)}`, 2] as [string, string, string | null, number]] : []),
           ["cal", "اليوم", c.day ? dayLabel(c.day) : null, 4],
-          ["clock", "الساعة", c.time ? `${clock(c.time)} بتوقيت دمشق` : null, 5],
+          ["clock", "الساعة", c.time ? `${clock(c.time)} بتوقيت حمص` : null, 5],
           ["phone", "بياناتكِ", `${c.name.trim()} · ${c.phone.trim()}`, 6],
         ];
         return (
@@ -464,7 +464,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         <div className={s.burst} aria-hidden>{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ ["--a" as string]: `${i * 30}deg`, animationDelay: `${120 + (i % 3) * 40}ms` }} />)}</div>
         <div className={s.doneMark}><Icon name="check" color="#fff" size={40} stroke={2.4} /></div>
         <h2 className={s.doneTitle}>تم تأكيد حجزكِ</h2>
-        <p className={s.doneText}>موعدكِ <b>{dayLabel(dayKey(new Date(r.starts_at)))}</b> الساعة <b className="latin">{clock(r.starts_at)}</b> بتوقيت دمشق. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(r.phone || c.phone)}</b></p>
+        <p className={s.doneText}>موعدكِ <b>{dayLabel(dayKey(new Date(r.starts_at)))}</b> الساعة <b className="latin">{clock(r.starts_at)}</b> بتوقيت حمص. ستصلكِ رسالة تأكيد على الرقم <b className="latin" dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{localPhone(r.phone || c.phone)}</b></p>
         <div className={s.miniSum}>
           <div className={s.miniRow}><span>الحالة</span><span style={{ color: C.accent, fontWeight: 700 }}>مؤكد</span></div>
           <div className={s.miniRow}><span>الجلسة</span><span>{r.service}</span></div>
@@ -534,7 +534,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             ? <button type="button" className={s.backBtn} onClick={back} aria-label="رجوع إلى الخطوة السابقة"><Icon name="back" size={20} color={C.accent} /></button>
             : <span className={s.backBtn} aria-hidden style={{ visibility: "hidden" }} />}
           <span aria-label="فاطمة بيوتي" className={s.logo}><Logo height={40} /></span>
-          {c.now && <span className={s.clock} aria-label={`الآن في دمشق ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
+          {c.now && <span className={s.clock} aria-label={`الآن في حمص ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
         </div>
         {ready && !c.result && (
           <>
