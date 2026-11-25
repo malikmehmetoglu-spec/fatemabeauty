@@ -6,7 +6,7 @@
  */
 import { useEffect, useState, type CSSProperties } from "react";
 import { AdminShell } from "@/components/shell";
-import { EmptyState, ErrorNote, Icon, Loading, TextInput } from "@/components/ui";
+import { EmptyState, ErrorNote, Icon, Loading } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
 import { createInvoice, financeError, getInvoice, listSellables, type CartLine, type InvoiceRow } from "@/lib/db/finance";
 import { arDate, clock, money } from "@/lib/format";
@@ -37,8 +37,6 @@ export default function SimplePos() {
   const sellables = useQuery(["finance", "sellables"], listSellables);
   const L = useLocations();
   const receipt = useInvoicePrint();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [lines, setLines] = useState<CartLine[]>([]);
   const [card, setCard] = useState(false);
@@ -69,25 +67,22 @@ export default function SimplePos() {
 
   const total = lines.reduce((s, l) => s + l.qty * l.unit_price, 0);
   const count = lines.reduce((s, l) => s + l.qty, 0);
-  const digits = phone.replace(/\D/g, "");
-  const phoneOk = /^0?9\d{8}$/.test(digits);
-  const missing = !name.trim() ? "اكتبي اسم الزبونة" : !phoneOk ? "اكتبي رقم هاتف صحيح يبدأ بـ 09" : !lines.length ? "امسحي باركود منتج واحد على الأقل" : "";
+  const missing = !lines.length ? "امسحي باركود منتج واحد على الأقل" : "";
 
   const sell = async () => {
     if (missing || busy) return;
     setBusy(true); setErr(null);
     try {
       const inv = await createInvoice({
-        walkInName: name.trim(), lines, discount: 0, payments: [{ method: card ? "card" : "cash", amount: total }],
-        note: `هاتف: ${digits.startsWith("0") ? digits : "0" + digits}`, location: L.multi && L.def ? L.def.id : null,
+        walkInName: "زبونة مباشرة", lines, discount: 0, payments: [{ method: card ? "card" : "cash", amount: total }],
+        location: L.multi && L.def ? L.def.id : null,
       });
       if (inv) {
         const row = await getInvoice(inv.id).catch(() => ({ ...inv, patients: null, invoice_items: [], invoice_payments: [], appointments: null }) as InvoiceRow);
-        const ph = digits.startsWith("0") ? digits : "0" + digits;
-        receipt.print({ ...(row as InvoiceRow), walk_in_name: maskName(name), note: `هاتف: ${maskPhone(ph)}` }, { staff: staff?.name });
+        receipt.print(row as InvoiceRow, { staff: staff?.name });
         setDone(inv.no ? String(inv.no) : "");
       }
-      setName(""); setPhone(""); setLines([]); setCard(false);
+      setLines([]); setCard(false);
     } catch (e) { setErr(financeError(e)); } finally { setBusy(false); }
   };
 
@@ -95,19 +90,9 @@ export default function SimplePos() {
     <AdminShell active="المالية" title="نقطة البيع" subtitle={`${arDate(new Date())} · ${clock()}`}>
       {sellables.loading && !sellables.data ? <Loading /> : (
         <div className={css.cashier}>
-          {/* ---------- customer ---------- */}
-          <div className={css.cWho} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
-            <Title n={1}>الزبونة</Title>
-            <TextInput label="الاسم" value={name} onChange={setName} placeholder="اسم الزبونة" />
-            <TextInput label="رقم الهاتف" value={phone} onChange={setPhone} placeholder="09xxxxxxxx" dir="ltr" type="tel" />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 14, padding: "9px 12px", background: C.tint, color: "#74457F", fontSize: 12.5, fontWeight: 600 }}>
-              <Icon name="info" color={C.accentMid} size={17} /><span>يُحفظ الاسم والرقم كاملين في النظام، وتُطبع الفاتورة بأجزاء مخفية منهما.</span>
-            </div>
-          </div>
-
           {/* ---------- products ---------- */}
           <div className={css.cBill} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 14 }}>
-            <Title n={2}>المنتجات</Title>
+            <Title n={1}>المنتجات</Title>
             <label style={{ height: 50, borderRadius: 25, border: "1.5px dashed #DFCBE3", background: "#FEFCFE", display: "flex", alignItems: "center", gap: 10, padding: "0 16px" }}>
               <Icon name="scan" color={C.accentMid} size={19} />
               <input aria-label="باركود المنتج" value={code} onChange={(e) => setCode(e.target.value)} placeholder="امسحي باركود المنتج هنا"
