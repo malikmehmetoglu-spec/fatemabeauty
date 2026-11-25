@@ -152,7 +152,20 @@ export default function MyDayPage() {
                         <div style={{ marginTop: 5 }}><IntakeBadgeButton appointmentId={a.id} ready={!!intake.data[a.id]} reviewed={intake.data[a.id]?.reviewed} /></div>
                       )}
                     </div>
-                    <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                    {a.status === "checked_in" ? (
+                      isPaid(a) ? (
+                        <button type="button" disabled={!!busy} onClick={() => go(a, "in_session")}
+                          style={{ height: 34, padding: "0 14px", borderRadius: 17, border: "none", background: C.accent, color: C.white, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", opacity: busy ? 0.6 : 1 }}>
+                          {busy === a.id + "in_session" ? "جارٍ البدء…" : "بدء الجلسة"}
+                        </button>
+                      ) : isAdmin ? (
+                        <OverrideStartButton apptId={a.id} name={personName(a)} />
+                      ) : (
+                        <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                      )
+                    ) : (
+                      <Tag kind={STATUS_KIND[a.status]}>{STATUS_LABEL[a.status]}</Tag>
+                    )}
                   </div>
                 ))}
               </div>
