@@ -22,6 +22,7 @@ import LevelPicker from "./LevelPicker";
 import { C } from "@/lib/tokens";
 import s from "./book.module.css";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
+import { AlgaePeelingNotice, isAlgaePeeling } from "./AlgaePeelingNotice";
 import CardFlow, { FlowPending, usePhoneCards } from "./CardFlow";
 
 type Kind = "session" | "consult";
@@ -398,6 +399,7 @@ export default function PublicBookingPage() {
                       </>
                     )}
                     {svcCat?.not_for_pregnant && <PregnancyNotice style={{ marginTop: 14 }} />}
+                    {isAlgaePeeling(service) && <AlgaePeelingNotice style={{ marginTop: 14 }} />}
                     {noProvider && (
                       <div className={s.note} style={{ marginTop: 18 }}>
                         لا تتوفّر أخصائية لهذه الجلسة حالياً. اختاري جلسة أخرى{contact ? " أو تواصلي معنا لنرتّب موعدكِ" : ""}.

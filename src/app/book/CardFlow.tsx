@@ -17,6 +17,7 @@ import { durationLabel, levelsOfService, localPhone, normalisePhone, pubPrice, t
 import LevelPicker from "./LevelPicker";
 import { C } from "@/lib/tokens";
 import { PregnancyNotice } from "@/app/services/PregnancyNotice";
+import { AlgaePeelingNotice, isAlgaePeeling } from "./AlgaePeelingNotice";
 import s from "./cardflow.module.css";
 
 /** "cards" = new phone deck, "classic" = the original single-page phone layout. */
@@ -316,6 +317,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
         <>
           {head({ n: 4, title: "أي يوم يناسبكِ؟" })}
           <div className={s.body}>
+            {isAlgaePeeling(c.service) && <AlgaePeelingNotice style={{ marginBottom: 12 }} />}
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
                 const open = c.isOpen(k);
@@ -534,7 +536,7 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             ? <button type="button" className={s.backBtn} onClick={back} aria-label="رجوع إلى الخطوة السابقة"><Icon name="back" size={20} color={C.accent} /></button>
             : <span className={s.backBtn} aria-hidden style={{ visibility: "hidden" }} />}
           <span aria-label="فاطمة بيوتي" className={s.logo}><Logo height={40} /></span>
-          {c.now && <span className={s.clock} aria-label={`الآن في حمص ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
+          {c.now && <span className={s.clock} aria-label={`الآن في دمشق ${clock(c.now)}`}><Icon name="clock" size={15} color={C.accentMid} /><b className="latin">{clock(c.now)}</b></span>}
         </div>
         {ready && !c.result && (
           <>
