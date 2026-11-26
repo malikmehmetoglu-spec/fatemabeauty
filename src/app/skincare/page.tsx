@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Stage } from "@/components/shell";
 import { ErrorNote, Icon, Loading, Modal } from "@/components/ui";
-import { useQuery } from "@/lib/db/query";
-import { listSpecialists } from "@/lib/db/catalog";
+import { supabase } from "@/lib/supabase/client";
 import {
   bookingError,
   isOpenVisit,
-  listRange,
   personName,
-  setStatus,
   useLiveAppointments,
   type Appointment,
 } from "@/lib/db/appointments";
@@ -20,6 +17,8 @@ import { initials } from "@/lib/data";
 import { BG, C, ICON_FILL, LOGO, SHB } from "@/lib/tokens";
 import { DatePill } from "../kiosk/kiosk";
 import { SessionTimer } from "../admin/queue/session-ui";
+
+type Specialist = { id: string; name: string; photo_url?: string | null };
 
 const mins = (iso: string | null) =>
   iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0;
@@ -60,7 +59,7 @@ function Avatar({
         objectFit: "cover",
         border: ring,
         boxShadow: shadow,
-        transition: `width 0.38s ${EASE}, height 0.38s ${EASE}, box-shadow 0.38s ${EASE}, border-color 0.25s ease`,
+        transition: `width 0.42s ${EASE}, height 0.42s ${EASE}, box-shadow 0.42s ${EASE}, border-color 0.28s ease`,
       }}
     />
   ) : (
@@ -80,7 +79,7 @@ function Avatar({
         fontSize: Math.round(size * 0.32),
         fontWeight: 700,
         color: active ? C.white : C.accent,
-        transition: `width 0.38s ${EASE}, height 0.38s ${EASE}, font-size 0.38s ${EASE}, box-shadow 0.38s ${EASE}`,
+        transition: `width 0.42s ${EASE}, height 0.42s ${EASE}, font-size 0.42s ${EASE}, box-shadow 0.42s ${EASE}`,
       }}
     >
       {initials(name)}
@@ -90,10 +89,11 @@ function Avatar({
 
 export default function SkincareScreen() {
   useLiveAppointments("skincare-screen");
-  const team = useQuery(["catalog", "specialists-all"], () => listSpecialists());
   const today = dayKey();
-  const q = useQuery(["appointments", "day", today], () => listRange(today));
 
+  const [specialists, setSpecialists] = useState<Specialist[]>([]);
+  const [list, setList] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
@@ -101,20 +101,40 @@ export default function SkincareScreen() {
   const [noteText, setNoteText] = useState("");
   const [, tick] = useState(0);
 
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.rpc("skincare_screen_data", { p_day: today });
+    if (error) {
+      setErr(bookingError(error));
+    } else if (data) {
+      const payload = data as { specialists?: Specialist[]; appointments?: Appointment[] };
+      setSpecialists(payload.specialists ?? []);
+      setList(payload.appointments ?? []);
+      setErr("");
+    }
+    setLoading(false);
+  }, [today]);
+
   useEffect(() => {
+    load();
+    const poll = setInterval(load, 8000);
     const t = setInterval(() => tick((n) => n + 1), 30000);
-    return () => clearInterval(t);
-  }, []);
+    return () => {
+      clearInterval(poll);
+      clearInterval(t);
+    };
+  }, [load]);
 
-  const list = useMemo(() => q.data ?? [], [q.data]);
-  const specialists = useMemo(() => team.data ?? [], [team.data]);
-  const selected = specialists.find((s) => s.id === selectedId) ?? null;
+  const selected = useMemo(
+    () => specialists.find((s) => s.id === selectedId) ?? null,
+    [specialists, selectedId]
+  );
 
-  async function run(a: Appointment, f: () => Promise<unknown>) {
+  async function run(a: Appointment, f: () => Promise<void>) {
     setBusy(a.id);
     setErr("");
     try {
       await f();
+      await load();
     } catch (e) {
       setErr(bookingError(e));
     } finally {
@@ -123,12 +143,24 @@ export default function SkincareScreen() {
   }
 
   const startSession = (a: Appointment, specialistId: string) =>
-    run(a, () => setStatus(a.id, "in_session", { specialist_id: specialistId }));
+    run(a, async () => {
+      const { error } = await supabase.rpc("skincare_set_status", {
+        p_id: a.id,
+        p_status: "in_session",
+        p_specialist_id: specialistId,
+      });
+      if (error) throw error;
+    });
 
   const finishSession = (a: Appointment) => {
     if (!window.confirm(`إنهاء جلسة ${personName(a)}؟`)) return;
     run(a, async () => {
-      await setStatus(a.id, "done");
+      const { error } = await supabase.rpc("skincare_set_status", {
+        p_id: a.id,
+        p_status: "done",
+        p_specialist_id: null,
+      });
+      if (error) throw error;
       setSelectedId(null);
     });
   };
@@ -155,6 +187,16 @@ export default function SkincareScreen() {
 
   return (
     <Stage fluid width={1320} height={880} background={BG} padding="28px 36px" gap={24}>
+      <style>{`
+        @keyframes skincarePanelIn {
+          from { opacity: 0; transform: translateY(18px) scale(0.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .sk-circle-btn:active {
+          transform: scale(0.94) !important;
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -197,7 +239,7 @@ export default function SkincareScreen() {
 
       {err && <ErrorNote>{err}</ErrorNote>}
 
-      {q.loading || team.loading ? (
+      {loading ? (
         <Loading />
       ) : (
         <>
@@ -211,7 +253,7 @@ export default function SkincareScreen() {
               gap: isIdle ? "34px 42px" : "14px 20px",
               flexWrap: "wrap",
               padding: isIdle ? "24px 12px" : "4px 0 8px",
-              transition: `all 0.38s ${EASE}`,
+              transition: `all 0.42s ${EASE}`,
             }}
           >
             {specialists.map((sp) => {
@@ -224,6 +266,7 @@ export default function SkincareScreen() {
                 <button
                   key={sp.id}
                   type="button"
+                  className="sk-circle-btn"
                   onClick={() => setSelectedId(isSelected ? null : sp.id)}
                   style={{
                     position: "relative",
@@ -237,8 +280,8 @@ export default function SkincareScreen() {
                     cursor: "pointer",
                     fontFamily: "inherit",
                     opacity: !isIdle && !isSelected ? 0.72 : 1,
-                    transform: isSelected ? "translateY(-2px)" : "none",
-                    transition: `all 0.32s ${EASE}`,
+                    transform: isSelected ? "translateY(-3px) scale(1.03)" : "scale(1)",
+                    transition: `all 0.36s ${EASE}`,
                   }}
                 >
                   <div style={{ position: "relative" }}>
@@ -297,7 +340,7 @@ export default function SkincareScreen() {
                       fontSize: isIdle ? 18 : isSelected ? 15.5 : 13,
                       fontWeight: 700,
                       color: isSelected ? C.accent : C.ink,
-                      transition: `font-size 0.3s ${EASE}`,
+                      transition: `font-size 0.32s ${EASE}`,
                     }}
                   >
                     {sp.name}
@@ -310,6 +353,7 @@ export default function SkincareScreen() {
           {/* Workspace for Selected Specialist */}
           {selected && (
             <div
+              key={selected.id}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -319,6 +363,7 @@ export default function SkincareScreen() {
                 background: "rgba(255,255,255,0.92)",
                 backdropFilter: "blur(12px)",
                 boxShadow: "0 20px 50px rgba(123, 70, 135, 0.10)",
+                animation: `skincarePanelIn 0.38s ${EASE}`,
               }}
             >
               {/* Running Session */}
