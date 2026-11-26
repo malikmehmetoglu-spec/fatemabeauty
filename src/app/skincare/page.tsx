@@ -102,6 +102,7 @@ export default function SkincareScreen() {
   const [, tick] = useState(0);
 
   const load = useCallback(async () => {
+    // @ts-expect-error RPC added via SQL migration
     const { data, error } = await supabase.rpc("skincare_screen_data", { p_day: today });
     if (error) {
       setErr(bookingError(error));
@@ -144,6 +145,7 @@ export default function SkincareScreen() {
 
   const startSession = (a: Appointment, specialistId: string) =>
     run(a, async () => {
+      // @ts-expect-error RPC added via SQL migration
       const { error } = await supabase.rpc("skincare_set_status", {
         p_id: a.id,
         p_status: "in_session",
@@ -155,6 +157,7 @@ export default function SkincareScreen() {
   const finishSession = (a: Appointment) => {
     if (!window.confirm(`إنهاء جلسة ${personName(a)}؟`)) return;
     run(a, async () => {
+      // @ts-expect-error RPC added via SQL migration
       const { error } = await supabase.rpc("skincare_set_status", {
         p_id: a.id,
         p_status: "done",
