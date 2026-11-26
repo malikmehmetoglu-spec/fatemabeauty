@@ -17,25 +17,37 @@ import {
 import { isPaid } from "@/lib/db/levels";
 import { clock, dayKey } from "@/lib/format";
 import { initials } from "@/lib/data";
-import { BG, C, ICON_FILL, LOGO, SH, SHB } from "@/lib/tokens";
+import { BG, C, ICON_FILL, LOGO, SHB } from "@/lib/tokens";
 import { DatePill } from "../kiosk/kiosk";
 import { SessionTimer } from "../admin/queue/session-ui";
 
 const mins = (iso: string | null) =>
   iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0;
 
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
 function Avatar({
   name,
   photo,
   size,
   active,
+  running,
 }: {
   name: string;
   photo?: string | null;
   size: number;
   active?: boolean;
+  running?: boolean;
 }) {
-  const border = active ? `3px solid ${C.accent}` : "3px solid #FFFFFF";
+  const ring = active
+    ? `4px solid ${C.accent}`
+    : running
+      ? "4px solid #C8507F"
+      : "4px solid rgba(255,255,255,0.95)";
+  const shadow = active
+    ? "0 18px 38px rgba(123, 70, 135, 0.28)"
+    : "0 14px 32px rgba(95, 58, 108, 0.14)";
+
   return photo ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -44,11 +56,11 @@ function Avatar({
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
+        borderRadius: "50%",
         objectFit: "cover",
-        border,
-        boxShadow: SHB,
-        transition: "all 0.25s ease",
+        border: ring,
+        boxShadow: shadow,
+        transition: `width 0.38s ${EASE}, height 0.38s ${EASE}, box-shadow 0.38s ${EASE}, border-color 0.25s ease`,
       }}
     />
   ) : (
@@ -56,19 +68,19 @@ function Avatar({
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
+        borderRadius: "50%",
         background: active
           ? "linear-gradient(145deg, #7B4687, #A86BB6)"
-          : "linear-gradient(145deg, #EEDBF2, #DABBE1)",
-        border,
-        boxShadow: SHB,
+          : "linear-gradient(145deg, #F3E5F7, #DFC2E7)",
+        border: ring,
+        boxShadow: shadow,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: size * 0.34,
+        fontSize: Math.round(size * 0.32),
         fontWeight: 700,
         color: active ? C.white : C.accent,
-        transition: "all 0.25s ease",
+        transition: `width 0.38s ${EASE}, height 0.38s ${EASE}, font-size 0.38s ${EASE}, box-shadow 0.38s ${EASE}`,
       }}
     >
       {initials(name)}
@@ -96,7 +108,6 @@ export default function SkincareScreen() {
 
   const list = useMemo(() => q.data ?? [], [q.data]);
   const specialists = useMemo(() => team.data ?? [], [team.data]);
-
   const selected = specialists.find((s) => s.id === selectedId) ?? null;
 
   async function run(a: Appointment, f: () => Promise<unknown>) {
@@ -118,7 +129,6 @@ export default function SkincareScreen() {
     if (!window.confirm(`إنهاء جلسة ${personName(a)}؟`)) return;
     run(a, async () => {
       await setStatus(a.id, "done");
-      // Shrink circle back and line up with the rest
       setSelectedId(null);
     });
   };
@@ -141,22 +151,47 @@ export default function SkincareScreen() {
         )
     : [];
 
+  const isIdle = !selected;
+
   return (
-    <Stage fluid width={1280} height={860} background={BG} padding="26px 32px" gap={20}>
+    <Stage fluid width={1320} height={880} background={BG} padding="28px 36px" gap={24}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO} alt="Fatema Beauty" style={{ height: 46 }} />
-        <div style={{ flex: "1 1 220px", lineHeight: 1.3 }}>
+        <img src={LOGO} alt="Fatema Beauty" style={{ height: 48 }} />
+        <div style={{ flex: "1 1 240px", lineHeight: 1.35 }}>
           <div style={{ fontSize: 26, fontWeight: 700, color: C.ink }}>
             غرفة العناية بالبشرة
           </div>
-          <div style={{ fontSize: 14, color: C.sub2 }}>
+          <div style={{ fontSize: 14.5, color: C.sub2 }}>
             {selected
-              ? `الأخصائية: ${selected.name} — اضغطي على الدائرة للتصغير`
-              : "اختاري دائرتكِ لبدء الجلسة أو متابعة العميلات"}
+              ? `الأخصائية: ${selected.name}`
+              : "اضغطي على دائرتكِ للبدء"}
           </div>
         </div>
+        {selected && (
+          <button
+            type="button"
+            onClick={() => setSelectedId(null)}
+            style={{
+              height: 44,
+              padding: "0 18px",
+              borderRadius: 22,
+              border: "none",
+              background: "rgba(255,255,255,0.85)",
+              color: C.accent,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: SHB,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            عرض جميع الدوائر
+          </button>
+        )}
         <DatePill />
       </div>
 
@@ -166,26 +201,24 @@ export default function SkincareScreen() {
         <Loading />
       ) : (
         <>
-          {/* Circles Row — compact when idle/finished, highlighted when active */}
+          {/* Circles — large & screen-filling when idle, compact & docked when a specialist is open */}
           <div
             style={{
+              flex: isIdle ? 1 : "0 0 auto",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 18,
+              gap: isIdle ? "34px 42px" : "14px 20px",
               flexWrap: "wrap",
-              padding: "14px 18px",
-              borderRadius: 28,
-              background: "rgba(255,255,255,0.65)",
-              border: "1px solid #EFE3F3",
-              boxShadow: SH,
+              padding: isIdle ? "24px 12px" : "4px 0 8px",
+              transition: `all 0.38s ${EASE}`,
             }}
           >
             {specialists.map((sp) => {
               const isSelected = sp.id === selectedId;
               const activeSession = runningAll.find((a) => a.specialist_id === sp.id);
               const waitCount = waitingAll.filter((a) => a.specialist_id === sp.id).length;
-              const size = isSelected ? 96 : 72;
+              const size = isIdle ? 158 : isSelected ? 88 : 66;
 
               return (
                 <button
@@ -197,15 +230,15 @@ export default function SkincareScreen() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 8,
-                    padding: isSelected ? "12px 18px" : "8px 12px",
-                    borderRadius: 24,
-                    border: isSelected ? `2px solid ${C.accent}` : "2px solid transparent",
-                    background: isSelected ? C.white : "transparent",
-                    boxShadow: isSelected ? SHB : "none",
+                    gap: isIdle ? 14 : 7,
+                    padding: 0,
+                    border: "none",
+                    background: "transparent",
                     cursor: "pointer",
                     fontFamily: "inherit",
-                    transition: "all 0.25s ease",
+                    opacity: !isIdle && !isSelected ? 0.72 : 1,
+                    transform: isSelected ? "translateY(-2px)" : "none",
+                    transition: `all 0.32s ${EASE}`,
                   }}
                 >
                   <div style={{ position: "relative" }}>
@@ -213,20 +246,22 @@ export default function SkincareScreen() {
                       name={sp.name}
                       photo={sp.photo_url}
                       size={size}
-                      active={isSelected || !!activeSession}
+                      active={isSelected}
+                      running={!!activeSession}
                     />
                     {activeSession && (
                       <span
                         title="جلسة جارية"
                         style={{
                           position: "absolute",
-                          bottom: 2,
-                          right: 2,
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
+                          bottom: isIdle ? 8 : 2,
+                          right: isIdle ? 8 : 2,
+                          width: isIdle ? 22 : 16,
+                          height: isIdle ? 22 : 16,
+                          borderRadius: "50%",
                           background: "#C8507F",
-                          border: "2px solid #fff",
+                          border: "3px solid #fff",
+                          boxShadow: "0 4px 10px rgba(200,80,127,0.35)",
                         }}
                       />
                     )}
@@ -236,20 +271,21 @@ export default function SkincareScreen() {
                         title="عميلات بانتظارك"
                         style={{
                           position: "absolute",
-                          top: -4,
-                          left: -4,
-                          minWidth: 24,
-                          height: 24,
-                          borderRadius: 12,
-                          padding: "0 6px",
+                          top: isIdle ? 4 : -4,
+                          left: isIdle ? 4 : -4,
+                          minWidth: isIdle ? 32 : 24,
+                          height: isIdle ? 32 : 24,
+                          borderRadius: 16,
+                          padding: "0 7px",
                           background: C.accent,
                           color: C.white,
-                          fontSize: 12,
+                          fontSize: isIdle ? 15 : 12,
                           fontWeight: 700,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: "2px solid #fff",
+                          border: "3px solid #fff",
+                          boxShadow: "0 4px 12px rgba(123,70,135,0.3)",
                         }}
                       >
                         {waitCount}
@@ -258,9 +294,10 @@ export default function SkincareScreen() {
                   </div>
                   <span
                     style={{
-                      fontSize: isSelected ? 16 : 13.5,
+                      fontSize: isIdle ? 18 : isSelected ? 15.5 : 13,
                       fontWeight: 700,
                       color: isSelected ? C.accent : C.ink,
+                      transition: `font-size 0.3s ${EASE}`,
                     }}
                   >
                     {sp.name}
@@ -270,18 +307,18 @@ export default function SkincareScreen() {
             })}
           </div>
 
-          {/* Expanded Workspace for Selected Specialist */}
+          {/* Workspace for Selected Specialist */}
           {selected && (
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: 16,
-                padding: "22px 24px",
-                borderRadius: 28,
-                background: C.white,
-                border: "1px solid #F0E6F3",
-                boxShadow: SHB,
+                gap: 20,
+                padding: "26px 28px",
+                borderRadius: 32,
+                background: "rgba(255,255,255,0.92)",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 20px 50px rgba(123, 70, 135, 0.10)",
               }}
             >
               {/* Running Session */}
@@ -296,19 +333,19 @@ export default function SkincareScreen() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 16,
+                        gap: 18,
                         flexWrap: "wrap",
-                        padding: "16px 18px",
-                        borderRadius: 22,
-                        background: "#FDF1F6",
-                        border: "1px solid #F2CADB",
+                        padding: "18px 22px",
+                        borderRadius: 24,
+                        background: "linear-gradient(145deg, #FFF5F9, #FCEAF1)",
+                        boxShadow: "0 8px 24px rgba(200, 80, 127, 0.08)",
                       }}
                     >
                       <div style={{ flex: "1 1 240px", minWidth: 0, lineHeight: 1.5 }}>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: C.ink }}>
+                        <div style={{ fontSize: 21, fontWeight: 700, color: C.ink }}>
                           {personName(a)}
                         </div>
-                        <div style={{ fontSize: 14, color: C.sub2 }}>
+                        <div style={{ fontSize: 14.5, color: C.sub2 }}>
                           {isOpenVisit(a)
                             ? "جلسة غير محددة"
                             : `${a.service?.short_name ?? a.service?.name ?? ""}${
@@ -328,18 +365,19 @@ export default function SkincareScreen() {
                           setNoteText(a.note ?? "");
                         }}
                         style={{
-                          height: 48,
-                          padding: "0 18px",
-                          borderRadius: 24,
-                          border: `1px solid ${C.accent}`,
+                          height: 50,
+                          padding: "0 20px",
+                          borderRadius: 25,
+                          border: "none",
                           background: C.white,
                           color: C.accent,
                           fontSize: 14.5,
                           fontWeight: 700,
                           cursor: "pointer",
+                          boxShadow: SHB,
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 6,
+                          gap: 8,
                         }}
                       >
                         <Icon name="edit" size={16} color={C.accent} />
@@ -351,16 +389,16 @@ export default function SkincareScreen() {
                         disabled={busy === a.id}
                         onClick={() => finishSession(a)}
                         style={{
-                          height: 52,
-                          padding: "0 24px",
-                          borderRadius: 26,
+                          height: 54,
+                          padding: "0 26px",
+                          borderRadius: 27,
                           border: "none",
-                          background: "#C8507F",
+                          background: "linear-gradient(145deg, #D45B8B, #B83D6D)",
                           color: C.white,
                           fontSize: 16,
                           fontWeight: 700,
                           cursor: "pointer",
-                          boxShadow: "0 10px 22px rgba(200,80,127,0.28)",
+                          boxShadow: "0 12px 26px rgba(200,80,127,0.30)",
                           opacity: busy === a.id ? 0.6 : 1,
                         }}
                       >
@@ -372,12 +410,12 @@ export default function SkincareScreen() {
               )}
 
               {/* Waiting Clients */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.accent }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 15.5, fontWeight: 700, color: C.accent }}>
                   العميلات المنتظرات ({selectedWaiting.length})
                 </div>
                 {selectedWaiting.length === 0 ? (
-                  <div style={{ padding: "18px 0", fontSize: 14, color: C.sub2 }}>
+                  <div style={{ padding: "20px 0", fontSize: 14.5, color: C.sub2 }}>
                     لا توجد عميلات منتظرات حالياً.
                   </div>
                 ) : (
@@ -389,10 +427,11 @@ export default function SkincareScreen() {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 14,
+                          gap: 16,
                           flexWrap: "wrap",
-                          padding: "12px 0",
-                          borderTop: "1px solid #EDE2F1",
+                          padding: "14px 16px",
+                          borderRadius: 20,
+                          background: "#FAF6FC",
                         }}
                       >
                         <span
@@ -414,13 +453,13 @@ export default function SkincareScreen() {
                           {a.queue_no ?? "—"}
                         </span>
                         <div style={{ flex: "1 1 220px", minWidth: 0, lineHeight: 1.45 }}>
-                          <div style={{ fontSize: 17.5, fontWeight: 700 }}>
+                          <div style={{ fontSize: 18, fontWeight: 700 }}>
                             {personName(a)}
                             {!a.specialist_id && (
                               <span
                                 style={{
                                   marginInlineStart: 8,
-                                  fontSize: 12,
+                                  fontSize: 12.5,
                                   color: C.sub2,
                                   fontWeight: 600,
                                 }}
@@ -429,7 +468,7 @@ export default function SkincareScreen() {
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: 13.5, color: C.sub2 }}>
+                          <div style={{ fontSize: 14, color: C.sub2 }}>
                             {isOpenVisit(a)
                               ? "جلسة غير محددة"
                               : `${a.service?.short_name ?? a.service?.name ?? ""}${
@@ -457,16 +496,16 @@ export default function SkincareScreen() {
                             disabled={busy === a.id || selectedRunning.length > 0}
                             onClick={() => startSession(a, selected.id)}
                             style={{
-                              height: 50,
-                              padding: "0 22px",
-                              borderRadius: 25,
+                              height: 52,
+                              padding: "0 24px",
+                              borderRadius: 26,
                               border: "none",
-                              background: C.accent,
+                              background: "linear-gradient(145deg, #8B5498, #6C3A78)",
                               color: C.white,
                               fontSize: 15.5,
                               fontWeight: 700,
                               cursor: "pointer",
-                              boxShadow: "0 10px 22px rgba(123,70,135,0.28)",
+                              boxShadow: "0 12px 24px rgba(123,70,135,0.28)",
                               opacity:
                                 busy === a.id || selectedRunning.length > 0 ? 0.5 : 1,
                             }}
@@ -476,12 +515,11 @@ export default function SkincareScreen() {
                         ) : (
                           <span
                             style={{
-                              height: 42,
-                              padding: "0 16px",
-                              borderRadius: 21,
+                              height: 44,
+                              padding: "0 18px",
+                              borderRadius: 22,
                               background: "#FFF3E0",
                               color: "#A3621A",
-                              border: "1px solid #F6DDB9",
                               fontSize: 14,
                               fontWeight: 700,
                               display: "inline-flex",
