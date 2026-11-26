@@ -11,9 +11,10 @@ import { arDate } from "@/lib/format";
 import { R } from "@/lib/routes";
 import { C, CARD } from "@/lib/tokens";
 
-type NoShowRow = {
+type ApptRow = {
   id: string;
   starts_at: string;
+  status: string;
   source: string | null;
   patient_id: string | null;
   walk_in_name: string | null;
@@ -27,21 +28,22 @@ type BlacklistEntry = {
   fileNo: number | null;
   name: string;
   phone: string;
-  total: number;
-  fromLink: number;
+  linkBookings: number;
+  deskBookings: number;
+  noShows: number;
   lastAt: string;
   blocked: boolean;
 };
 
-async function fetchNoShows(): Promise<NoShowRow[]> {
+async function fetchBlacklistData(): Promise<ApptRow[]> {
   const { data, error } = await supabase
     .from("appointments")
-    .select("id, starts_at, source, patient_id, walk_in_name, walk_in_phone, patient:patients(id, name, file_no, phone)")
-    .eq("status", "no_show")
+    .select("id, starts_at, status, source, patient_id, walk_in_name, walk_in_phone, patient:patients(id, name, file_no, phone)")
+    .neq("status", "cancelled")
     .order("starts_at", { ascending: false })
-    .limit(1000);
+    .limit(3000);
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as NoShowRow[];
+  return (data ?? []) as unknown as ApptRow[];
 }
 
 type BlacklistOverrides = { blocked: string[]; unblocked: string[] };
@@ -55,7 +57,7 @@ async function fetchOverrides(): Promise<BlacklistOverrides> {
 export default function BlacklistPage() {
   const { staff } = useSession();
   const isAdmin = staff?.role === "owner" || staff?.role === "admin";
-  const { data, loading, error } = useQuery(["appointments", "blacklist"], fetchNoShows, { enabled: isAdmin });
+  const { data, loading, error } = useQuery(["appointments", "blacklist"], fetchBlacklistData, { enabled: isAdmin });
   const ov = useQuery(["settings", "booking_blacklist"], fetchOverrides, { enabled: isAdmin });
   const [busyKey, setBusyKey] = useState("");
 
@@ -65,34 +67,39 @@ export default function BlacklistPage() {
       const phone = r.patient?.phone || r.walk_in_phone || "";
       const key = r.patient_id || phone || r.id;
       const name = r.patient?.name || r.walk_in_name || "مراجِعة بدون اسم";
-      const cur = map.get(key);
-      if (cur) {
-        cur.total += 1;
-        if (r.source === "public") cur.fromLink += 1;
-        if (r.starts_at > cur.lastAt) cur.lastAt = r.starts_at;
-      } else {
-        map.set(key, {
+      let cur = map.get(key);
+      if (!cur) {
+        cur = {
           key,
           patientId: r.patient_id,
           fileNo: r.patient?.file_no ?? null,
           name,
           phone,
-          total: 1,
-          fromLink: r.source === "public" ? 1 : 0,
+          linkBookings: 0,
+          deskBookings: 0,
+          noShows: 0,
           lastAt: r.starts_at,
           blocked: false,
-        });
+        };
+        map.set(key, cur);
+      }
+      if (r.source === "public") cur.linkBookings += 1;
+      else cur.deskBookings += 1;
+      if (r.status === "no_show") {
+        cur.noShows += 1;
+        if (r.starts_at > cur.lastAt) cur.lastAt = r.starts_at;
       }
     }
     const blockedSet = new Set(ov.data?.blocked ?? []);
     const unblockedSet = new Set(ov.data?.unblocked ?? []);
     return [...map.values()]
+      .filter((e) => e.noShows > 0 || blockedSet.has(e.phone || e.key))
       .map((e) => {
         const id = e.phone || e.key;
-        const auto = e.total >= 3;
+        const auto = e.noShows >= 3;
         return { ...e, blocked: blockedSet.has(id) || (auto && !unblockedSet.has(id)) };
       })
-      .sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.total - a.total || b.lastAt.localeCompare(a.lastAt));
+      .sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.noShows - a.noShows || b.lastAt.localeCompare(a.lastAt));
   }, [data, ov.data]);
 
   async function toggleBlock(e: BlacklistEntry) {
@@ -111,7 +118,7 @@ export default function BlacklistPage() {
   }
 
   const blockedCount = entries.filter((e) => e.blocked).length;
-  const linkCount = entries.filter((e) => e.fromLink > 0).length;
+  const linkCount = entries.filter((e) => e.linkBookings > 0).length;
 
   return (
     <AdminShell active="المواعيد" title="القائمة السوداء (عدم الحضور)" subtitle="المراجِعات اللواتي حجزن ولم يحضرن — يُحظر الحجز من الرابط تلقائياً عند 3 مرات">
@@ -138,16 +145,22 @@ export default function BlacklistPage() {
                 {e.phone && <div className="latin" dir="ltr" style={{ fontSize: 12.5, color: C.sub2, textAlign: "right" }}>{e.phone}</div>}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: C.sub2, flexWrap: "wrap" }}>
-                <span>إجمالي عدم الحضور: <b className="latin" style={{ color: e.blocked ? C.danger : C.ink }}>{e.total}</b></span>
+                <span>من الرابط: <b className="latin">{e.linkBookings}</b></span>
                 <span>·</span>
-                <span>منها عبر رابط الحجز: <b className="latin">{e.fromLink}</b></span>
+                <span>من الاستقبال/خدمة العملاء: <b className="latin">{e.deskBookings}</b></span>
+                <span>·</span>
+                <span>لم تحضر: <b className="latin" style={{ color: e.blocked ? C.danger : C.ink }}>{e.noShows}</b></span>
                 <span>·</span>
                 <span>آخر مرة: {arDate(new Date(e.lastAt))}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button type="button" disabled={busyKey === e.key} onClick={() => toggleBlock(e)}
-                  style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${e.blocked ? "#CFE8E3" : "#EBC9D6"}`, background: e.blocked ? "#E6F6EF" : "#FDF1F6", color: e.blocked ? "#1F6A60" : C.danger, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  {busyKey === e.key ? "جارٍ الحفظ…" : e.blocked ? "إلغاء الحظر" : "حظر من الرابط"}
+                <button type="button" disabled={busyKey === e.key || e.blocked} onClick={() => e.blocked || toggleBlock(e)}
+                  style={{ height: 32, padding: "0 12px", borderRadius: 16, border: "1px solid #EBC9D6", background: "#FDF1F6", color: C.danger, fontSize: 12, fontWeight: 700, cursor: e.blocked ? "default" : "pointer", opacity: e.blocked ? 0.45 : 1 }}>
+                  حظر
+                </button>
+                <button type="button" disabled={busyKey === e.key || !e.blocked} onClick={() => !e.blocked || toggleBlock(e)}
+                  style={{ height: 32, padding: "0 12px", borderRadius: 16, border: "1px solid #CFE8E3", background: "#E6F6EF", color: "#1F6A60", fontSize: 12, fontWeight: 700, cursor: !e.blocked ? "default" : "pointer", opacity: !e.blocked ? 0.45 : 1 }}>
+                  رفع الحظر
                 </button>
                 {e.patientId && (
                   <Link href={`${R.W_Record}?id=${e.patientId}`} style={{ fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center", gap: 4 }}>
