@@ -39,7 +39,8 @@ export default function SimplePos() {
   const receipt = useInvoicePrint();
   const [code, setCode] = useState("");
   const [lines, setLines] = useState<CartLine[]>([]);
-  const [card, setCard] = useState(false);
+  const [payMode, setPayMode] = useState<"cash" | "card" | "gift">("cash");
+  const [giftNote, setGiftNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,7 +66,9 @@ export default function SimplePos() {
       : [...lines, { kind: "product", ref: p.key, qty: 1, label: p.name_ar ? `${p.name_ar} — ${p.name}` : p.name, unit_price: p.price ?? 0 }]);
   };
 
-  const total = lines.reduce((s, l) => s + l.qty * l.unit_price, 0);
+  const sub = lines.reduce((s, l) => s + l.qty * l.unit_price, 0);
+  const isGift = payMode === "gift";
+  const total = isGift ? 0 : sub;
   const count = lines.reduce((s, l) => s + l.qty, 0);
   const missing = !lines.length ? "امسحي باركود منتج واحد على الأقل" : "";
 
@@ -74,7 +77,11 @@ export default function SimplePos() {
     setBusy(true); setErr(null);
     try {
       const inv = await createInvoice({
-        walkInName: "زبونة مباشرة", lines, discount: 0, payments: [{ method: card ? "card" : "cash", amount: total }],
+        walkInName: isGift ? "هدية" : "زبونة مباشرة",
+        lines,
+        discount: isGift ? sub : 0,
+        payments: [{ method: payMode === "card" ? "card" : "cash", amount: total }],
+        note: isGift ? (giftNote.trim() ? `هدية: ${giftNote.trim()}` : "هدية") : undefined,
         location: L.multi && L.def ? L.def.id : null,
       });
       if (inv) {
@@ -82,7 +89,7 @@ export default function SimplePos() {
         receipt.print(row as InvoiceRow, { staff: staff?.name });
         setDone(inv.no ? String(inv.no) : "");
       }
-      setLines([]); setCard(false);
+      setLines([]); setPayMode("cash"); setGiftNote("");
     } catch (e) { setErr(financeError(e)); } finally { setBusy(false); }
   };
 
@@ -142,17 +149,22 @@ export default function SimplePos() {
 
             <div style={{ ...PANEL, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
               <Title n={2}>طريقة الدفع</Title>
-              <div style={{ display: "flex", gap: 10 }}>
-                {[false, true].map((c) => {
-                  const on = card === c;
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {([["cash", "نقدي"], ["card", "بطاقة"], ["gift", "هدية"]] as const).map(([k, label]) => {
+                  const on = payMode === k;
                   return (
-                    <button key={String(c)} type="button" onClick={() => setCard(c)} style={{ flex: 1, height: 46, borderRadius: 23, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, color: C.ink, ...(on ? SELECTED : OFF) }}>
+                    <button key={k} type="button" onClick={() => setPayMode(k)} style={{ flex: 1, minWidth: 90, height: 46, borderRadius: 23, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, color: C.ink, ...(on ? SELECTED : OFF) }}>
                       <span style={{ width: 14, height: 14, borderRadius: 7, flexShrink: 0, ...(on ? { background: C.accent, border: "3px solid #F1E3F6", boxShadow: "0 0 0 1.5px #7B4687" } : { border: "1.5px solid #D1C0D5", background: C.white }) }} />
-                      <span style={{ flex: 1, textAlign: "right", fontSize: 14, fontWeight: 700 }}>{c ? "بطاقة" : "نقدي"}</span>
+                      <span style={{ flex: 1, textAlign: "right", fontSize: 14, fontWeight: 700 }}>{label}</span>
                     </button>
                   );
                 })}
               </div>
+              {isGift && (
+                <textarea aria-label="ملاحظة الهدية" rows={2} value={giftNote} onChange={(e) => setGiftNote(e.target.value)}
+                  placeholder="ملاحظة (مثلاً: اسم العميلة أو سبب الإهداء)"
+                  style={{ borderRadius: 16, border: "1px solid #E7D9EB", background: "#FEFCFE", padding: "10px 12px", fontSize: 13.5, color: C.ink, resize: "none", outline: "none", fontFamily: "inherit" }} />
+              )}
             </div>
 
             <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -166,7 +178,7 @@ export default function SimplePos() {
               )}
               {missing && <div style={{ fontSize: 12.5, color: C.sub2, textAlign: "center" }}>{missing}</div>}
               <button type="button" onClick={sell} disabled={!!missing || busy} style={{ height: 62, borderRadius: 31, border: "none", backgroundColor: C.accent, backgroundImage: GRAD, boxShadow: "0 16px 34px rgba(123,70,135,0.32), inset 0 1px 0 rgba(255,255,255,0.25)", color: C.white, fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 9, opacity: missing || busy ? 0.55 : 1 }}>
-                <Icon name="print" color={C.white} size={20} />{busy ? "جارٍ البيع…" : "قبول البيع وطباعة الفاتورة"}
+                <Icon name="print" color={C.white} size={20} />{busy ? "جارٍ التنفيذ…" : isGift ? "تأكيد الهدية وطباعة الفاتورة" : "قبول البيع وطباعة الفاتورة"}
               </button>
             </div>
           </div>
