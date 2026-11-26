@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Kpi, Loading, Tag } from "@/components/ui";
@@ -44,10 +44,20 @@ async function fetchNoShows(): Promise<NoShowRow[]> {
   return (data ?? []) as unknown as NoShowRow[];
 }
 
+type BlacklistOverrides = { blocked: string[]; unblocked: string[] };
+
+async function fetchOverrides(): Promise<BlacklistOverrides> {
+  const { data } = await supabase.from("settings").select("value").eq("key", "booking_blacklist").maybeSingle();
+  const v = (data?.value ?? {}) as Partial<BlacklistOverrides>;
+  return { blocked: Array.isArray(v.blocked) ? v.blocked : [], unblocked: Array.isArray(v.unblocked) ? v.unblocked : [] };
+}
+
 export default function BlacklistPage() {
   const { staff } = useSession();
   const isAdmin = staff?.role === "owner" || staff?.role === "admin";
   const { data, loading, error } = useQuery(["appointments", "blacklist"], fetchNoShows, { enabled: isAdmin });
+  const ov = useQuery(["settings", "booking_blacklist"], fetchOverrides, { enabled: isAdmin });
+  const [busyKey, setBusyKey] = useState("");
 
   const entries = useMemo<BlacklistEntry[]>(() => {
     const map = new Map<string, BlacklistEntry>();
@@ -60,7 +70,6 @@ export default function BlacklistPage() {
         cur.total += 1;
         if (r.source === "public") cur.fromLink += 1;
         if (r.starts_at > cur.lastAt) cur.lastAt = r.starts_at;
-        cur.blocked = cur.total >= 3;
       } else {
         map.set(key, {
           key,
@@ -75,8 +84,31 @@ export default function BlacklistPage() {
         });
       }
     }
-    return [...map.values()].sort((a, b) => b.total - a.total || b.lastAt.localeCompare(a.lastAt));
-  }, [data]);
+    const blockedSet = new Set(ov.data?.blocked ?? []);
+    const unblockedSet = new Set(ov.data?.unblocked ?? []);
+    return [...map.values()]
+      .map((e) => {
+        const id = e.phone || e.key;
+        const auto = e.total >= 3;
+        return { ...e, blocked: blockedSet.has(id) || (auto && !unblockedSet.has(id)) };
+      })
+      .sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.total - a.total || b.lastAt.localeCompare(a.lastAt));
+  }, [data, ov.data]);
+
+  async function toggleBlock(e: BlacklistEntry) {
+    const id = e.phone || e.key;
+    setBusyKey(e.key);
+    try {
+      const cur = ov.data ?? { blocked: [], unblocked: [] };
+      const next: BlacklistOverrides = e.blocked
+        ? { blocked: cur.blocked.filter((x) => x !== id), unblocked: [...new Set([...cur.unblocked, id])] }
+        : { blocked: [...new Set([...cur.blocked, id])], unblocked: cur.unblocked.filter((x) => x !== id) };
+      await supabase.from("settings").upsert({ key: "booking_blacklist", value: next, updated_at: new Date().toISOString() });
+      ov.refresh();
+    } finally {
+      setBusyKey("");
+    }
+  }
 
   const blockedCount = entries.filter((e) => e.blocked).length;
   const linkCount = entries.filter((e) => e.fromLink > 0).length;
@@ -105,18 +137,24 @@ export default function BlacklistPage() {
                 </div>
                 {e.phone && <div className="latin" dir="ltr" style={{ fontSize: 12.5, color: C.sub2, textAlign: "right" }}>{e.phone}</div>}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: C.sub2 }}>
-                <span>عدم الحضور: <b className="latin" style={{ color: e.blocked ? C.danger : C.ink }}>{e.total}</b></span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: C.sub2, flexWrap: "wrap" }}>
+                <span>إجمالي عدم الحضور: <b className="latin" style={{ color: e.blocked ? C.danger : C.ink }}>{e.total}</b></span>
                 <span>·</span>
-                <span>من الرابط: <b className="latin">{e.fromLink}</b></span>
+                <span>منها عبر رابط الحجز: <b className="latin">{e.fromLink}</b></span>
                 <span>·</span>
                 <span>آخر مرة: {arDate(new Date(e.lastAt))}</span>
               </div>
-              {e.patientId && (
-                <Link href={`${R.W_Record}?id=${e.patientId}`} style={{ fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <Icon name="user" size={14} color={C.accent} />ملفها
-                </Link>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button type="button" disabled={busyKey === e.key} onClick={() => toggleBlock(e)}
+                  style={{ height: 32, padding: "0 12px", borderRadius: 16, border: `1px solid ${e.blocked ? "#CFE8E3" : "#EBC9D6"}`, background: e.blocked ? "#E6F6EF" : "#FDF1F6", color: e.blocked ? "#1F6A60" : C.danger, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  {busyKey === e.key ? "جارٍ الحفظ…" : e.blocked ? "إلغاء الحظر" : "حظر من الرابط"}
+                </button>
+                {e.patientId && (
+                  <Link href={`${R.W_Record}?id=${e.patientId}`} style={{ fontSize: 13, fontWeight: 700, color: C.accent, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Icon name="user" size={14} color={C.accent} />ملفها
+                  </Link>
+                )}
+              </div>
             </div>
           ))}
         </div>
