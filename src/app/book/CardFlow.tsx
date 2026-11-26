@@ -321,13 +321,15 @@ export default function CardFlow({ ctx }: { ctx: BookingCtx }) {
             <div className={s.days} data-noswipe>
               {c.days.map((k) => {
                 const open = c.isOpen(k);
+                const clinicOpen = c.info?.hours.days.includes(weekday(k)) ?? true;
+                const offLabel = clinicOpen ? "محجوز" : "مغلق";
                 const d = dateOf(k);
                 const on = c.day === k;
                 return (
-                  <button key={k} type="button" disabled={!open} className={`${s.day} ${on ? s.dayOn : ""}`} onClick={() => chooseDay(k)} aria-pressed={on} aria-label={`${dayLabel(k)}${open ? "" : " — مغلق"}`}>
+                  <button key={k} type="button" disabled={!open} className={`${s.day} ${on ? s.dayOn : ""}`} onClick={() => chooseDay(k)} aria-pressed={on} aria-label={`${dayLabel(k)}${open ? "" : ` — ${offLabel}`}`}>
                     <span className={s.dayName}>{k === dayKey(c.now ?? new Date()) ? "اليوم" : AR_DAYS[weekday(k)]}</span>
                     <span className={`${s.dayNum} latin`}>{d.getUTCDate()}</span>
-                    {open ? <span className={s.dayMon}>{AR_MONTHS[d.getUTCMonth()]}</span> : <span className={s.closed}>مغلق</span>}
+                    {open ? <span className={s.dayMon}>{AR_MONTHS[d.getUTCMonth()]}</span> : <span className={s.closed}>{offLabel}</span>}
                   </button>
                 );
               })}

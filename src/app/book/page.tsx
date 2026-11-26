@@ -423,12 +423,14 @@ export default function PublicBookingPage() {
                       <div className={s.days}>
                         {shownDays.map((k) => {
                           const open = isOpen(k);
+                          const clinicOpen = info?.hours.days.includes(weekday(k)) ?? true;
+                          const offLabel = clinicOpen ? "محجوز" : "مغلق";
                           const d = dateOf(k);
                           return (
                             <button key={k} type="button" disabled={!open} className={`${s.day} ${day === k ? s.dayOn : ""}`} onClick={() => pickDay(k)} aria-pressed={day === k}>
                               <span className={s.dayName}>{k === dayKey(now ?? new Date()) ? "اليوم" : AR_DAYS[weekday(k)]}</span>
                               <span className={`${s.dayNum} latin`}>{d.getUTCDate()}</span>
-                              {open ? <span className={s.dayMon}>{AR_MONTHS[d.getUTCMonth()]}</span> : <span className={s.closedTag}>مغلق</span>}
+                              {open ? <span className={s.dayMon}>{AR_MONTHS[d.getUTCMonth()]}</span> : <span className={s.closedTag}>{offLabel}</span>}
                             </button>
                           );
                         })}
