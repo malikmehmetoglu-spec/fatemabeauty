@@ -23,7 +23,20 @@ export type PayMethod = Invoice["method"];
 
 export const PAY_LABEL: Record<PayMethod, string> = { cash: "نقدي", card: "بطاقة", package: "رصيد باقة", points: "نقاط الولاء" };
 
-export const EXPENSE_CATEGORIES = ["إيجار", "رواتب", "مواد", "كهرباء", "صيانة", "تسويق", "ضيافة", "أخرى"];
+export const EXPENSE_CATEGORIES = [
+  "إيجار",
+  "رواتب",
+  "مواد",
+  "أجهزة ومعدات",
+  "كهرباء",
+  "ماء وفواتير",
+  "لوجستيات وشحن",
+  "صيانة",
+  "نظافة",
+  "تسويق",
+  "ضيافة",
+  "أخرى",
+];
 
 /** Arabic text for errors raised by the finance rpcs. */
 export function financeError(e: unknown) {
@@ -63,7 +76,7 @@ export function financeError(e: unknown) {
     ["bad item", "بند غير معروف في الفاتورة."],
     ["void reason required", "اكتبي سبب الإلغاء."],
     ["sold package already used", "لا يمكن إلغاء فاتورة باقة استُخدمت منها جلسات أو حُجزت عليها مواعيد."],
-    ["difference needs a reason", "يوجد فرق بين المعدود والمتوقع — اكتبي السبب قبل الإغلاق."],
+    ["difference needs a reason", "يوجد فرق بين المعدود والمتوقع — اكتبي السبب قبل الإلاق."],
     ["shift closed", "هذا المصروف مقفل ولا يمكن تعديله أو حذفه (المالكة فقط)."],
     ["cash_shifts_one_open", "هناك وردية مفتوحة بالفعل."],
     ["offer code not found", "كود الخصم غير موجود."],
