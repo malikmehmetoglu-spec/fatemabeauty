@@ -6,6 +6,7 @@ import { AdminShell } from "@/components/shell";
 import { EmptyState, ErrorNote, Icon, Kpi, Loading, Tag } from "@/components/ui";
 import { useQuery } from "@/lib/db/query";
 import { supabase } from "@/lib/supabase/client";
+import { useSession } from "@/lib/supabase/session";
 import { arDate } from "@/lib/format";
 import { R } from "@/lib/routes";
 import { C, CARD } from "@/lib/tokens";
@@ -44,7 +45,9 @@ async function fetchNoShows(): Promise<NoShowRow[]> {
 }
 
 export default function BlacklistPage() {
-  const { data, loading, error } = useQuery(["appointments", "blacklist"], fetchNoShows);
+  const { staff } = useSession();
+  const isAdmin = staff?.role === "owner" || staff?.role === "admin";
+  const { data, loading, error } = useQuery(["appointments", "blacklist"], fetchNoShows, { enabled: isAdmin });
 
   const entries = useMemo<BlacklistEntry[]>(() => {
     const map = new Map<string, BlacklistEntry>();
@@ -86,7 +89,9 @@ export default function BlacklistPage() {
         <Kpi label="حجزن من الرابط" value={linkCount} sub="مرة واحدة على الأقل" icon="link" />
       </div>
 
-      {loading ? <Loading /> : error ? <ErrorNote>{error}</ErrorNote> : entries.length === 0 ? (
+      {!staff ? <Loading /> : !isAdmin ? (
+        <EmptyState icon="lock" title="للمدراء فقط" text="هذه الصفحة متاحة للإدارة فقط." />
+      ) : loading ? <Loading /> : error ? <ErrorNote>{error}</ErrorNote> : entries.length === 0 ? (
         <EmptyState icon="check" title="القائمة السوداء فارغة" text="لا توجد أي حالة عدم حضور مسجّلة." />
       ) : (
         <div style={{ ...CARD, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
