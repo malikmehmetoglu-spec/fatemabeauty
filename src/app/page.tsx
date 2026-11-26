@@ -19,7 +19,7 @@ import BookPage from "./book/page";
 
 type Entry = "splash" | "site" | "store" | "book" | "redirect" | null;
 
-const REDIRECTS: Record<string, string> = { admin: R.W_Login, kiosk: R.T_Welcome, tv: R.TV_Board };
+const REDIRECTS: Record<string, string> = { admin: R.W_Login, kiosk: R.T_Welcome, tv: R.TV_Board, touch: "/skincare" };
 
 export default function Root() {
   const router = useRouter();
