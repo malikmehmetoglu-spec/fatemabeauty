@@ -144,6 +144,8 @@ function ApptCard({ a, by, mode, style, compact, narrow, px = 999, onOpen }: {
 }
 
 export function CalendarBody() {
+  const { staff } = useSession();
+  const isAdmin = staff?.role === "owner" || staff?.role === "admin";
   const [day, setDay] = useState(dayKey());
   const [view, setView] = useState<"day" | "week">("day");
   const [layout, setLayout] = useState<"list" | "grid">("list");
@@ -272,6 +274,7 @@ export function CalendarBody() {
               تصفية{activeFilters > 0 ? ` (${activeFilters})` : ""}
             </button>
             <VipButton onClick={() => setVipOpen(true)} height={38} style={{ borderRadius: 12, fontSize: 13.5, padding: "0 14px", boxShadow: "0 6px 14px rgba(169,129,48,0.25)" }} />
+            {isAdmin && <Link href="/admin/blacklist" className={S.btn} title="القائمة السوداء"><Icon name="alert" size={14} color={C.danger} />القائمة السوداء</Link>}
             <Link href={R.W_Reception} className={S.btn} title="الاستقبال والنداء"><Icon name="bell" size={14} color={C.accent} />الاستقبال</Link>
             <Link href={R.W_BookingModal} className={S.primary}><Icon name="M12 5v14M5 12h14" size={16} color={C.white} stroke={2} />موعد جديد</Link>
           </div>
