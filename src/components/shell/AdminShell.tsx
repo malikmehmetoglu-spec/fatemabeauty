@@ -251,7 +251,7 @@ const SUB: Partial<Record<AdminSection, [string, string][]>> = {
   "المالية": [["الكاشير", R.W_Cashier], ["الفواتير", R.W_Invoices], ["الاستشارات المكتوبة", R.W_WcPayments], ["طلبات الباقات", R.W_PkgRequests], ["الذمم والأقساط", R.W_Receivables], ["المصاريف", R.W_Expenses], ["العمولات", R.W_Commissions], ["التقارير المالية", R.W_FinanceReports]],
   "الصيدلية": [["المنتجات", R.W_Products], ["الطلبات والتوصيل", R.W_Orders], ["واجهة الصيدلية", "/admin/store/storefront/"]],
   "المخزون والأجهزة": [["المخزون", R.W_Inventory], ["المشتريات", R.W_Purchases], ["الجرد", R.W_Stocktake], ["المواقع", "/admin/inventory/locations/"], ["الأجهزة", R.W_Devices]],
-  "الإعدادات": [["الخدمات", R.W_Services], ["الغرف والأجهزة", R.W_Rooms], ["الأدوار والصلاحيات", R.W_Roles], ["السياسات", R.W_Policies], ["النداء", R.W_CallSettings], ["سجل العمليات", R.W_Audit]],
+  "الإعدادات": [["الخدمات", R.W_Services], ["الغرف والأجهزة", R.W_Rooms], ["الأدوار والصلاحيات", R.W_Roles], ["السياسات", R.W_Policies], ["النداء", R.W_CallSettings], ["شاشة البشرة", "/admin/settings/skincare-screen"], ["سجل العمليات", R.W_Audit]],
 };
 
 /** Sub-section tabs for sections that have several pages. */
