@@ -48,7 +48,7 @@ export function bookingError(e: unknown) {
   if (/patient required/.test(m)) return "اختاري المراجِعة أو اكتبي اسمها.";
   if (/cannot cancel/.test(m)) return "لا يمكن إلغاء هذا الموعد الآن.";
   if (/no patient record|not signed in/.test(m)) return "سجّلي الدخول أولاً.";
-  if (/outside opening hours/.test(m)) return "هذا الوقت خارج ساعات الدوام. اختاري وقتاً من الأوقات المعروضة.";
+  if (/outside opening hours/.test(m)) return "المواعيد ممتلئة في هذا الوقت. اختاري وقتاً آخر.";
   if (/already booked at this time/.test(m)) return "لديكِ موعد آخر في هذا الوقت.";
   if (/check-in only on the appointment day/.test(m)) return "يمكن تسجيل الوصول في يوم الموعد فقط.";
   if (/bad status change/.test(m)) return "لا يمكن نقل الموعد إلى هذه الحالة من حالته الحالية.";
